@@ -148,6 +148,19 @@ export const parserRules: Record<string, Function> = {
     matchAndMove(tokens.Dim, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
+
+    if (check(tokens.As, tokenStream.current())) {
+      matchAndMove(tokens.As, tokenStream);
+      matchAndMove(tokens.Variable, tokenStream);
+      const module = symbolTable.get(
+        tokenStream.prev().text,
+        symbolTypes.Module
+      );
+      const object = symbolTable.clone(name, module, symbolTypes.Object);
+
+      return node(nodeTypes.Clone, { object, module });
+    }
+
     if (!check(tokens.OpenParen, tokenStream.current())) {
       const varSymbol = symbolTable.add(name, symbolTypes.Variable);
       return node(nodeTypes.VariableDim, varSymbol);
@@ -157,17 +170,6 @@ export const parserRules: Record<string, Function> = {
     matchAndMove(newLines, tokenStream);
 
     return node(nodeTypes.Dim, arraySymbol, dims);
-  },
-  Clone: (tokenStream: TokenStream, symbolTable: Symbols) => {
-    matchAndMove(tokens.Clone, tokenStream);
-    matchAndMove(tokens.Variable, tokenStream);
-    const objectName = tokenStream.prev().text;
-    matchAndMove(tokens.Equals, tokenStream);
-    matchAndMove(tokens.Variable, tokenStream);
-    const module = symbolTable.get(tokenStream.prev().text, symbolTypes.Module);
-    const object = symbolTable.clone(objectName, module, symbolTypes.Object);
-
-    return node(nodeTypes.Clone, { object, module });
   },
   While: (tokenStream: TokenStream, symbolTable: Symbols) => {
     matchAndMove(tokens.While, tokenStream);

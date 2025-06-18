@@ -1,6 +1,7 @@
 const getMonacoConfig = (): any => ({
   tokens: [
     [/dim/i, "custom-keyword"],
+    [/clone/i, "custom-keyword"],
     [/print/i, "custom-function"],
     [/call/i, "custom-function"],
     [/onupdate/i, "custom-event"],
@@ -26,21 +27,7 @@ const getMonacoConfig = (): any => ({
   theme: {
     base: "vs",
     inherit: true,
-    colors: {
-      "editor.foreground": "#BDAE9D",
-      "editor.background": "#2A211C",
-      "editor.selectionBackground": "#C3DCFF",
-      "editor.lineHighlightBackground": "#3A312C",
-      "editor.highlightBackground": "#9a4a9c88",
-      "editorCursor.foreground": "#889AFF",
-      "editorWhitespace.foreground": "#BFBFBF",
-      "editorIndentGuide.background": "#5e81ce52",
-      "editor.selectionHighlightBorder": "#122d42",
-      editorIndentGuides: "#D3D3D3",
-      editorActiveIndentGuides: "#939393",
-      "editor.inactiveSelectionBackground": "#ff000066",
-      "editor.selectionHighlight": "#00ff0066",
-    },
+    colors: {},
     rules: [
       { token: "custom-keyword", foreground: "000080" },
       { token: "custom-function", foreground: "008000" },
