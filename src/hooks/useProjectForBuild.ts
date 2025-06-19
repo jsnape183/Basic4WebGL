@@ -1,11 +1,11 @@
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
-import { File } from "../features/files/filesSlice";
+import { IFile } from "../features/files/filesSlice";
 import { ProjectFile } from "../lib/compiler/types";
 
 type BuildProject = {
   lib: Array<ProjectFile>;
-  files: Array<File>;
+  files: Array<IFile>;
 };
 
 export const useProjectForBuild = (
@@ -16,8 +16,8 @@ export const useProjectForBuild = (
     lib: lib,
     files: useSelector((state: RootState) =>
       Object.values(state.files.byId).filter(
-        (file) => (file as File).projectId === projectId
+        (file) => (file as IFile).projectId === projectId
       )
-    ) as Array<File>,
+    ) as Array<IFile>,
   };
 };

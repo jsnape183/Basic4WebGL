@@ -76,7 +76,6 @@ class Symbols {
 
     const clonedSymbol = this.add(name, newType, scope);
     this.setScope(name);
-    console.log(childSymbols);
     childSymbols.forEach((c) => {
       this.add(c.name, c.type, new SymbolScope(name, symbol.type));
     });
@@ -129,17 +128,14 @@ class Symbols {
 
       return undefined;
     }
-    console.log(this.table);
     const symbolMatches: Symbol[] = Object.values(this.table).filter(
       (v) =>
         v.name.toLowerCase() === formattedName &&
         this.isMatchingType(type, v.type)
     );
-    console.log(symbolMatches);
     const scopePriority = new Map(
       this.scopes.map((s, index) => [s.name, index])
     );
-    console.log(scopePriority);
     const symbol = symbolMatches.reduce((best, current) => {
       const currentPriority = scopePriority.get(current.scope.name);
       if (currentPriority === undefined) return best;
@@ -150,7 +146,6 @@ class Symbols {
       return currentPriority < bestPriority ? current : best;
     }, undefined as (typeof symbolMatches)[number] | undefined);
 
-    console.log(symbol);
     return symbol;
   }
   get(
@@ -174,6 +169,8 @@ class Symbols {
     type: string,
     scope: SymbolScope | undefined = undefined
   ) {
+    console.log(name);
+    console.log(this.table);
     return this.retrieveSymbol(name, type, scope) !== undefined;
   }
   getAll(

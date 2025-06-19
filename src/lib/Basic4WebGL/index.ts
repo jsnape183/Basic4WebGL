@@ -18,7 +18,6 @@ const transpile = (project: CompilerProject) => {
     parseResult.symbolTable,
     new SymbolScope("", "")
   );
-  console.log(globals);
   return (
     globals +
     transpiler.transpile(parseResult, parseResult.symbolTable, transpilerRules)

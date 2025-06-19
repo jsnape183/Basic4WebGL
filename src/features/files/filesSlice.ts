@@ -1,19 +1,19 @@
 // src/features/files/filesSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export interface File {
+export interface IFile {
   id: string;
   name: string;
   source: string;
   projectId: string;
 }
 
-export interface FilesState {
-  byId: Record<string, File>;
+export interface IFilesState {
+  byId: Record<string, IFile>;
   selectedFileId: string;
 }
 
-const initialState: FilesState = {
+const initialState: IFilesState = {
   byId: {},
   selectedFileId: "",
 };
@@ -22,13 +22,13 @@ const filesSlice = createSlice({
   name: "files",
   initialState,
   reducers: {
-    addFile: (state: FilesState, action: PayloadAction<File>) => {
+    addFile: (state: IFilesState, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
     },
-    updateFile: (state: FilesState, action: PayloadAction<File>) => {
+    updateFile: (state: IFilesState, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
     },
-    removeFile: (state: FilesState, action: PayloadAction<string>) => {
+    removeFile: (state: IFilesState, action: PayloadAction<string>) => {
       delete state.byId[action.payload];
     },
   },

@@ -122,15 +122,41 @@ export const parserRules: Record<string, Function> = {
     matchAndMove(newLines, tokenStream);
     return node(nodeTypes.FunctionReturn, null, expr);
   },
+  Module: (
+    tokenStream: TokenStream,
+    symbolTable: Symbols,
+    name: string
+  ): Tree => {
+    matchAndMove(tokens.Dot, tokenStream);
+    symbolTable.setScope(name);
+    matchAndMove(tokens.Variable, tokenStream);
+    const functionName = tokenStream.prev().text;
+    const functionSymbol = symbolTable.get(functionName, symbolTypes.Function);
+
+    const node = parserRules.FunctionCall(
+      tokenStream,
+      symbolTable,
+      functionSymbol
+    );
+    symbolTable.clearScope();
+    return node;
+  },
   Variable: (tokenStream: TokenStream, symbolTable: Symbols) => {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
+    console.log(symbolTable.check(name, symbolTypes.Module));
+    if (
+      symbolTable.check(name, symbolTypes.Module) ||
+      symbolTable.check(name, symbolTypes.Object)
+    ) {
+      return parserRules.Module(tokenStream, symbolTable, name);
+    }
 
-    if (symbolTable.check(name, "Function")) {
+    if (symbolTable.check(name, symbolTypes.Function)) {
       const functionSymbol = symbolTable.get(name, "Function");
       return parserRules.FunctionCall(tokenStream, symbolTable, functionSymbol);
     }
-    if (symbolTable.check(name, "Array")) {
+    if (symbolTable.check(name, symbolTypes.Array)) {
       const dims = boolExpressionRules.ExpressionList(tokenStream, symbolTable);
       matchAndMove(tokens.Equals, tokenStream);
       const expr = parserRules.BoolExpression(tokenStream, symbolTable);

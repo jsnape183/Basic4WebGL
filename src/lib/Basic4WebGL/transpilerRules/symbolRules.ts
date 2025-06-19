@@ -5,14 +5,18 @@ export const isMatchingType = (expected: string, actual: string): boolean =>
   expected === actual || (expected === "Variable" && actual === "Parameter");
 
 export const symbolRules = (table: Symbols, scope: SymbolScope): string => {
-  const globals =
+  let variables = "";
+  if (scope.name === "") {
     table
       .getAll("Variable", scope)
       .filter((s) => s.type !== symbolTypes.Parameter)
       .map((s) => `let ${s.scope.name}_${s.name} = null`).join(`;
         `) +
-    `;
-     ` +
+      `;
+     `;
+  }
+  const globals =
+    variables +
     table
       .getAll("Module", scope)
       .map(

@@ -12,7 +12,12 @@ import FileTree from "../components/FileTree";
 import { useProjectForBuild } from "../hooks/useProjectForBuild";
 import Basic4WebGL from "../lib/Basic4WebGL";
 import { projectLib } from "../constants/projectLib";
-import { addLog, clearLogs, setTranspiled } from "../features/ui/uiSlice";
+import {
+  addLog,
+  clearLogs,
+  selectFile,
+  setTranspiled,
+} from "../features/ui/uiSlice";
 import { LogItem, LogItemType } from "../Types/LogItem";
 
 const EditPage: React.FC = () => {
@@ -54,7 +59,10 @@ const EditPage: React.FC = () => {
     }
   };
 
-  const handleFileSelected = () => {};
+  const handleFileSelected = (id: string) => {
+    console.log("File selected");
+    dispatch(selectFile({ projectId: project.id, fileId: id }));
+  };
 
   const handleRun = () => {
     let transpiledCode = "";
