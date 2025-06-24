@@ -79,7 +79,6 @@ export const lexer = {
 
     project.files.forEach((f, i) => {
       if (i == 0) return;
-      console.log(f.name);
       tokens.push({
         name: f.name.replace(".bas", "").toLowerCase(),
         tokens: lexFile(f.name, f.source, tokenResolverConfig).filter(
