@@ -130,6 +130,12 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchPattern(input, /^class(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      token: tokens.Class,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchPattern(input, /^as(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
       token: tokens.As,
     }),

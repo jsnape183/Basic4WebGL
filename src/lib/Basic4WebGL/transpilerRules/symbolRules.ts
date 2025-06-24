@@ -15,15 +15,7 @@ export const symbolRules = (table: Symbols, scope: SymbolScope): string => {
       `;
      `;
   }
-  const globals =
-    variables +
-    table
-      .getAll("Module", scope)
-      .map(
-        (s) => `class ${s.name} {};
-     `
-      )
-      .join(";");
+  const globals = variables;
   let onTick = "";
   let onKeyDown = "";
   let onPointerDown = "";

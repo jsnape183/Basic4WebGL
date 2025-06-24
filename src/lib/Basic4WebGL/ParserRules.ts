@@ -1,5 +1,5 @@
 import tokens from "./tokens";
-import node from "../tree";
+import node, { Tree } from "../tree";
 import nodeTypes from "./nodeTypes";
 import { check, matchAndMove } from "../compiler/rulesHelper";
 import boolExpressionRules from "./boolExpressionRules";
@@ -7,6 +7,7 @@ import { scopeTypes, symbolTypes } from "./symbolTypes";
 import TokenStream from "../compiler/tokenStream";
 import Symbols from "../symbols";
 import { TokenMatch } from "../lexer/Token";
+import { CompilationError } from "../compiler/errors";
 
 const newLines = [tokens.NewLine, tokens.EndOfFile, tokens.SoftNewLine];
 
@@ -25,7 +26,11 @@ export const parserRules: Record<string, Function> = {
       if (!child) continue;
       children.push(child);
     }
-    const returnNode = node(nodeTypes.Root, symbolTable.getScope(), children);
+    const returnNode = node(
+      nodeTypes.Root,
+      symbolTable.getScopeName(),
+      children
+    );
     symbolTable.clearScope();
     return returnNode;
   },
@@ -144,7 +149,6 @@ export const parserRules: Record<string, Function> = {
   Variable: (tokenStream: TokenStream, symbolTable: Symbols) => {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
-    console.log(symbolTable.check(name, symbolTypes.Module));
     if (
       symbolTable.check(name, symbolTypes.Module) ||
       symbolTable.check(name, symbolTypes.Object)
@@ -170,6 +174,26 @@ export const parserRules: Record<string, Function> = {
     matchAndMove(newLines, tokenStream);
     return node(nodeTypes.Assign, varSymbol, expr);
   },
+  Class: (tokenStream: TokenStream, symbolTable: Symbols) => {
+    if (tokenStream.current().line !== 1) {
+      throw new CompilationError(
+        "Class declaration must appear at the top of the file",
+        tokenStream.current().line,
+        tokenStream.current().col,
+        tokenStream.current().filename
+      );
+    }
+
+    matchAndMove(tokens.Class, tokenStream);
+
+    const moduleName = symbolTable.getScopeName();
+    const module = symbolTable.get(moduleName, symbolTypes.Module);
+    module.setType(symbolTypes.Class);
+    module.setScopeType(scopeTypes.Class);
+    symbolTable.setCurrentScope(symbolTable.getScopeName(), scopeTypes.Class);
+
+    return node(nodeTypes.Empty);
+  },
   Dim: (tokenStream: TokenStream, symbolTable: Symbols) => {
     matchAndMove(tokens.Dim, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
@@ -180,7 +204,7 @@ export const parserRules: Record<string, Function> = {
       matchAndMove(tokens.Variable, tokenStream);
       const module = symbolTable.get(
         tokenStream.prev().text,
-        symbolTypes.Module
+        symbolTypes.Class
       );
       const object = symbolTable.clone(name, module, symbolTypes.Object);
 

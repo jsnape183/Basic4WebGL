@@ -1,5 +1,5 @@
 import nodeTypes from "../nodeTypes";
-import { symbolTypes } from "../symbolTypes";
+import { scopeTypes, symbolTypes } from "../symbolTypes";
 import { Tree } from "../../tree";
 import Symbols, { Symbol } from "../../symbols";
 
@@ -21,25 +21,39 @@ const formatSymbol = (data: Symbol) => {
   if (data.type === symbolTypes.Function || data.type === symbolTypes.Object) {
     return `${data.fullScope}.${data.name}`;
   }
-  return `${data.scope.name}_${data.name}`;
+
+  if (data.type === symbolTypes.Parameter) {
+    return `${data.scope.name}_${data.name}`;
+  }
+
+  return `${data.scope.name}.${data.name}`;
 };
 
 const formatFunctionDecl = (node: Tree, params: string, body: string) => {
-  //if (node.data.scope.name !== `defs`) {
+  if (node.data.scope.type === scopeTypes.Class) {
+    return `${node.data.fullScope}.prototype.${node.data.name} = (${params}) => {${body}};`;
+  }
+
   return `${node.data.fullScope}.${node.data.name} = (${params}) => {${body}};`;
-  //}
-  //return `const ${node.data.name} = (${params}) => { ${body} }`;
+};
+
+const formatClass = (className: string): string => {
+  return `class ${className}{}`;
 };
 
 const formatRoot = (node: Tree, children: Array<string>) => {
   if (node.data !== "main") {
-    return children.join(";");
+    return `${formatClass(node.data)}
+    ${children.join(";")}`;
   }
 
-  return `${node.data}.entry = () => {${children.join("")}}`;
+  return `
+  ${formatClass(node.data)}
+  ${node.data}.entry = () => {${children.join("")}}`;
 };
 
 export const transpilerRules: Record<number, Function> = {
+  [nodeTypes.Empty]: (): string => ``,
   [nodeTypes.Root]: (node: Tree, table: Symbols): string => {
     const children = node.children.map(
       (n) => `${transpilerRules[n.type](n, table)}`
@@ -95,8 +109,13 @@ export const transpilerRules: Record<number, Function> = {
     `(${doChild(transpilerRules, node, 0, table)})`,
   [nodeTypes.Term]: (node: Tree): string =>
     node.data.name ? formatSymbol(node.data) : node.data,
-  [nodeTypes.VariableDim]: (node: Tree): string => `
-  let ${formatSymbol(node.data)} = undefined;`,
+  [nodeTypes.VariableDim]: (node: Tree): string => {
+    if (node.data.scopeType === scopeTypes.Class) {
+      return `${`${node.data.scope.name}.prototype.${node.data.name}`} = undefined;`;
+    }
+
+    return `${`${node.data.scope.name}.${node.data.name}`} = undefined;`;
+  },
   [nodeTypes.Dim]: (node: Tree, table: Symbols): string =>
     `let ${formatSymbol(node.data)} = createArray([${doChild(
       transpilerRules,
@@ -105,11 +124,7 @@ export const transpilerRules: Record<number, Function> = {
       table
     )}]);`,
   [nodeTypes.Clone]: (node: Tree) =>
-    `${formatSymbol(
-      node.data.object
-    )} = Object.assign(Object.create(Object.getPrototypeOf(${
-      node.data.module.name
-    })), ${node.data.module.name});`,
+    `${formatSymbol(node.data.object)} = new ${node.data.module.name}();`,
   [nodeTypes.VariableList]: (node: Tree, table: Symbols): string =>
     `${concatChildren(transpilerRules, node, ",", table)}`,
   [nodeTypes.FunctionDecl]: (node: Tree, table: Symbols): string => {

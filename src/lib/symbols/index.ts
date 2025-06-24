@@ -25,11 +25,23 @@ export class Symbol {
     this.scope = scope;
     this.fullScope = fullScope;
   }
+
+  setType(type: string) {
+    this.type = type;
+  }
+
+  setScopeType(type: string) {
+    this.scope.type = type;
+  }
+
+  isScopedToType(scopeType: string) {
+    return this.scope.type === scopeType;
+  }
 }
 
 class Symbols {
   private isMatchingType: (expected: string, actual: string) => Boolean;
-  private table: Record<string, Symbol> = {};
+  private table: Array<Symbol> = [];
   private scopes: Array<SymbolScope> = [];
   private currentScope: SymbolScope;
 
@@ -44,7 +56,7 @@ class Symbols {
     this.scopes.push({ ...this.currentScope });
   }
 
-  getScope(): string {
+  getScopeName(): string {
     if (this.scopes.length === 0) return "";
     return this.scopes[this.scopes.length - 1].name;
   }
@@ -55,6 +67,14 @@ class Symbols {
   setScope(scope: string, type: string = "") {
     this.scopes.push(new SymbolScope(scope, type));
     this.currentScope = this.scopes[this.scopes.length - 1];
+  }
+  setCurrentScope(scope: string, type: string = "") {
+    if (this.scopes.length === 0) return;
+
+    this.scopes[this.scopes.length - 1].name = scope;
+    this.scopes[this.scopes.length - 1].type = type;
+    this.currentScope.name = scope;
+    this.currentScope.type = type;
   }
   clearScope(): void {
     this.scopes.pop();
@@ -70,7 +90,7 @@ class Symbols {
     newType: string,
     scope: SymbolScope = this.currentScope
   ) {
-    const childSymbols = Object.values(this.table)
+    const childSymbols = this.table
       .filter((s) => s.scope.name === symbol.name)
       .slice(0);
 
@@ -91,14 +111,11 @@ class Symbols {
       scope = new SymbolScope("", "");
     }
     const formattedName = name.toLowerCase();
-    if (
-      this.table[formattedName] &&
-      (this.table[formattedName].scope.name === "" ||
-        this.table[formattedName].scope.name === this.currentScope.name)
-    ) {
+    if (this.retrieveSymbol(name, type, scope)) {
       throw Error(`${type} ${name} in ${scope.name} already exists.`);
     }
-    this.table[formattedName] = new Symbol(
+
+    const symbol = new Symbol(
       name,
       type,
       scope,
@@ -107,7 +124,8 @@ class Symbols {
         .filter((s) => s !== "")
         .join(".")
     );
-    return this.table[formattedName];
+    this.table.push(symbol);
+    return symbol;
   }
   retrieveSymbol(
     name: string,
@@ -117,7 +135,10 @@ class Symbols {
     const formattedName = name.toLowerCase();
 
     if (scope !== undefined) {
-      const symbol = this.table[formattedName];
+      const symbol = this.table.filter(
+        (s) => s.name === formattedName && s.scope.name === scope.name
+      )[0];
+
       if (
         symbol &&
         this.isMatchingType(type, symbol.type) &&
@@ -128,7 +149,8 @@ class Symbols {
 
       return undefined;
     }
-    const symbolMatches: Symbol[] = Object.values(this.table).filter(
+
+    const symbolMatches: Symbol[] = this.table.filter(
       (v) =>
         v.name.toLowerCase() === formattedName &&
         this.isMatchingType(type, v.type)
@@ -169,8 +191,6 @@ class Symbols {
     type: string,
     scope: SymbolScope | undefined = undefined
   ) {
-    console.log(name);
-    console.log(this.table);
     return this.retrieveSymbol(name, type, scope) !== undefined;
   }
   getAll(

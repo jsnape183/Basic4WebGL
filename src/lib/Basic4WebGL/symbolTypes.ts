@@ -1,6 +1,8 @@
 export const scopeTypes = {
   Globals: "",
   Function: "Function",
+  Module: "Module",
+  Class: "Class",
 };
 
 export const symbolTypes = {
@@ -10,4 +12,5 @@ export const symbolTypes = {
   Parameter: "Parameter",
   Module: "Module",
   Object: "Object",
+  Class: "Class",
 };

@@ -1,6 +1,7 @@
 import { createEnum } from "../compiler/helpers";
 
 export const nodeTypes = createEnum([
+  "Empty",
   "Root",
   "Block",
   "Expression",

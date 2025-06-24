@@ -25,6 +25,7 @@ export const tokens = createKeyValueEnum<TokenMatch>([
   "Print",
   "Call",
   "Variable",
+  "Class",
   "Dim",
   "As",
   "Function",
