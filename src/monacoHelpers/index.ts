@@ -1,5 +1,6 @@
 const getMonacoConfig = (): any => ({
   tokens: [
+    [/class/i, "custom-keyword"],
     [/dim/i, "custom-keyword"],
     [/clone/i, "custom-keyword"],
     [/print/i, "custom-function"],
