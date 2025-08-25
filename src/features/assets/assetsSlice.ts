@@ -1,5 +1,5 @@
 // src/features/files/filesSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface IAsset {
   id: string;
@@ -17,10 +17,11 @@ const initialState: IAssetsState = {
 };
 
 const assetsSlice = createSlice({
-  name: "assets",
+  name: 'assets',
   initialState,
   reducers: {
     addAsset: (state: IAssetsState, action: PayloadAction<IAsset>) => {
+      console.log('Adding asset:', action.payload);
       state.byId[action.payload.id] = action.payload;
     },
     updateAsset: (state: IAssetsState, action: PayloadAction<IAsset>) => {

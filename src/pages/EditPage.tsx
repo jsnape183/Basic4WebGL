@@ -20,6 +20,8 @@ import {
 } from "../features/ui/uiSlice";
 import { LogItem, LogItemType } from "../Types/LogItem";
 import AssetTree from "../components/AssetTree";
+import { Tree } from "../lib/tree";
+import TreePanel from "../components/TreePanel";
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,12 +61,6 @@ const EditPage: React.FC = () => {
       dispatch(updateFile({ ...selectedFile, source }));
     }
   };
-
-  const handleFileSelected = (id: string) => {
-    dispatch(selectFile({ projectId: project.id, fileId: id }));
-  };
-
-  const handleAssetSelected = (id: string) => {};
 
   const handleRun = () => {
     let transpiledCode = "";
@@ -123,11 +119,8 @@ const EditPage: React.FC = () => {
       </header>
       {/* Main area: sidebar + editor + preview */}
       <div className="flex flex-1 overflow-hidden">
-        <FileTree projectId={project.id} onFileSelected={handleFileSelected} />
-        <AssetTree
-          projectId={project.id}
-          onAssetSelected={handleAssetSelected}
-        />
+        <TreePanel projectId={project.id} />
+      
         {/* Editor */}
         <main
           className={`flex-1 bg-gray-900 ${
