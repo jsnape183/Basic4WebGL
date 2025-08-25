@@ -40,12 +40,13 @@ class _softBasicGfx {
   };
 
   constructor(sbClasses) {
-    this._sbClasses = sbClasses.filter((c) => c.symbol.onupdate);
+    this._sbClasses = sbClasses;
+    this._sbClasses.forEach((c) => (c.enabled = false));
   }
 
   _update(delta) {
     this._sbClasses.forEach((c) => {
-      if (c.symbol.onupdate) {
+      if (c.symbol.onupdate && c.enabled) {
         c.symbol.onupdate(delta);
       }
     });
@@ -64,6 +65,21 @@ class _softBasicGfx {
     obj.endFill();
     app.stage.addChild(obj);
     return obj;
+  }
+
+  registerNode(s) {
+    const sbClass = this._sbClasses.findIndex(
+      (c) => c.name === s.toLowerCase()
+    );
+    if (sbClass < 0) {
+      throw Error(`Node class ${s} not found`);
+    }
+    this._sbClasses[sbClass].enabled = true;
+  }
+
+  clear() {
+    console.log(app.stage);
+    app.stage.clear();
   }
 
   setFillColor(r, g, b) {

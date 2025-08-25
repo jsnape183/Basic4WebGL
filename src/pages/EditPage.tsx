@@ -19,6 +19,7 @@ import {
   setTranspiled,
 } from "../features/ui/uiSlice";
 import { LogItem, LogItemType } from "../Types/LogItem";
+import AssetTree from "../components/AssetTree";
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -62,6 +63,8 @@ const EditPage: React.FC = () => {
   const handleFileSelected = (id: string) => {
     dispatch(selectFile({ projectId: project.id, fileId: id }));
   };
+
+  const handleAssetSelected = (id: string) => {};
 
   const handleRun = () => {
     let transpiledCode = "";
@@ -121,6 +124,10 @@ const EditPage: React.FC = () => {
       {/* Main area: sidebar + editor + preview */}
       <div className="flex flex-1 overflow-hidden">
         <FileTree projectId={project.id} onFileSelected={handleFileSelected} />
+        <AssetTree
+          projectId={project.id}
+          onAssetSelected={handleAssetSelected}
+        />
         {/* Editor */}
         <main
           className={`flex-1 bg-gray-900 ${
