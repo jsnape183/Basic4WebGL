@@ -1,3 +1,6 @@
+import softBasicGFX from "./softBasicGFX.js?raw";
+import bootstrapper from "./bootstrapper.html?raw";
+
 type RunnerProps = {
   width: string;
   height: string;
@@ -9,6 +12,7 @@ const Runner: React.FC<RunnerProps> = ({
   width = "100%",
   height = "100%",
 }) => {
+  console.log(import.meta.env.BASE_URL);
   return (
     <div style={{ width: width, height: height }}>
       <iframe
@@ -17,7 +21,8 @@ const Runner: React.FC<RunnerProps> = ({
         title="Preview"
         srcDoc={`<html>
       <head>
-      
+        <!-- Make all relative URLs resolve from the app base -->
+        <base href="${import.meta.env.BASE_URL}">
       </head>
       <body>
       <script type="text/javascrip">
@@ -34,7 +39,9 @@ const Runner: React.FC<RunnerProps> = ({
       };
       </script>
       <script src="https://unpkg.com/pixi.js@6.x/dist/browser/pixi.min.js"></script>
-      <script src="../softBasicGfx.js"></script>
+      <script type="text/javascript">
+      ${softBasicGFX}
+      </script>
       <script type="text/javascript">
 
       ${transpiled};

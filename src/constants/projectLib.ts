@@ -1,3 +1,4 @@
+import softNode from "../lib/Basic4WebGL/defs/tree/softNode";
 import softGFX from "../lib/Basic4WebGL/defs/softGFX";
 import softString from "../lib/Basic4WebGL/defs/softString";
 import softMath from "../lib/Basic4WebGL/defs/softMath";
@@ -9,4 +10,5 @@ export const projectLib: Array<ProjectFile> = [
   { name: "string", source: softString },
   { name: "math", source: softMath },
   { name: "array", source: softArray },
+  { name: "node", source: softNode },
 ];

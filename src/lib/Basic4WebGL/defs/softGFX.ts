@@ -2,7 +2,7 @@ export default `
 
 ' Start of PIXI text function
 function text(s, x, y)
-  return call("_sb.text(s,x,y);")
+  return call("_sb.text(text_s,text_x,text_y);")
 endfunction
 
 function setText(obj, text)

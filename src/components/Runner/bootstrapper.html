@@ -1,0 +1,29 @@
+<html>
+      <head>
+      
+      </head>
+      <body>
+      <script type="text/javascrip">
+      const createArrayDim = (sizes, depth) => {
+        if (depth === sizes.length - 1)
+          return Array.apply(null, new Array(sizes[depth])).map(() => false);
+    
+        return Array.apply(null, new Array(sizes[depth])).map(() =>
+          Array.apply(null, createArrayDim(sizes, depth + 1))
+        );
+      };
+      const createArray = (sizes) => {
+        return createArrayDim(sizes, 0);
+      };
+      </script>
+      <script src="https://unpkg.com/pixi.js@6.x/dist/browser/pixi.min.js"></script>
+      <script src="/softBasicGfx.js"></script>
+      <script type="text/javascript">
+
+      ${transpiled};
+      main.entry();
+      </script>
+      </div>
+
+      </body>
+      </html>
