@@ -1,4 +1,4 @@
-import AssetTree from '../AssetTree';
+import AssetTree from './AssetTree';
 import FileTree from '../FileTree';
 
 type TreePanelProps = {
