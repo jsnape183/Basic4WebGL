@@ -4,17 +4,16 @@ app.stage.interactive = true;
 document.body.appendChild(app.view);
 app.view.focus();
 
-app.renderer.plugins.interaction.on("pointerdown", (e) => {
+/*app.renderer.plugins.interaction.on("pointerdown", (e) => {
   main_onpointerdown(e.target?.children[0]);
 });
 
 app.renderer.plugins.interaction.on("pointermove", (e) => {
   main_onpointermove(e.data.global.x, e.data.global.y);
-});
-
-app.ticker.add((delta) => main_onupdate(delta));
+});*/
 
 class _softBasicGfx {
+  _sbClasses = [];
   _keys = {};
 
   _textStyles = new PIXI.TextStyle({
@@ -39,6 +38,18 @@ class _softBasicGfx {
     fillColor: 0xffffff,
     lineColor: 0xffffff,
   };
+
+  constructor(sbClasses) {
+    this._sbClasses = sbClasses.filter((c) => c.symbol.onupdate);
+  }
+
+  _update(delta) {
+    this._sbClasses.forEach((c) => {
+      if (c.symbol.onupdate) {
+        c.symbol.onupdate(delta);
+      }
+    });
+  }
 
   _componentToHex() {
     var hex = c.toString(16);
@@ -152,7 +163,7 @@ class _softBasicGfx {
   }
 }
 
-const _sb = new _softBasicGfx();
+//const _sb = new _softBasicGfx();
 
 document.addEventListener("keydown", (e) => {
   _sb.registerKey(e.keyCode, true);

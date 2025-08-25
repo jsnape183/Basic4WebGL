@@ -42,14 +42,8 @@ const formatClass = (className: string): string => {
 };
 
 const formatRoot = (node: Tree, children: Array<string>) => {
-  if (node.data !== "main") {
-    return `${formatClass(node.data)}
+  return `${formatClass(node.data)}
     ${children.join(";")}`;
-  }
-
-  return `
-  ${formatClass(node.data)}
-  ${node.data}.entry = () => {${children.join("")}}`;
 };
 
 export const transpilerRules: Record<number, Function> = {

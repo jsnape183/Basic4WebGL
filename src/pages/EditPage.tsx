@@ -60,7 +60,6 @@ const EditPage: React.FC = () => {
   };
 
   const handleFileSelected = (id: string) => {
-    console.log("File selected");
     dispatch(selectFile({ projectId: project.id, fileId: id }));
   };
 
