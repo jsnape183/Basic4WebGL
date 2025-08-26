@@ -2,6 +2,8 @@ import { useDispatch } from 'react-redux';
 import { useAssetsForProject } from '../../../hooks/useAssetsForProject';
 import FileInput, { FileUploadResult } from '../FileInput';
 import { addAsset } from '../../../features/assets/assetsSlice';
+import { useLocalStorage } from '../../../hooks/useLocalStorage';
+import { Asset } from '../../../globalProps/Asset';
 
 type AssetTreeProps = {
   projectId: string;
@@ -10,9 +12,12 @@ type AssetTreeProps = {
 const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
   const assets = useAssetsForProject(projectId);
+  const [storedAssets, setStoredAssets] = useLocalStorage<Asset[]>(
+    `${projectId}:assets`,
+    []
+  );
 
   const handleFileInputChange = (files: FileUploadResult[]) => {
-    // Handle file input change
     files.forEach((file) => {
       dispatch(
         addAsset({
@@ -22,6 +27,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
           projectId: projectId,
         })
       );
+
+      setStoredAssets([...storedAssets, file as Asset]);
     });
   };
 

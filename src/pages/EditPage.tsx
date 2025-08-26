@@ -8,19 +8,11 @@ import { Project } from '../features/projects/projectsSlice';
 import { AppDispatch, RootState } from '../store';
 import Editor from '../components/Editor';
 import Preview from '../components/Preview';
-import FileTree from '../components/FileTree';
 import { useProjectForBuild } from '../hooks/useProjectForBuild';
 import Basic4WebGL from '../lib/Basic4WebGL';
 import { projectLib } from '../constants/projectLib';
-import {
-  addLog,
-  clearLogs,
-  selectFile,
-  setTranspiled,
-} from '../features/ui/uiSlice';
+import { addLog, clearLogs, setTranspiled } from '../features/ui/uiSlice';
 import { LogItem, LogItemType } from '../Types/LogItem';
-import AssetTree from '../components/TreePanel/AssetTree';
-import { Tree } from '../lib/tree';
 import TreePanel from '../components/TreePanel';
 
 const EditPage: React.FC = () => {
@@ -131,7 +123,9 @@ const EditPage: React.FC = () => {
         </main>
 
         {/* Preview Pane */}
-        {project && isRunning && <Preview transpiled={transpiled} />}
+        {project && isRunning && (
+          <Preview transpiled={transpiled} projectId={project.id} />
+        )}
       </div>
 
       {/* Footer */}

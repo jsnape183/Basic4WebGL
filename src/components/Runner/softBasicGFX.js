@@ -1,9 +1,3 @@
-let app = new PIXI.Application({ width: 640, height: 360 });
-app.stage.interactive = true;
-
-document.body.appendChild(app.view);
-app.view.focus();
-
 /*app.renderer.plugins.interaction.on("pointerdown", (e) => {
   main_onpointerdown(e.target?.children[0]);
 });
@@ -17,21 +11,21 @@ class _softBasicGfx {
   _keys = {};
 
   _textStyles = new PIXI.TextStyle({
-    fontFamily: "Arial",
+    fontFamily: 'Arial',
     fontSize: 36,
-    fontStyle: "italic",
-    fontWeight: "bold",
-    fill: ["#ffffff", "#00ff99"], // gradient
-    stroke: "#4a1850",
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    fill: '#ffffff', // gradient
+    stroke: '#4a1850',
     strokeThickness: 5,
     dropShadow: true,
-    dropShadowColor: "#000000",
+    dropShadowColor: '#000000',
     dropShadowBlur: 4,
     dropShadowAngle: Math.PI / 6,
     dropShadowDistance: 6,
     wordWrap: true,
     wordWrapWidth: 440,
-    lineJoin: "round",
+    lineJoin: 'round',
   });
 
   _graphicsStyles = {
@@ -54,7 +48,7 @@ class _softBasicGfx {
 
   _componentToHex() {
     var hex = c.toString(16);
-    return hex.length === 1 ? "0" + hex : hex;
+    return hex.length === 1 ? '0' + hex : hex;
   }
 
   _drawWithFill(drawMethod) {
@@ -84,12 +78,12 @@ class _softBasicGfx {
 
   setFillColor(r, g, b) {
     const hexString = componentToHex(r) + componentToHex(g) + componentToHex(b);
-    graphicsStyles.fillColor = parseInt(hexString.replace(/^#/, ""), 16);
+    graphicsStyles.fillColor = parseInt(hexString.replace(/^#/, ''), 16);
   }
 
   setLineColor(r, g, b) {
     const hexString = componentToHex(r) + componentToHex(g) + componentToHex(b);
-    graphicsStyles.lineColor = parseInt(hexString.replace(/^#/, ""), 16);
+    graphicsStyles.lineColor = parseInt(hexString.replace(/^#/, ''), 16);
   }
 
   setAlpha(obj, a) {
@@ -181,11 +175,11 @@ class _softBasicGfx {
 
 //const _sb = new _softBasicGfx();
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener('keydown', (e) => {
   _sb.registerKey(e.keyCode, true);
   onkeydown(e.keyCode);
 });
-document.addEventListener("keyup", (e) => {
+document.addEventListener('keyup', (e) => {
   _sb.registerKey(e.keyCode, false);
   onkeydown(e.keyCode);
 });

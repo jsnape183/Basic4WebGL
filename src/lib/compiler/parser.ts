@@ -1,9 +1,9 @@
-import Token from "../lexer/Token";
-import ParserResults, { ParseFileResult } from "../parser/parserResults";
-import Symbols from "../symbols";
-import { Tree } from "../tree";
-import TokenStream from "./tokenStream";
-import { LexerResult } from "./types";
+import Token from '../lexer/Token';
+import ParserResults, { ParseFileResult } from '../parser/parserResults';
+import Symbols from '../symbols';
+import { Tree } from '../tree';
+import TokenStream from './tokenStream';
+import { LexerResult } from './types';
 
 const parseFile = (
   filename: string,
@@ -12,9 +12,17 @@ const parseFile = (
   symbolTable: Symbols
 ): ParseFileResult => {
   const stream = new TokenStream(tokens);
-  const parseResult = parserRules.Root(filename, stream, symbolTable) as Tree;
 
-  return new ParseFileResult(filename, parseResult, symbolTable);
+  try {
+    const parseResult = parserRules.Root(filename, stream, symbolTable) as Tree;
+    return new ParseFileResult(filename, parseResult, symbolTable);
+  } catch (e) {
+    throw new Error(
+      `${filename} - Parse error: ${e} at ${stream.current().line}:${
+        stream.current().col
+      } near '${stream.current().text}'`
+    );
+  }
 };
 
 export const parse = (

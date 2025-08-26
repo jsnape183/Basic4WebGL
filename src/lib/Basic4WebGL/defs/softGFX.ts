@@ -1,8 +1,10 @@
-import softDrawing from "./graphics/softDrawing";
-import softPen from "./graphics/softPen";
-import softStage from "./graphics/softStage";
-import softText from "./graphics/softText";
-import softTransform from "./graphics/softTransform";
+import softDrawing from './graphics/softDrawing';
+import softPen from './graphics/softPen';
+import softStage from './graphics/softStage';
+import softText from './graphics/softText';
+import softTransform from './graphics/softTransform';
+import softAsset from './graphics/softAsset';
+import softSprite from './graphics/softSprite';
 
 export default `
 
@@ -16,4 +18,12 @@ function getKeyDown(keycode)
   return call("_sb.getKeyDown(keycode)")
 endfunction`;
 
-export { softDrawing, softPen, softStage, softText, softTransform };
+export {
+  softDrawing,
+  softPen,
+  softStage,
+  softText,
+  softTransform,
+  softAsset,
+  softSprite,
+};
