@@ -5,7 +5,7 @@ export class Tree {
 
   constructor(
     type: number,
-    data: string | Symbol | any,
+    data: string | Symbol | any | undefined,
     children: Array<Tree> = new Array<Tree>()
   ) {
     this.type = type;
