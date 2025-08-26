@@ -1,15 +1,15 @@
-import tokens from "./tokens";
+import tokens from './tokens';
 import {
   matchChar,
   matchAll,
   matchString,
   matchPattern,
-} from "../compiler/resolverHelpers";
+} from '../compiler/resolverHelpers';
 import {
   TokenResolverConfig,
   TokenResolverRule,
   TokenResolverRuleResult,
-} from "../compiler/types";
+} from '../compiler/types';
 
 export const tokenResolver: Array<TokenResolverRule> = [
   {
@@ -17,96 +17,102 @@ export const tokenResolver: Array<TokenResolverRule> = [
       match: false,
       token: tokens.Error,
       position: 0,
-      text: "",
+      text: '',
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchAll(input, " "),
+      ...matchAll(input, ' '),
       token: tokens.WhiteSpace,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchAll(input, "\n"),
+      ...matchPattern(input, /^(\r\n|\r|\n)/),
       token: tokens.NewLine,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchAll(input, ":"),
+      ...matchAll(input, '\n'),
+      token: tokens.NewLine,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchAll(input, ':'),
       token: tokens.SoftNewLine,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "+"),
+      ...matchChar(input, '+'),
       token: tokens.Add,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "-"),
+      ...matchChar(input, '-'),
       token: tokens.Subtract,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "*"),
+      ...matchChar(input, '*'),
       token: tokens.Multiply,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "/"),
+      ...matchChar(input, '/'),
       token: tokens.Divide,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "("),
+      ...matchChar(input, '('),
       token: tokens.OpenParen,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, ")"),
+      ...matchChar(input, ')'),
       token: tokens.CloseParen,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "="),
+      ...matchChar(input, '='),
       token: tokens.Equals,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchString(input, ">="),
+      ...matchString(input, '>='),
       token: tokens.GreaterThanEqualTo,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, ">"),
+      ...matchChar(input, '>'),
       token: tokens.GreaterThan,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchString(input, "<="),
+      ...matchString(input, '<='),
       token: tokens.LessThanEqualTo,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "<"),
+      ...matchChar(input, '<'),
       token: tokens.LessThan,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, "."),
+      ...matchChar(input, '.'),
       token: tokens.Dot,
     }),
   },
@@ -160,13 +166,13 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchChar(input, ","),
+      ...matchChar(input, ','),
       token: tokens.Comma,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchString(input, "true"),
+      ...matchString(input, 'true'),
       token: tokens.BoolTrue,
     }),
   },

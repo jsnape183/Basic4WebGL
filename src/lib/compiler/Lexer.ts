@@ -1,11 +1,11 @@
-import Token, { TokenMatch } from "../lexer/Token";
-import { CompilationError } from "./errors";
+import Token, { TokenMatch } from '../lexer/Token';
+import { CompilationError } from './errors';
 import {
   CompilerProject,
   LexerResult,
   TokenResolverConfig,
   TokenResolverRuleResult,
-} from "./types";
+} from './types';
 
 const lexFile = (
   filename: string,
@@ -56,6 +56,7 @@ const lexFile = (
     if (match.position === 0) break;
     currentStream = currentStream.substring(match.position);
   }
+  console.log(tokens);
   return tokens;
 };
 
@@ -80,7 +81,7 @@ export const lexer = {
     project.files.forEach((f, i) => {
       if (i == 0) return;
       tokens.push({
-        name: f.name.replace(".bas", "").toLowerCase(),
+        name: f.name.replace('.bas', '').toLowerCase(),
         tokens: lexFile(f.name, f.source, tokenResolverConfig).filter(
           (t) => !t.token.stripped
         ),
@@ -95,7 +96,7 @@ export const lexer = {
 
     if (main && main.length > 0) {
       tokens.push({
-        name: "main",
+        name: 'main',
         tokens: main.filter((t) => !t.token.stripped),
       });
     }

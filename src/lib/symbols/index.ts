@@ -110,33 +110,37 @@ class Symbols {
     if (!scope || !scope?.name) {
       scope = new SymbolScope("", "");
     }
+
+    const fullScope = this.scopes
+      .map((s) => s.name)
+      .filter((s) => s !== "")
+      .join(".");
+
     const formattedName = name.toLowerCase();
-    if (this.retrieveSymbol(name, type, scope)) {
+    if (this.retrieveSymbol(name, type, scope, fullScope)) {
+      console.log(this.table);
+      console.log(name, type, scope);
       throw Error(`${type} ${name} in ${scope.name} already exists.`);
     }
 
-    const symbol = new Symbol(
-      name,
-      type,
-      scope,
-      this.scopes
-        .map((s) => s.name)
-        .filter((s) => s !== "")
-        .join(".")
-    );
+    const symbol = new Symbol(name, type, scope, fullScope);
     this.table.push(symbol);
     return symbol;
   }
   retrieveSymbol(
     name: string,
     type: string = "Variable",
-    scope: SymbolScope | undefined = undefined
+    scope: SymbolScope | undefined = undefined,
+    fullScope: string = ""
   ) {
     const formattedName = name.toLowerCase();
 
     if (scope !== undefined) {
       const symbol = this.table.filter(
-        (s) => s.name === formattedName && s.scope.name === scope.name
+        (s) =>
+          s.name === formattedName &&
+          s.scope.name === scope.name &&
+          s.fullScope === fullScope
       )[0];
 
       if (

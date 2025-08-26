@@ -5,21 +5,27 @@ import { useFilesForProject } from "../../hooks/useFilesForProject";
 import { ModalWithInput } from "../Modal";
 import { IFile, addFile } from "../../features/files/filesSlice";
 import { useDispatch } from "react-redux";
+import { selectFile } from "../../features/ui/uiSlice";
 
 type FileTreeProps = {
   projectId: string;
-  onFileSelected: (fileId: string) => void;
 };
 
-const FileTree: React.FC<FileTreeProps> = ({ projectId, onFileSelected }) => {
+const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
   const files = useFilesForProject(projectId);
 
   const selectedFileId: string = useSelector(
     (state: RootState) => state.files.selectedFileId as string
   );
+
+  const handleFileSelected = (id: string) => {
+    dispatch(selectFile({ projectId, fileId: id }));
+  };
+
+
   if (selectedFileId === "") {
-    onFileSelected(files[0].id);
+    handleFileSelected(files[0].id);
   }
 
   const handleNewFile = (filename: string) => {
@@ -30,12 +36,11 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId, onFileSelected }) => {
       projectId: projectId,
     };
     dispatch(addFile(file));
-    onFileSelected(file.id);
+    handleFileSelected(file.id);
   };
 
   return (
-    <aside className="w-64 bg-gray-850 p-4 border-r border-gray-700 overflow-y-auto">
-      <div className="text-sm font-semibold text-gray-400 mb-2">
+    <>
         Files
         <ModalWithInput
           onSubmit={handleNewFile}
@@ -44,7 +49,6 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId, onFileSelected }) => {
           closeText="Close"
           title="New file"
         />
-      </div>
       <ul className="space-y-2 text-sm">
         {files.map((file) => (
           <>
@@ -52,7 +56,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId, onFileSelected }) => {
               key={file.id}
               className="hover:text-white cursor-pointer"
               onClick={() => {
-                onFileSelected(file.id);
+                handleFileSelected(file.id);
               }}
             >
               {file.name}
@@ -60,7 +64,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId, onFileSelected }) => {
           </>
         ))}
       </ul>
-    </aside>
+    </>
   );
 };
 

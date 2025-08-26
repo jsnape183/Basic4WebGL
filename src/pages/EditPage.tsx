@@ -1,24 +1,19 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
-import { updateFile } from "../features/files/filesSlice";
-import useSelectedFile from "../features/ui/useSelectedFile";
-import { Project } from "../features/projects/projectsSlice";
-import { AppDispatch, RootState } from "../store";
-import Editor from "../components/Editor";
-import Preview from "../components/Preview";
-import FileTree from "../components/FileTree";
-import { useProjectForBuild } from "../hooks/useProjectForBuild";
-import Basic4WebGL from "../lib/Basic4WebGL";
-import { projectLib } from "../constants/projectLib";
-import {
-  addLog,
-  clearLogs,
-  selectFile,
-  setTranspiled,
-} from "../features/ui/uiSlice";
-import { LogItem, LogItemType } from "../Types/LogItem";
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { updateFile } from '../features/files/filesSlice';
+import useSelectedFile from '../features/ui/useSelectedFile';
+import { Project } from '../features/projects/projectsSlice';
+import { AppDispatch, RootState } from '../store';
+import Editor from '../components/Editor';
+import Preview from '../components/Preview';
+import { useProjectForBuild } from '../hooks/useProjectForBuild';
+import Basic4WebGL from '../lib/Basic4WebGL';
+import { projectLib } from '../constants/projectLib';
+import { addLog, clearLogs, setTranspiled } from '../features/ui/uiSlice';
+import { LogItem, LogItemType } from '../Types/LogItem';
+import TreePanel from '../components/TreePanel';
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,10 +29,10 @@ const EditPage: React.FC = () => {
   useEffect(() => {
     if (!project?.id) {
       // Redirect to previous page or fallback to '/'
-      if (location.key !== "default") {
+      if (location.key !== 'default') {
         navigate(-1); // Go back to previous page
       } else {
-        navigate("/"); // Fallback if there's no history
+        navigate('/'); // Fallback if there's no history
       }
     }
   }, [project, navigate, location]);
@@ -59,17 +54,12 @@ const EditPage: React.FC = () => {
     }
   };
 
-  const handleFileSelected = (id: string) => {
-    console.log("File selected");
-    dispatch(selectFile({ projectId: project.id, fileId: id }));
-  };
-
   const handleRun = () => {
-    let transpiledCode = "";
+    let transpiledCode = '';
     dispatch(
       addLog({
         type: LogItemType.Notice,
-        text: "Compiling project...",
+        text: 'Compiling project...',
       } as LogItem)
     );
     try {
@@ -77,14 +67,14 @@ const EditPage: React.FC = () => {
       dispatch(
         addLog({
           type: LogItemType.Notice,
-          text: "Project compiled successfully...",
+          text: 'Project compiled successfully...',
         } as LogItem)
       );
       dispatch(setTranspiled(transpiledCode));
       setIsRunning(true);
     } catch (e: any) {
       dispatch(addLog({ type: LogItemType.Error, text: e.message } as LogItem));
-      dispatch(setTranspiled(""));
+      dispatch(setTranspiled(''));
       setIsRunning(true);
       console.log(e);
     }
@@ -121,18 +111,21 @@ const EditPage: React.FC = () => {
       </header>
       {/* Main area: sidebar + editor + preview */}
       <div className="flex flex-1 overflow-hidden">
-        <FileTree projectId={project.id} onFileSelected={handleFileSelected} />
+        <TreePanel projectId={project.id} />
+
         {/* Editor */}
         <main
           className={`flex-1 bg-gray-900 ${
-            isRunning ? "w-1/2" : "w-full"
+            isRunning ? 'w-1/2' : 'w-full'
           } transition-all duration-300`}
         >
           <Editor onChange={handleChange} file={selectedFile} height="90vh" />
         </main>
 
         {/* Preview Pane */}
-        {project && isRunning && <Preview transpiled={transpiled} />}
+        {project && isRunning && (
+          <Preview transpiled={transpiled} projectId={project.id} />
+        )}
       </div>
 
       {/* Footer */}

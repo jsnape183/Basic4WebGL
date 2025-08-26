@@ -2,6 +2,7 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import projectsReducer from "./features/projects/projectsSlice";
 import filesReducer from "./features/files/filesSlice";
+import assetsReducer from "./features/assets/assetsSlice";
 import uiReducer from "./features/ui/uiSlice";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
@@ -9,6 +10,7 @@ import storage from "redux-persist/lib/storage";
 const combinedRecduers = combineReducers({
   projects: projectsReducer,
   files: filesReducer,
+  assets: assetsReducer,
   ui: uiReducer,
 });
 

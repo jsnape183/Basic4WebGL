@@ -9,7 +9,7 @@ function atan2(n1, n2):return call("Math.atan2(atan2_n1,atan2_n2)"):endfunction
 function atanh(n):return call("Math.atanh(atanh_n)"):endfunction
 function cbrt(n):return call("Math.cbrt(cbrt_n)"):endfunction
 function ceil(n):return call("Math.ceil(ceil_n)"):endfunction
-function cos(n):return call("Math.cos(cos_n))"):endfunction
+function cos(n):return call("Math.cos(cos_n)"):endfunction
 function cosh(n):return call("Math.cosh(cosh_n)"):endfunction
 function euler():return call("Math.E"):endfunction
 function exp(n):return call("Math.exp(exp_n)"):endfunction
@@ -18,7 +18,7 @@ function log(n):return call("Math.log(log_n)"):endfunction
 function log2(n):return call("Math.log2(log2_n)"):endfunction
 function log10(n):return call("Math.log10(log10_n)"):endfunction
 function pi(): return call("Math.PI"):endfunction
-function pow(x,y):return call("Math.pow(pw_x),pow_y)"):endfunction
+function pow(x,y):return call("Math.pow(pw_x,pow_y)"):endfunction
 function random(max):return call("Math.random(random_max)"):endfunction
 function round(n):return call("Math.round(round_n)"):endfunction
 function sign(n):return call("Math.sign(sign_n)"):endfunction
