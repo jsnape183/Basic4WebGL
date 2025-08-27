@@ -1,22 +1,24 @@
-import TokenResolver from "./TokenResolver";
-import parserRules from "./ParserRules";
-import { CompilerProject } from "../compiler/types";
-import lexer from "../compiler/Lexer";
-import parser from "../compiler/parser";
-import transpilerRules from "./transpilerRules";
-import Transpiler from "../transpiler";
-import Symbols, { SymbolScope } from "../symbols";
-import { isMatchingType } from "./transpilerRules/symbolRules";
+import TokenResolver from './TokenResolver';
+import { CompilerProject } from '../compiler/types';
+import lexer from '../compiler/Lexer';
+import parser from '../compiler/parser';
+import transpilerRules from './transpilerRules';
+import Transpiler from '../transpiler';
+import Symbols, { SymbolScope } from '../symbols';
+import { isMatchingType } from './transpilerRules/symbolRules';
+import './parserRules';
 
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
+
 const parse = (project: CompilerProject) =>
-  parser(lexOnly(project), parserRules, new Symbols(isMatchingType));
+  parser(lexOnly(project), new Symbols(isMatchingType));
+
 const transpile = (project: CompilerProject) => {
   const transpiler = new Transpiler();
   const parseResult = parse(project);
   const globals = transpilerRules.symbolRules(
     parseResult.symbolTable,
-    new SymbolScope("", "")
+    new SymbolScope('', '')
   );
   return (
     globals +
