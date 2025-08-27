@@ -4,7 +4,7 @@ import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import tokens from '../tokens';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import PrintNode from '../nodes/PrintNode';
 import { newLines } from '../parserConfig';
 

@@ -3,7 +3,7 @@ import TokenStream from '../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import BlockNode from '../nodes/BlockNode';
 
 @RegisterParserRule('Block')

@@ -5,7 +5,7 @@ import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import CloneNode from '../nodes/CloneNode';
 import VariableDimNode from '../nodes/VariableDimNode';
 import DimNode from '../nodes/DimNode';

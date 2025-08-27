@@ -5,7 +5,7 @@ import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import RootNode from '../nodes/RootNode';
 
 @RegisterParserRule('Root')

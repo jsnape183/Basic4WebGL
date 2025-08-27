@@ -1,6 +1,6 @@
 import TokenStream from '../../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
-import { getParserRule } from '../../../parser/ruleFactory';
+import { getParserRule } from '../../../parser/parserRuleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 

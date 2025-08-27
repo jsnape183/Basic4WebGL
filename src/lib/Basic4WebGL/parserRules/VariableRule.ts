@@ -5,7 +5,7 @@ import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import ArrayAssignNode from '../nodes/ArrayAssignNode';
 import AssignNode from '../nodes/AssignNode';
 import { newLines } from '../parserConfig';

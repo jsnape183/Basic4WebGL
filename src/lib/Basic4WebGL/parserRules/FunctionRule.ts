@@ -5,7 +5,7 @@ import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { scopeTypes, symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getParserRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/parserRuleFactory';
 import FunctionDeclNode from '../nodes/FunctionDeclNode';
 import BlockNode from '../nodes/BlockNode';
 import { newLines } from '../parserConfig';

@@ -1,6 +1,6 @@
 import Token from '../lexer/Token';
 import ParserResults, { ParseFileResult } from '../parser/parserResults';
-import { getParserRule } from '../parser/ruleFactory';
+import { getParserRule } from '../parser/parserRuleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
 import TokenStream from './tokenStream';

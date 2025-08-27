@@ -1,7 +1,7 @@
 import { matchAndMove } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
-import { getParserRule } from '../../../parser/ruleFactory';
+import { getParserRule } from '../../../parser/parserRuleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import tokens from '../../tokens';
