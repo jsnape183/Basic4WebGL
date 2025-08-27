@@ -1,13 +1,17 @@
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 
-@RegisterRule('BoolTerm')
+@RegisterParserRule('BoolTerm')
 class BoolTermRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
-    return getRule('BoolFactor').parse(tokenStream, symbolTable, undefined);
+    return getParserRule('BoolFactor').parse(
+      tokenStream,
+      symbolTable,
+      undefined
+    );
   }
 }
 

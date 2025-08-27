@@ -1,13 +1,13 @@
 import { matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 
-@RegisterRule('Module')
+@RegisterParserRule('Module')
 class ModuleRule implements IParserRule {
   parse(
     tokenStream: TokenStream,
@@ -21,7 +21,7 @@ class ModuleRule implements IParserRule {
     const functionName = tokenStream.prev().text;
     const functionSymbol = symbolTable.get(functionName, symbolTypes.Function);
 
-    const node = getRule('FunctionCall').parse(
+    const node = getParserRule('FunctionCall').parse(
       tokenStream,
       symbolTable,
       functionSymbol

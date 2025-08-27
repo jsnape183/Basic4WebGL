@@ -1,7 +1,7 @@
 import { check, matchAndMove } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import ArrayLookupNode from '../../nodes/ArrayLookupNode';
@@ -9,7 +9,7 @@ import TermNode from '../../nodes/TermNode';
 import { symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 
-@RegisterRule('VariableFactor')
+@RegisterParserRule('VariableFactor')
 class VariableFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Variable, tokenStream);
@@ -18,10 +18,12 @@ class VariableFactorRule implements IParserRule {
       symbolTable.check(name, symbolTypes.Module) ||
       symbolTable.check(name, symbolTypes.Object)
     ) {
-      return getRule('ModuleFactor').parse(tokenStream, symbolTable, { name });
+      return getParserRule('ModuleFactor').parse(tokenStream, symbolTable, {
+        name,
+      });
     }
     if (symbolTable.check(name, symbolTypes.Function)) {
-      return getRule('FunctionFactor').parse(tokenStream, symbolTable, {
+      return getParserRule('FunctionFactor').parse(tokenStream, symbolTable, {
         name,
       });
     }
@@ -29,7 +31,7 @@ class VariableFactorRule implements IParserRule {
       return new TermNode(symbolTable.get(name), undefined);
     }
     matchAndMove(tokens.OpenParen, tokenStream);
-    const elems = getRule('ArrayList').parse(
+    const elems = getParserRule('ArrayList').parse(
       tokenStream,
       symbolTable,
       undefined

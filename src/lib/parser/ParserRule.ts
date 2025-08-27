@@ -1,7 +1,7 @@
 import TokenStream from '../compiler/tokenStream';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
-import { addRule } from './ruleFactory';
+import { addParserRule } from './ruleFactory';
 
 interface IParserRule {
   parse(
@@ -11,10 +11,10 @@ interface IParserRule {
   ): Tree;
 }
 
-export function RegisterRule(name?: string) {
+export function RegisterParserRule(name?: string) {
   return function <T extends { new (...args: any[]): IParserRule }>(ctor: T) {
     const instance = new ctor();
-    addRule(name ?? ctor.name, instance);
+    addParserRule(name ?? ctor.name, instance);
   };
 }
 

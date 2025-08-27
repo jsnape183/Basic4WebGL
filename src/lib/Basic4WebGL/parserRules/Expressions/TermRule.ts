@@ -1,25 +1,29 @@
 import { check } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import ExpressionNode from '../../nodes/ExpressionNode';
 import tokens from '../../tokens';
 
-@RegisterRule('Term')
+@RegisterParserRule('Term')
 class TermRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
-    let factor = getRule('Factor').parse(tokenStream, symbolTable, undefined);
+    let factor = getParserRule('Factor').parse(
+      tokenStream,
+      symbolTable,
+      undefined
+    );
     while (check([tokens.Multiply, tokens.Divide], tokenStream.current())) {
       switch (tokenStream.current().token.value) {
         case tokens.Multiply.value:
-          factor = getRule('Multiply').parse(tokenStream, symbolTable, {
+          factor = getParserRule('Multiply').parse(tokenStream, symbolTable, {
             factor,
           });
           break;
         case tokens.Divide.value:
-          factor = getRule('Divide').parse(tokenStream, symbolTable, {
+          factor = getParserRule('Divide').parse(tokenStream, symbolTable, {
             factor,
           });
           break;

@@ -1,6 +1,6 @@
 import { matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { scopeTypes, symbolTypes } from '../symbolTypes';
@@ -8,7 +8,7 @@ import tokens from '../tokens';
 import { CompilationError } from '../../compiler/errors';
 import EmptyNode from '../nodes/EmptyNode';
 
-@RegisterRule('Class')
+@RegisterParserRule('Class')
 class ClassRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     if (tokenStream.current().line !== 1) {

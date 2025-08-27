@@ -1,14 +1,14 @@
 import { matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import FunctionReturnNode from '../nodes/FunctionReturnNode';
 import { newLines } from '../parserConfig';
 
-@RegisterRule('Return')
+@RegisterParserRule('Return')
 class ReturnRule implements IParserRule {
   parse(
     tokenStream: TokenStream,
@@ -16,7 +16,7 @@ class ReturnRule implements IParserRule {
     data: any | undefined
   ): Tree {
     matchAndMove(tokens.Return, tokenStream);
-    const expr = getRule('BoolExpression').parse(
+    const expr = getParserRule('BoolExpression').parse(
       tokenStream,
       symbolTable,
       undefined

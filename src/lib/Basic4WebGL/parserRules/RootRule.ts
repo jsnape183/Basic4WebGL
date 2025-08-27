@@ -1,14 +1,14 @@
 import { check } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import RootNode from '../nodes/RootNode';
 
-@RegisterRule('Root')
+@RegisterParserRule('Root')
 class RootRule implements IParserRule {
   parse(
     tokenStream: TokenStream,
@@ -21,7 +21,7 @@ class RootRule implements IParserRule {
 
     symbolTable.setScope(name);
     while (!check(tokens.EndOfFile, tokenStream.current())) {
-      const child = getRule(tokenStream.current().token.name).parse(
+      const child = getParserRule(tokenStream.current().token.name).parse(
         tokenStream,
         symbolTable,
         undefined

@@ -1,17 +1,17 @@
 import { check, matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import { symbolTypes } from '../symbolTypes';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import CloneNode from '../nodes/CloneNode';
 import VariableDimNode from '../nodes/VariableDimNode';
 import DimNode from '../nodes/DimNode';
 import { newLines } from '../parserConfig';
 
-@RegisterRule('Dim')
+@RegisterParserRule('Dim')
 class DimRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Dim, tokenStream);
@@ -35,7 +35,7 @@ class DimRule implements IParserRule {
       return new VariableDimNode(varSymbol);
     }
     const arraySymbol = symbolTable.add(name, symbolTypes.Array);
-    const dims = getRule('ExpressionList').parse(
+    const dims = getParserRule('ExpressionList').parse(
       tokenStream,
       symbolTable,
       undefined

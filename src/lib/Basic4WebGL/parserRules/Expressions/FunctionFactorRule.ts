@@ -1,15 +1,15 @@
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import FunctionTermNode from '../../nodes/FunctionTermNode';
 
-@RegisterRule('FunctionFactor')
+@RegisterParserRule('FunctionFactor')
 class FunctionFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
     const name = data?.name;
-    const expr = getRule('ExpressionList').parse(
+    const expr = getParserRule('ExpressionList').parse(
       tokenStream,
       symbolTable,
       undefined

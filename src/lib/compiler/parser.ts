@@ -1,6 +1,6 @@
 import Token from '../lexer/Token';
 import ParserResults, { ParseFileResult } from '../parser/parserResults';
-import { getRule, getRules } from '../parser/ruleFactory';
+import { getParserRule } from '../parser/ruleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
 import TokenStream from './tokenStream';
@@ -13,7 +13,7 @@ const parseFile = (
 ): ParseFileResult => {
   const stream = new TokenStream(tokens);
   try {
-    const parseResult = getRule('Root').parse(stream, symbolTable, {
+    const parseResult = getParserRule('Root').parse(stream, symbolTable, {
       name: filename,
     }) as Tree;
     return new ParseFileResult(filename, parseResult, symbolTable);
@@ -28,7 +28,6 @@ const parseFile = (
 };
 
 export const parse = (tokens: Array<LexerResult>, symbolTable: Symbols) => {
-  console.log(getRules());
   const parseResult = new ParserResults(symbolTable);
 
   tokens.forEach((tokenSet) => {

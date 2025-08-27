@@ -1,7 +1,7 @@
 import { check, matchAndMove } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import ParenNode from '../../nodes/ParenNode';
@@ -10,20 +10,20 @@ import UMinusNode from '../../nodes/UMinusNode';
 import { factors } from '../../parserConfig';
 import tokens from '../../tokens';
 
-@RegisterRule('Factor')
+@RegisterParserRule('Factor')
 class FactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     if (check([tokens.Add, tokens.Subtract], tokenStream.current())) {
       matchAndMove([tokens.Add, tokens.Subtract], tokenStream);
       return new UMinusNode(
         null,
-        getRule('Factor').parse(tokenStream, symbolTable, undefined)
+        getParserRule('Factor').parse(tokenStream, symbolTable, undefined)
       );
     }
     if (check(tokens.OpenParen, tokenStream.current())) {
       matchAndMove(tokens.OpenParen, tokenStream);
 
-      const expr = getRule('BoolExpression').parse(
+      const expr = getParserRule('BoolExpression').parse(
         tokenStream,
         symbolTable,
         undefined
@@ -32,10 +32,14 @@ class FactorRule implements IParserRule {
       return new ParenNode(null, expr);
     }
     if (check(tokens.Call, tokenStream.current())) {
-      return getRule('CallFactor').parse(tokenStream, symbolTable, undefined);
+      return getParserRule('CallFactor').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
     }
     if (check(tokens.Variable, tokenStream.current())) {
-      return getRule('VariableFactor').parse(
+      return getParserRule('VariableFactor').parse(
         tokenStream,
         symbolTable,
         undefined

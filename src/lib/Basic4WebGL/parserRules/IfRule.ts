@@ -1,24 +1,24 @@
 import { matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import { newLines } from '../parserConfig';
 import IfNode from '../nodes/IfNode';
 
-@RegisterRule('If')
+@RegisterParserRule('If')
 class IfRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.If, tokenStream);
-    const expr = getRule('BoolExpression').parse(
+    const expr = getParserRule('BoolExpression').parse(
       tokenStream,
       symbolTable,
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    const block = getRule('Block').parse(
+    const block = getParserRule('Block').parse(
       tokenStream,
       symbolTable,
       tokens.EndIf

@@ -1,15 +1,15 @@
 import { check, matchAndMove } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
 import tokens from '../tokens';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import { symbolTypes } from '../symbolTypes';
 import InNode from '../nodes/InNode';
 import ToNode from '../nodes/ToNode';
 
-@RegisterRule('ForExpression')
+@RegisterParserRule('ForExpression')
 class ForExpressionRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Variable, tokenStream);
@@ -22,13 +22,13 @@ class ForExpressionRule implements IParserRule {
       return new InNode({ var: name, iterator }, []);
     }
     matchAndMove(tokens.Equals, tokenStream);
-    const startExpr = getRule('BoolExpression').parse(
+    const startExpr = getParserRule('BoolExpression').parse(
       tokenStream,
       symbolTable,
       undefined
     );
     matchAndMove(tokens.To, tokenStream);
-    const endExpr = getRule('BoolExpression').parse(
+    const endExpr = getParserRule('BoolExpression').parse(
       tokenStream,
       symbolTable,
       undefined

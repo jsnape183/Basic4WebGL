@@ -1,12 +1,12 @@
 import { check } from '../../compiler/rulesHelper';
 import TokenStream from '../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../parser/ParserRule';
+import IParserRule, { RegisterParserRule } from '../../parser/ParserRule';
 import Symbols from '../../symbols';
 import { Tree } from '../../tree';
-import { getRule } from '../../parser/ruleFactory';
+import { getParserRule } from '../../parser/ruleFactory';
 import BlockNode from '../nodes/BlockNode';
 
-@RegisterRule('Block')
+@RegisterParserRule('Block')
 class BlockRule implements IParserRule {
   parse(
     tokenStream: TokenStream,
@@ -16,7 +16,7 @@ class BlockRule implements IParserRule {
     const children = new Array<Tree>();
     const endTokens = data?.endTokens;
     while (!check(endTokens, tokenStream.current())) {
-      const child = getRule(tokenStream.current().token.name).parse(
+      const child = getParserRule(tokenStream.current().token.name).parse(
         tokenStream,
         symbolTable,
         undefined

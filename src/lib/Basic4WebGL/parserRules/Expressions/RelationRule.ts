@@ -1,16 +1,16 @@
 import { check, matchAndMove } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import RelationNode from '../../nodes/RelationNode';
 import { relOps } from '../../parserConfig';
 
-@RegisterRule('Relation')
+@RegisterParserRule('Relation')
 class RelationRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
-    const left = getRule('Expression').parse(
+    const left = getParserRule('Expression').parse(
       tokenStream,
       symbolTable,
       undefined
@@ -20,7 +20,7 @@ class RelationRule implements IParserRule {
     matchAndMove(relOps, tokenStream);
     return new RelationNode(tokenStream.prev().text, [
       left,
-      getRule('Expression').parse(tokenStream, symbolTable, undefined),
+      getParserRule('Expression').parse(tokenStream, symbolTable, undefined),
     ]);
   }
 }

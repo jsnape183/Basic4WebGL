@@ -1,18 +1,18 @@
 import { matchAndMove } from '../../../compiler/rulesHelper';
 import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterRule } from '../../../parser/ParserRule';
-import { getRule } from '../../../parser/ruleFactory';
+import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
+import { getParserRule } from '../../../parser/ruleFactory';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
 import MultiplyNode from '../../nodes/MultiplyNode';
 import tokens from '../../tokens';
 
-@RegisterRule('Multiply')
+@RegisterParserRule('Multiply')
 class MultiplyRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
     const factor = data?.factor;
     matchAndMove(tokens.Add, tokenStream);
-    const secondary = getRule('Term').parse(
+    const secondary = getParserRule('Term').parse(
       tokenStream,
       symbolTable,
       undefined
