@@ -1,4 +1,4 @@
-import { LogItem, LogItemType } from "../../Types/LogItem";
+import { LogItem, LogItemType } from '../../Types/LogItem';
 
 type ConsoleProps = {
   logs: Array<LogItem>;
@@ -7,11 +7,11 @@ type ConsoleProps = {
 const getClassesForType = (type: LogItemType) => {
   switch (type) {
     case LogItemType.Notice:
-      return "text-green-400";
+      return 'text-green-400';
     case LogItemType.Warning:
-      return "text-orange-400";
+      return 'text-orange-400';
     case LogItemType.Error:
-      return "text-red-400";
+      return 'text-red-400';
   }
 };
 
@@ -21,9 +21,9 @@ const Console: React.FC<ConsoleProps> = ({ logs = new Array<LogItem>() }) => (
     {logs.map((log, index) => (
       <div
         key={index}
-        className={`h-40 bg-black ${getClassesForType(
+        className={`h-6 bg-black ${getClassesForType(
           log.type
-        )} text-xs font-mono p-2 overflow-auto`}
+        )} text-xs font-mono p-2`}
       >
         {log.text}
       </div>

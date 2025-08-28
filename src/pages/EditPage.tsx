@@ -56,6 +56,7 @@ const EditPage: React.FC = () => {
 
   const handleRun = () => {
     let transpiledCode = '';
+    dispatch(clearLogs());
     dispatch(
       addLog({
         type: LogItemType.Notice,
@@ -73,7 +74,6 @@ const EditPage: React.FC = () => {
       dispatch(setTranspiled(transpiledCode));
       setIsRunning(true);
     } catch (e: any) {
-      console.log('An unhandled error occurred...');
       dispatch(addLog({ type: LogItemType.Error, text: e.message } as LogItem));
       dispatch(setTranspiled(''));
       setIsRunning(true);

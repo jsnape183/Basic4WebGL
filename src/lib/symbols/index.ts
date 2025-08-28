@@ -1,3 +1,5 @@
+import { SymbolError } from '../compiler/errors';
+
 export class SymbolScope {
   public name: string = '';
   public type: string = '';
@@ -117,7 +119,7 @@ class Symbols {
       .join('.');
 
     if (this.retrieveSymbol(name, type, scope, fullScope)) {
-      throw Error(`${type} ${name} in ${scope.name} already exists.`);
+      throw new SymbolError(`${type} ${name} in ${scope.name} already exists.`);
     }
 
     const symbol = new Symbol(name, type, scope, fullScope);
@@ -181,7 +183,7 @@ class Symbols {
       return symbol;
     }
 
-    throw Error(
+    throw new SymbolError(
       `${type} ${name} ${
         scope?.name !== '' ? 'in ' + scope?.name : ''
       } has not been declared yet.`

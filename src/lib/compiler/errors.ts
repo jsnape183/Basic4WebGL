@@ -10,6 +10,12 @@ export class CompilationError extends Error {
   }
 }
 
+export class SymbolError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export class UnexpectedError extends Error {
   public innerError: Error;
   constructor(error: Error) {

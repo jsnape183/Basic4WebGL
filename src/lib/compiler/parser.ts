@@ -3,7 +3,7 @@ import ParserResults, { ParseFileResult } from '../parser/parserResults';
 import { getParserRule } from '../parser/parserRuleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
-import { CompilationError, UnexpectedError } from './errors';
+import { CompilationError, SymbolError, UnexpectedError } from './errors';
 import TokenStream from './tokenStream';
 import { LexerResult } from './types';
 
@@ -18,11 +18,20 @@ const parseFile = (
       name: filename,
     }) as Tree;
     return new ParseFileResult(filename, parseResult, symbolTable);
-  } catch (e: any) {
+  } catch (e: unknown) {
+    console.log(e instanceof CompilationError);
     if (e instanceof CompilationError) {
       throw e;
     }
-    throw new UnexpectedError(e);
+    if (e instanceof SymbolError) {
+      throw new CompilationError(
+        e.message,
+        stream.current().line,
+        stream.current().col,
+        filename
+      );
+    }
+    throw new UnexpectedError(e as Error);
   }
 };
 
