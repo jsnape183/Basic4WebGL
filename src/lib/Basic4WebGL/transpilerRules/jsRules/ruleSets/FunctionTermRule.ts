@@ -10,7 +10,7 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.FunctionTerm)
 class FunctionTermRule implements IGeneratable {
   generate(node: Tree, table: Symbols): string {
-    return `await ${formatSymbol(node.data)}(${doChild(node, 0, table)});`;
+    return `${formatSymbol(node.data)}(${doChild(node, 0, table)});`;
   }
 }
 

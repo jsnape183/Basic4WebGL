@@ -40,10 +40,10 @@ export const formatFunctionDecl = (
   body: string
 ) => {
   if (node.data.scope.type === scopeTypes.Class) {
-    return `${node.data.fullScope}.prototype.${node.data.name} = async (${params}) => {${body}};`;
+    return `${node.data.fullScope}.prototype.${node.data.name} = (${params}) => {${body}};`;
   }
 
-  return `${node.data.fullScope}.${node.data.name} = async (${params}) => {${body}};`;
+  return `${node.data.fullScope}.${node.data.name} = (${params}) => {${body}};`;
 };
 
 export const formatClass = (className: string): string => {

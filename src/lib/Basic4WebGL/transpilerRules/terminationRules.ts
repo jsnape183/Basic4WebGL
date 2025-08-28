@@ -15,7 +15,7 @@ export default (table: Symbols): string => {
         _sb.getApp().ticker.add((delta) => _sb._update(delta));
         _sbClasses.forEach((c) => {
           if(c.symbol.onentry){
-            c.symbol.onentry();
+             c.symbol.onentry();
           }
         });
       };

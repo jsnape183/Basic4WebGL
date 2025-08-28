@@ -7,7 +7,7 @@ type ConsoleProps = {
   logs: Array<LogItem>;
 };
 
-type LogMessage = { type: 'console.log'; message: string };
+type LogMessage = { type: string; message: string };
 
 const TRUSTED_ORIGINS = new Set([
   'https://your-iframe-app.example',
@@ -38,8 +38,16 @@ const Console: React.FC<ConsoleProps> = ({ logs = new Array<LogItem>() }) => {
     const onMessage = (e: MessageEvent) => {
       //if (!TRUSTED_ORIGINS.has(e.origin)) return;           // security
       if (!isLogMessage(e.data)) return;
-      if (e.data.type === 'console.log') {
-        dispatch(addLog({ type: LogItemType.Output, text: e.data.message }));
+      switch (e.data.type) {
+        case 'console.log':
+          dispatch(addLog({ type: LogItemType.Output, text: e.data.message }));
+          break;
+        case 'runtimeError':
+          dispatch(addLog({ type: LogItemType.Error, text: e.data.message }));
+          throw Error(e.data.message);
+          break;
+        default:
+          dispatch(addLog({ type: LogItemType.Warning, text: e.data.message }));
       }
     };
     window.addEventListener('message', onMessage);
@@ -47,19 +55,19 @@ const Console: React.FC<ConsoleProps> = ({ logs = new Array<LogItem>() }) => {
   }, []);
 
   return (
-    <div className="h-40 bg-black text-xs font-mono p-2 overflow-auto">
-      <div className="text-grey-400">Console log output...</div>
+    <ul className="bg-black text-xs font-mono p-2 overflow-scroll">
+      <li className="text-grey-400">Console log output...</li>
       {logs.map((log, index) => (
-        <div
+        <li
           key={index}
-          className={`h-6 bg-black ${getClassesForType(
+          className={`bg-black ${getClassesForType(
             log.type
           )} text-xs font-mono p-2`}
         >
           {log.text}
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 };
 
