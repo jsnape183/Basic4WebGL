@@ -25,7 +25,6 @@ class Transpiler {
 
     output += ';\n' + config.terminationRules(symbols);
 
-    console.log(output);
     return output;
   }
 }

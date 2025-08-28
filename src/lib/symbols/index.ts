@@ -1,6 +1,6 @@
 export class SymbolScope {
-  public name: string = "";
-  public type: string = "";
+  public name: string = '';
+  public type: string = '';
 
   constructor(name: string, type: string) {
     this.name = name;
@@ -9,10 +9,10 @@ export class SymbolScope {
 }
 
 export class Symbol {
-  public name: string = "";
-  public type: string = "";
+  public name: string = '';
+  public type: string = '';
   public scope: SymbolScope;
-  public fullScope: string = "";
+  public fullScope: string = '';
 
   constructor(
     name: string,
@@ -52,23 +52,23 @@ class Symbols {
     ) => expected === actual
   ) {
     this.isMatchingType = isMatchingType;
-    this.currentScope = new SymbolScope("", "");
+    this.currentScope = new SymbolScope('', '');
     this.scopes.push({ ...this.currentScope });
   }
 
   getScopeName(): string {
-    if (this.scopes.length === 0) return "";
+    if (this.scopes.length === 0) return '';
     return this.scopes[this.scopes.length - 1].name;
   }
   getScopeType(): string {
-    if (this.scopes.length === 0) return "";
+    if (this.scopes.length === 0) return '';
     return this.scopes[this.scopes.length - 1].type;
   }
-  setScope(scope: string, type: string = "") {
+  setScope(scope: string, type: string = '') {
     this.scopes.push(new SymbolScope(scope, type));
     this.currentScope = this.scopes[this.scopes.length - 1];
   }
-  setCurrentScope(scope: string, type: string = "") {
+  setCurrentScope(scope: string, type: string = '') {
     if (this.scopes.length === 0) return;
 
     this.scopes[this.scopes.length - 1].name = scope;
@@ -79,7 +79,7 @@ class Symbols {
   clearScope(): void {
     this.scopes.pop();
     if (this.scopes.length === 0) {
-      this.currentScope = new SymbolScope("", "");
+      this.currentScope = new SymbolScope('', '');
       this.scopes.push({ ...this.currentScope });
     }
     this.currentScope = this.scopes[this.scopes.length - 1];
@@ -104,22 +104,19 @@ class Symbols {
   }
   add(
     name: string,
-    type: string = "Variable",
+    type: string = 'Variable',
     scope: SymbolScope = this.currentScope
   ) {
     if (!scope || !scope?.name) {
-      scope = new SymbolScope("", "");
+      scope = new SymbolScope('', '');
     }
 
     const fullScope = this.scopes
       .map((s) => s.name)
-      .filter((s) => s !== "")
-      .join(".");
+      .filter((s) => s !== '')
+      .join('.');
 
-    const formattedName = name.toLowerCase();
     if (this.retrieveSymbol(name, type, scope, fullScope)) {
-      console.log(this.table);
-      console.log(name, type, scope);
       throw Error(`${type} ${name} in ${scope.name} already exists.`);
     }
 
@@ -129,9 +126,9 @@ class Symbols {
   }
   retrieveSymbol(
     name: string,
-    type: string = "Variable",
+    type: string = 'Variable',
     scope: SymbolScope | undefined = undefined,
-    fullScope: string = ""
+    fullScope: string = ''
   ) {
     const formattedName = name.toLowerCase();
 
@@ -176,7 +173,7 @@ class Symbols {
   }
   get(
     name: string,
-    type: string = "Variable",
+    type: string = 'Variable',
     scope: SymbolScope | undefined = undefined
   ): Symbol {
     const symbol = this.retrieveSymbol(name, type, scope);
@@ -186,7 +183,7 @@ class Symbols {
 
     throw Error(
       `${type} ${name} ${
-        scope?.name !== "" ? "in " + scope?.name : ""
+        scope?.name !== '' ? 'in ' + scope?.name : ''
       } has not been declared yet.`
     );
   }
@@ -198,7 +195,7 @@ class Symbols {
     return this.retrieveSymbol(name, type, scope) !== undefined;
   }
   getAll(
-    type: string = "Variable",
+    type: string = 'Variable',
     scope: SymbolScope = this.currentScope
   ): Array<Symbol> {
     const result: Array<Symbol> = Object.values(

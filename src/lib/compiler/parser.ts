@@ -3,6 +3,7 @@ import ParserResults, { ParseFileResult } from '../parser/parserResults';
 import { getParserRule } from '../parser/parserRuleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
+import { CompilationError, UnexpectedError } from './errors';
 import TokenStream from './tokenStream';
 import { LexerResult } from './types';
 
@@ -17,13 +18,11 @@ const parseFile = (
       name: filename,
     }) as Tree;
     return new ParseFileResult(filename, parseResult, symbolTable);
-  } catch (e) {
-    throw e;
-    throw new Error(
-      `${filename} - Parse error: ${e} at ${stream.current().line}:${
-        stream.current().col
-      } near '${stream.current().text}'`
-    );
+  } catch (e: any) {
+    if (e instanceof CompilationError) {
+      throw e;
+    }
+    throw new UnexpectedError(e);
   }
 };
 

@@ -8,8 +8,6 @@ import Symbols, { SymbolScope } from '../symbols';
 import './parserRules';
 import { isMatchingType } from './transpilerRules/symbolRules';
 
-console.log('In BASIC4WebGL/index.ts');
-
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
 
 const parse = (project: CompilerProject) =>

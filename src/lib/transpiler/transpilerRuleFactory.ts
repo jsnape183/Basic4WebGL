@@ -14,6 +14,5 @@ export const addTranspilerRule = (key: number, rule: IGeneratable) => {
   if (transpilerRules[key]) {
     throw Error(`Duplicate transpiler rule ${key} found.`);
   }
-  console.log(`Adding transpiler rule ${key}`);
   transpilerRules[key] = rule;
 };

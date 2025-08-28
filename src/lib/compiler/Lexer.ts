@@ -56,7 +56,6 @@ const lexFile = (
     if (match.position === 0) break;
     currentStream = currentStream.substring(match.position);
   }
-  console.log(tokens);
   return tokens;
 };
 

@@ -37,7 +37,6 @@ const AssetManager = (() => {
           `Asset "${name}" not found. Make sure AssetManager.preload() finished and includes this name.`
         );
       }
-      console.log(_cache);
       return _cache.get(name);
     },
 

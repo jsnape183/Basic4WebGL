@@ -21,7 +21,6 @@ const assetsSlice = createSlice({
   initialState,
   reducers: {
     addAsset: (state: IAssetsState, action: PayloadAction<IAsset>) => {
-      console.log('Adding asset:', action.payload);
       state.byId[action.payload.id] = action.payload;
     },
     updateAsset: (state: IAssetsState, action: PayloadAction<IAsset>) => {

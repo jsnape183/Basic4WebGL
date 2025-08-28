@@ -72,7 +72,6 @@ class _softBasicGfx {
   }
 
   clear() {
-    console.log(app.stage);
     app.stage.clear();
   }
 
@@ -111,7 +110,6 @@ class _softBasicGfx {
 
   drawRect(x, y, width, height) {
     const obj = drawWithFill((obj) => {
-      console.log({ x, y });
       obj.drawRect(0, 0, width, height);
       obj.pivot.set(width / 2, height / 2);
       obj.position.set(x, y);
