@@ -3,8 +3,8 @@
       
       </head>
       <body>
-      <script type="text/javascrip">
-      const createArrayDim = (sizes, depth) => {
+      <script type="text/javascript">
+      const _createArrayDim = (sizes, depth) => {
         if (depth === sizes.length - 1)
           return Array.apply(null, new Array(sizes[depth])).map(() => false);
     
@@ -12,9 +12,29 @@
           Array.apply(null, createArrayDim(sizes, depth + 1))
         );
       };
-      const createArray = (sizes) => {
-        return createArrayDim(sizes, 0);
+      const _createArray = (sizes) => {
+        return _createArrayDim(sizes, 0);
       };
+
+      const _print = (value) => {
+        console.log(value); 
+        if(typeof value === 'string' || typeof value === 'number'){
+          window.parent.postMessage({type:'console.log', message: value});
+          return;
+        }
+        try{
+          const json = JSON.stringify(value);
+          if(!json){
+            window.parent.postMessage({type:'console.log', message:'null'});
+            return;
+          }
+          
+            window.parent.postMessage({type:'console.log', message:json});  
+          }
+          catch{
+            window.parent.postMessage({type:'console.log', message:'null'});
+          }
+      }
       </script>
       <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.x/dist/pixi.min.js"></script>
       <script type="text/javascript">

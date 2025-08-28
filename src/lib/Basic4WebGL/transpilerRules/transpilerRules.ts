@@ -113,7 +113,7 @@ export const transpilerRules: Record<number, Function> = {
     return `${`${node.data.scope.name}.${node.data.name}`} = undefined;`;
   },
   [nodeTypes.Dim]: (node: Tree, table: Symbols): string =>
-    `let ${formatSymbol(node.data)} = createArray([${doChild(
+    `let ${formatSymbol(node.data)} = _createArray([${doChild(
       transpilerRules,
       node,
       0,

@@ -10,7 +10,7 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.Dim)
 class DimRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
-    return `let ${formatSymbol(node.data)} = createArray([${doChild(
+    return `let ${formatSymbol(node.data)} = _createArray([${doChild(
       node,
       0,
       table

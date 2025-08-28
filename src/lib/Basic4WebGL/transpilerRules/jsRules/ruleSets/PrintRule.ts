@@ -11,7 +11,7 @@ import { doChild } from '../helpers/transpilerHelpers';
 class PrintRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
     const value = doChild(node, 0, table);
-    return `console.log(${value});`;
+    return `_print(${value})`;
   }
 }
 
