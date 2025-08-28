@@ -3,7 +3,7 @@ export {}; // ensure this stays a module
 
 const modules = import.meta.glob(
   [
-    './jsRules/ruleSets/**/*.ts', // recursive: picks up subfolders too
+    './rules/**/*.ts', // recursive: picks up subfolders too
     '!./index.ts', // exclude the barrel if needed
     '!./autoload.ts', // exclude this file
   ],

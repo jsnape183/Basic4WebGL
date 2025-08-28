@@ -1,0 +1,22 @@
+import { matchAndMove } from '../../../../compiler/rulesHelper';
+import TokenStream from '../../../../compiler/tokenStream';
+import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
+import { getParserRule } from '../../../../parser/parserRuleFactory';
+import Symbols from '../../../../symbols';
+import { Tree } from '../../../../tree';
+import OrNode from '../../../nodes/OrNode';
+import tokens from '../../../tokens';
+
+@RegisterParserRule('Or')
+class OrRule implements IParserRule {
+  parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const term = data?.term;
+    matchAndMove(tokens.Or, tokenStream);
+    return new OrNode(null, [
+      term,
+      getParserRule('BoolTerm').parse(tokenStream, symbolTable, undefined),
+    ]);
+  }
+}
+
+export default OrRule;
