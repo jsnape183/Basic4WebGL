@@ -33,7 +33,6 @@ const AssetManager = (() => {
     // Synchronous getter (throws if not found)
     get(name) {
       if (!_cache.has(name)) {
-        console.log("Can't find asset");
         throw Error(
           `Asset "${name}" not found. Make sure the filename is correct and included in your assets.`
         );
