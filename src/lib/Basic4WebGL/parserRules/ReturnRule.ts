@@ -10,11 +10,7 @@ import { newLines } from '../parserConfig';
 
 @RegisterParserRule('Return')
 class ReturnRule implements IParserRule {
-  parse(
-    tokenStream: TokenStream,
-    symbolTable: Symbols,
-    data: any | undefined
-  ): Tree {
+  parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Return, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,

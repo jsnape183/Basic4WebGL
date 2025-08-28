@@ -10,11 +10,7 @@ import { newLines } from '../parserConfig';
 
 @RegisterParserRule('Print')
 class PrintRule implements IParserRule {
-  parse(
-    tokenStream: TokenStream,
-    symbolTable: Symbols,
-    data: any | undefined
-  ): Tree {
+  parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Print, tokenStream);
     const printNode = new PrintNode(
       null,

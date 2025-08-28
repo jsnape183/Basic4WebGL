@@ -1,15 +1,9 @@
-import Symbols from '../../symbols';
 import { Tree } from '../../tree';
-import { IGeneratable } from '../../tree/IGeneratable';
 import nodeTypes from '../nodeTypes';
 
-class ToNode extends Tree implements IGeneratable {
+class ToNode extends Tree {
   constructor(data: any | undefined, children: Tree[]) {
     super(nodeTypes.To, data, children);
-  }
-
-  generate(node: Tree, table: Symbols | undefined): string {
-    return '';
   }
 }
 

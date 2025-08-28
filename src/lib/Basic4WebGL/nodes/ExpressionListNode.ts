@@ -1,15 +1,9 @@
-import Symbols from '../../symbols';
 import { Tree } from '../../tree';
-import { IGeneratable } from '../../tree/IGeneratable';
 import nodeTypes from '../nodeTypes';
 
-class ExpressionListNode extends Tree implements IGeneratable {
+class ExpressionListNode extends Tree {
   constructor(data: any | undefined, children: Tree | Tree[] | undefined) {
     super(nodeTypes.ExpressionList, data, children);
-  }
-
-  generate(node: Tree, table: Symbols | undefined): string {
-    return '';
   }
 }
 

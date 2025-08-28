@@ -1,7 +1,7 @@
 export class Tree {
   public type: number;
   public data: string | Symbol | any;
-  public children: Array<Tree> | Tree;
+  public children: Array<Tree>;
 
   constructor(
     type: number,

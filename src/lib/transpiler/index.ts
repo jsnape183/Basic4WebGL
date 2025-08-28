@@ -1,6 +1,7 @@
-import ParserResults from "../parser/parserResults";
-import Symbols, { SymbolScope } from "../symbols";
-import { TranspilerConfig } from "./types";
+import ParserResults from '../parser/parserResults';
+import Symbols, { SymbolScope } from '../symbols';
+import { getTranspilerRule } from './transpilerRuleFactory';
+import { TranspilerConfig } from './types';
 
 class Transpiler {
   transpile(
@@ -14,12 +15,15 @@ class Transpiler {
       .map((result) => {
         return `${config.symbolRules(
           symbols,
-          new SymbolScope(result.name, "")
-        )}${config.transpilerRules[result.tree.type](result.tree, symbols)}`;
+          new SymbolScope(result.name, '')
+        )}${getTranspilerRule(result.tree.type).generate(
+          result.tree,
+          symbols
+        )}`;
       })
-      .join("\n");
+      .join('\n');
 
-    output += ";\n" + config.terminationRules(symbols);
+    output += ';\n' + config.terminationRules(symbols);
 
     console.log(output);
     return output;

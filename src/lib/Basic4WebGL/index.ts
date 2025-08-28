@@ -5,8 +5,10 @@ import parser from '../compiler/parser';
 import transpilerRules from './transpilerRules';
 import Transpiler from '../transpiler';
 import Symbols, { SymbolScope } from '../symbols';
-import { isMatchingType } from './transpilerRules/symbolRules';
 import './parserRules';
+import { isMatchingType } from './transpilerRules/symbolRules';
+
+console.log('In BASIC4WebGL/index.ts');
 
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
 

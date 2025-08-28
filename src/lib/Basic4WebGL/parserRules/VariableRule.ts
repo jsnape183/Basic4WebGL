@@ -12,11 +12,7 @@ import { newLines } from '../parserConfig';
 
 @RegisterParserRule('Variable')
 class VariableRule implements IParserRule {
-  parse(
-    tokenStream: TokenStream,
-    symbolTable: Symbols,
-    data: any | undefined
-  ): Tree {
+  parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
     if (
