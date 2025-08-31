@@ -3,8 +3,8 @@ import softPen from './graphics/softPen';
 import softStage from './graphics/softStage';
 import softText from './graphics/softText';
 import softTransform from './graphics/softTransform';
-import softAsset from './graphics/softAsset';
-import softSprite from './graphics/softSprite';
+import softAssetManager from './graphics/softAssetManager';
+import softSpriteManager from './graphics/softSpriteManager';
 
 export default `
 
@@ -24,6 +24,6 @@ export {
   softStage,
   softText,
   softTransform,
-  softAsset,
-  softSprite,
+  softAssetManager,
+  softSpriteManager,
 };

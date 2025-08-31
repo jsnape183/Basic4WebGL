@@ -1,5 +1,5 @@
 // AssetManager: preload async, then sync getters only
-const AssetManager = (() => {
+const _SoftAssetManager = (() => {
   const _cache = new Map(); // name -> loaded content (e.g., Texture)
   let _ready = false;
 

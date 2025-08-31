@@ -4,8 +4,8 @@ import softGFX, {
   softPen,
   softText,
   softTransform,
-  softAsset,
-  softSprite,
+  softAssetManager,
+  softSpriteManager,
 } from '../lib/Basic4WebGL/defs/softGFX';
 import softString from '../lib/Basic4WebGL/defs/softString';
 import softMath from '../lib/Basic4WebGL/defs/softMath';
@@ -22,6 +22,6 @@ export const projectLib: Array<ProjectFile> = [
   { name: 'pen', source: softPen },
   { name: 'text', source: softText },
   { name: 'transform', source: softTransform },
-  { name: 'asset', source: softAsset },
-  { name: 'sprite', source: softSprite },
+  { name: 'assetmanager', source: softAssetManager },
+  { name: 'spritemanager', source: softSpriteManager },
 ];

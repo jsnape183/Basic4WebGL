@@ -8,11 +8,11 @@ export default (table: Symbols): string => {
     .join(`,`);
   classes = `
       let _sbClasses = [${classes}];
-      _sb = new _softBasicGfx(_sbClasses);
+      _SoftBasicGfx.createInstance(_sbClasses);
       
       const _sb_globalOnEnter = async () => {
-        await AssetManager.preloadFromLocalStorage(_sbProjectId);
-        _sb.getApp().ticker.add((delta) => _sb._update(delta));
+        await _SoftAssetManager.preloadFromLocalStorage(_sbProjectId);
+        _SoftBasicGfx.getInstance().getApp().ticker.add((delta) => _SoftBasicGfx.getInstance()._update(delta));
         _sbClasses.forEach((c) => {
           if(c.symbol.onentry){
              c.symbol.onentry();

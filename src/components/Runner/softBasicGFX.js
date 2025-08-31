@@ -6,7 +6,18 @@ app.renderer.plugins.interaction.on("pointermove", (e) => {
   main_onpointermove(e.data.global.x, e.data.global.y);
 });*/
 
-class _softBasicGfx {
+class _SoftBasicGfx {
+  static instance = null;
+  static createInstance(sbClasses) {
+    this.instance = new _SoftBasicGfx(sbClasses);
+  }
+  static getInstance() {
+    if (!this.instance) {
+      this.instance = new _SoftBasicGfx([]);
+    }
+    return this.instance;
+  }
+
   _sbClasses = [];
   _keys = {};
 
@@ -163,10 +174,18 @@ class _softBasicGfx {
     this._keys[keyCode] = down;
   }
 
+  addStageChild(obj) {
+    this.getStage().addChild(obj);
+  }
+
+  getStage() {
+    return this.getApp().stage;
+  }
+
   getApp() {
     return app;
   }
-  getPixi() {
+  getEngine() {
     return PIXI;
   }
 }
