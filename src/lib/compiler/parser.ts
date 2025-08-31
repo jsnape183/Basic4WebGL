@@ -19,7 +19,6 @@ const parseFile = (
     }) as Tree;
     return new ParseFileResult(filename, parseResult, symbolTable);
   } catch (e: unknown) {
-    console.log(e instanceof CompilationError);
     if (e instanceof CompilationError) {
       throw e;
     }
