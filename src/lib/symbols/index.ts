@@ -57,7 +57,16 @@ class Symbols {
     this.currentScope = new SymbolScope('', '');
     this.scopes.push({ ...this.currentScope });
   }
-
+  getFullScopeName(): string {
+    const fullScope = this.scopes
+      .map((s) => s.name)
+      .filter((s) => s !== '')
+      .join('.');
+    return fullScope;
+  }
+  getScope(): SymbolScope {
+    return this.currentScope;
+  }
   getScopeName(): string {
     if (this.scopes.length === 0) return '';
     return this.scopes[this.scopes.length - 1].name;
@@ -103,6 +112,22 @@ class Symbols {
     });
     this.clearScope();
     return clonedSymbol;
+  }
+  addTyped(symbol: Symbol) {
+    if (
+      this.retrieveSymbol(
+        symbol.name,
+        symbol.type,
+        symbol.scope,
+        symbol.fullScope
+      )
+    ) {
+      throw new SymbolError(
+        `${symbol.type} ${symbol.name} in ${symbol.scope.name} already exists.`
+      );
+    }
+    this.table.push(symbol);
+    return symbol;
   }
   add(
     name: string,

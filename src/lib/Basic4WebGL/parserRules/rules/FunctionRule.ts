@@ -3,7 +3,7 @@ import TokenStream from '../../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
-import { scopeTypes, symbolTypes } from '../../symbolTypes';
+import { FunctionSymbol, scopeTypes, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '../../../parser/parserRuleFactory';
 import FunctionDeclNode from '../../nodes/FunctionDeclNode';
@@ -17,13 +17,17 @@ class FunctionRule implements IParserRule {
     matchAndMove(tokens.Variable, tokenStream);
 
     const name = tokenStream.prev().text.toLowerCase();
-    const functionSymbol = symbolTable.add(name, symbolTypes.Function);
     matchAndMove(tokens.OpenParen, tokenStream);
     symbolTable.setScope(name, scopeTypes.Function);
     const variables = getParserRule('VariableList').parse(
       tokenStream,
       symbolTable,
       undefined
+    );
+
+    const parameters = symbolTable.getAll(
+      symbolTypes.Parameter,
+      symbolTable.getScope()
     );
     matchAndMove(tokens.CloseParen, tokenStream);
     matchAndMove(newLines, tokenStream);
@@ -33,6 +37,15 @@ class FunctionRule implements IParserRule {
     matchAndMove(tokens.EndFunction, tokenStream);
     symbolTable.clearScope();
     matchAndMove(newLines, tokenStream);
+    const functionSymbol = symbolTable.addTyped(
+      new FunctionSymbol(
+        name,
+        symbolTypes.Function,
+        symbolTable.getScope(),
+        symbolTable.getFullScopeName(),
+        parameters
+      )
+    );
     return new FunctionDeclNode(functionSymbol, [
       variables,
       new BlockNode(null, children),

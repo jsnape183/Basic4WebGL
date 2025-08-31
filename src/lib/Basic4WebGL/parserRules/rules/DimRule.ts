@@ -3,7 +3,7 @@ import TokenStream from '../../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
 import Symbols from '../../../symbols';
 import { Tree } from '../../../tree';
-import { symbolTypes } from '../../symbolTypes';
+import { ArraySymbol, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '../../../parser/parserRuleFactory';
 import CloneNode from '../../nodes/CloneNode';
@@ -21,24 +21,33 @@ class DimRule implements IParserRule {
     if (check(tokens.As, tokenStream.current())) {
       matchAndMove(tokens.As, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
-      const module = symbolTable.get(
+      const classSymbol = symbolTable.get(
         tokenStream.prev().text,
         symbolTypes.Class
       );
-      const object = symbolTable.clone(name, module, symbolTypes.Object);
+      const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
 
-      return new CloneNode({ object, module });
+      return new CloneNode({ object, classSymbol });
     }
 
     if (!check(tokens.OpenParen, tokenStream.current())) {
       const varSymbol = symbolTable.add(name, symbolTypes.Variable);
       return new VariableDimNode(varSymbol);
     }
-    const arraySymbol = symbolTable.add(name, symbolTypes.Array);
     const dims = getParserRule('ExpressionList').parse(
       tokenStream,
       symbolTable,
       undefined
+    );
+
+    const arraySymbol = symbolTable.addTyped(
+      new ArraySymbol(
+        name,
+        symbolTypes.Array,
+        symbolTable.getScope(),
+        symbolTable.getFullScopeName(),
+        dims.children.length
+      )
     );
     matchAndMove(newLines, tokenStream);
 
