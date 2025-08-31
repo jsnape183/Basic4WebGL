@@ -7,11 +7,12 @@ import Transpiler from '../transpiler';
 import Symbols, { SymbolScope } from '../symbols';
 import './parserRules';
 import { isMatchingType } from './transpilerRules/symbolRules';
+import VariantType from './builtInTypes/VariantType';
 
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
 
 const parse = (project: CompilerProject) =>
-  parser(lexOnly(project), new Symbols(isMatchingType));
+  parser(lexOnly(project), new Symbols(new VariantType(), isMatchingType));
 
 const transpile = (project: CompilerProject) => {
   const transpiler = new Transpiler();

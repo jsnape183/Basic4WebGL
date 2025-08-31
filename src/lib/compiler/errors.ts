@@ -1,3 +1,5 @@
+import BuiltInType from '../builtInTypes';
+
 export class CompilationError extends Error {
   public line: number;
   public col: number;
@@ -22,5 +24,21 @@ export class UnexpectedError extends Error {
     super(`An unexpected error occured with the message ${error.name} "${error.message}"
       Stack Trace ${error?.stack}}`);
     this.innerError = error;
+  }
+}
+
+export class SemanticTypeError extends Error {
+  constructor(expectedTypes: BuiltInType[], actualType: BuiltInType) {
+    super(
+      `Semantic Error: Expected type(s) ${expectedTypes
+        .map((t) => t.name)
+        .join(', ')} but got ${actualType.name}`
+    );
+  }
+}
+
+export class SemanticError extends Error {
+  constructor(message: string) {
+    super(message);
   }
 }

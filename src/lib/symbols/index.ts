@@ -1,3 +1,4 @@
+import BuiltInType from '../builtInTypes';
 import { SymbolError } from '../compiler/errors';
 
 export class SymbolScope {
@@ -15,17 +16,20 @@ export class Symbol {
   public type: string = '';
   public scope: SymbolScope;
   public fullScope: string = '';
+  public dataType: BuiltInType;
 
   constructor(
     name: string,
     type: string,
     scope: SymbolScope,
-    fullScope: string
+    fullScope: string,
+    dataType: BuiltInType
   ) {
     this.name = name;
     this.type = type;
     this.scope = scope;
     this.fullScope = fullScope;
+    this.dataType = dataType;
   }
 
   setType(type: string) {
@@ -46,8 +50,10 @@ class Symbols {
   private table: Array<Symbol> = [];
   private scopes: Array<SymbolScope> = [];
   private currentScope: SymbolScope;
+  private defaultType: BuiltInType;
 
   constructor(
+    defaultType: BuiltInType,
     isMatchingType: (expected: string, actual: string) => Boolean = (
       expected: string,
       actual: string
@@ -56,6 +62,7 @@ class Symbols {
     this.isMatchingType = isMatchingType;
     this.currentScope = new SymbolScope('', '');
     this.scopes.push({ ...this.currentScope });
+    this.defaultType = defaultType;
   }
   getFullScopeName(): string {
     const fullScope = this.scopes
@@ -105,7 +112,7 @@ class Symbols {
       .filter((s) => s.scope.name === symbol.name)
       .slice(0);
 
-    const clonedSymbol = this.add(name, newType, scope);
+    const clonedSymbol = this.add(name, newType, scope, symbol.dataType);
     this.setScope(name);
     childSymbols.forEach((c) => {
       this.add(c.name, c.type, new SymbolScope(name, symbol.type));
@@ -132,7 +139,8 @@ class Symbols {
   add(
     name: string,
     type: string = 'Variable',
-    scope: SymbolScope = this.currentScope
+    scope: SymbolScope = this.currentScope,
+    dataType: BuiltInType = this.defaultType
   ) {
     if (!scope || !scope?.name) {
       scope = new SymbolScope('', '');
@@ -147,7 +155,7 @@ class Symbols {
       throw new SymbolError(`${type} ${name} in ${scope.name} already exists.`);
     }
 
-    const symbol = new Symbol(name, type, scope, fullScope);
+    const symbol = new Symbol(name, type, scope, fullScope, dataType);
     this.table.push(symbol);
     return symbol;
   }

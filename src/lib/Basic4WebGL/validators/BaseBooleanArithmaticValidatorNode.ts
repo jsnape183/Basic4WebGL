@@ -1,15 +1,9 @@
 import { SemanticTypeError } from '../../compiler/errors';
 import { Tree } from '../../tree';
+import IValidatable from '../../tree/IValidatable';
 import builtInTypes from '../builtInTypes';
-import nodeTypes from '../nodeTypes';
-import BaseBooleanArthrmaticValidatorNode from '../validators/BaseBooleanArithmaticValidatorNode';
 
-class AndNode extends BaseBooleanArthrmaticValidatorNode {
-  constructor(data: any | undefined, children: Tree[]) {
-    super(nodeTypes.And, data, children);
-    this.dataType = builtInTypes.Boolean;
-  }
-
+class BaseBooleanArthrmaticValidatorNode extends Tree implements IValidatable {
   validate(): void {
     if (!this.children[0].dataType?.canAccept(builtInTypes.Boolean)) {
       throw new SemanticTypeError(
@@ -27,4 +21,4 @@ class AndNode extends BaseBooleanArthrmaticValidatorNode {
   }
 }
 
-export default AndNode;
+export default BaseBooleanArthrmaticValidatorNode;

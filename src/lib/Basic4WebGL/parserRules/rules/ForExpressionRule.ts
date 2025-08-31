@@ -8,13 +8,19 @@ import { getParserRule } from '../../../parser/parserRuleFactory';
 import { symbolTypes } from '../../symbolTypes';
 import InNode from '../../nodes/InNode';
 import ToNode from '../../nodes/ToNode';
+import builtInTypes from '../../builtInTypes';
 
 @RegisterParserRule('ForExpression')
 class ForExpressionRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
-    symbolTable.add(name, symbolTypes.Variable);
+    symbolTable.add(
+      name,
+      symbolTypes.Variable,
+      symbolTable.getScope(),
+      builtInTypes.Number
+    );
     if (check(tokens.In, tokenStream.current())) {
       matchAndMove(tokens.In, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);

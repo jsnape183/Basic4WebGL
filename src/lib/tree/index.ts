@@ -1,16 +1,21 @@
+import BuiltInType from '../builtInTypes';
+
 export class Tree {
   public type: number;
   public data: string | Symbol | any;
   public children: Array<Tree>;
+  public dataType: BuiltInType;
 
   constructor(
     type: number,
     data: string | Symbol | any | undefined,
-    children: Array<Tree> | Tree = new Array<Tree>()
+    children: Array<Tree> | Tree = new Array<Tree>(),
+    dataType: BuiltInType = new BuiltInType('Unknown')
   ) {
     this.type = type;
     this.data = data;
     this.children = Array.isArray(children) ? children : [children];
+    this.dataType = dataType;
   }
 }
 

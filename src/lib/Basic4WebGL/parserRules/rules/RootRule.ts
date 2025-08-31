@@ -7,6 +7,7 @@ import { symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '../../../parser/parserRuleFactory';
 import RootNode from '../../nodes/RootNode';
+import ObjectType from '../../builtInTypes/ObjectType';
 
 @RegisterParserRule('Root')
 class RootRule implements IParserRule {
@@ -17,7 +18,12 @@ class RootRule implements IParserRule {
   ): Tree {
     const name = data?.name;
     const children = new Array<Tree>();
-    symbolTable.add(name, symbolTypes.Module);
+    symbolTable.add(
+      name,
+      symbolTypes.Module,
+      symbolTable.getScope(),
+      new ObjectType(`${symbolTable.getFullScopeName()}.${name}`)
+    );
 
     symbolTable.setScope(name);
     while (!check(tokens.EndOfFile, tokenStream.current())) {

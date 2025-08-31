@@ -1,4 +1,6 @@
 import { Symbol, SymbolScope } from '../symbols';
+import builtInTypes from './builtInTypes';
+import ObjectType from './builtInTypes/ObjectType';
 
 export const scopeTypes = {
   Globals: '',
@@ -26,7 +28,7 @@ export class FunctionSymbol extends Symbol {
     fullScope: string,
     parameters: Array<Symbol> = new Array<Symbol>()
   ) {
-    super(name, type, scope, fullScope);
+    super(name, type, scope, fullScope, new ObjectType(`${fullScope}.${name}`));
     this.parameters = parameters;
   }
 }
@@ -40,7 +42,7 @@ export class ArraySymbol extends Symbol {
     fullScope: string,
     dimensions: number
   ) {
-    super(name, type, scope, fullScope);
+    super(name, type, scope, fullScope, builtInTypes.Variant);
     this.dimensions = dimensions;
   }
 }

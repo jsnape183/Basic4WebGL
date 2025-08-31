@@ -1,3 +1,5 @@
+import BuiltInType from '../../builtInTypes';
+
 class ObjectType extends BuiltInType {
   fullName: string = '';
   constructor(fullName: string) {
@@ -5,7 +7,7 @@ class ObjectType extends BuiltInType {
     this.fullName = fullName;
   }
 
-  canAccept(typeName: string): boolean {
+  objectEquals(typeName: string): boolean {
     return this.fullName === typeName;
   }
 }

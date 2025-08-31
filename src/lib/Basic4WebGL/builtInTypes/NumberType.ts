@@ -1,3 +1,5 @@
+import BuiltInType from '../../builtInTypes';
+
 class NumberType extends BuiltInType {
   constructor() {
     super('Number', []);
