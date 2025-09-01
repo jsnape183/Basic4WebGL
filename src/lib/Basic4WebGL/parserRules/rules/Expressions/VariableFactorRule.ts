@@ -6,6 +6,7 @@ import Symbols from '../../../../symbols';
 import { Tree } from '../../../../tree';
 import ArrayLookupNode from '../../../nodes/ArrayLookupNode';
 import TermNode from '../../../nodes/TermNode';
+import VariableNode from '../../../nodes/VariableNode';
 import { symbolTypes } from '../../../symbolTypes';
 import tokens from '../../../tokens';
 
@@ -28,7 +29,7 @@ class VariableFactorRule implements IParserRule {
       });
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      return new TermNode(symbolTable.get(name), undefined);
+      return new TermNode(symbolTable.get(name), new VariableNode(name));
     }
     matchAndMove(tokens.OpenParen, tokenStream);
     const elems = getParserRule('ArrayList').parse(

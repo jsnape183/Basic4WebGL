@@ -1,5 +1,7 @@
-import BuiltInType from '../../builtInTypes';
+import { RegisterBuiltInType } from '../../../builtInTypes';
+import BuiltInType from '../../../builtInTypes';
 
+@RegisterBuiltInType('Object')
 class ObjectType extends BuiltInType {
   fullName: string = '';
   constructor(fullName: string) {

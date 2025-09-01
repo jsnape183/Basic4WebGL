@@ -6,13 +6,20 @@ import transpilerRules from './transpilerRules';
 import Transpiler from '../transpiler';
 import Symbols, { SymbolScope } from '../symbols';
 import './parserRules';
+import './builtInTypes';
 import { isMatchingType } from './transpilerRules/symbolRules';
-import VariantType from './builtInTypes/VariantType';
+import { getBuiltInType } from '../builtInTypes/builtInTypeFactory';
+import builtInTypes from './builtInTypes';
 
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
 
-const parse = (project: CompilerProject) =>
-  parser(lexOnly(project), new Symbols(new VariantType(), isMatchingType));
+const parse = (project: CompilerProject) => {
+  const result = parser(
+    lexOnly(project),
+    new Symbols(getBuiltInType(builtInTypes.Variant), isMatchingType)
+  );
+  return result;
+};
 
 const transpile = (project: CompilerProject) => {
   const transpiler = new Transpiler();

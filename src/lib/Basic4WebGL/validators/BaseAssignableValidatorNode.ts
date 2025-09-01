@@ -1,10 +1,20 @@
-import { SemanticTypeError } from '../../compiler/errors';
+import { CompilationError, SemanticTypeError } from '../../compiler/errors';
 import { Tree } from '../../tree';
 import IValidatable from '../../tree/IValidatable';
+import { Symbol } from '../../symbols';
 
 class BaseAssignableValidatorNode extends Tree implements IValidatable {
   validate(): void {
-    if (!this.children[0].dataType?.canAccept(this.children[1].dataType)) {
+    const symbol = this.data as Symbol;
+    if (!symbol) {
+      throw new CompilationError(
+        'Expected Variable for assignment operator',
+        0,
+        0,
+        ''
+      );
+    }
+    if (!symbol.dataType?.canAccept(this.children[0].dataType)) {
       throw new SemanticTypeError(
         this.children[0].dataType.acceptsTypes,
         this.children[1].dataType

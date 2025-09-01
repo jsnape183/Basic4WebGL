@@ -17,7 +17,6 @@ class NotRule implements IParserRule {
         getParserRule('BoolFactor').parse(tokenStream, symbolTable, undefined)
       );
     }
-
     return getParserRule('BoolTerm').parse(tokenStream, symbolTable, undefined);
   }
 }

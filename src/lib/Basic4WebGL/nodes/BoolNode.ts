@@ -3,9 +3,11 @@ import { Tree } from '../../tree';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 
-export class NumberNode extends Tree {
+class BoolNode extends Tree {
   constructor(data: any | undefined) {
-    super(nodeTypes.Number, data, []);
-    this.dataType = getBuiltInType(builtInTypes.Number);
+    super(nodeTypes.String, data, []);
+    this.dataType = getBuiltInType(builtInTypes.String);
   }
 }
+
+export default BoolNode;

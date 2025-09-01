@@ -7,7 +7,7 @@ import { symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '../../../parser/parserRuleFactory';
 import RootNode from '../../nodes/RootNode';
-import ObjectType from '../../builtInTypes/ObjectType';
+import ObjectType from '../../builtInTypes/definitions/ObjectType';
 
 @RegisterParserRule('Root')
 class RootRule implements IParserRule {

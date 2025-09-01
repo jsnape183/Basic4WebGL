@@ -6,6 +6,7 @@ import { Tree } from '../tree';
 import { CompilationError, SymbolError, UnexpectedError } from './errors';
 import TokenStream from './tokenStream';
 import { LexerResult } from './types';
+import validateTree from '../tree/validator';
 
 const parseFile = (
   filename: string,
@@ -17,6 +18,7 @@ const parseFile = (
     const parseResult = getParserRule('Root').parse(stream, symbolTable, {
       name: filename,
     }) as Tree;
+    validateTree(parseResult);
     return new ParseFileResult(filename, parseResult, symbolTable);
   } catch (e: unknown) {
     if (e instanceof CompilationError) {

@@ -1,12 +1,16 @@
+import { CompilationError } from '../../../../compiler/errors';
 import { check, matchAndMove } from '../../../../compiler/rulesHelper';
 import TokenStream from '../../../../compiler/tokenStream';
 import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
 import { getParserRule } from '../../../../parser/parserRuleFactory';
 import Symbols from '../../../../symbols';
 import { Tree } from '../../../../tree';
+import { NumberNode } from '../../../nodes/NumberNode';
 import ParenNode from '../../../nodes/ParenNode';
+import StringNode from '../../../nodes/StringNode';
 import TermNode from '../../../nodes/TermNode';
 import UMinusNode from '../../../nodes/UMinusNode';
+import VariableNode from '../../../nodes/VariableNode';
 import { factors } from '../../../parserConfig';
 import tokens from '../../../tokens';
 
@@ -45,9 +49,38 @@ class FactorRule implements IParserRule {
         undefined
       );
     }
+    if (!check(factors, tokenStream.current())) {
+      throw new CompilationError(
+        `Expected String, Number, Variable but found ${
+          tokenStream.current().text
+        }`,
+        tokenStream.current().line,
+        tokenStream.current().col,
+        tokenStream.current().filename
+      );
+    }
 
-    matchAndMove(factors, tokenStream);
-    return new TermNode(tokenStream.prev().text, undefined);
+    if (check(tokens.String, tokenStream.current())) {
+      matchAndMove(tokens.String, tokenStream);
+      return new TermNode(
+        tokenStream.prev().text,
+        new StringNode(tokenStream.prev().text)
+      );
+    }
+
+    if (check(tokens.Number, tokenStream.current())) {
+      matchAndMove(tokens.Number, tokenStream);
+      return new TermNode(
+        tokenStream.prev().text,
+        new NumberNode(tokenStream.prev().text)
+      );
+    }
+    throw new CompilationError(
+      `Expected String, Number but found ${tokenStream.current().text}`,
+      tokenStream.current().line,
+      tokenStream.current().col,
+      tokenStream.current().filename
+    );
   }
 }
 

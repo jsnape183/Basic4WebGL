@@ -11,7 +11,7 @@ import tokens from '../../../tokens';
 class SubtractRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
     const term = data?.term;
-    matchAndMove(tokens.Add, tokenStream);
+    matchAndMove(tokens.Subtract, tokenStream);
     const secondary = getParserRule('Term').parse(
       tokenStream,
       symbolTable,

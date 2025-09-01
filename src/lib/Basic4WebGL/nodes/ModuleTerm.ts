@@ -1,5 +1,5 @@
 import { Tree } from '../../tree';
-import ObjectType from '../builtInTypes/ObjectType';
+import ObjectType from '../builtInTypes/definitions/ObjectType';
 import nodeTypes from '../nodeTypes';
 import { Symbol } from '../../symbols';
 

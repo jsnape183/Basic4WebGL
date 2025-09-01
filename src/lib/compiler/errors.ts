@@ -28,10 +28,10 @@ export class UnexpectedError extends Error {
 }
 
 export class SemanticTypeError extends Error {
-  constructor(expectedTypes: BuiltInType[], actualType: BuiltInType) {
+  constructor(expectedTypes: string[], actualType: BuiltInType) {
     super(
       `Semantic Error: Expected type(s) ${expectedTypes
-        .map((t) => t.name)
+        .map((t) => t)
         .join(', ')} but got ${actualType.name}`
     );
   }

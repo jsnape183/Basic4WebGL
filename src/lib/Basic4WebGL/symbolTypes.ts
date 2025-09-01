@@ -1,6 +1,6 @@
 import { Symbol, SymbolScope } from '../symbols';
 import builtInTypes from './builtInTypes';
-import ObjectType from './builtInTypes/ObjectType';
+import ObjectType from './builtInTypes/definitions/ObjectType';
 
 export const scopeTypes = {
   Globals: '',
