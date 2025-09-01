@@ -1,7 +1,7 @@
-import { CompilationError, SemanticTypeError } from '../../compiler/errors';
-import { Tree } from '../../tree';
-import IValidatable from '../../tree/IValidatable';
-import { Symbol } from '../../symbols';
+import { CompilationError, SemanticTypeError } from '@CompilerLib/errors';
+import { Tree } from '@CompilerLib/tree';
+import IValidatable from '@CompilerLib/tree/IValidatable';
+import { Symbol } from '@CompilerLib/symbols';
 
 class BaseAssignableValidatorNode extends Tree implements IValidatable {
   validate(): void {

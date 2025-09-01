@@ -1,7 +1,7 @@
-import { useSelector } from "react-redux";
-import { RootState } from "../store";
-import { IFile } from "../features/files/filesSlice";
-import { ProjectFile } from "../lib/compiler/types";
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { IFile } from '../features/files/filesSlice';
+import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 
 type BuildProject = {
   lib: Array<ProjectFile>;

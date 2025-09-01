@@ -1,7 +1,7 @@
-import { getBuiltInType } from '../../builtInTypes/builtInTypeFactory';
-import { SemanticTypeError } from '../../compiler/errors';
-import { Tree } from '../../tree';
-import IValidatable from '../../tree/IValidatable';
+import { getBuiltInType } from '@CompilerLib/builtInTypes/builtInTypeFactory';
+import { SemanticTypeError } from '@CompilerLib/errors';
+import { Tree } from '@CompilerLib/tree';
+import IValidatable from '@CompilerLib/tree/IValidatable';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 

@@ -1,4 +1,4 @@
-import { Symbol, SymbolScope } from '../symbols';
+import { Symbol, SymbolScope } from '@CompilerLib/symbols';
 import builtInTypes from './builtInTypes';
 import ObjectType from './builtInTypes/definitions/ObjectType';
 

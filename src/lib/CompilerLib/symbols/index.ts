@@ -1,5 +1,5 @@
-import BuiltInType from '../builtInTypes';
-import { SymbolError } from '../compiler/errors';
+import BuiltInType from '../CompilerLib/builtInTypes';
+import { SymbolError } from '../errors';
 
 export class SymbolScope {
   public name: string = '';

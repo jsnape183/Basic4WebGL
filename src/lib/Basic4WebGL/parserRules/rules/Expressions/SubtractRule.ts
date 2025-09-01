@@ -1,11 +1,13 @@
-import { matchAndMove } from '../../../../compiler/rulesHelper';
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import SubtractNode from '../../../nodes/SubtractNode';
-import tokens from '../../../tokens';
+import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import SubtractNode from '@Basic4WebGL/nodes/SubtractNode';
+import tokens from '@Basic4WebGL/tokens';
 
 @RegisterParserRule('Subtract')
 class SubtractRule implements IParserRule {

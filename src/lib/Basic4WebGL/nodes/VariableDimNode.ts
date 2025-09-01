@@ -1,4 +1,4 @@
-import { Tree } from '../../tree';
+import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../nodeTypes';
 
 class VariableDimNode extends Tree {

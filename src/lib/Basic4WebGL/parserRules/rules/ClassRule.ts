@@ -1,11 +1,13 @@
-import { matchAndMove } from '../../../compiler/rulesHelper';
-import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
-import Symbols from '../../../symbols';
-import { Tree } from '../../../tree';
+import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
 import { scopeTypes, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
-import { CompilationError } from '../../../compiler/errors';
+import { CompilationError } from '@CompilerLib/errors';
 import EmptyNode from '../../nodes/EmptyNode';
 
 @RegisterParserRule('Class')

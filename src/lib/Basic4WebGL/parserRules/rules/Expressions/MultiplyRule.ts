@@ -1,11 +1,13 @@
-import { matchAndMove } from '../../../../compiler/rulesHelper';
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import MultiplyNode from '../../../nodes/MultiplyNode';
-import tokens from '../../../tokens';
+import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import MultiplyNode from '@Basic4WebGL/nodes/MultiplyNode';
+import tokens from '@Basic4WebGL/tokens';
 
 @RegisterParserRule('Multiply')
 class MultiplyRule implements IParserRule {

@@ -1,11 +1,11 @@
-import Token from "../lexer/Token";
+import Token from './Token';
 
-const eof = { token: { name: "EndOfFile", value: 0, stripped: false } };
+const eof = { token: { name: 'EndOfFile', value: 0, stripped: false } };
 
 const generateEof = (tokens: Array<Token>): Token => {
   const { line, col, filename } = tokens[tokens.length - 1];
 
-  return new Token(eof.token, "", line, col, filename);
+  return new Token(eof.token, '', line, col, filename);
 };
 
 export class TokenStream {

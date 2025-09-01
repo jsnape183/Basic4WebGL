@@ -1,8 +1,8 @@
 import {
   IGeneratable,
   RegisterTranspilerRule,
-} from '../../../../transpiler/IGeneratable';
-import { Tree } from '../../../../tree';
+} from '@CompilerLib/transpiler/IGeneratable';
+import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
 

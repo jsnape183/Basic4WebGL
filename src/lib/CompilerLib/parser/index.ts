@@ -1,11 +1,11 @@
-import Token from '../lexer/Token';
-import ParserResults, { ParseFileResult } from '../parser/parserResults';
-import { getParserRule } from '../parser/parserRuleFactory';
+import Token from '../lexer/tokens/Token';
+import ParserResults, { ParseFileResult } from './ParserResults';
+import { getParserRule } from './parserRuleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
-import { CompilationError, SymbolError, UnexpectedError } from './errors';
-import TokenStream from './tokenStream';
-import { LexerResult } from './types';
+import { CompilationError, UnexpectedError } from '../errors';
+import TokenStream from '../lexer/tokens/tokenStream';
+import { LexerResult } from '../lexer';
 import validateTree from '../tree/validator';
 
 const parseFile = (

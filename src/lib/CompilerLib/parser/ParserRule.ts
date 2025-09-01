@@ -1,4 +1,4 @@
-import TokenStream from '../compiler/tokenStream';
+import TokenStream from '../lexer/tokens/tokenStream';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
 import { addParserRule } from './parserRuleFactory';

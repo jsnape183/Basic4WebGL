@@ -1,14 +1,14 @@
 import TokenResolver from './TokenResolver';
-import { CompilerProject } from '../compiler/types';
-import lexer from '../compiler/Lexer';
-import parser from '../compiler/parser';
+import { CompilerProject } from '@CompilerLib/compiler/types';
+import lexer from '@CompilerLib/lexer';
+import parser from '@CompilerLib/parser';
 import transpilerRules from './transpilerRules';
-import Transpiler from '../transpiler';
-import Symbols, { SymbolScope } from '../symbols';
+import Transpiler from '@CompilerLib/transpiler';
+import Symbols, { SymbolScope } from '@CompilerLib/symbols';
 import './parserRules';
 import './builtInTypes';
 import { isMatchingType } from './transpilerRules/symbolRules';
-import { getBuiltInType } from '../builtInTypes/builtInTypeFactory';
+import { getBuiltInType } from '@CompilerLib/builtInTypes/builtInTypeFactory';
 import builtInTypes from './builtInTypes';
 
 const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);

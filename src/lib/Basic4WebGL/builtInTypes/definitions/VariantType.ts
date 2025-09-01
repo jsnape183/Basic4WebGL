@@ -1,5 +1,4 @@
-import { RegisterBuiltInType } from '../../../builtInTypes';
-import BuiltInType from '../../../builtInTypes';
+import BuiltInType, { RegisterBuiltInType } from '@CompilerLib/builtInTypes';
 
 @RegisterBuiltInType('Variant')
 class VariantType extends BuiltInType {

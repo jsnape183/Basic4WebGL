@@ -1,7 +1,7 @@
-import Token from '../lexer/Token';
-import TokenStream from './tokenStream';
-import { TokenMatch } from '../lexer/Token';
-import { CompilationError } from './errors';
+import Token from '../lexer/tokens/Token';
+import TokenStream from '../lexer/tokens/tokenStream';
+import { TokenMatch } from '../lexer/tokens/Token';
+import { CompilationError } from '../errors';
 
 export const checkAny = (
   expected: Array<TokenMatch>,

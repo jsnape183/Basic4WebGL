@@ -1,11 +1,13 @@
-import { check, matchAndMove } from '../../../../compiler/rulesHelper';
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import BoolNode from '../../../nodes/BoolNode';
-import TermNode from '../../../nodes/TermNode';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import BoolNode from '@Basic4WebGL/nodes/BoolNode';
+import TermNode from '@Basic4WebGL/nodes/TermNode';
 import { booleans } from '../../../parserConfig';
 
 @RegisterParserRule('BoolFactor')

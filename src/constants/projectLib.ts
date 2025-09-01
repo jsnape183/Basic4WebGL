@@ -10,7 +10,7 @@ import softGFX, {
 import softString from '../lib/Basic4WebGL/defs/softString';
 import softMath from '../lib/Basic4WebGL/defs/softMath';
 import softArray from '../lib/Basic4WebGL/defs/softArray';
-import { ProjectFile } from '../lib/compiler/types';
+import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 
 export const projectLib: Array<ProjectFile> = [
   { name: 'gfx', source: softGFX },

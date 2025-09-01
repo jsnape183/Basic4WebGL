@@ -1,15 +1,4 @@
-import Token from "../lexer/Token";
-import { TokenMatch } from "../lexer/Token";
-
-export type ProjectFile = {
-  name: string;
-  source: string;
-};
-
-export type CompilerProject = {
-  lib: Array<ProjectFile>;
-  files: Array<ProjectFile>;
-};
+import { TokenMatch } from './Token';
 
 export type TokenResolverRuleResult = {
   match: boolean;
@@ -25,9 +14,4 @@ export type TokenResolverRule = {
 export type TokenResolverConfig = {
   tokenResolver: Array<TokenResolverRule>;
   newLineToken: TokenMatch;
-};
-
-export type LexerResult = {
-  name: string;
-  tokens: Array<Token>;
 };

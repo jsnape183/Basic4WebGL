@@ -1,5 +1,5 @@
 import Symbols from '../symbols';
-import { Tree } from '../tree';
+import { Tree } from '../../tree';
 import { addTranspilerRule } from './transpilerRuleFactory';
 
 export interface IGeneratable {

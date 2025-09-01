@@ -1,6 +1,6 @@
-import { Tree } from '../../tree';
+import { Tree } from '../../CompilerLib/tree';
 import nodeTypes from '../nodeTypes';
-import { Symbol } from '../../symbols';
+import { Symbol } from '@CompilerLib/symbols';
 
 class CloneNode extends Tree {
   constructor(data: any | undefined) {

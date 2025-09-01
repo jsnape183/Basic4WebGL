@@ -1,11 +1,15 @@
-import Token, { TokenMatch } from '../lexer/Token';
-import { CompilationError } from './errors';
+import Token, { TokenMatch } from './tokens/Token';
+import { CompilationError } from '../errors';
+import { CompilerProject } from '../compiler/types';
 import {
-  CompilerProject,
-  LexerResult,
   TokenResolverConfig,
   TokenResolverRuleResult,
-} from './types';
+} from './tokens/TokenResolverRule';
+
+export type LexerResult = {
+  name: string;
+  tokens: Array<Token>;
+};
 
 const lexFile = (
   filename: string,

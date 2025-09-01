@@ -1,18 +1,19 @@
-import { CompilationError } from '../../../../compiler/errors';
-import { check, matchAndMove } from '../../../../compiler/rulesHelper';
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import { NumberNode } from '../../../nodes/NumberNode';
-import ParenNode from '../../../nodes/ParenNode';
-import StringNode from '../../../nodes/StringNode';
-import TermNode from '../../../nodes/TermNode';
-import UMinusNode from '../../../nodes/UMinusNode';
-import VariableNode from '../../../nodes/VariableNode';
+import { CompilationError } from '@CompilerLib/errors';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import { NumberNode } from '@Basic4WebGL/nodes/NumberNode';
+import ParenNode from '@Basic4WebGL/nodes/ParenNode';
+import StringNode from '@Basic4WebGL/nodes/StringNode';
+import TermNode from '@Basic4WebGL/nodes/TermNode';
+import UMinusNode from '@Basic4WebGL/nodes/UMinusNode';
 import { factors } from '../../../parserConfig';
-import tokens from '../../../tokens';
+import tokens from '@Basic4WebGL/tokens';
 
 @RegisterParserRule('Factor')
 class FactorRule implements IParserRule {

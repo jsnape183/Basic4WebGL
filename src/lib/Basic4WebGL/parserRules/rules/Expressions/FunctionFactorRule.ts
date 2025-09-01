@@ -1,9 +1,11 @@
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import FunctionTermNode from '../../../nodes/FunctionTermNode';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import FunctionTermNode from '@Basic4WebGL/nodes/FunctionTermNode';
 
 @RegisterParserRule('FunctionFactor')
 class FunctionFactorRule implements IParserRule {

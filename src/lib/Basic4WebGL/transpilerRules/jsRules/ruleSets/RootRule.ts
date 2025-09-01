@@ -1,10 +1,10 @@
-import Symbols from '../../../../symbols';
+import Symbols from '@CompilerLib/symbols';
 import {
   IGeneratable,
   RegisterTranspilerRule,
-} from '../../../../transpiler/IGeneratable';
-import { getTranspilerRule } from '../../../../transpiler/transpilerRuleFactory';
-import { Tree } from '../../../../tree';
+} from '@CompilerLib/transpiler/IGeneratable';
+import { getTranspilerRule } from '@CompilerLib/transpiler/transpilerRuleFactory';
+import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { formatRoot } from '../helpers/transpilerHelpers';
 

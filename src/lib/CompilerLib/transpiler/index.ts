@@ -1,4 +1,4 @@
-import ParserResults from '../parser/parserResults';
+import ParserResults from '../parser/ParserResults';
 import Symbols, { SymbolScope } from '../symbols';
 import { getTranspilerRule } from './transpilerRuleFactory';
 import { TranspilerConfig } from './types';

@@ -1,5 +1,5 @@
-import { getBuiltInType } from '../../builtInTypes/builtInTypeFactory';
-import { Tree } from '../../tree';
+import { getBuiltInType } from '@CompilerLib/builtInTypes/builtInTypeFactory';
+import { Tree } from '@CompilerLib/tree';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 import BaseBooleanArthrmaticValidatorNode from '../validators/BaseBooleanArithmaticValidatorNode';

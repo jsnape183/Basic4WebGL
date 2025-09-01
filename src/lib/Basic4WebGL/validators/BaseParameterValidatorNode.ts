@@ -1,6 +1,6 @@
-import { SemanticError } from '../../compiler/errors';
-import { Tree } from '../../tree';
-import IValidatable from '../../tree/IValidatable';
+import { SemanticError } from '@CompilerLib/errors';
+import { Tree } from '@CompilerLib/tree';
+import IValidatable from '@CompilerLib/tree/IValidatable';
 import { FunctionSymbol } from '../symbolTypes';
 
 class BaseParameterValidatorNode extends Tree implements IValidatable {

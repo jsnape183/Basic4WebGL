@@ -1,7 +1,9 @@
-import { matchAndMove } from '../../../compiler/rulesHelper';
-import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
-import { Tree } from '../../../tree';
+import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { Tree } from '@CompilerLib/tree';
 import tokens from '../../tokens';
 import EmptyNode from '../../nodes/EmptyNode';
 

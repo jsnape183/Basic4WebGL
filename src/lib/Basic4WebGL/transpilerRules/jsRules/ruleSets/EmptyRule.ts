@@ -1,7 +1,7 @@
 import {
   IGeneratable,
   RegisterTranspilerRule,
-} from '../../../../transpiler/IGeneratable';
+} from '@CompilerLib/transpiler/IGeneratable';
 import nodeTypes from '../../../nodeTypes';
 
 @RegisterTranspilerRule(nodeTypes.Empty)

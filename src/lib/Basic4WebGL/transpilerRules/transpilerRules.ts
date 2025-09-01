@@ -1,6 +1,6 @@
 import nodeTypes from '../nodeTypes';
 import { scopeTypes, symbolTypes } from '../symbolTypes';
-import { Tree } from '../../tree';
+import { Tree } from '../../CompilerLib/tree';
 import Symbols, { Symbol } from '../../symbols';
 
 const doChild = (

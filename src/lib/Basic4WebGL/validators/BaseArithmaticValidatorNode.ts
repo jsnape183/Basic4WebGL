@@ -1,6 +1,6 @@
-import { SemanticTypeError } from '../../compiler/errors';
-import { Tree } from '../../tree';
-import IValidatable from '../../tree/IValidatable';
+import { SemanticTypeError } from '@CompilerLib/errors';
+import { Tree } from '@CompilerLib/tree';
+import IValidatable from '@CompilerLib/tree/IValidatable';
 
 class BaseArithmaticValidatorNode extends Tree implements IValidatable {
   validate(): void {

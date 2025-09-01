@@ -1,8 +1,10 @@
-import { check, matchAndMove } from '../../../compiler/rulesHelper';
-import TokenStream from '../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../parser/ParserRule';
-import Symbols from '../../../symbols';
-import { Tree } from '../../../tree';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
 import { symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import VariableListNode from '../../nodes/VariableLIstNode';

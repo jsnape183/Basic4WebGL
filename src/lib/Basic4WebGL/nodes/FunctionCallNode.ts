@@ -1,7 +1,7 @@
-import { Tree } from '../../tree';
+import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../nodeTypes';
 import BaseParameterValidatorNode from '../validators/BaseParameterValidatorNode';
-import { Symbol } from '../../symbols';
+import { Symbol } from '@CompilerLib/symbols';
 
 class FunctionCallNode extends BaseParameterValidatorNode {
   constructor(data: any | undefined, children: Tree) {

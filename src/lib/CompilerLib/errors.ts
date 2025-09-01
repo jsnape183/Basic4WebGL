@@ -1,4 +1,4 @@
-import BuiltInType from '../builtInTypes';
+import BuiltInType from './builtInTypes';
 
 export class CompilationError extends Error {
   constructor(message: string) {

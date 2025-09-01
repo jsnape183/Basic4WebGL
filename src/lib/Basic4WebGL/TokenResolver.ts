@@ -4,12 +4,12 @@ import {
   matchAll,
   matchString,
   matchPattern,
-} from '../compiler/resolverHelpers';
+} from '../CompilerLib/lexer/resolverHelpers';
 import {
   TokenResolverConfig,
   TokenResolverRule,
   TokenResolverRuleResult,
-} from '../compiler/types';
+} from '../CompilerLib/lexer/tokens/TokenResolverRule';
 
 export const tokenResolver: Array<TokenResolverRule> = [
   {

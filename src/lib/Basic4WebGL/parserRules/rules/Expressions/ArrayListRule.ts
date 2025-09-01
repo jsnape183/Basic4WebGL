@@ -1,11 +1,13 @@
-import { check, matchAndMove } from '../../../../compiler/rulesHelper';
-import TokenStream from '../../../../compiler/tokenStream';
-import IParserRule, { RegisterParserRule } from '../../../../parser/ParserRule';
-import { getParserRule } from '../../../../parser/parserRuleFactory';
-import Symbols from '../../../../symbols';
-import { Tree } from '../../../../tree';
-import ArrayListNode from '../../../nodes/ArrayListNode';
-import tokens from '../../../tokens';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
+import IParserRule, {
+  RegisterParserRule,
+} from '@CompilerLib/parser/ParserRule';
+import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
+import Symbols from '@CompilerLib/symbols';
+import { Tree } from '@CompilerLib/tree';
+import ArrayListNode from '@Basic4WebGL/nodes/ArrayListNode';
+import tokens from '@Basic4WebGL/tokens';
 
 @RegisterParserRule('ArrayList')
 class ArrayListRule implements IParserRule {

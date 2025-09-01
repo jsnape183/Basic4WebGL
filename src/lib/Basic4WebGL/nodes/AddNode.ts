@@ -1,4 +1,4 @@
-import { Tree } from '../../tree';
+import { Tree } from '@CompilerLib/tree';
 import BaseArithmaticValidatorNode from '../validators/BaseArithmaticValidatorNode';
 import nodeTypes from '../nodeTypes';
 

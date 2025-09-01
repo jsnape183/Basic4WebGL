@@ -1,5 +1,5 @@
-import Symbols from "../symbols";
-import { Tree } from "../tree";
+import Symbols from '../symbols';
+import { Tree } from '../tree';
 
 export class ParseFileResult {
   public name: string;

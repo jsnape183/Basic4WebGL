@@ -1,7 +1,7 @@
 import { scopeTypes, symbolTypes } from '../../../symbolTypes';
-import { Tree } from '../../../../tree';
-import Symbols, { Symbol } from '../../../../symbols';
-import { getTranspilerRule } from '../../../../transpiler/transpilerRuleFactory';
+import { Tree } from '@CompilerLib/tree';
+import Symbols, { Symbol } from '@CompilerLib/symbols';
+import { getTranspilerRule } from '@CompilerLib/transpiler/transpilerRuleFactory';
 
 export const doChild = (
   node: Tree,
