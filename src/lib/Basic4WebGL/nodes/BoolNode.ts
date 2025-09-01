@@ -6,7 +6,7 @@ import nodeTypes from '../nodeTypes';
 class BoolNode extends Tree {
   constructor(data: any | undefined) {
     super(nodeTypes.String, data, []);
-    this.dataType = getBuiltInType(builtInTypes.String);
+    this.dataType = getBuiltInType(builtInTypes.Boolean);
   }
 }
 

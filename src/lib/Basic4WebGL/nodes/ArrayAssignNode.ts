@@ -1,3 +1,4 @@
+import { getBuiltInType } from '../../builtInTypes/builtInTypeFactory';
 import { Tree } from '../../tree';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
@@ -6,7 +7,7 @@ import BaseAssignableValidatorNode from '../validators/BaseAssignableValidatorNo
 class ArrayAssignNode extends BaseAssignableValidatorNode {
   constructor(data: any | undefined, children: Tree[]) {
     super(nodeTypes.ArrayAssign, data, children);
-    this.dataType = builtInTypes.Variant;
+    this.dataType = getBuiltInType(builtInTypes.Variant);
   }
 }
 

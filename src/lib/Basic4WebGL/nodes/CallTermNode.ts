@@ -1,11 +1,23 @@
+import { getBuiltInType } from '../../builtInTypes/builtInTypeFactory';
+import { SemanticTypeError } from '../../compiler/errors';
 import { Tree } from '../../tree';
+import IValidatable from '../../tree/IValidatable';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 
-class CallTermNode extends Tree {
+class CallTermNode extends Tree implements IValidatable {
   constructor(data: any | undefined, children: Tree) {
     super(nodeTypes.CallTerm, data, children);
-    this.dataType = builtInTypes.Variant;
+    this.dataType = getBuiltInType(builtInTypes.Variant);
+  }
+
+  validate(): void {
+    if (this.children[0].dataType != getBuiltInType(builtInTypes.String)) {
+      throw new SemanticTypeError(
+        getBuiltInType(builtInTypes.String).acceptsTypes,
+        this.children[0].dataType
+      );
+    }
   }
 }
 
