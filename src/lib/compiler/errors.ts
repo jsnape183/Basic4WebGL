@@ -1,20 +1,16 @@
 import BuiltInType from '../builtInTypes';
 
 export class CompilationError extends Error {
-  public line: number;
-  public col: number;
-
-  constructor(message: string, line: number, col: number, filename: string) {
-    super(`Parse Error in ${filename} - ${message} at ${line}:${col}`);
+  constructor(message: string) {
+    super(message);
     this.name = 'CompilatonError';
-    this.line = line;
-    this.col = col;
   }
 }
 
 export class SymbolError extends Error {
   constructor(message: string) {
     super(message);
+    this.name = 'SymbolError';
   }
 }
 
@@ -23,6 +19,7 @@ export class UnexpectedError extends Error {
   constructor(error: Error) {
     super(`An unexpected error occured with the message ${error.name} "${error.message}"
       Stack Trace ${error?.stack}}`);
+    this.name = 'UnexpectedError';
     this.innerError = error;
   }
 }
@@ -34,11 +31,13 @@ export class SemanticTypeError extends Error {
         .map((t) => t)
         .join(', ')} but got ${actualType.name}`
     );
+    this.name = 'SemanticTypeError';
   }
 }
 
 export class SemanticError extends Error {
   constructor(message: string) {
     super(message);
+    this.name = 'SemanticError';
   }
 }

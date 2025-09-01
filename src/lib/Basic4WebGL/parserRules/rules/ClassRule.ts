@@ -13,10 +13,7 @@ class ClassRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     if (tokenStream.current().line !== 1) {
       throw new CompilationError(
-        'Class declaration must appear at the top of the file',
-        tokenStream.current().line,
-        tokenStream.current().col,
-        tokenStream.current().filename
+        'Class declaration must appear at the top of the file'
       );
     }
 

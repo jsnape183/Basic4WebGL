@@ -21,18 +21,14 @@ const parseFile = (
     validateTree(parseResult);
     return new ParseFileResult(filename, parseResult, symbolTable);
   } catch (e: unknown) {
-    if (e instanceof CompilationError) {
-      throw e;
+    if (e instanceof UnexpectedError) {
+      throw new UnexpectedError(e as Error);
     }
-    if (e instanceof SymbolError) {
-      throw new CompilationError(
-        e.message,
-        stream.current().line,
-        stream.current().col,
-        filename
-      );
-    }
-    throw new UnexpectedError(e as Error);
+    throw new CompilationError(
+      `Compilation Error - ${(e as Error).message} occurred at ${
+        stream.current().line
+      }:${stream.current().col} in ${filename}`
+    );
   }
 };
 

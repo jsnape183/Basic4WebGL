@@ -53,10 +53,7 @@ class FactorRule implements IParserRule {
       throw new CompilationError(
         `Expected String, Number, Variable but found ${
           tokenStream.current().text
-        }`,
-        tokenStream.current().line,
-        tokenStream.current().col,
-        tokenStream.current().filename
+        }`
       );
     }
 
@@ -76,10 +73,7 @@ class FactorRule implements IParserRule {
       );
     }
     throw new CompilationError(
-      `Expected String, Number but found ${tokenStream.current().text}`,
-      tokenStream.current().line,
-      tokenStream.current().col,
-      tokenStream.current().filename
+      `Expected String, Number but found ${tokenStream.current().text}`
     );
   }
 }

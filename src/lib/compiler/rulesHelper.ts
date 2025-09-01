@@ -1,7 +1,7 @@
-import Token from "../lexer/Token";
-import TokenStream from "./tokenStream";
-import { TokenMatch } from "../lexer/Token";
-import { CompilationError } from "./errors";
+import Token from '../lexer/Token';
+import TokenStream from './tokenStream';
+import { TokenMatch } from '../lexer/Token';
+import { CompilationError } from './errors';
 
 export const checkAny = (
   expected: Array<TokenMatch>,
@@ -14,10 +14,7 @@ export const matchAny = (expected: Array<TokenMatch>, actual: Token): void => {
   const result = checkAny(expected, actual);
   if (!result) {
     throw new CompilationError(
-      `Expected ${expected.map((e) => e.name).join()} got ${actual.token.name}`,
-      actual.line,
-      actual.col,
-      actual.filename
+      `Expected ${expected.map((e) => e.name).join()} got ${actual.token.name}`
     );
   }
 };
@@ -34,10 +31,7 @@ export const check = (
 export const match = (expected: TokenMatch, actual: Token) => {
   if (!check(expected, actual)) {
     throw new CompilationError(
-      `Expected ${expected.name} got ${actual.token.name}`,
-      actual.line,
-      actual.col,
-      actual.filename
+      `Expected ${expected.name} got ${actual.token.name}`
     );
   }
 

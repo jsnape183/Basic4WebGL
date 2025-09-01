@@ -29,10 +29,7 @@ const lexFile = (
     }
     if (!match.match) {
       throw new CompilationError(
-        `Unexpected token ${currentStream.substring(0, 1)}`,
-        line,
-        currentPos,
-        filename
+        `Unexpected token ${currentStream.substring(0, 1)}`
       );
     }
     currentPos += match.position;
