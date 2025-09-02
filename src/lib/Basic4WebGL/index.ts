@@ -1,7 +1,7 @@
 import TokenResolver from './TokenResolver';
 import { CompilerProject } from '@CompilerLib/compiler/types';
-import lexer from '@CompilerLib/lexer';
 import parser from '@CompilerLib/parser';
+import lexer from '@CompilerLib/lexer';
 import transpilerRules from './transpilerRules';
 import Transpiler from '@CompilerLib/transpiler';
 import Symbols, { SymbolScope } from '@CompilerLib/symbols';

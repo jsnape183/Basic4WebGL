@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": "src", // or "./" depending on where your root folder is
+    "paths": {
+      "@CompilerLib/*": ["lib/CompilerLib/*"],
+      "@Basic4WebGL/*": ["lib/Basic4WebGL/*"]
+    },
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",

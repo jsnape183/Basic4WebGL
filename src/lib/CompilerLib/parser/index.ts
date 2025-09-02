@@ -32,7 +32,7 @@ const parseFile = (
   }
 };
 
-export const parse = (tokens: Array<LexerResult>, symbolTable: Symbols) => {
+export const parser = (tokens: Array<LexerResult>, symbolTable: Symbols) => {
   const parseResult = new ParserResults(symbolTable);
 
   tokens.forEach((tokenSet) => {
@@ -45,4 +45,4 @@ export const parse = (tokens: Array<LexerResult>, symbolTable: Symbols) => {
   return parseResult;
 };
 
-export default parse;
+export default parser;
