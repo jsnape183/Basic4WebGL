@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "types": ["node"],
-    "baseUrl": "src", // or "./" depending on where your root folder is
+    "baseUrl": ".", // or "./" depending on where your root folder is
     "paths": {
-      "@CompilerLib/*": ["lib/CompilerLib/*"],
-      "@Basic4WebGL/*": ["lib/Basic4WebGL/*"]
+      "@CompilerLib/*": ["src/lib/CompilerLib/*"],
+      "@Basic4WebGL/*": ["src/lib/Basic4WebGL/*"]
     },
     "composite": true,
     "skipLibCheck": true,
@@ -12,5 +12,5 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "src", "tests/**/*.test.ts"]
 }

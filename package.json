@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ci": "vitest run --coverage"
   },
   "imports": {
     "#CompilerLib/*": "./src/CompilerLib/*",
@@ -26,9 +28,6 @@
     "uuid": "11.1.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.3.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -42,7 +41,6 @@
     "eslint": "^9.16.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
-    "jsdom": "^26.1.0",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.16",
     "typescript": "^5.7.2",

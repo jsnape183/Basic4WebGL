@@ -118,49 +118,49 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^print(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^print(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Print,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^call(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^call(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Call,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^dim(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^dim(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Dim,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^class(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^class(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Class,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^as(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^as(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.As,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^function(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^function(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Function,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^return(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^return(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Return,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^endfunction(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^endfunction(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.EndFunction,
     }),
   },
@@ -178,67 +178,67 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^and(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^and(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.And,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^or(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^or(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Or,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^not(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^not(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Not,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^if(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^if(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.If,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^endif(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^endif(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.EndIf,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^while(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^while(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.While,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^endwhile(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^endwhile(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.EndWhile,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^for(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^for(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.For,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^next(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^next(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Next,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^in(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^in(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.In,
     }),
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^to(?=[ \r\n]|[^a-zA-Z0-9]|$)/),
+      ...matchPattern(input, /^to(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.To,
     }),
   },

@@ -16,4 +16,11 @@ export default defineConfig({
       '@Basic4WebGL': resolve(__dirname, './src/lib/Basic4WebGL'),
     },
   },
+  test: {
+    globals: true, // so you can use test/expect/describe without imports
+    environment: 'node', // or 'jsdom' if needed
+    //setupFiles: './vitest.setup.ts', // optional
+    include: ['tests/**/*.{test,spec}.ts'],
+    // coverage: { reporter: ['text', 'html'] },
+  },
 });

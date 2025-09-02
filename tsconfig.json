@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "types": ["node"],
-    "baseUrl": "src", // or "./" depending on where your root folder is
+    "types": ["node", "vitest/globals"],
+    "baseUrl": ".", // or "./" depending on where your root folder is
     "paths": {
-      "@CompilerLib/*": ["lib/CompilerLib/*"],
-      "@Basic4WebGL/*": ["lib/Basic4WebGL/*"]
+      "@CompilerLib/*": ["src/lib/CompilerLib/*"],
+      "@Basic4WebGL/*": ["src/lib/Basic4WebGL/*"]
     },
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -27,6 +27,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "tests/**/*.test.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
