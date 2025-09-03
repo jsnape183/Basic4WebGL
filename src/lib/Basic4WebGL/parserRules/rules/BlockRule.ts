@@ -7,6 +7,7 @@ import Symbols from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import BlockNode from '../../nodes/BlockNode';
+import { TokenMatch } from '@CompilerLib/lexer/tokens/Token';
 
 @RegisterParserRule('Block')
 class BlockRule implements IParserRule {

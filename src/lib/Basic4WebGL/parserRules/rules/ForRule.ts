@@ -21,7 +21,7 @@ class ForRule implements IParserRule {
     );
     matchAndMove(newLines, tokenStream);
     const block = getParserRule('Block').parse(tokenStream, symbolTable, {
-      endToken: tokens.Next,
+      endTokens: tokens.Next,
     });
     matchAndMove(tokens.Next, tokenStream);
     matchAndMove(newLines, tokenStream);

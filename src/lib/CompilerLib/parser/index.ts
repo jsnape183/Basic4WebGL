@@ -3,7 +3,12 @@ import ParserResults, { ParseFileResult } from './ParserResults';
 import { getParserRule } from './parserRuleFactory';
 import Symbols from '../symbols';
 import { Tree } from '../tree';
-import { CompilationError, UnexpectedError } from '../errors';
+import {
+  CompilationError,
+  SemanticError,
+  SemanticTypeError,
+  UnexpectedError,
+} from '../errors';
 import TokenStream from '../lexer/tokens/tokenStream';
 import { LexerResult } from '../lexer';
 import validateTree from '../tree/validator';
@@ -24,11 +29,18 @@ const parseFile = (
     if (e instanceof UnexpectedError) {
       throw new UnexpectedError(e as Error);
     }
-    throw new CompilationError(
-      `Compilation Error - ${(e as Error).message} occurred at ${
-        stream.current().line
-      }:${stream.current().col} in ${filename}`
-    );
+    if (
+      e instanceof CompilationError ||
+      e instanceof SemanticError ||
+      e instanceof SemanticTypeError
+    ) {
+      throw new CompilationError(
+        `Compilation Error - ${(e as Error).message} occurred at ${
+          stream.current().line
+        }:${stream.current().col} in ${filename}`
+      );
+    }
+    throw e;
   }
 };
 

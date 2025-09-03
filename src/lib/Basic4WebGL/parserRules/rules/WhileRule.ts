@@ -21,7 +21,7 @@ class WhileRule implements IParserRule {
     );
     matchAndMove(newLines, tokenStream);
     const block = getParserRule('Block').parse(tokenStream, symbolTable, {
-      newLines: tokens.EndWhile,
+      endTokens: tokens.EndWhile,
     });
     matchAndMove(tokens.EndWhile, tokenStream);
     matchAndMove(newLines, tokenStream);

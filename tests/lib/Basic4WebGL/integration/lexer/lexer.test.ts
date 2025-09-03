@@ -2,6 +2,7 @@ import { test, expect } from 'vitest';
 import { CompilerProject } from '@CompilerLib/compiler/types';
 import compiler from '@Basic4WebGL/index';
 import tokens from '@Basic4WebGL/tokens';
+import { loadSampleFile } from '../../helpers';
 
 const project: CompilerProject = {
   lib: [],
@@ -9,7 +10,10 @@ const project: CompilerProject = {
 };
 
 test('prints hello world', () => {
-  project.files.push({ name: 'Main.bas', source: 'Print "Hello, World!"' });
+  project.files.push({
+    name: 'Main.bas',
+    source: loadSampleFile('helloworld'),
+  });
   const result = compiler.lexOnly(project);
   expect(result).toBeDefined();
   expect(result.length).toBe(1);

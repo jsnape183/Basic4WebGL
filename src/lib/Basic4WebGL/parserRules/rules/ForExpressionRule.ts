@@ -17,7 +17,7 @@ class ForExpressionRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
-    symbolTable.add(
+    const forSymbol = symbolTable.add(
       name,
       symbolTypes.Variable,
       symbolTable.getScope(),
@@ -41,7 +41,7 @@ class ForExpressionRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new ToNode(name, [startExpr, endExpr]);
+    return new ToNode(forSymbol, [startExpr, endExpr]);
   }
 }
 

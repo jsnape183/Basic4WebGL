@@ -2,16 +2,18 @@ import { test, expect } from 'vitest';
 import { CompilerProject } from '@CompilerLib/compiler/types';
 import compiler from '@Basic4WebGL/index';
 import mockHelloWorld from './mocks/mockHelloWorld';
+import { loadSampleFile, rawObject } from '../../helpers';
 
 const project: CompilerProject = {
   lib: [],
   files: [],
 };
 
-const rawObject = (object: any) => JSON.parse(JSON.stringify(object));
-
 test('prints hello world', () => {
-  project.files.push({ name: 'Main.bas', source: 'Print "Hello, World!"' });
+  project.files.push({
+    name: 'Main.bas',
+    source: loadSampleFile('helloworld'),
+  });
   const result = compiler.parse(project);
   expect(result).toBeDefined();
   expect(result.symbolTable).toBeDefined();

@@ -16,7 +16,7 @@ class ModuleRule implements IParserRule {
     symbolTable: Symbols,
     data: any | undefined
   ): Tree {
-    const name = data?.name;
+    const name = data as string;
     matchAndMove(tokens.Dot, tokenStream);
     symbolTable.setScope(name);
     matchAndMove(tokens.Variable, tokenStream);

@@ -78,8 +78,7 @@ export const lexer = {
       });
     }
 
-    project.files.forEach((f, i) => {
-      if (i == 0) return;
+    project.files.forEach((f) => {
       tokens.push({
         name: f.name.replace('.bas', '').toLowerCase(),
         tokens: lexFile(f.name, f.source, tokenResolverConfig).filter(
@@ -87,19 +86,6 @@ export const lexer = {
         ),
       });
     });
-
-    const main = lexFile(
-      project.files[0].name,
-      project.files[0].source,
-      tokenResolverConfig
-    );
-
-    if (main && main.length > 0) {
-      tokens.push({
-        name: 'main',
-        tokens: main.filter((t) => !t.token.stripped),
-      });
-    }
 
     return tokens;
   },

@@ -16,7 +16,7 @@ class FunctionCallRule implements IParserRule {
     symbolTable: Symbols,
     data: any | undefined
   ): Tree {
-    const functionSymbol = data?.functionSymbol as Symbol;
+    const functionSymbol = data as Symbol;
     const expressions = getParserRule('ExpressionList').parse(
       tokenStream,
       symbolTable,

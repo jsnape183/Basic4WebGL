@@ -20,11 +20,9 @@ class IfRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    const block = getParserRule('Block').parse(
-      tokenStream,
-      symbolTable,
-      tokens.EndIf
-    );
+    const block = getParserRule('Block').parse(tokenStream, symbolTable, {
+      endTokens: tokens.EndIf,
+    });
     matchAndMove(tokens.EndIf, tokenStream);
     matchAndMove(newLines, tokenStream);
 

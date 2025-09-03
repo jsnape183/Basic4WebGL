@@ -10,9 +10,15 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.To)
 class ToRule implements IGeneratable {
   generate(node: Tree, table: Symbols): string {
-    return `${formatSymbol(node.data)} = ${doChild(node, 0, table)}; ${
-      node.data
-    } <= ${doChild(node, 1, table)}; ${node.data}++`;
+    return `${formatSymbol(node.data)} = ${doChild(
+      node,
+      0,
+      table
+    )}; ${formatSymbol(node.data)} <= ${doChild(
+      node,
+      1,
+      table
+    )}; ${formatSymbol(node.data)}++`;
   }
 }
 
