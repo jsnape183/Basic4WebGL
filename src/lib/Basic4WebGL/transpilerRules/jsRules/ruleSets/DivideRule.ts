@@ -12,7 +12,7 @@ class DivideRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
     const left = doChild(node, 0, table);
     const right = doChild(node, 1, table);
-    return `${left}-${right}`;
+    return `${left}/${right}`;
   }
 }
 

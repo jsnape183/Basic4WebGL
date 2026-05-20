@@ -11,7 +11,7 @@ class PrintNode extends Tree implements IValidatable {
   }
   validate(): void {
     if (
-      getBuiltInType(builtInTypes.String).canAccept(
+      getBuiltInType(builtInTypes.Variant).canAccept(
         this.children[0].dataType
       ) === false
     ) {

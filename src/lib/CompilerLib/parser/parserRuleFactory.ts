@@ -10,6 +10,10 @@ export const getParserRule = (key: string): IParserRule => {
   return parserRules[key];
 };
 
+export const hasParserRule = (key: string): boolean => {
+  return key in parserRules;
+};
+
 export const addParserRule = (key: string, rule: IParserRule) => {
   if (parserRules[key]) {
     throw Error(`Duplicate parse rule ${key} found.`);

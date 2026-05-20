@@ -14,17 +14,20 @@ class ModuleFactorRule implements IParserRule {
     const name = data?.name;
     matchAndMove(tokens.Dot, tokenStream);
     symbolTable.setScope(name);
-    matchAndMove(tokens.Variable, tokenStream);
-    const functionName = tokenStream.prev().text;
-
-    const node = getParserRule('FunctionFactor').parse(
-      tokenStream,
-      symbolTable,
-      {
-        name: functionName,
-      }
-    );
-    symbolTable.clearScope();
+    let node: Tree;
+    try {
+      matchAndMove(tokens.Variable, tokenStream);
+      const functionName = tokenStream.prev().text;
+      node = getParserRule('FunctionFactor').parse(
+        tokenStream,
+        symbolTable,
+        {
+          name: functionName,
+        }
+      );
+    } finally {
+      symbolTable.clearScope();
+    }
     return node;
   }
 }

@@ -5,24 +5,17 @@ export const isMatchingType = (expected: string, actual: string): boolean =>
   expected === actual || (expected === "Variable" && actual === "Parameter");
 
 export const symbolRules = (table: Symbols, scope: SymbolScope): string => {
-  let variables = "";
-  if (scope.name === "") {
-    table
-      .getAll("Variable", scope)
-      .filter((s) => s.type !== symbolTypes.Parameter)
-      .map((s) => `let ${s.scope.name}_${s.name} = null`).join(`;
-        `) +
-      `;
-     `;
+  if (scope.name !== "") {
+    return "";
   }
 
-  const globals = variables;
-  let onTick = "";
-  let onKeyDown = "";
-  let onPointerDown = "";
-  let onPointerMove = "";
+  const declarations = table
+    .getAll("Variable", scope)
+    .filter((s) => s.type !== symbolTypes.Parameter)
+    .map((s) => `let ${s.scope.name}_${s.name} = null`)
+    .join(";\n");
 
-  return `${globals}${onTick}${onKeyDown}${onPointerDown}${onPointerMove}`;
+  return declarations ? `${declarations};\n` : "";
 };
 
 export default symbolRules;

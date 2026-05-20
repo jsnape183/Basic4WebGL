@@ -5,7 +5,7 @@ import nodeTypes from '../nodeTypes';
 
 class VariableNode extends Tree {
   constructor(data: any | undefined) {
-    super(nodeTypes.String, data, []);
+    super(nodeTypes.Variable, data, []);
     this.dataType = getBuiltInType(builtInTypes.Variant);
   }
 }

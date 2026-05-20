@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`test not comparison generates the correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "data": "2",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "Number",
+                        ],
+                        "name": "Number",
+                      },
+                      "type": 8,
+                    },
+                  ],
+                  "data": "2",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 4,
+                },
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "data": "2",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "Number",
+                        ],
+                        "name": "Number",
+                      },
+                      "type": 8,
+                    },
+                  ],
+                  "data": "2",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 4,
+                },
+              ],
+              "dataType": {
+                "acceptsTypes": [
+                  "Boolean",
+                  "Number",
+                  "String",
+                  "Variant",
+                ],
+                "name": "Boolean",
+              },
+              "type": 34,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Boolean",
+              "Number",
+              "String",
+              "Variant",
+            ],
+            "name": "Boolean",
+          },
+          "type": 32,
+        },
+      ],
+      "data": null,
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 5,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;

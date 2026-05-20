@@ -5,6 +5,7 @@ export const factors = [tokens.String, tokens.Number, tokens.Variable];
 export const booleans = [tokens.BoolTrue, tokens.BoolFalse];
 export const relOps = [
   tokens.Equals,
+  tokens.NotEquals,
   tokens.GreaterThan,
   tokens.GreaterThanEqualTo,
   tokens.LessThan,

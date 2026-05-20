@@ -88,6 +88,12 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchString(input, '<>'),
+      token: tokens.NotEquals,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchString(input, '>='),
       token: tokens.GreaterThanEqualTo,
     }),
@@ -174,6 +180,12 @@ export const tokenResolver: Array<TokenResolverRule> = [
     isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchString(input, 'true'),
       token: tokens.BoolTrue,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchString(input, 'false'),
+      token: tokens.BoolFalse,
     }),
   },
   {

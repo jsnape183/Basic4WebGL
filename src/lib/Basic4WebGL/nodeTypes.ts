@@ -35,11 +35,18 @@ export const nodeTypes = createEnum([
   'Or',
   'Not',
   'Relation',
+  'Equals',
+  'NotEquals',
+  'LessThan',
+  'GreaterThan',
+  'LessThanEqualTo',
+  'GreaterThanEqualTo',
   'While',
   'If',
   'For',
   'In',
   'To',
+  'Variable',
 ]);
 
 export default nodeTypes;

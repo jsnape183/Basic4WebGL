@@ -9,6 +9,9 @@ import { Tree } from '@CompilerLib/tree';
 import BoolNode from '@Basic4WebGL/nodes/BoolNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import { booleans } from '../../../parserConfig';
+import Token from '@CompilerLib/lexer/tokens/Token';
+import tokens from '@Basic4WebGL/tokens';
+import BoolEqualNode from '@Basic4WebGL/nodes/BoolEqualNode';
 
 @RegisterParserRule('BoolFactor')
 class BoolFactorRule implements IParserRule {

@@ -13,7 +13,7 @@ import tokens from '@Basic4WebGL/tokens';
 class DivideRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
     const factor = data?.factor;
-    matchAndMove(tokens.Add, tokenStream);
+    matchAndMove(tokens.Divide, tokenStream);
     const secondary = getParserRule('Term').parse(
       tokenStream,
       symbolTable,

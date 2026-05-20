@@ -28,18 +28,22 @@ class RootRule implements IParserRule {
     );
 
     symbolTable.setScope(name);
-    while (!check(tokens.EndOfFile, tokenStream.current())) {
-      const child = getParserRule(tokenStream.current().token.name).parse(
-        tokenStream,
-        symbolTable,
-        undefined
-      ) as Tree;
+    let returnNode: RootNode;
+    try {
+      while (!check(tokens.EndOfFile, tokenStream.current())) {
+        const child = getParserRule(tokenStream.current().token.name).parse(
+          tokenStream,
+          symbolTable,
+          undefined
+        ) as Tree;
 
-      if (!child) continue;
-      children.push(child);
+        if (!child) continue;
+        children.push(child);
+      }
+      returnNode = new RootNode(symbolTable.getScopeName(), children);
+    } finally {
+      symbolTable.clearScope();
     }
-    const returnNode = new RootNode(symbolTable.getScopeName(), children);
-    symbolTable.clearScope();
     return returnNode;
   }
 }

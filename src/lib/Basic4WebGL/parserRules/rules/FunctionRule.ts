@@ -21,23 +21,28 @@ class FunctionRule implements IParserRule {
     const name = tokenStream.prev().text.toLowerCase();
     matchAndMove(tokens.OpenParen, tokenStream);
     symbolTable.setScope(name, scopeTypes.Function);
-    const variables = getParserRule('VariableList').parse(
-      tokenStream,
-      symbolTable,
-      undefined
-    );
-
-    const parameters = symbolTable.getAll(
-      symbolTypes.Parameter,
-      symbolTable.getScope()
-    );
-    matchAndMove(tokens.CloseParen, tokenStream);
-    matchAndMove(newLines, tokenStream);
-    const children = getParserRule('Block').parse(tokenStream, symbolTable, {
-      endTokens: tokens.EndFunction,
-    });
-    matchAndMove(tokens.EndFunction, tokenStream);
-    symbolTable.clearScope();
+    let variables: Tree;
+    let parameters: ReturnType<typeof symbolTable.getAll>;
+    let children: Tree;
+    try {
+      variables = getParserRule('VariableList').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      parameters = symbolTable.getAll(
+        symbolTypes.Parameter,
+        symbolTable.getScope()
+      );
+      matchAndMove(tokens.CloseParen, tokenStream);
+      matchAndMove(newLines, tokenStream);
+      children = getParserRule('Block').parse(tokenStream, symbolTable, {
+        endTokens: tokens.EndFunction,
+      });
+      matchAndMove(tokens.EndFunction, tokenStream);
+    } finally {
+      symbolTable.clearScope();
+    }
     matchAndMove(newLines, tokenStream);
     const functionSymbol = symbolTable.addTyped(
       new FunctionSymbol(

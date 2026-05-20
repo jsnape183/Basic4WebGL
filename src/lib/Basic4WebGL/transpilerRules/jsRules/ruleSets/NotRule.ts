@@ -10,7 +10,7 @@ import { doChild } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.Not)
 class NotRule implements IGeneratable {
   generate(node: Tree, table: Symbols): string {
-    return `!${doChild(node, 0, table)}`;
+    return `!(${doChild(node, 0, table)})`;
   }
 }
 

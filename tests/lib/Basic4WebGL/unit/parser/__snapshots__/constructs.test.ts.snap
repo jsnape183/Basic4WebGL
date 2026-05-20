@@ -1,0 +1,924 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`assignment > assigning a literal value produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Variant",
+          ],
+          "name": "Variant",
+        },
+        "fullScope": "main",
+        "name": "x",
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Variable",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 16,
+    },
+    {
+      "children": [],
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 0,
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "data": "5",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 8,
+            },
+          ],
+          "data": "5",
+          "dataType": {
+            "acceptsTypes": [
+              "Number",
+            ],
+            "name": "Number",
+          },
+          "type": 4,
+        },
+      ],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Variant",
+          ],
+          "name": "Variant",
+        },
+        "fullScope": "main",
+        "name": "x",
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Variable",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 28,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`assignment > assigning an expression produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Variant",
+          ],
+          "name": "Variant",
+        },
+        "fullScope": "main",
+        "name": "x",
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Variable",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 16,
+    },
+    {
+      "children": [],
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 0,
+    },
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "2",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "2",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "3",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "3",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Number",
+            ],
+            "name": "Number",
+          },
+          "type": 10,
+        },
+      ],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Variant",
+          ],
+          "name": "Variant",
+        },
+        "fullScope": "main",
+        "name": "x",
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Variable",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 28,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`dim statement > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Variant",
+          ],
+          "name": "Variant",
+        },
+        "fullScope": "main",
+        "name": "x",
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Variable",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 16,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`for loop > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "0",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "0",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "9",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "9",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+          ],
+          "data": {
+            "dataType": "Number",
+            "fullScope": "main",
+            "name": "x",
+            "scope": {
+              "name": "main",
+              "type": "",
+            },
+            "type": "Variable",
+          },
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 44,
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "data": "x",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "Variant",
+                        ],
+                        "name": "Variant",
+                      },
+                      "type": 45,
+                    },
+                  ],
+                  "data": {
+                    "dataType": "Number",
+                    "fullScope": "main",
+                    "name": "x",
+                    "scope": {
+                      "name": "main",
+                      "type": "",
+                    },
+                    "type": "Variable",
+                  },
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Variant",
+                    ],
+                    "name": "Variant",
+                  },
+                  "type": 4,
+                },
+              ],
+              "data": null,
+              "dataType": {
+                "acceptsTypes": [
+                  "Unknown",
+                ],
+                "name": "Unknown",
+              },
+              "type": 5,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 2,
+        },
+      ],
+      "data": null,
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 42,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`function declaration > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 24,
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "data": ""hi"",
+                          "dataType": {
+                            "acceptsTypes": [
+                              "String",
+                              "Variant",
+                            ],
+                            "name": "String",
+                          },
+                          "type": 9,
+                        },
+                      ],
+                      "data": ""hi"",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "String",
+                          "Variant",
+                        ],
+                        "name": "String",
+                      },
+                      "type": 4,
+                    },
+                  ],
+                  "data": null,
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Unknown",
+                    ],
+                    "name": "Unknown",
+                  },
+                  "type": 5,
+                },
+              ],
+              "data": null,
+              "dataType": {
+                "acceptsTypes": [
+                  "Unknown",
+                ],
+                "name": "Unknown",
+              },
+              "type": 2,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 2,
+        },
+      ],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Object",
+          ],
+          "fullName": "main.greet",
+          "name": "Object",
+        },
+        "fullScope": "main",
+        "name": "greet",
+        "parameters": [],
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Function",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 19,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`if statement > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "1",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "1",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "1",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "1",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+          ],
+          "dataType": {
+            "acceptsTypes": [
+              "Boolean",
+              "Number",
+              "String",
+              "Variant",
+            ],
+            "name": "Boolean",
+          },
+          "type": 34,
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "data": ""yes"",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "String",
+                          "Variant",
+                        ],
+                        "name": "String",
+                      },
+                      "type": 9,
+                    },
+                  ],
+                  "data": ""yes"",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "String",
+                      "Variant",
+                    ],
+                    "name": "String",
+                  },
+                  "type": 4,
+                },
+              ],
+              "data": null,
+              "dataType": {
+                "acceptsTypes": [
+                  "Unknown",
+                ],
+                "name": "Unknown",
+              },
+              "type": 5,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 2,
+        },
+      ],
+      "data": null,
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 41,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`return statement > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 24,
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "data": "42",
+                          "dataType": {
+                            "acceptsTypes": [
+                              "Number",
+                            ],
+                            "name": "Number",
+                          },
+                          "type": 8,
+                        },
+                      ],
+                      "data": "42",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "Number",
+                        ],
+                        "name": "Number",
+                      },
+                      "type": 4,
+                    },
+                  ],
+                  "data": null,
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 21,
+                },
+              ],
+              "data": null,
+              "dataType": {
+                "acceptsTypes": [
+                  "Unknown",
+                ],
+                "name": "Unknown",
+              },
+              "type": 2,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 2,
+        },
+      ],
+      "data": {
+        "dataType": {
+          "acceptsTypes": [
+            "Object",
+          ],
+          "fullName": "main.getvalue",
+          "name": "Object",
+        },
+        "fullScope": "main",
+        "name": "getvalue",
+        "parameters": [],
+        "scope": {
+          "name": "main",
+          "type": "",
+        },
+        "type": "Function",
+      },
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 19,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;
+
+exports[`while loop > produces correct tree 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "1",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "1",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+            {
+              "children": [
+                {
+                  "children": [],
+                  "data": "1",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "Number",
+                    ],
+                    "name": "Number",
+                  },
+                  "type": 8,
+                },
+              ],
+              "data": "1",
+              "dataType": {
+                "acceptsTypes": [
+                  "Number",
+                ],
+                "name": "Number",
+              },
+              "type": 4,
+            },
+          ],
+          "dataType": {
+            "acceptsTypes": [
+              "Boolean",
+              "Number",
+              "String",
+              "Variant",
+            ],
+            "name": "Boolean",
+          },
+          "type": 34,
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [],
+                      "data": ""yes"",
+                      "dataType": {
+                        "acceptsTypes": [
+                          "String",
+                          "Variant",
+                        ],
+                        "name": "String",
+                      },
+                      "type": 9,
+                    },
+                  ],
+                  "data": ""yes"",
+                  "dataType": {
+                    "acceptsTypes": [
+                      "String",
+                      "Variant",
+                    ],
+                    "name": "String",
+                  },
+                  "type": 4,
+                },
+              ],
+              "data": null,
+              "dataType": {
+                "acceptsTypes": [
+                  "Unknown",
+                ],
+                "name": "Unknown",
+              },
+              "type": 5,
+            },
+          ],
+          "data": null,
+          "dataType": {
+            "acceptsTypes": [
+              "Unknown",
+            ],
+            "name": "Unknown",
+          },
+          "type": 2,
+        },
+      ],
+      "data": null,
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 40,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;

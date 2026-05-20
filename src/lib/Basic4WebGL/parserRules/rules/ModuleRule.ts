@@ -19,16 +19,19 @@ class ModuleRule implements IParserRule {
     const name = data as string;
     matchAndMove(tokens.Dot, tokenStream);
     symbolTable.setScope(name);
-    matchAndMove(tokens.Variable, tokenStream);
-    const functionName = tokenStream.prev().text;
-    const functionSymbol = symbolTable.get(functionName, symbolTypes.Function);
-
-    const node = getParserRule('FunctionCall').parse(
-      tokenStream,
-      symbolTable,
-      functionSymbol
-    );
-    symbolTable.clearScope();
+    let node: Tree;
+    try {
+      matchAndMove(tokens.Variable, tokenStream);
+      const functionName = tokenStream.prev().text;
+      const functionSymbol = symbolTable.get(functionName, symbolTypes.Function);
+      node = getParserRule('FunctionCall').parse(
+        tokenStream,
+        symbolTable,
+        functionSymbol
+      );
+    } finally {
+      symbolTable.clearScope();
+    }
     return node;
   }
 }

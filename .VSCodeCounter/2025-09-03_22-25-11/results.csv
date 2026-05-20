@@ -1,0 +1,254 @@
+"filename", "language", "JSON with Comments", "TypeScript", "JSON", "Markdown", "JavaScript", "TypeScript JSX", "YAML", "XML", "Visual Basic", "PostCSS", "HTML", "comment", "blank", "total"
+"c:\Users\jsnap\source\repos\Basic4WebGL\.codesandbox\tasks.json", "JSON with Comments", 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 36
+"c:\Users\jsnap\source\repos\Basic4WebGL\.codesandbox\template.json", "JSON", 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"c:\Users\jsnap\source\repos\Basic4WebGL\.devcontainer\devcontainer.json", "JSON with Comments", 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"c:\Users\jsnap\source\repos\Basic4WebGL\.prettierrc", "JSON", 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5
+"c:\Users\jsnap\source\repos\Basic4WebGL\README.md", "Markdown", 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 4, 9
+"c:\Users\jsnap\source\repos\Basic4WebGL\index.html", "HTML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 1, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\package-lock.json", "JSON", 0, 0, 5509, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5510
+"c:\Users\jsnap\source\repos\Basic4WebGL\package.json", "JSON", 0, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 52
+"c:\Users\jsnap\source\repos\Basic4WebGL\pnpm-lock.yaml", "YAML", 0, 0, 0, 0, 0, 0, 2204, 0, 0, 0, 0, 0, 322, 2526
+"c:\Users\jsnap\source\repos\Basic4WebGL\postcss.config.js", "JavaScript", 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"c:\Users\jsnap\source\repos\Basic4WebGL\public\vite.svg", "XML", 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\App.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\Types\LogItem.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\Types\state.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Editor\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 51, 0, 0, 0, 0, 0, 2, 12, 65
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\FileTree\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 62, 0, 0, 0, 0, 0, 0, 10, 72
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Modal\ModalWithInput.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 74, 0, 0, 0, 0, 0, 1, 10, 85
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Modal\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 4
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Preview\Console.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 1, 10, 75
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Preview\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 1, 6, 32
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Projects\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 52, 0, 0, 0, 0, 0, 1, 8, 61
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Routes\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 4, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\bootstrapper.html", "HTML", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 6, 60
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 38, 0, 0, 0, 0, 0, 1, 4, 43
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\pixiInit.js", "JavaScript", 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 1, 2, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\softAssetManager.js", "JavaScript", 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 6, 7, 49
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\softBasicGFX.js", "JavaScript", 0, 0, 0, 0, 163, 0, 0, 0, 0, 0, 0, 9, 31, 203
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\Runner\softSpriteManager.js", "JavaScript", 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 8, 50
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\TreePanel\AssetTree\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 7, 53
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\TreePanel\FileInput\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 52, 0, 0, 0, 0, 0, 1, 10, 63
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\components\TreePanel\index.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 4, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\constants\projectLib.ts", "TypeScript", 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 28
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\assets\assetsSlice.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 37
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\files\filesSlice.ts", "TypeScript", 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 39
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\projects\createProjectWithMainFile.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 28
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\projects\deleteProjectAndFiles.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\projects\projectsSlice.ts", "TypeScript", 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\ui\uiSlice.ts", "TypeScript", 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 42
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\features\ui\useSelectedFile.ts", "TypeScript", 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\globalProps\Asset.ts", "TypeScript", 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\globalProps\Project.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\hooks.ts", "TypeScript", 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 7
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\hooks\useAssetsForProject.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\hooks\useFilesForProject.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\hooks\useLocalStorage.ts", "TypeScript", 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 26
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\hooks\useProjectForBuild.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\index.css", "PostCSS", 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 1, 4
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\TokenResolver.ts", "TypeScript", 0, 272, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 275
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\autoload.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\BooleanType.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\NumberType.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\ObjectType.ts", "TypeScript", 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\StringType.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\VariantType.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\definitions\VoidType.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\builtInTypes\index.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softAssetManager.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softDrawing.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softPen.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 16
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softSpriteManager.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 9
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softStage.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softText.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\graphics\softTransform.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\softArray.ts", "TypeScript", 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\softGFX.ts", "TypeScript", 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 30
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\softMath.ts", "TypeScript", 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\defs\softString.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\index.ts", "TypeScript", 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 42
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodeTypes.ts", "TypeScript", 0, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 46
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\AddNode.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\AndNode.ts", "TypeScript", 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 32
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ArrayAssignNode.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ArrayListNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ArrayLookupNode.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\AssignNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\BlockNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\BoolNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\CallNode.ts", "TypeScript", 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\CallTermNode.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 25
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\CloneNode.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\DimNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\DivideNode.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\EmptyNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ExpressionListNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ExpressionNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ForNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\FunctionCallNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\FunctionDeclNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\FunctionReturnNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\FunctionTermNode.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\IfNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\InNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ModuleTerm.ts", "TypeScript", 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\MultiplyNode.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\NotNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\NumberNode.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\OrNode.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ParenNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\PrintNode.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\RelationNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\RootNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\StringNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\SubtractNode.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\TermNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\ToNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\UMinusNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\VariableDimNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\VariableLIstNode.ts", "TypeScript", 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 11
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\VariableNode.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\nodes\WhileNode.ts", "TypeScript", 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserConfig.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\autoload.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\index.ts", "TypeScript", 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\BlockRule.ts", "TypeScript", 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 35
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\CallRule.ts", "TypeScript", 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 30
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\ClassRule.ts", "TypeScript", 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 35
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\DimRule.ts", "TypeScript", 0, 53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 61
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\AddRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\AndRule.ts", "TypeScript", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 25
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\ArrayListRule.ts", "TypeScript", 0, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 29
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\BoolExpressionRule.ts", "TypeScript", 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 37
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\BoolFactorRule.ts", "TypeScript", 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 29
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\BoolTermRule.ts", "TypeScript", 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 21
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\CallFactorRule.ts", "TypeScript", 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 28
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\DivideRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\ExpressionListRule.ts", "TypeScript", 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 35
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\ExpressionRule.ts", "TypeScript", 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 48
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\FactorRule.ts", "TypeScript", 0, 77, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 83
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\FunctionFactorRule.ts", "TypeScript", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 26
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\ModuleFactorRule.ts", "TypeScript", 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\MultiplyRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\NotRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\OrRule.ts", "TypeScript", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 25
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\RelationRule.ts", "TypeScript", 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 31
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\SubtractRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\TermRule.ts", "TypeScript", 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 41
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\Expressions\VariableFactorRule.ts", "TypeScript", 0, 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 49
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\ForExpressionRule.ts", "TypeScript", 0, 46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 49
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\ForRule.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\FunctionCallRule.ts", "TypeScript", 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 31
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\FunctionRule.ts", "TypeScript", 0, 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 59
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\IfRule.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\ModuleRule.ts", "TypeScript", 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 37
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\NewLineRule.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\PrintRule.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\ReturnRule.ts", "TypeScript", 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 28
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\RootRule.ts", "TypeScript", 0, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 48
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\VariableListRule.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\VariableRule.ts", "TypeScript", 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\parserRules\rules\WhileRule.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\symbolTypes.ts", "TypeScript", 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 49
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\tokens.ts", "TypeScript", 0, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 56
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\autoload.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\index.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 12
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\helpers\transpilerHelpers.ts", "TypeScript", 0, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 57
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\AddRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 20
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\AndRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ArrayAssignRule.ts", "TypeScript", 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 22
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ArrayListRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ArrayLookupRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\AssignRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\BlockRule.ts", "TypeScript", 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 23
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\CallRule.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\CallTermRule.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\CloneRule.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\DimRule.ts", "TypeScript", 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 22
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\DivideRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 20
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\EmptyRule.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ExpressionListRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ExpressionRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ForRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\FunctionCallRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\FunctionDeclRule.ts", "TypeScript", 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 23
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\FunctionReturnRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\FunctionTermRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\IfRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\InRule.ts", "TypeScript", 0, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 16
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\MultiplyRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 20
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\NotRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\OrRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ParenRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\PrintRule.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\RelationRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 20
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\RootRule.ts", "TypeScript", 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 22
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\SubtractRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 20
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\TermRule.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\ToRule.ts", "TypeScript", 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 26
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\VariableDimRule.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 21
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\VariableListRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\jsRules\ruleSets\WhileRule.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\symbolRules.ts", "TypeScript", 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 29
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\terminationRules.ts", "TypeScript", 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 26
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\transpilerRules\transpilerRules.ts", "TypeScript", 0, 204, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 220
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\validators\BaseArithmaticValidatorNode.ts", "TypeScript", 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\validators\BaseAssignableValidatorNode.ts", "TypeScript", 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 21
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\validators\BaseBooleanArithmaticValidatorNode.ts", "TypeScript", 0, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\validators\BaseConditionalValidatorNode.ts", "TypeScript", 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 21
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\Basic4WebGL\validators\BaseParameterValidatorNode.ts", "TypeScript", 0, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\builtInTypes\builtInTypeFactory.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\builtInTypes\index.ts", "TypeScript", 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\compiler\types.ts", "TypeScript", 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 13
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\errors.ts", "TypeScript", 0, 38, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 44
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\helpers.ts", "TypeScript", 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\lexer\index.ts", "TypeScript", 0, 86, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 95
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\lexer\resolverHelpers.ts", "TypeScript", 0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 44
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\lexer\tokens\Token.ts", "TypeScript", 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 36
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\lexer\tokens\TokenResolverRule.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\lexer\tokens\tokenStream.ts", "TypeScript", 0, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 45
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\parser\ParserResults.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 27
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\parser\ParserRule.ts", "TypeScript", 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 22
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\parser\index.ts", "TypeScript", 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 61
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\parser\parserRuleFactory.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\parser\rulesHelper.ts", "TypeScript", 0, 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 54
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\symbols\index.ts", "TypeScript", 0, 225, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 250
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\transpiler\IGeneratable.ts", "TypeScript", 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 15
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\transpiler\index.ts", "TypeScript", 0, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\transpiler\transpilerRuleFactory.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\transpiler\types.ts", "TypeScript", 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\tree\IValidatable.ts", "TypeScript", 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\tree\index.ts", "TypeScript", 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 34
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\lib\CompilerLib\tree\validator.ts", "TypeScript", 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 14
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\main.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 2, 21
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\monacoHelpers\index.ts", "TypeScript", 0, 45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 47
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\pages\EditPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 121, 0, 0, 0, 0, 0, 6, 15, 142
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\pages\ProjectsPage.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 2, 10
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\store.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\src\vite-env.d.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2
+"c:\Users\jsnap\source\repos\Basic4WebGL\tailwind.config.js", "JavaScript", 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 1, 1, 9
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\helpers.ts", "TypeScript", 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\lexer\lexer.test.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\parser\mocks\mockHelloWorld.ts", "TypeScript", 0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 40
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\parser\parser.test.ts", "TypeScript", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 25
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\conditionals.test.ts", "TypeScript", 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8, 57
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\coreConstructs.test.ts", "TypeScript", 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 8, 67
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\conditionals\forResult.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\conditionals\ifResult.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\conditionals\whileResult.ts", "TypeScript", 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 19
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\coreConstructs\helloworldResult.ts", "TypeScript", 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 18
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\coreConstructs\methodCallResult.ts", "TypeScript", 0, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 24
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\coreConstructs\methodResult.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 23
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\lib\Basic4WebGL\integration\transpiler\mocks\coreConstructs\moduleCallResult.ts", "TypeScript", 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 26
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\conditionals\forTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\conditionals\ifTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\conditionals\whileTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\coreConstructs\methodCallTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 1, 7
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\coreConstructs\methodTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\coreConstructs\moduleCallTest.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\helloworld.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"c:\Users\jsnap\source\repos\Basic4WebGL\tests\sampleFiles\modules\Talk.bas", "Visual Basic", 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 3
+"c:\Users\jsnap\source\repos\Basic4WebGL\tsconfig.json", "JSON with Comments", 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 33
+"c:\Users\jsnap\source\repos\Basic4WebGL\tsconfig.node.json", "JSON", 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 17
+"c:\Users\jsnap\source\repos\Basic4WebGL\vite.config.ts", "TypeScript", 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 27
+"Total", "-", 64, 4849, 5588, 5, 268, 646, 2204, 1, 25, 3, 67, 59, 1242, 15021

@@ -17,6 +17,7 @@ export const tokens = createKeyValueEnum<TokenMatch>([
   'OpenParen',
   'CloseParen',
   'Equals',
+  'NotEquals',
   'GreaterThan',
   'GreaterThanEqualTo',
   'LessThan',

@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect, beforeEach } from 'vitest';
 import { CompilerProject } from '@CompilerLib/compiler/types';
 import compiler from '@Basic4WebGL/index';
 import tokens from '@Basic4WebGL/tokens';
@@ -8,6 +8,10 @@ const project: CompilerProject = {
   lib: [],
   files: [],
 };
+
+beforeEach(() => {
+  project.files = [];
+});
 
 test('prints hello world', () => {
   project.files.push({

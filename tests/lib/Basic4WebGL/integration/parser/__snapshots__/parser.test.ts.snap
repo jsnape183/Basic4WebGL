@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`prints hello world 1`] = `
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [],
+              "data": ""Hello, World!"",
+              "dataType": {
+                "acceptsTypes": [
+                  "String",
+                  "Variant",
+                ],
+                "name": "String",
+              },
+              "type": 9,
+            },
+          ],
+          "data": ""Hello, World!"",
+          "dataType": {
+            "acceptsTypes": [
+              "String",
+              "Variant",
+            ],
+            "name": "String",
+          },
+          "type": 4,
+        },
+      ],
+      "data": null,
+      "dataType": {
+        "acceptsTypes": [
+          "Unknown",
+        ],
+        "name": "Unknown",
+      },
+      "type": 5,
+    },
+  ],
+  "data": "main",
+  "dataType": {
+    "acceptsTypes": [
+      "Unknown",
+    ],
+    "name": "Unknown",
+  },
+  "type": 1,
+}
+`;

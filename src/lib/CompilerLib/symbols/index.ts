@@ -48,6 +48,8 @@ export class Symbol {
 class Symbols {
   private isMatchingType: (expected: string, actual: string) => Boolean;
   private table: Array<Symbol> = [];
+  /** Fast O(1) index for exact-scope lookups: "${name}::${scopeName}::${fullScope}" */
+  private index: Map<string, Symbol> = new Map();
   private scopes: Array<SymbolScope> = [];
   private currentScope: SymbolScope;
   private defaultType: BuiltInType;
@@ -64,6 +66,18 @@ class Symbols {
     this.scopes.push({ ...this.currentScope });
     this.defaultType = defaultType;
   }
+
+  private indexKey(name: string, scopeName: string, fullScope: string): string {
+    return `${name.toLowerCase()}::${scopeName}::${fullScope}`;
+  }
+
+  private indexSymbol(symbol: Symbol): void {
+    this.index.set(
+      this.indexKey(symbol.name, symbol.scope.name, symbol.fullScope),
+      symbol
+    );
+  }
+
   getFullScopeName(): string {
     const fullScope = this.scopes
       .map((s) => s.name)
@@ -93,6 +107,9 @@ class Symbols {
     this.scopes[this.scopes.length - 1].type = type;
     this.currentScope.name = scope;
     this.currentScope.type = type;
+  }
+  getScopeDepth(): number {
+    return this.scopes.length;
   }
   clearScope(): void {
     this.scopes.pop();
@@ -134,6 +151,7 @@ class Symbols {
       );
     }
     this.table.push(symbol);
+    this.indexSymbol(symbol);
     return symbol;
   }
   add(
@@ -157,6 +175,7 @@ class Symbols {
 
     const symbol = new Symbol(name, type, scope, fullScope, dataType);
     this.table.push(symbol);
+    this.indexSymbol(symbol);
     return symbol;
   }
   retrieveSymbol(
@@ -168,24 +187,17 @@ class Symbols {
     const formattedName = name.toLowerCase();
 
     if (scope !== undefined) {
-      const symbol = this.table.filter(
-        (s) =>
-          s.name === formattedName &&
-          s.scope.name === scope.name &&
-          s.fullScope === fullScope
-      )[0];
-
-      if (
-        symbol &&
-        this.isMatchingType(type, symbol.type) &&
-        symbol.scope.name === scope.name
-      ) {
-        return symbol;
+      // O(1) fast path: exact scope lookup via index
+      const key = this.indexKey(formattedName, scope.name, fullScope);
+      const indexed = this.index.get(key);
+      if (indexed && this.isMatchingType(type, indexed.type)) {
+        return indexed;
       }
-
       return undefined;
     }
 
+    // Scope-priority path: find best match across visible scopes (stays O(n) — needed
+    // for implicit scope resolution where the caller doesn't know which scope owns the symbol)
     const symbolMatches: Symbol[] = this.table.filter(
       (v) =>
         v.name.toLowerCase() === formattedName &&
