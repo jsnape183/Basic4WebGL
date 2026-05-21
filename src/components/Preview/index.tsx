@@ -9,11 +9,10 @@ type PreviewProps = {
 };
 
 const Preview: React.FC<PreviewProps> = ({ transpiled, projectId }) => {
-  const logs = useSelector((state: RootState) => state.ui.logs);
+  const logs = useSelector((state: RootState) => state.session.logs);
 
   return (
     <aside className="w-1/2 bg-gray-950 border-l border-gray-700 flex flex-col">
-      {/* Preview iframe */}
       <div className="flex-1 border-b border-gray-700">
         <Runner
           transpiled={transpiled}
@@ -22,7 +21,6 @@ const Preview: React.FC<PreviewProps> = ({ transpiled, projectId }) => {
           height="100%"
         />
       </div>
-
       <Console logs={logs} />
     </aside>
   );

@@ -1,21 +1,16 @@
 // src/features/ui/uiSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { LogItem } from "../../Types/LogItem";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface UIState {
   selectedFileByProject: Record<string, string>;
-  logs: Array<LogItem>;
-  transpiled: string;
 }
 
 const initialState: UIState = {
   selectedFileByProject: {},
-  logs: [],
-  transpiled: "",
 };
 
 const uiSlice = createSlice({
-  name: "ui",
+  name: 'ui',
   initialState,
   reducers: {
     selectFile: (
@@ -25,17 +20,8 @@ const uiSlice = createSlice({
       const { projectId, fileId } = action.payload;
       state.selectedFileByProject[projectId] = fileId;
     },
-    addLog: (state: UIState, action: PayloadAction<LogItem>) => {
-      state.logs.push(action.payload);
-    },
-    clearLogs: (state: UIState) => {
-      state.logs = [];
-    },
-    setTranspiled: (state: UIState, action: PayloadAction<string>) => {
-      state.transpiled = action.payload;
-    },
   },
 });
 
-export const { selectFile, addLog, clearLogs, setTranspiled } = uiSlice.actions;
+export const { selectFile } = uiSlice.actions;
 export default uiSlice.reducer;

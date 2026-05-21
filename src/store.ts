@@ -4,25 +4,34 @@ import projectsReducer from "./features/projects/projectsSlice";
 import filesReducer from "./features/files/filesSlice";
 import assetsReducer from "./features/assets/assetsSlice";
 import uiReducer from "./features/ui/uiSlice";
+import sessionReducer from "./features/session/sessionSlice";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-
-const combinedRecduers = combineReducers({
-  projects: projectsReducer,
-  files: filesReducer,
-  assets: assetsReducer,
-  ui: uiReducer,
-});
 
 const persistedConfig = {
   key: "softBASIC",
   storage,
+  blacklist: ["session"],
 };
 
-const localStorageRecuder = persistReducer(persistedConfig, combinedRecduers);
+const rootReducer = combineReducers({
+  projects: projectsReducer,
+  files: filesReducer,
+  assets: assetsReducer,
+  ui: uiReducer,
+  session: sessionReducer,
+});
+
+const persistedReducer = persistReducer(persistedConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: localStorageRecuder,
+  reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+      },
+    }),
 });
 
 export const persistor = persistStore(store);
