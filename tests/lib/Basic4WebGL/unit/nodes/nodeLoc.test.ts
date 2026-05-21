@@ -71,3 +71,42 @@ describe('BaseConditionalValidatorNode subclasses store loc', () => {
     expect(n.loc).toBeUndefined();
   });
 });
+
+import { SemanticTypeError } from '@CompilerLib/errors';
+
+describe('Validator nodes attach loc to thrown SemanticTypeError', () => {
+  test('AddNode.validate() throws SemanticTypeError carrying this.loc', () => {
+    const wrongType = new BuiltInType('String');
+    const intType = new BuiltInType('Integer');
+    (intType as any).acceptsTypes = ['Integer'];
+    (intType as any).canAccept = (t: BuiltInType) => t.name === 'Integer';
+
+    const child = new Tree(0, null, []);
+    child.dataType = wrongType;
+
+    const n = new AddNode(null, [child, child], loc);
+    (n as any).dataType = intType;
+
+    let caught: SemanticTypeError | undefined;
+    try { n.validate(); } catch (e) { caught = e as SemanticTypeError; }
+    expect(caught).toBeInstanceOf(SemanticTypeError);
+    expect(caught?.loc).toEqual(loc);
+  });
+
+  test('AddNode.validate() SemanticTypeError has no loc when node has no loc', () => {
+    const wrongType = new BuiltInType('String');
+    const intType = new BuiltInType('Integer');
+    (intType as any).acceptsTypes = ['Integer'];
+    (intType as any).canAccept = (t: BuiltInType) => t.name === 'Integer';
+
+    const child = new Tree(0, null, []);
+    child.dataType = wrongType;
+
+    const n = new AddNode(null, [child, child]);
+    (n as any).dataType = intType;
+
+    let caught: SemanticTypeError | undefined;
+    try { n.validate(); } catch (e) { caught = e as SemanticTypeError; }
+    expect(caught?.loc).toBeUndefined();
+  });
+});

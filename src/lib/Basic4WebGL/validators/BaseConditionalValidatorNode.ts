@@ -11,7 +11,8 @@ class BaseConditionalValidatorNode extends Tree implements IValidatable {
     ) {
       throw new SemanticTypeError(
         getBuiltInType(builtInTypes.Boolean).acceptsTypes,
-        this.children[0].dataType
+        this.children[0].dataType,
+        this.loc
       );
     }
   }

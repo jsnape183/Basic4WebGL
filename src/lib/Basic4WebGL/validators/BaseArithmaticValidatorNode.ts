@@ -7,14 +7,16 @@ class BaseArithmaticValidatorNode extends Tree implements IValidatable {
     if (!this.dataType?.canAccept(this.children[0].dataType)) {
       throw new SemanticTypeError(
         this.dataType.acceptsTypes,
-        this.children[0].dataType
+        this.children[0].dataType,
+        this.loc
       );
     }
 
     if (!this.dataType?.canAccept(this.children[1].dataType)) {
       throw new SemanticTypeError(
         this.dataType.acceptsTypes,
-        this.children[1].dataType
+        this.children[1].dataType,
+        this.loc
       );
     }
   }

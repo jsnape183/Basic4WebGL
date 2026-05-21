@@ -19,7 +19,8 @@ class PrintNode extends Tree implements IValidatable {
     ) {
       throw new SemanticTypeError(
         [builtInTypes.String],
-        this.children[0].dataType
+        this.children[0].dataType,
+        this.loc
       );
     }
   }
