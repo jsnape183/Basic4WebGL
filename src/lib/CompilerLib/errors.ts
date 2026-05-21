@@ -1,16 +1,21 @@
 import BuiltInType from './builtInTypes';
+import { SourceLocation } from './compiler/types';
 
 export class CompilationError extends Error {
-  constructor(message: string) {
+  public loc?: SourceLocation;
+  constructor(message: string, loc?: SourceLocation) {
     super(message);
     this.name = 'CompilatonError';
+    this.loc = loc;
   }
 }
 
 export class SymbolError extends Error {
-  constructor(message: string) {
+  public loc?: SourceLocation;
+  constructor(message: string, loc?: SourceLocation) {
     super(message);
     this.name = 'SymbolError';
+    this.loc = loc;
   }
 }
 
@@ -25,19 +30,23 @@ export class UnexpectedError extends Error {
 }
 
 export class SemanticTypeError extends Error {
-  constructor(expectedTypes: string[], actualType: BuiltInType) {
+  public loc?: SourceLocation;
+  constructor(expectedTypes: string[], actualType: BuiltInType, loc?: SourceLocation) {
     super(
       `Semantic Error: Expected type(s) ${expectedTypes
         .map((t) => t)
         .join(', ')} but got ${actualType.name}`
     );
     this.name = 'SemanticTypeError';
+    this.loc = loc;
   }
 }
 
 export class SemanticError extends Error {
-  constructor(message: string) {
+  public loc?: SourceLocation;
+  constructor(message: string, loc?: SourceLocation) {
     super(message);
     this.name = 'SemanticError';
+    this.loc = loc;
   }
 }
