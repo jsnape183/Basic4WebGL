@@ -7,6 +7,7 @@ import {
   CompilationError,
   SemanticError,
   SemanticTypeError,
+  SymbolError,
   UnexpectedError,
 } from '../errors';
 import TokenStream from '../lexer/tokens/tokenStream';
@@ -27,18 +28,19 @@ const parseFile = (
     return new ParseFileResult(filename, parseResult, symbolTable);
   } catch (e: unknown) {
     if (e instanceof UnexpectedError) {
-      throw new UnexpectedError(e as Error);
+      throw e;
     }
     if (
       e instanceof CompilationError ||
       e instanceof SemanticError ||
-      e instanceof SemanticTypeError
+      e instanceof SemanticTypeError ||
+      e instanceof SymbolError
     ) {
-      throw new CompilationError(
-        `Compilation Error - ${(e as Error).message} occurred at ${
-          stream.current().line
-        }:${stream.current().col} in ${filename}`
-      );
+      const err = e as CompilationError | SemanticError | SemanticTypeError | SymbolError;
+      if (!err.loc) {
+        err.loc = stream.current().loc();
+      }
+      throw err;
     }
     throw e;
   }
