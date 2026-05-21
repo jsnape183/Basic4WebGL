@@ -1,3 +1,5 @@
+import { SourceLocation } from '../../compiler/types';
+
 export class TokenMatch {
   public value: Number;
   public name: string;
@@ -29,6 +31,10 @@ class Token {
     this.line = line;
     this.col = col;
     this.filename = filename;
+  }
+
+  loc(): SourceLocation {
+    return { line: this.line, col: this.col, filename: this.filename };
   }
 }
 
