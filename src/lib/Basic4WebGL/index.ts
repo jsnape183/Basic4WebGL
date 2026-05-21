@@ -1,5 +1,5 @@
 import TokenResolver from './TokenResolver';
-import { CompilerProject } from '@CompilerLib/compiler/types';
+import { CompilerProject, CompileResult, Diagnostic, SourceLocation } from '@CompilerLib/compiler/types';
 import parser from '@CompilerLib/parser';
 import lexer from '@CompilerLib/lexer';
 import transpilerRules from './transpilerRules';
@@ -21,21 +21,31 @@ const parse = (project: CompilerProject) => {
   return result;
 };
 
-const transpile = (project: CompilerProject) => {
-  const transpiler = new Transpiler();
-  const parseResult = parse(project);
-  const globals = transpilerRules.symbolRules(
-    parseResult.symbolTable,
-    new SymbolScope('', '')
-  );
-  return (
-    globals +
-    transpiler.transpile(parseResult, parseResult.symbolTable, transpilerRules)
-  );
+const transpile = (project: CompilerProject): CompileResult => {
+  try {
+    const transpilerInstance = new Transpiler();
+    const parseResult = parse(project);
+    const globals = transpilerRules.symbolRules(
+      parseResult.symbolTable,
+      new SymbolScope('', '')
+    );
+    const code =
+      globals +
+      transpilerInstance.transpile(parseResult, parseResult.symbolTable, transpilerRules);
+    return { code, diagnostics: [] };
+  } catch (e: unknown) {
+    const err = e as Error & { loc?: SourceLocation };
+    const diagnostic: Diagnostic = {
+      message: err.message,
+      severity: 'error',
+      loc: err.loc,
+    };
+    return { diagnostics: [diagnostic] };
+  }
 };
 
 export default {
-  lexOnly: lexOnly,
-  parse: parse,
-  transpile: transpile,
+  lexOnly,
+  parse,
+  transpile,
 };

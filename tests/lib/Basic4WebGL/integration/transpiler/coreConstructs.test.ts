@@ -16,17 +16,17 @@ beforeEach(() => {
 
 test('prints hello world', () => {
   project.files.push({ name: 'Main.bas', source: loadSampleFile('helloworld') });
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
 
 test('method onentry is added to class', () => {
   project.files.push({ name: 'Main.bas', source: loadSampleFile('methodTest', folder) });
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
 
 test('method call in onentry works', () => {
   project.files.push({ name: 'Main.bas', source: loadSampleFile('methodCallTest', folder) });
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
 
 test('module call in onentry works', () => {
@@ -34,5 +34,5 @@ test('module call in onentry works', () => {
     { name: 'Talk', source: loadSampleFile('Talk', 'modules') },
     { name: 'Main', source: loadSampleFile('moduleCallTest', folder) },
   ];
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });

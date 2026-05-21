@@ -23,5 +23,5 @@ test.each([
   ['or',                   'print 2=2 or 1=1',     '_print(2==2||1==1)'],
 ])('%s comparison generates correct code', (_, source, expected) => {
   project.files.push({ name: 'Main.bas', source });
-  expect(cleanWhitespace(compiler.transpile(project))).toContain(expected);
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toContain(expected);
 });

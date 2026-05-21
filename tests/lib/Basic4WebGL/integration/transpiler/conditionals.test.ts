@@ -16,15 +16,15 @@ beforeEach(() => {
 
 test('if statement generates correct code', () => {
   project.files = [{ name: 'Main', source: loadSampleFile('ifTest', folder) }];
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
 
 test('while statement generates correct code', () => {
   project.files = [{ name: 'Main', source: loadSampleFile('whileTest', folder) }];
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
 
 test('for statement generates correct code', () => {
   project.files = [{ name: 'Main', source: loadSampleFile('forTest', folder) }];
-  expect(cleanWhitespace(compiler.transpile(project))).toMatchSnapshot();
+  expect(cleanWhitespace(compiler.transpile(project).code!)).toMatchSnapshot();
 });
