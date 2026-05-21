@@ -4,11 +4,13 @@ import { Tree } from '@CompilerLib/tree';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 import BaseBooleanArthrmaticValidatorNode from '../validators/BaseBooleanArithmaticValidatorNode';
+import type { SourceLocation } from '@CompilerLib/compiler/types';
 
 class AndNode extends BaseBooleanArthrmaticValidatorNode {
-  constructor(data: any | undefined, children: Tree[]) {
+  constructor(data: any | undefined, children: Tree[], loc?: SourceLocation) {
     super(nodeTypes.And, data, children);
     this.dataType = getBuiltInType(builtInTypes.Boolean);
+    this.loc = loc;
   }
 
   validate(): void {

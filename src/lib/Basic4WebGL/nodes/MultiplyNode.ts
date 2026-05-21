@@ -3,11 +3,13 @@ import { Tree } from '@CompilerLib/tree';
 import builtInTypes from '../builtInTypes';
 import nodeTypes from '../nodeTypes';
 import BaseArithmaticValidatorNode from '../validators/BaseArithmaticValidatorNode';
+import type { SourceLocation } from '@CompilerLib/compiler/types';
 
 class MultiplyNode extends BaseArithmaticValidatorNode {
-  constructor(data: any | undefined, children: Tree[]) {
+  constructor(data: any | undefined, children: Tree[], loc?: SourceLocation) {
     super(nodeTypes.Multiply, data, children);
     this.dataType = getBuiltInType(builtInTypes.Number);
+    this.loc = loc;
   }
 }
 
