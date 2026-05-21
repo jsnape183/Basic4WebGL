@@ -26,9 +26,9 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   // Auto-select first file when none is selected for this project
   useEffect(() => {
     if (!selectedFileId && files.length > 0) {
-      handleFileSelected(files[0].id);
+      dispatch(selectFile({ projectId, fileId: files[0].id }));
     }
-  }, [selectedFileId, files]);
+  }, [selectedFileId, files, dispatch, projectId]);
 
   const handleNewFile = (filename: string) => {
     const file: IFile = {

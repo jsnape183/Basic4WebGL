@@ -26,6 +26,10 @@ const EditPage: React.FC = () => {
   );
   const transpiled = useSelector((state: RootState) => state.ui.transpiled);
 
+  // Hooks must be called unconditionally — moved above early return
+  const selectedFile = useSelectedFile(id ?? '');
+  const buildProject = useProjectForBuild(id ?? '', projectLib);
+
   useEffect(() => {
     if (!project?.id) {
       // Redirect to previous page or fallback to '/'
@@ -44,9 +48,6 @@ const EditPage: React.FC = () => {
       </div>
     );
   }
-
-  const selectedFile = useSelectedFile(project.id);
-  const buildProject = useProjectForBuild(project.id, projectLib);
 
   const handleChange = (source: string | undefined) => {
     if (source) {
