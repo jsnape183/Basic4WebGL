@@ -17,10 +17,10 @@ export default defineConfig({
     },
   },
   test: {
-    globals: true, // so you can use test/expect/describe without imports
-    environment: 'node', // or 'jsdom' if needed
-    //setupFiles: './vitest.setup.ts', // optional
-    include: ['tests/**/*.{test,spec}.ts'],
+    globals: true,
+    environment: 'node',
+    setupFiles: ['./tests/ui/setup.ts'],
+    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
