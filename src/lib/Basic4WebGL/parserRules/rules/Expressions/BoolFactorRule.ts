@@ -16,12 +16,14 @@ import BoolEqualNode from '@Basic4WebGL/nodes/BoolEqualNode';
 @RegisterParserRule('BoolFactor')
 class BoolFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     if (check(booleans, tokenStream.current())) {
       matchAndMove(booleans, tokenStream);
 
       return new TermNode(
         tokenStream.prev().text,
-        new BoolNode(tokenStream.prev().text)
+        new BoolNode(tokenStream.prev().text, loc),
+        loc
       );
     }
     return getParserRule('Relation').parse(tokenStream, symbolTable, undefined);
