@@ -5,7 +5,7 @@ export class CompilationError extends Error {
   public loc?: SourceLocation;
   constructor(message: string, loc?: SourceLocation) {
     super(message);
-    this.name = 'CompilatonError';
+    this.name = 'CompilationError';
     this.loc = loc;
   }
 }
@@ -33,9 +33,7 @@ export class SemanticTypeError extends Error {
   public loc?: SourceLocation;
   constructor(expectedTypes: string[], actualType: BuiltInType, loc?: SourceLocation) {
     super(
-      `Semantic Error: Expected type(s) ${expectedTypes
-        .map((t) => t)
-        .join(', ')} but got ${actualType.name}`
+      `Semantic Error: Expected type(s) ${expectedTypes.join(', ')} but got ${actualType.name}`
     );
     this.name = 'SemanticTypeError';
     this.loc = loc;
