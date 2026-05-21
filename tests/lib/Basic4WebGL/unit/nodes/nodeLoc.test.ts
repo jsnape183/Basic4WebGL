@@ -72,6 +72,7 @@ describe('BaseConditionalValidatorNode subclasses store loc', () => {
   });
 });
 
+import '@Basic4WebGL/builtInTypes'; // registers Boolean and other built-in types
 import { SemanticTypeError } from '@CompilerLib/errors';
 
 describe('Validator nodes attach loc to thrown SemanticTypeError', () => {
@@ -104,6 +105,37 @@ describe('Validator nodes attach loc to thrown SemanticTypeError', () => {
 
     const n = new AddNode(null, [child, child]);
     (n as any).dataType = intType;
+
+    let caught: SemanticTypeError | undefined;
+    try { n.validate(); } catch (e) { caught = e as SemanticTypeError; }
+    expect(caught?.loc).toBeUndefined();
+  });
+});
+
+describe('IfNode validates condition is Boolean type', () => {
+  test('IfNode.validate() throws SemanticTypeError carrying this.loc', () => {
+    const nonBoolChild = new Tree(0, null, []);
+    nonBoolChild.dataType = new BuiltInType('Object'); // not in Boolean acceptsTypes
+
+    const block = new Tree(0, null, []);
+    block.dataType = new BuiltInType('Variant');
+
+    const n = new IfNode(null, [nonBoolChild, block], loc);
+
+    let caught: SemanticTypeError | undefined;
+    try { n.validate(); } catch (e) { caught = e as SemanticTypeError; }
+    expect(caught).toBeInstanceOf(SemanticTypeError);
+    expect(caught?.loc).toEqual(loc);
+  });
+
+  test('IfNode.validate() SemanticTypeError has no loc when node has no loc', () => {
+    const nonBoolChild = new Tree(0, null, []);
+    nonBoolChild.dataType = new BuiltInType('Object');
+
+    const block = new Tree(0, null, []);
+    block.dataType = new BuiltInType('Variant');
+
+    const n = new IfNode(null, [nonBoolChild, block]);
 
     let caught: SemanticTypeError | undefined;
     try { n.validate(); } catch (e) { caught = e as SemanticTypeError; }
