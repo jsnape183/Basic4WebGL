@@ -55,7 +55,6 @@ const EditPage: React.FC = () => {
   };
 
   const handleRun = () => {
-    let transpiledCode = '';
     dispatch(clearLogs());
     dispatch(
       addLog({
@@ -63,21 +62,29 @@ const EditPage: React.FC = () => {
         text: 'Compiling project...',
       } as LogItem)
     );
-    try {
-      transpiledCode = Basic4WebGL.transpile(buildProject);
+
+    const result = Basic4WebGL.transpile(buildProject);
+
+    if (result.diagnostics.length > 0) {
+      result.diagnostics.forEach((d) => {
+        const locStr = d.loc
+          ? ` (${d.loc.filename}:${d.loc.line}:${d.loc.col})`
+          : '';
+        dispatch(
+          addLog({ type: LogItemType.Error, text: d.message + locStr } as LogItem)
+        );
+      });
+      dispatch(setTranspiled(''));
+      setIsRunning(true);
+    } else {
       dispatch(
         addLog({
           type: LogItemType.Notice,
           text: 'Project compiled successfully...',
         } as LogItem)
       );
-      dispatch(setTranspiled(transpiledCode));
+      dispatch(setTranspiled(result.code!));
       setIsRunning(true);
-    } catch (e: any) {
-      dispatch(addLog({ type: LogItemType.Error, text: e.message } as LogItem));
-      dispatch(setTranspiled(''));
-      setIsRunning(true);
-      console.log(e);
     }
   };
 
