@@ -75,7 +75,7 @@ const EditPage: React.FC = () => {
         );
       });
       dispatch(setTranspiled(''));
-      setIsRunning(true);
+      // H2 fix: do NOT call setIsRunning(true) on failure
     } else {
       dispatch(
         addLog({

@@ -1,11 +1,11 @@
-import { useSelector } from "react-redux";
-import { v4 as uuidv4 } from "uuid";
-import { RootState } from "../../store";
-import { useFilesForProject } from "../../hooks/useFilesForProject";
-import { ModalWithInput } from "../Modal";
-import { IFile, addFile } from "../../features/files/filesSlice";
-import { useDispatch } from "react-redux";
-import { selectFile } from "../../features/ui/uiSlice";
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { v4 as uuidv4 } from 'uuid';
+import { RootState } from '../../store';
+import { useFilesForProject } from '../../hooks/useFilesForProject';
+import { ModalWithInput } from '../Modal';
+import { IFile, addFile } from '../../features/files/filesSlice';
+import { selectFile } from '../../features/ui/uiSlice';
 
 type FileTreeProps = {
   projectId: string;
@@ -15,24 +15,26 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
   const files = useFilesForProject(projectId);
 
-  const selectedFileId: string = useSelector(
-    (state: RootState) => state.files.selectedFileId as string
+  const selectedFileId: string | undefined = useSelector(
+    (state: RootState) => state.ui.selectedFileByProject[projectId]
   );
 
   const handleFileSelected = (id: string) => {
     dispatch(selectFile({ projectId, fileId: id }));
   };
 
-
-  if (selectedFileId === "") {
-    handleFileSelected(files[0].id);
-  }
+  // Auto-select first file when none is selected for this project
+  useEffect(() => {
+    if (!selectedFileId && files.length > 0) {
+      handleFileSelected(files[0].id);
+    }
+  }, [selectedFileId, files]);
 
   const handleNewFile = (filename: string) => {
-    let file: IFile = {
+    const file: IFile = {
       id: uuidv4(),
       name: filename,
-      source: "",
+      source: '',
       projectId: projectId,
     };
     dispatch(addFile(file));
@@ -41,27 +43,25 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
 
   return (
     <>
-        Files
-        <ModalWithInput
-          onSubmit={handleNewFile}
-          openText="+"
-          saveText="Save"
-          closeText="Close"
-          title="New file"
-        />
+      Files
+      <ModalWithInput
+        onSubmit={handleNewFile}
+        openText="+"
+        saveText="Save"
+        closeText="Close"
+        title="New file"
+      />
       <ul className="space-y-2 text-sm">
         {files.map((file) => (
-          <>
-            <li
-              key={file.id}
-              className="hover:text-white cursor-pointer"
-              onClick={() => {
-                handleFileSelected(file.id);
-              }}
-            >
-              {file.name}
-            </li>
-          </>
+          <li
+            key={file.id}
+            className={`hover:text-white cursor-pointer ${
+              file.id === selectedFileId ? 'text-white font-semibold' : ''
+            }`}
+            onClick={() => handleFileSelected(file.id)}
+          >
+            {file.name}
+          </li>
         ))}
       </ul>
     </>
