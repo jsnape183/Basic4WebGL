@@ -16,6 +16,7 @@ class BlockRule implements IParserRule {
     symbolTable: Symbols,
     data: any | undefined
   ): Tree {
+    const loc = tokenStream.current().loc();
     const children = new Array<Tree>();
     const endTokens = data?.endTokens;
     while (!check(endTokens, tokenStream.current())) {
@@ -27,7 +28,7 @@ class BlockRule implements IParserRule {
       if (!child) continue;
       children.push(child);
     }
-    return new BlockNode(null, children);
+    return new BlockNode(null, children, loc);
   }
 }
 

@@ -13,6 +13,7 @@ import IfNode from '../../nodes/IfNode';
 @RegisterParserRule('If')
 class IfRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.If, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,
@@ -26,7 +27,7 @@ class IfRule implements IParserRule {
     matchAndMove(tokens.EndIf, tokenStream);
     matchAndMove(newLines, tokenStream);
 
-    return new IfNode(null, [expr, block]);
+    return new IfNode(null, [expr, block], loc);
   }
 }
 

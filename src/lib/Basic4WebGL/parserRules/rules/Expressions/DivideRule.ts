@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Divide')
 class DivideRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const factor = data?.factor;
     matchAndMove(tokens.Divide, tokenStream);
     const secondary = getParserRule('Term').parse(
@@ -19,7 +20,7 @@ class DivideRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new DivideNode(null, [factor, secondary]);
+    return new DivideNode(null, [factor, secondary], loc);
   }
 }
 

@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Subtract')
 class SubtractRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const term = data?.term;
     matchAndMove(tokens.Subtract, tokenStream);
     const secondary = getParserRule('Term').parse(
@@ -19,7 +20,7 @@ class SubtractRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new SubtractNode(null, [term, secondary]);
+    return new SubtractNode(null, [term, secondary], loc);
   }
 }
 

@@ -12,10 +12,11 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('ExpressionList')
 class ExpressionListRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.OpenParen, tokenStream);
     if (check(tokens.CloseParen, tokenStream.current())) {
       matchAndMove(tokens.CloseParen, tokenStream);
-      return new ExpressionListNode(null, undefined);
+      return new ExpressionListNode(null, undefined, loc);
     }
     let expr = [
       getParserRule('Expression').parse(tokenStream, symbolTable, undefined),
@@ -27,7 +28,7 @@ class ExpressionListRule implements IParserRule {
       );
     }
     matchAndMove(tokens.CloseParen, tokenStream);
-    return new ExpressionListNode(null, expr);
+    return new ExpressionListNode(null, expr, loc);
   }
 }
 

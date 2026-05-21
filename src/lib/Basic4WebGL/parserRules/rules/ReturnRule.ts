@@ -13,6 +13,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Return')
 class ReturnRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Return, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,
@@ -20,7 +21,7 @@ class ReturnRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    return new FunctionReturnNode(null, expr);
+    return new FunctionReturnNode(null, expr, loc);
   }
 }
 

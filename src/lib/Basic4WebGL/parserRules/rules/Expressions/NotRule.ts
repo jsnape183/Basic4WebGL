@@ -12,11 +12,13 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Not')
 class NotRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     if (check(tokens.Not, tokenStream.current())) {
       matchAndMove(tokens.Not, tokenStream);
       return new NotNode(
         null,
-        getParserRule('BoolFactor').parse(tokenStream, symbolTable, undefined)
+        getParserRule('BoolFactor').parse(tokenStream, symbolTable, undefined),
+        loc
       );
     }
     return getParserRule('BoolTerm').parse(tokenStream, symbolTable, undefined);

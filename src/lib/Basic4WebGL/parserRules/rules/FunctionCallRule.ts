@@ -16,6 +16,7 @@ class FunctionCallRule implements IParserRule {
     symbolTable: Symbols,
     data: any | undefined
   ): Tree {
+    const loc = tokenStream.current().loc();
     const functionSymbol = data as Symbol;
     const expressions = getParserRule('ExpressionList').parse(
       tokenStream,
@@ -23,7 +24,7 @@ class FunctionCallRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    return new FunctionCallNode(functionSymbol, expressions);
+    return new FunctionCallNode(functionSymbol, expressions, loc);
   }
 }
 

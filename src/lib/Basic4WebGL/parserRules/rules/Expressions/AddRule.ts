@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Add')
 class AddRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const term = data?.term;
     matchAndMove(tokens.Add, tokenStream);
     const secondary = getParserRule('Term').parse(
@@ -19,7 +20,7 @@ class AddRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new AddNode(null, [term, secondary]);
+    return new AddNode(null, [term, secondary], loc);
   }
 }
 

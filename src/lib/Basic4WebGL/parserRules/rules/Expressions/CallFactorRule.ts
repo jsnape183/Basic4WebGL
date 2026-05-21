@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('CallFactor')
 class CallFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Call, tokenStream);
     matchAndMove(tokens.OpenParen, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
@@ -20,7 +21,7 @@ class CallFactorRule implements IParserRule {
       undefined
     );
     matchAndMove(tokens.CloseParen, tokenStream);
-    return new CallTermNode(null, expr);
+    return new CallTermNode(null, expr, loc);
   }
 }
 

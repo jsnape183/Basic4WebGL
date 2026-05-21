@@ -13,6 +13,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Call')
 class CallRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Call, tokenStream);
     matchAndMove(tokens.OpenParen, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
@@ -22,7 +23,7 @@ class CallRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
     matchAndMove(newLines, tokenStream);
-    return new CallNode(null, expr);
+    return new CallNode(null, expr, loc);
   }
 }
 

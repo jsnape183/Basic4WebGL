@@ -16,6 +16,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Dim')
 class DimRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Dim, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
@@ -29,12 +30,12 @@ class DimRule implements IParserRule {
       );
       const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
 
-      return new CloneNode({ object, classSymbol });
+      return new CloneNode({ object, classSymbol }, loc);
     }
 
     if (!check(tokens.OpenParen, tokenStream.current())) {
       const varSymbol = symbolTable.add(name, symbolTypes.Variable);
-      return new VariableDimNode(varSymbol);
+      return new VariableDimNode(varSymbol, loc);
     }
     const dims = getParserRule('ExpressionList').parse(
       tokenStream,
@@ -53,7 +54,7 @@ class DimRule implements IParserRule {
     );
     matchAndMove(newLines, tokenStream);
 
-    return new DimNode(arraySymbol, dims);
+    return new DimNode(arraySymbol, dims, loc);
   }
 }
 

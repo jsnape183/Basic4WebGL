@@ -15,6 +15,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('VariableFactor')
 class VariableFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text;
     if (
@@ -31,7 +32,7 @@ class VariableFactorRule implements IParserRule {
       });
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      return new TermNode(symbolTable.get(name), new VariableNode(name));
+      return new TermNode(symbolTable.get(name), new VariableNode(name), loc);
     }
     matchAndMove(tokens.OpenParen, tokenStream);
     const elems = getParserRule('ArrayList').parse(
@@ -41,7 +42,7 @@ class VariableFactorRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
 
-    return new ArrayLookupNode(symbolTable.get(name, 'Array'), elems);
+    return new ArrayLookupNode(symbolTable.get(name, 'Array'), elems, loc);
   }
 }
 

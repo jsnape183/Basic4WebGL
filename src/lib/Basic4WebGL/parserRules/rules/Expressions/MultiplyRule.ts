@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Multiply')
 class MultiplyRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const factor = data?.factor;
     matchAndMove(tokens.Multiply, tokenStream);
     const secondary = getParserRule('Term').parse(
@@ -19,7 +20,7 @@ class MultiplyRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new MultiplyNode(null, [factor, secondary]);
+    return new MultiplyNode(null, [factor, secondary], loc);
   }
 }
 

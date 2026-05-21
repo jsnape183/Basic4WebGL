@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('ArrayList')
 class ArrayListRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     let expr = [
       getParserRule('Expression').parse(tokenStream, symbolTable, undefined),
     ];
@@ -21,7 +22,7 @@ class ArrayListRule implements IParserRule {
         getParserRule('Expression').parse(tokenStream, symbolTable, undefined)
       );
     }
-    return new ArrayListNode(null, expr);
+    return new ArrayListNode(null, expr, loc);
   }
 }
 

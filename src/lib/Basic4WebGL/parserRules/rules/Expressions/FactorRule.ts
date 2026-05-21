@@ -18,11 +18,13 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Factor')
 class FactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     if (check([tokens.Add, tokens.Subtract], tokenStream.current())) {
       matchAndMove([tokens.Add, tokens.Subtract], tokenStream);
       return new UMinusNode(
         null,
-        getParserRule('Factor').parse(tokenStream, symbolTable, undefined)
+        getParserRule('Factor').parse(tokenStream, symbolTable, undefined),
+        loc
       );
     }
     if (check(tokens.OpenParen, tokenStream.current())) {
@@ -34,7 +36,7 @@ class FactorRule implements IParserRule {
         undefined
       );
       matchAndMove(tokens.CloseParen, tokenStream);
-      return new ParenNode(null, expr);
+      return new ParenNode(null, expr, loc);
     }
     if (check(tokens.Call, tokenStream.current())) {
       return getParserRule('CallFactor').parse(
@@ -62,7 +64,8 @@ class FactorRule implements IParserRule {
       matchAndMove(tokens.String, tokenStream);
       return new TermNode(
         tokenStream.prev().text,
-        new StringNode(tokenStream.prev().text)
+        new StringNode(tokenStream.prev().text),
+        loc
       );
     }
 
@@ -70,7 +73,8 @@ class FactorRule implements IParserRule {
       matchAndMove(tokens.Number, tokenStream);
       return new TermNode(
         tokenStream.prev().text,
-        new NumberNode(tokenStream.prev().text)
+        new NumberNode(tokenStream.prev().text),
+        loc
       );
     }
     throw new CompilationError(

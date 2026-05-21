@@ -12,12 +12,13 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('And')
 class AndRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const term = data?.term;
     matchAndMove(tokens.And, tokenStream);
     return new AndNode(null, [
       term,
       getParserRule('BoolTerm').parse(tokenStream, symbolTable, undefined),
-    ]);
+    ], loc);
   }
 }
 

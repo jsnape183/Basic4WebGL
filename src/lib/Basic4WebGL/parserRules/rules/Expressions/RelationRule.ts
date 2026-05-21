@@ -21,6 +21,7 @@ import { CompilationError } from '@CompilerLib/errors';
 @RegisterParserRule('Relation')
 class RelationRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     const left = getParserRule('Expression').parse(
       tokenStream,
       symbolTable,
@@ -32,24 +33,25 @@ class RelationRule implements IParserRule {
     return this.getRelationNode(
       tokenStream.prev(),
       left,
-      getParserRule('Expression').parse(tokenStream, symbolTable, undefined)
+      getParserRule('Expression').parse(tokenStream, symbolTable, undefined),
+      loc
     );
   }
 
-  getRelationNode(token: Token, left, right): Tree {
+  getRelationNode(token: Token, left, right, loc?): Tree {
     switch (token.token.value) {
       case tokens.Equals.value:
-        return new BoolEqualNode(left, right);
+        return new BoolEqualNode(left, right, loc);
       case tokens.NotEquals.value:
-        return new BoolNotEqualNode(left, right);
+        return new BoolNotEqualNode(left, right, loc);
       case tokens.GreaterThan.value:
-        return new BoolGreaterThanNode(left, right);
+        return new BoolGreaterThanNode(left, right, loc);
       case tokens.GreaterThanEqualTo.value:
-        return new BoolGreaterThanEqualToNode(left, right);
+        return new BoolGreaterThanEqualToNode(left, right, loc);
       case tokens.LessThan.value:
-        return new BoolLessThanNode(left, right);
+        return new BoolLessThanNode(left, right, loc);
       case tokens.LessThanEqualTo.value:
-        return new BoolLessThanEqualToNode(left, right);
+        return new BoolLessThanEqualToNode(left, right, loc);
       default:
         throw new CompilationError(
           `Expected =, <>, <, >, <= or >= found ${token.token.value}`

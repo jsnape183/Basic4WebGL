@@ -10,6 +10,7 @@ import FunctionTermNode from '@Basic4WebGL/nodes/FunctionTermNode';
 @RegisterParserRule('FunctionFactor')
 class FunctionFactorRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols, data: any): Tree {
+    const loc = tokenStream.current().loc();
     const name = data?.name;
     const expr = getParserRule('ExpressionList').parse(
       tokenStream,
@@ -18,7 +19,7 @@ class FunctionFactorRule implements IParserRule {
     );
 
     const functionSymbol = symbolTable.get(name, 'Function');
-    return new FunctionTermNode(functionSymbol, expr);
+    return new FunctionTermNode(functionSymbol, expr, loc);
   }
 }
 

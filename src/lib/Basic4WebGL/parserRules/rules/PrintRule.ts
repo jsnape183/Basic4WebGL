@@ -13,10 +13,12 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Print')
 class PrintRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Print, tokenStream);
     const printNode = new PrintNode(
       null,
-      getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined)
+      getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined),
+      loc
     );
     matchAndMove(newLines, tokenStream);
     return printNode;

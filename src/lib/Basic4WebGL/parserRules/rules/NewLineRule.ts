@@ -10,8 +10,9 @@ import EmptyNode from '../../nodes/EmptyNode';
 @RegisterParserRule('NewLine')
 class NewLineRule implements IParserRule {
   parse(tokenStream: TokenStream): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.NewLine, tokenStream);
-    return new EmptyNode();
+    return new EmptyNode(loc);
   }
 }
 

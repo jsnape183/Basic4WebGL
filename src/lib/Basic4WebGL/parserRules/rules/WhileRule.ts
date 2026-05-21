@@ -13,6 +13,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('While')
 class WhileRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.While, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,
@@ -26,7 +27,7 @@ class WhileRule implements IParserRule {
     matchAndMove(tokens.EndWhile, tokenStream);
     matchAndMove(newLines, tokenStream);
 
-    return new WhileNode(null, [expr, block]);
+    return new WhileNode(null, [expr, block], loc);
   }
 }
 

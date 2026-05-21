@@ -15,6 +15,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Function')
 class FunctionRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Function, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
 
@@ -55,8 +56,8 @@ class FunctionRule implements IParserRule {
     );
     return new FunctionDeclNode(functionSymbol, [
       variables,
-      new BlockNode(null, children),
-    ]);
+      new BlockNode(null, children, loc),
+    ], loc);
   }
 }
 

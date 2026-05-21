@@ -12,6 +12,7 @@ import tokens from '@Basic4WebGL/tokens';
 @RegisterParserRule('Term')
 class TermRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     let factor = getParserRule('Factor').parse(
       tokenStream,
       symbolTable,
@@ -30,7 +31,7 @@ class TermRule implements IParserRule {
           });
           break;
         default:
-          return new ExpressionNode(null, factor);
+          return new ExpressionNode(null, factor, loc);
       }
     }
     return factor;

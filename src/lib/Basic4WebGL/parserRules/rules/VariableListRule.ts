@@ -14,6 +14,7 @@ import VariableNode from '../../nodes/VariableNode';
 @RegisterParserRule('VariableList')
 class VariableListRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     const list = new Array<Tree>();
     while (check(tokens.Variable, tokenStream.current())) {
       matchAndMove(tokens.Variable, tokenStream);
@@ -21,12 +22,12 @@ class VariableListRule implements IParserRule {
         tokenStream.prev().text,
         symbolTypes.Parameter
       );
-      list.push(new TermNode(paramSymbol, new VariableNode(paramSymbol.name)));
+      list.push(new TermNode(paramSymbol, new VariableNode(paramSymbol.name), loc));
       if (!check(tokens.Comma, tokenStream.current())) break;
       matchAndMove(tokens.Comma, tokenStream);
     }
 
-    return new VariableListNode(null, list);
+    return new VariableListNode(null, list, loc);
   }
 }
 

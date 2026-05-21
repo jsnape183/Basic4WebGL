@@ -15,6 +15,7 @@ import builtInTypes from '../../builtInTypes';
 @RegisterParserRule('ForExpression')
 class ForExpressionRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
     const forSymbol = symbolTable.add(
@@ -27,7 +28,7 @@ class ForExpressionRule implements IParserRule {
       matchAndMove(tokens.In, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
       const iterator = tokenStream.prev().text;
-      return new InNode({ var: name, iterator }, []);
+      return new InNode({ var: name, iterator }, [], loc);
     }
     matchAndMove(tokens.Equals, tokenStream);
     const startExpr = getParserRule('BoolExpression').parse(
@@ -41,7 +42,7 @@ class ForExpressionRule implements IParserRule {
       symbolTable,
       undefined
     );
-    return new ToNode(forSymbol, [startExpr, endExpr]);
+    return new ToNode(forSymbol, [startExpr, endExpr], loc);
   }
 }
 

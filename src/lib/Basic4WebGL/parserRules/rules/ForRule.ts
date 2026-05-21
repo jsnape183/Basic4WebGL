@@ -13,6 +13,7 @@ import ForNode from '../../nodes/ForNode';
 @RegisterParserRule('For')
 class ForRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.For, tokenStream);
     const expr = getParserRule('ForExpression').parse(
       tokenStream,
@@ -26,7 +27,7 @@ class ForRule implements IParserRule {
     matchAndMove(tokens.Next, tokenStream);
     matchAndMove(newLines, tokenStream);
 
-    return new ForNode(null, [expr, block]);
+    return new ForNode(null, [expr, block], loc);
   }
 }
 

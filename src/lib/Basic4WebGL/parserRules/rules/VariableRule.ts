@@ -15,6 +15,7 @@ import { newLines } from '../../parserConfig';
 @RegisterParserRule('Variable')
 class VariableRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
     if (
@@ -46,7 +47,7 @@ class VariableRule implements IParserRule {
       );
       matchAndMove(newLines, tokenStream);
       const arraySymbol = symbolTable.get(name, 'Array');
-      return new ArrayAssignNode(arraySymbol, [dims, expr]);
+      return new ArrayAssignNode(arraySymbol, [dims, expr], loc);
     }
     const varSymbol = symbolTable.get(name, symbolTypes.Variable);
     matchAndMove(tokens.Equals, tokenStream);
@@ -56,7 +57,7 @@ class VariableRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    return new AssignNode(varSymbol, expr);
+    return new AssignNode(varSymbol, expr, loc);
   }
 }
 

@@ -10,8 +10,9 @@ import EmptyNode from '../../nodes/EmptyNode';
 @RegisterParserRule('SoftNewLine')
 class SoftNewLineRule implements IParserRule {
   parse(tokenStream: TokenStream): Tree {
+    const loc = tokenStream.current().loc();
     matchAndMove(tokens.SoftNewLine, tokenStream);
-    return new EmptyNode();
+    return new EmptyNode(loc);
   }
 }
 
