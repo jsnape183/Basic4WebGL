@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateFile } from '../features/files/filesSlice';
@@ -76,13 +76,19 @@ const EditPage: React.FC = () => {
       }
       sidebar={<TreePanel projectId={project.id} />}
       editor={
-        <ErrorBoundary fallback={<p className="p-4 text-red-400">Editor failed to load.</p>}>
+        <ErrorBoundary
+          key={project.id}
+          fallback={<p className="p-4 text-red-400">Editor failed to load.</p>}
+        >
           <Editor onChange={handleChange} file={selectedFile} height="90vh" />
         </ErrorBoundary>
       }
       preview={
         isRunning ? (
-          <ErrorBoundary fallback={<p className="p-4 text-red-400">Preview failed to load.</p>}>
+          <ErrorBoundary
+            key={project.id}
+            fallback={<p className="p-4 text-red-400">Preview failed to load.</p>}
+          >
             <Preview transpiled={transpiled} projectId={project.id} />
           </ErrorBoundary>
         ) : undefined

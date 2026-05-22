@@ -35,13 +35,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback !== undefined) {
+        return this.props.fallback;
+      }
       return (
-        this.props.fallback ?? (
-          <div className="p-4 bg-gray-900 text-red-400 text-sm font-mono">
-            <p className="font-bold mb-1">Component error</p>
-            <p>{this.state.error?.message}</p>
-          </div>
-        )
+        <div className="p-4 bg-gray-900 text-red-400 text-sm font-mono">
+          <p className="font-bold mb-1">Component error</p>
+          <p>{this.state.error?.message}</p>
+        </div>
       );
     }
     return this.props.children;

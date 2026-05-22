@@ -28,19 +28,18 @@ const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange }) => {
     return <p>File not found.</p>;
   }
 
+  if (!languageLoaded) return null;
   return (
-    languageLoaded && (
-      <Editor
-        height={height}
-        defaultValue=""
-        language="softBasic"
-        defaultLanguage="softBasic"
-        theme="softBasicTheme"
-        value={file.source}
-        options={{ fontSize: 14, minimap: { enabled: false }, automaticLayout: true }}
-        onChange={onChange}
-      />
-    )
+    <Editor
+      height={height}
+      defaultValue=""
+      language="softBasic"
+      defaultLanguage="softBasic"
+      theme="softBasicTheme"
+      value={file.source}
+      options={{ fontSize: 14, minimap: { enabled: false }, automaticLayout: true }}
+      onChange={onChange}
+    />
   );
 };
 
