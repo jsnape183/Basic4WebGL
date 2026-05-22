@@ -14,8 +14,8 @@ export default (table: Symbols): string => {
         await _SoftAssetManager.preloadFromLocalStorage(_sbProjectId);
         _SoftBasicGfx.getInstance().getApp().ticker.add((delta) => _SoftBasicGfx.getInstance()._update(delta));
         _sbClasses.forEach((c) => {
-          if(c.symbol.onentry){
-             c.symbol.onentry();
+          if(c.symbol.onenter){
+             c.symbol.onenter();
           }
         });
       };
