@@ -20,8 +20,11 @@ const uiSlice = createSlice({
       const { projectId, fileId } = action.payload;
       state.selectedFileByProject[projectId] = fileId;
     },
+    clearProjectSelection: (state: UIState, action: PayloadAction<string>) => {
+      delete state.selectedFileByProject[action.payload];
+    },
   },
 });
 
-export const { selectFile } = uiSlice.actions;
+export const { selectFile, clearProjectSelection } = uiSlice.actions;
 export default uiSlice.reducer;
