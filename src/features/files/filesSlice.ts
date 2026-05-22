@@ -10,12 +10,10 @@ export interface IFile {
 
 export interface IFilesState {
   byId: Record<string, IFile>;
-  selectedFileId: string;
 }
 
 const initialState: IFilesState = {
   byId: {},
-  selectedFileId: "",
 };
 
 const filesSlice = createSlice({

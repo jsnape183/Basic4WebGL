@@ -4,7 +4,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { RootState, AppDispatch } from "../../store";
 import { createProjectWithMainFile } from "../../features/projects/createProjectWithMainFile";
-import { removeProject, Project } from "../../features/projects/projectsSlice";
+import { deleteProjectWithMainFile } from "../../features/projects/deleteProjectAndFiles";
+import { Project } from "../../features/projects/projectsSlice";
 
 const ProjectList: React.FC = () => {
   const projects = useSelector((state: RootState) => state.projects.items);
@@ -15,7 +16,7 @@ const ProjectList: React.FC = () => {
   };
 
   const handleRemove = (id: string) => {
-    dispatch(removeProject(id));
+    dispatch(deleteProjectWithMainFile(id));
   };
 
   return (
