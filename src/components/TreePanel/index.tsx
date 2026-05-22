@@ -1,3 +1,4 @@
+import React from 'react';
 import AssetTree from './AssetTree';
 import FileTree from '../FileTree';
 
@@ -5,13 +6,13 @@ type TreePanelProps = {
   projectId: string;
 };
 
-const TreePanel: React.FC<TreePanelProps> = ({ projectId }) => {
-  return (
-    <aside className="w-64 bg-gray-800 p-4 border-r border-gray-700 overflow-y-auto">
-      <FileTree projectId={projectId} />
+const TreePanel: React.FC<TreePanelProps> = ({ projectId }) => (
+  <>
+    <FileTree projectId={projectId} />
+    <div className="mt-4 pt-4 border-t border-ds-border-subtle">
       <AssetTree projectId={projectId} />
-    </aside>
-  );
-};
+    </div>
+  </>
+);
 
 export default TreePanel;

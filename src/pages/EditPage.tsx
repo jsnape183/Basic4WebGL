@@ -11,7 +11,8 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { useCompiler } from '../hooks/useCompiler';
 import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import TreePanel from '../components/TreePanel';
-import ProjectShell from '../components/ProjectShell';
+import ProjectShell, { FilesIcon, AssetsIcon } from '../components/ProjectShell';
+import BottomPanel from '../components/BottomPanel';
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const EditPage: React.FC = () => {
     state.projects.items.find((p: Project) => p.id === id)
   );
   const transpiled = useSelector((state: RootState) => state.session.transpiled);
+  const logs = useSelector((state: RootState) => state.session.logs);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   useRunnerMessages();
@@ -76,7 +78,20 @@ const EditPage: React.FC = () => {
           )}
         </>
       }
-      sidebar={<TreePanel projectId={project.id} />}
+      activitySections={[
+        {
+          id: 'files',
+          icon: <FilesIcon />,
+          ariaLabel: 'Files',
+          content: <TreePanel projectId={project.id} />,
+        },
+        {
+          id: 'assets',
+          icon: <AssetsIcon />,
+          ariaLabel: 'Assets',
+          content: <TreePanel projectId={project.id} />,
+        },
+      ]}
       editor={
         <ErrorBoundary
           key={project.id}
@@ -95,6 +110,7 @@ const EditPage: React.FC = () => {
           </ErrorBoundary>
         ) : undefined
       }
+      panel={<BottomPanel logs={logs} />}
       footer={
         <>
           <span>Ln 1, Col 1</span>
