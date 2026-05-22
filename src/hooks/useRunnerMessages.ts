@@ -4,10 +4,14 @@ import { useDispatch } from 'react-redux';
 import { addLog } from '../features/session/sessionSlice';
 import { LogItemType } from '../Types/LogItem';
 
-type LogMessage = { type: string; message: string };
+type LogMessage = { type: 'console.log' | 'runtimeError'; message: string };
 
 function isLogMessage(x: unknown): x is LogMessage {
-  return !!x && typeof (x as LogMessage).type === 'string';
+  return (
+    !!x &&
+    typeof (x as LogMessage).type === 'string' &&
+    typeof (x as LogMessage).message === 'string'
+  );
 }
 
 /**
@@ -30,7 +34,7 @@ export const useRunnerMessages = () => {
           dispatch(addLog({ type: LogItemType.Error, text: e.data.message }));
           break;
         default:
-          dispatch(addLog({ type: LogItemType.Warning, text: e.data.message }));
+          return; // unknown message types are silently ignored
       }
     };
     window.addEventListener('message', onMessage);
