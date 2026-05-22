@@ -27,10 +27,10 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   return (
     <>
       Assets
-      <FileInput onChange={handleFileInputChange} />
+      <FileInput onChange={handleFileInputChange} aria-label="Upload asset" />
       <ul className="space-y-2 text-sm">
         {assets.map((asset) => (
-          <li key={asset.id} className="hover:text-white cursor-pointer">
+          <li key={asset.id} className="hover:text-ds-text cursor-pointer">
             {asset.name}
           </li>
         ))}

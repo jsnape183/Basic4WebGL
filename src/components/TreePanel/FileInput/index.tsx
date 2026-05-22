@@ -8,8 +8,9 @@ export type FileUploadResult = {
 
 export type FileInputProps = {
   onChange(files: FileUploadResult[]): void;
+  'aria-label'?: string;
 };
-const FileInput = ({ onChange }: FileInputProps) => {
+const FileInput = ({ onChange, 'aria-label': ariaLabel }: FileInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const readAsDataURL = (file: File) =>
@@ -50,6 +51,7 @@ const FileInput = ({ onChange }: FileInputProps) => {
       type="file"
       ref={inputRef}
       data-testid="uploader"
+      aria-label={ariaLabel}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
           handleOnChange(e.target.files);

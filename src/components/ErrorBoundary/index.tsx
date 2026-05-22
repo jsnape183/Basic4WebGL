@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         return this.props.fallback;
       }
       return (
-        <div className="p-4 bg-gray-900 text-red-400 text-sm font-mono">
+        <div className="p-4 bg-ds-bg text-ds-error text-sm font-mono">
           <p className="font-bold mb-1">Component error</p>
           <p>{this.state.error?.message}</p>
         </div>
