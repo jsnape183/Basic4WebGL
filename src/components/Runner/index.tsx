@@ -17,7 +17,6 @@ const Runner: React.FC<RunnerProps> = ({
   width = '100%',
   height = '100%',
 }) => {
-  //console.log(transpiled);
   return (
     <div style={{ width: width, height: height }}>
       <iframe

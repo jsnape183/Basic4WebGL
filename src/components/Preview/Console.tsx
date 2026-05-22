@@ -9,14 +9,14 @@ const getClassesForType = (type: LogItemType) => {
     case LogItemType.Notice:  return 'text-green-400';
     case LogItemType.Warning: return 'text-orange-400';
     case LogItemType.Error:   return 'text-red-400';
-    case LogItemType.Output:  return 'text-grey-400';
+    case LogItemType.Output:  return 'text-gray-400';
   }
 };
 
 const Console: React.FC<ConsoleProps> = ({ logs = [] }) => {
   return (
     <ul className="bg-black text-xs font-mono p-2 overflow-scroll">
-      <li className="text-grey-400">Console log output...</li>
+      <li className="text-gray-400">Console log output...</li>
       {logs.map((log, index) => (
         <li
           key={index}
