@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import { RootState } from '../../store';
@@ -14,6 +14,7 @@ type FileTreeProps = {
 const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
   const files = useFilesForProject(projectId);
+  const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   const selectedFileId: string | undefined = useSelector(
     (state: RootState) => state.ui.selectedFileByProject[projectId]
@@ -54,39 +55,79 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent, index: number, fileId: string) => {
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault();
+        const next = itemRefs.current[index + 1];
+        if (next) next.focus();
+        break;
+      }
+      case 'ArrowUp': {
+        e.preventDefault();
+        const prev = itemRefs.current[index - 1];
+        if (prev) prev.focus();
+        break;
+      }
+      case 'Enter':
+        e.preventDefault();
+        handleFileSelected(fileId);
+        break;
+    }
+  };
+
   return (
-    <>
-      Files
-      <ModalWithInput
-        onSubmit={handleNewFile}
-        openText="+"
-        saveText="Save"
-        closeText="Close"
-        title="New file"
-      />
-      <ul className="space-y-2 text-sm">
-        {files.map((file) => (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-ds-text-dim">
+          Files
+        </span>
+        <ModalWithInput
+          onSubmit={handleNewFile}
+          openText="+"
+          saveText="Save"
+          closeText="Close"
+          title="New file"
+        />
+      </div>
+      <ul
+        role="listbox"
+        aria-label="Files"
+        className="space-y-0.5"
+      >
+        {files.map((file, index) => (
           <li
             key={file.id}
-            className={`flex items-center justify-between group hover:text-white cursor-pointer ${
-              file.id === selectedFileId ? 'text-white font-semibold' : ''
-            }`}
+            ref={(el) => { itemRefs.current[index] = el; }}
+            role="option"
+            aria-selected={file.id === selectedFileId}
+            tabIndex={0}
+            onClick={() => handleFileSelected(file.id)}
+            onKeyDown={(e) => handleKeyDown(e, index, file.id)}
+            className={`
+              group flex items-center justify-between px-2 py-1 rounded text-xs cursor-pointer
+              focus:outline-none focus:ring-2 focus:ring-ds-accent
+              ${file.id === selectedFileId
+                ? 'bg-ds-accent-subtle text-ds-text font-semibold'
+                : 'text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text'
+              }
+            `}
           >
-            <span onClick={() => handleFileSelected(file.id)}>{file.name}</span>
+            <span className="truncate">{file.name}</span>
             {files.length > 1 && (
               <button
-                onClick={() => handleDeleteFile(file.id)}
-                className="hidden group-hover:inline text-gray-500 hover:text-red-400 ml-2 text-xs"
-                title="Delete file"
-                aria-label="Delete file"
+                onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
+                className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error ml-1 leading-none transition-opacity"
+                aria-label={`Delete ${file.name}`}
+                tabIndex={-1}
               >
-                ✕
+                ×
               </button>
             )}
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 };
 
