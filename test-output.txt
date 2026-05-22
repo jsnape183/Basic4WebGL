@@ -1,0 +1,36 @@
+
+> react-vite-ts@0.0.0 test
+> vitest
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/jsnap/source/repos/Basic4WebGL[39m
+
+ [32m✓[39m tests/lib/CompilerLib/unit/errors/errors.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/symbols/symbolTable.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/nodes/nodeLoc.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/expressions.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/symbols.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/lexer/token.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/parser/tokenRuleCoverage.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/compileResult.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/lexer/lexer.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/lexer/tokens.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/arithmatic.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/parser/parser.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/parser/booleans.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/booleans.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/coreConstructs.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/conditionals.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/parser/constructs.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/tree/tree.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/control.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/types/sourceLocation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui/smoke.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/symbolRules.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/nodes/nodeTypes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m23 passed[39m[22m[90m (23)[39m
+[2m      Tests [22m [1m[32m195 passed[39m[22m[90m (195)[39m
+[2m   Start at [22m 18:27:05
+[2m   Duration [22m 4.73s[2m (transform 3.79s, setup 8.82s, collect 28.87s, tests 446ms, environment 3.15s, prepare 8.09s)[22m
+
