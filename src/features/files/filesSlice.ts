@@ -1,5 +1,5 @@
-// src/features/files/filesSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { REHYDRATE } from 'redux-persist';
 
 export interface IFile {
   id: string;
@@ -10,27 +10,44 @@ export interface IFile {
 
 export interface IFilesState {
   byId: Record<string, IFile>;
+  dirtyFileIds: string[];
 }
 
 const initialState: IFilesState = {
   byId: {},
+  dirtyFileIds: [],
 };
 
 const filesSlice = createSlice({
-  name: "files",
+  name: 'files',
   initialState,
   reducers: {
-    addFile: (state: IFilesState, action: PayloadAction<IFile>) => {
+    addFile: (state, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
     },
-    updateFile: (state: IFilesState, action: PayloadAction<IFile>) => {
+    updateFile: (state, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
+      // Always replace the array so React sees a new reference and re-triggers useEffect
+      state.dirtyFileIds = [
+        ...state.dirtyFileIds.filter((id) => id !== action.payload.id),
+        action.payload.id,
+      ];
     },
-    removeFile: (state: IFilesState, action: PayloadAction<string>) => {
+    removeFile: (state, action: PayloadAction<string>) => {
       delete state.byId[action.payload];
+      state.dirtyFileIds = state.dirtyFileIds.filter((id) => id !== action.payload);
     },
+    clearAllDirty: (state) => {
+      state.dirtyFileIds = [];
+    },
+  },
+  extraReducers: (builder) => {
+    // dirtyFileIds must never survive a page refresh — clear on rehydrate
+    builder.addCase(REHYDRATE, (state) => {
+      state.dirtyFileIds = [];
+    });
   },
 });
 
-export const { addFile, updateFile, removeFile } = filesSlice.actions;
+export const { addFile, updateFile, removeFile, clearAllDirty } = filesSlice.actions;
 export default filesSlice.reducer;
