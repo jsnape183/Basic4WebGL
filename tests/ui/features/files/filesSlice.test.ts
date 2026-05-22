@@ -1,6 +1,5 @@
 // tests/ui/features/files/filesSlice.test.ts
 import { configureStore } from '@reduxjs/toolkit';
-import { REHYDRATE } from 'redux-persist';
 import filesReducer, {
   IFile,
   IFilesState,
@@ -58,10 +57,7 @@ describe('dirtyFileIds', () => {
     expect(store.getState().files.dirtyFileIds).toHaveLength(0);
   });
 
-  it('REHYDRATE clears dirtyFileIds', () => {
-    const store = configureStore({ reducer: { files: filesReducer } });
-    store.dispatch(updateFile({ id: 'f1', name: 'main.bas', source: 'x', projectId: 'p1' }));
-    store.dispatch({ type: REHYDRATE, key: 'softBASIC', payload: {} });
-    expect(store.getState().files.dirtyFileIds).toHaveLength(0);
-  });
+  // Note: dirtyFileIds is cleared on rehydration via a redux-persist transform
+  // in store.ts (clearDirtyOnRehydrate), not by a reducer handler.
+  // That behaviour is an integration concern, not a slice-level concern.
 });

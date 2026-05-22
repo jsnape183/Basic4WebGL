@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { REHYDRATE } from 'redux-persist';
 
 export interface IFile {
   id: string;
@@ -40,12 +39,6 @@ const filesSlice = createSlice({
     clearAllDirty: (state) => {
       state.dirtyFileIds = [];
     },
-  },
-  extraReducers: (builder) => {
-    // dirtyFileIds must never survive a page refresh — clear on rehydrate
-    builder.addCase(REHYDRATE, (state) => {
-      state.dirtyFileIds = [];
-    });
   },
 });
 

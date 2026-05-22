@@ -8,6 +8,7 @@ import sessionReducer from "./features/session/sessionSlice";
 import {
   persistReducer,
   persistStore,
+  createTransform,
   FLUSH,
   REHYDRATE,
   PAUSE,
@@ -16,11 +17,23 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
+import { IFilesState } from "./features/files/filesSlice";
+
+// Always clear dirtyFileIds on rehydration — it's UI-only state that must
+// not survive a page refresh. Using a transform (rather than a REHYDRATE
+// reducer handler) avoids interfering with autoMergeLevel1's reference
+// check, which would otherwise skip restoring byId.
+const clearDirtyOnRehydrate = createTransform<IFilesState, IFilesState>(
+  (inbound) => inbound, // nothing to do on the way into storage
+  (outbound) => ({ ...outbound, dirtyFileIds: [] }), // clear on the way out
+  { whitelist: ["files"] }
+);
 
 const persistedConfig = {
   key: "softBASIC",
   storage,
   blacklist: ["session"],
+  transforms: [clearDirtyOnRehydrate],
 };
 
 const rootReducer = combineReducers({
