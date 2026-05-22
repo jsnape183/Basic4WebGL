@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateFile, removeFile } from '../features/files/filesSlice';
 import useSelectedFile from '../features/ui/useSelectedFile';
@@ -75,6 +75,14 @@ const EditPage: React.FC = () => {
     <ProjectShell
       header={
         <>
+          <Link
+            to="/"
+            className="mr-2 text-ds-text-dim hover:text-ds-text-muted transition-colors text-lg leading-none"
+            aria-label="Back to projects"
+            title="Back to projects"
+          >
+            ‹
+          </Link>
           <span className="font-bold text-sm text-ds-accent-btn-text tracking-wide mr-3">
             softBASIC
           </span>
