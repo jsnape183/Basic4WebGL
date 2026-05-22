@@ -7,16 +7,7 @@ import { Project } from '../features/projects/projectsSlice';
 import { AppDispatch, RootState } from '../store';
 import Editor from '../components/Editor';
 import Preview from '../components/Preview';
-import { useProjectForBuild } from '../hooks/useProjectForBuild';
-import Basic4WebGL from '../lib/Basic4WebGL';
-import { projectLib } from '../constants/projectLib';
-import {
-  addLog,
-  clearLogs,
-  setTranspiled,
-  setIsRunning,
-} from '../features/session/sessionSlice';
-import { LogItem, LogItemType } from '../Types/LogItem';
+import { useCompiler } from '../hooks/useCompiler';
 import TreePanel from '../components/TreePanel';
 
 const EditPage: React.FC = () => {
@@ -29,11 +20,11 @@ const EditPage: React.FC = () => {
     state.projects.items.find((p: Project) => p.id === id)
   );
   const transpiled = useSelector((state: RootState) => state.session.transpiled);
-  const isRunning = useSelector((state: RootState) => state.session.isRunning);
+
+  const { run, stop, isRunning } = useCompiler(id ?? '');
 
   // Hooks must be called unconditionally — above early return
   const selectedFile = useSelectedFile(id ?? '');
-  const buildProject = useProjectForBuild(id ?? '', projectLib);
 
   useEffect(() => {
     if (!project?.id) {
@@ -59,47 +50,20 @@ const EditPage: React.FC = () => {
     }
   };
 
-  const handleRun = () => {
-    dispatch(clearLogs());
-    dispatch(addLog({ type: LogItemType.Notice, text: 'Compiling project...' } as LogItem));
-
-    const result = Basic4WebGL.transpile(buildProject);
-
-    if (result.diagnostics.length > 0) {
-      result.diagnostics.forEach((d) => {
-        const locStr = d.loc
-          ? ` (${d.loc.filename}:${d.loc.line}:${d.loc.col})`
-          : '';
-        dispatch(addLog({ type: LogItemType.Error, text: d.message + locStr } as LogItem));
-      });
-      dispatch(setTranspiled(''));
-    } else {
-      dispatch(addLog({ type: LogItemType.Notice, text: 'Project compiled successfully...' } as LogItem));
-      dispatch(setTranspiled(result.code!));
-      dispatch(setIsRunning(true));
-    }
-  };
-
-  const handleStop = () => {
-    dispatch(setIsRunning(false));
-    dispatch(clearLogs());
-    dispatch(setTranspiled(''));
-  };
-
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-900 text-white">
       <header className="h-12 px-4 flex items-center justify-between bg-gray-800 shadow">
         <div className="text-lg font-bold">softBASIC</div>
         {!isRunning ? (
           <button
-            onClick={handleRun}
+            onClick={run}
             className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
           >
             Run
           </button>
         ) : (
           <button
-            onClick={handleStop}
+            onClick={stop}
             className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
           >
             Stop
