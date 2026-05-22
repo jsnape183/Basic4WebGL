@@ -9,6 +9,7 @@ import Editor from '../components/Editor';
 import Preview from '../components/Preview';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useCompiler } from '../hooks/useCompiler';
+import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import TreePanel from '../components/TreePanel';
 import ProjectShell from '../components/ProjectShell';
 
@@ -24,6 +25,7 @@ const EditPage: React.FC = () => {
   const transpiled = useSelector((state: RootState) => state.session.transpiled);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
+  useRunnerMessages();
 
   // Hooks must be called unconditionally — above early return
   const selectedFile = useSelectedFile(id ?? '');

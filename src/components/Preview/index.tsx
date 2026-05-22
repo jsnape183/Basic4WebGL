@@ -2,13 +2,11 @@ import { useSelector } from 'react-redux';
 import Runner from '../Runner';
 import Console from './Console';
 import { RootState } from '../../store';
-import { useRunnerMessages } from '../../hooks/useRunnerMessages';
 
 type PreviewProps = { transpiled: string; projectId: string; };
 
 const Preview: React.FC<PreviewProps> = ({ transpiled, projectId }) => {
   const logs = useSelector((state: RootState) => state.session.logs);
-  useRunnerMessages();
 
   return (
     <>
