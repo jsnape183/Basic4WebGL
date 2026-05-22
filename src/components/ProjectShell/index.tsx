@@ -30,11 +30,7 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
         {sidebar}
       </nav>
 
-      <main
-        className={`flex-1 bg-gray-900 ${
-          preview ? 'w-1/2' : 'w-full'
-        } transition-all duration-300`}
-      >
+      <main className="flex-1 bg-gray-900 transition-all duration-300">
         {editor}
       </main>
 

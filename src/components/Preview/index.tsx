@@ -11,12 +11,12 @@ const Preview: React.FC<PreviewProps> = ({ transpiled, projectId }) => {
   useRunnerMessages();
 
   return (
-    <aside className="w-1/2 bg-gray-950 border-l border-gray-700 flex flex-col">
+    <>
       <div className="flex-1 border-b border-gray-700">
         <Runner transpiled={transpiled} projectId={projectId} width="100%" height="100%" />
       </div>
       <Console logs={logs} />
-    </aside>
+    </>
   );
 };
 

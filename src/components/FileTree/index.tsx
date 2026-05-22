@@ -5,7 +5,7 @@ import { RootState } from '../../store';
 import { useFilesForProject } from '../../hooks/useFilesForProject';
 import { ModalWithInput } from '../Modal';
 import { IFile, addFile, removeFile } from '../../features/files/filesSlice';
-import { selectFile } from '../../features/ui/uiSlice';
+import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
 
 type FileTreeProps = {
   projectId: string;
@@ -48,6 +48,8 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
       const remaining = files.filter((f) => f.id !== id);
       if (remaining.length > 0) {
         handleFileSelected(remaining[0].id);
+      } else {
+        dispatch(clearProjectSelection(projectId));
       }
     }
   };
@@ -76,6 +78,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
                 onClick={() => handleDeleteFile(file.id)}
                 className="hidden group-hover:inline text-gray-500 hover:text-red-400 ml-2 text-xs"
                 title="Delete file"
+                aria-label="Delete file"
               >
                 ✕
               </button>
