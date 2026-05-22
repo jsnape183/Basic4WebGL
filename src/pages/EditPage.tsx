@@ -9,6 +9,7 @@ import Editor from '../components/Editor';
 import Preview from '../components/Preview';
 import { useCompiler } from '../hooks/useCompiler';
 import TreePanel from '../components/TreePanel';
+import ProjectShell from '../components/ProjectShell';
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -51,43 +52,41 @@ const EditPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gray-900 text-white">
-      <header className="h-12 px-4 flex items-center justify-between bg-gray-800 shadow">
-        <div className="text-lg font-bold">softBASIC</div>
-        {!isRunning ? (
-          <button
-            onClick={run}
-            className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
-          >
-            Run
-          </button>
-        ) : (
-          <button
-            onClick={stop}
-            className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
-          >
-            Stop
-          </button>
-        )}
-      </header>
-      <div className="flex flex-1 overflow-hidden">
-        <TreePanel projectId={project.id} />
-        <main
-          className={`flex-1 bg-gray-900 ${
-            isRunning ? 'w-1/2' : 'w-full'
-          } transition-all duration-300`}
-        >
-          <Editor onChange={handleChange} file={selectedFile} height="90vh" />
-        </main>
-        {isRunning && (
+    <ProjectShell
+      header={
+        <>
+          <div className="text-lg font-bold">softBASIC</div>
+          {!isRunning ? (
+            <button
+              onClick={run}
+              className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
+            >
+              Run
+            </button>
+          ) : (
+            <button
+              onClick={stop}
+              className="text-sm px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 transition"
+            >
+              Stop
+            </button>
+          )}
+        </>
+      }
+      sidebar={<TreePanel projectId={project.id} />}
+      editor={<Editor onChange={handleChange} file={selectedFile} height="90vh" />}
+      preview={
+        isRunning ? (
           <Preview transpiled={transpiled} projectId={project.id} />
-        )}
-      </div>
-      <footer className="h-8 px-4 bg-gray-800 text-xs text-gray-400 flex items-center justify-between">
-        <span>Ln 1, Col 1</span>
-        <span>Spaces: 2 | UTF-8 | LF</span>
-      </footer>
-    </div>
+        ) : undefined
+      }
+      footer={
+        <>
+          <span>Ln 1, Col 1</span>
+          <span>Spaces: 2 | UTF-8 | LF</span>
+        </>
+      }
+    />
   );
 };
 
