@@ -5,7 +5,16 @@ import filesReducer from "./features/files/filesSlice";
 import assetsReducer from "./features/assets/assetsSlice";
 import uiReducer from "./features/ui/uiSlice";
 import sessionReducer from "./features/session/sessionSlice";
-import { persistReducer, persistStore } from "redux-persist";
+import {
+  persistReducer,
+  persistStore,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
 const persistedConfig = {
@@ -29,7 +38,8 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredPaths: ["_persist"],
       },
     }),
 });
