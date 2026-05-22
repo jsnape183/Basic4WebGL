@@ -6,7 +6,7 @@ import {
   setTranspiled,
   setIsRunning,
 } from '../features/session/sessionSlice';
-import { LogItem, LogItemType } from '../Types/LogItem';
+import { LogItemType } from '../Types/LogItem';
 import Basic4WebGL from '../lib/Basic4WebGL';
 import { useProjectForBuild } from './useProjectForBuild';
 import { projectLib } from '../constants/projectLib';
@@ -18,7 +18,7 @@ export const useCompiler = (projectId: string) => {
 
   const run = () => {
     dispatch(clearLogs());
-    dispatch(addLog({ type: LogItemType.Notice, text: 'Compiling project...' } as LogItem));
+    dispatch(addLog({ type: LogItemType.Notice, text: 'Compiling project...' }));
 
     const result = Basic4WebGL.transpile(buildProject);
 
@@ -27,11 +27,12 @@ export const useCompiler = (projectId: string) => {
         const locStr = d.loc
           ? ` (${d.loc.filename}:${d.loc.line}:${d.loc.col})`
           : '';
-        dispatch(addLog({ type: LogItemType.Error, text: d.message + locStr } as LogItem));
+        dispatch(addLog({ type: LogItemType.Error, text: d.message + locStr }));
       });
+      dispatch(setIsRunning(false));
       dispatch(setTranspiled(''));
     } else {
-      dispatch(addLog({ type: LogItemType.Notice, text: 'Project compiled successfully...' } as LogItem));
+      dispatch(addLog({ type: LogItemType.Notice, text: 'Project compiled successfully...' }));
       dispatch(setTranspiled(result.code!));
       dispatch(setIsRunning(true));
     }
