@@ -4,7 +4,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export interface Project {
   id: string;
   name: string;
-  fileIds: string[];
 }
 
 export interface ProjectsState {

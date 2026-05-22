@@ -12,7 +12,6 @@ export const createProjectWithMainFile =
       addProject({
         id: projectId,
         name,
-        fileIds: [mainFileId],
       })
     );
 
