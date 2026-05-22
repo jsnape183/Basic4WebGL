@@ -7,6 +7,7 @@ import { Project } from '../features/projects/projectsSlice';
 import { AppDispatch, RootState } from '../store';
 import Editor from '../components/Editor';
 import Preview from '../components/Preview';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useCompiler } from '../hooks/useCompiler';
 import TreePanel from '../components/TreePanel';
 import ProjectShell from '../components/ProjectShell';
@@ -74,10 +75,16 @@ const EditPage: React.FC = () => {
         </>
       }
       sidebar={<TreePanel projectId={project.id} />}
-      editor={<Editor onChange={handleChange} file={selectedFile} height="90vh" />}
+      editor={
+        <ErrorBoundary fallback={<p className="p-4 text-red-400">Editor failed to load.</p>}>
+          <Editor onChange={handleChange} file={selectedFile} height="90vh" />
+        </ErrorBoundary>
+      }
       preview={
         isRunning ? (
-          <Preview transpiled={transpiled} projectId={project.id} />
+          <ErrorBoundary fallback={<p className="p-4 text-red-400">Preview failed to load.</p>}>
+            <Preview transpiled={transpiled} projectId={project.id} />
+          </ErrorBoundary>
         ) : undefined
       }
       footer={
