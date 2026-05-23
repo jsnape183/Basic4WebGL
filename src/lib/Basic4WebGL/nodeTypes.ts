@@ -49,6 +49,7 @@ export const nodeTypes = createEnum([
   'Variable',
   'PropertyAssign',
   'PropertyTerm',
+  'ConstructorDecl',
 ]);
 
 export default nodeTypes;
