@@ -2,7 +2,7 @@ Class
 dim health
 
 function takeDamage(amount)
-    health = amount
+    health = health - amount
 endfunction
 
 function getHealth()
