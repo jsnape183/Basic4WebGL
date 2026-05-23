@@ -1,22 +1,11 @@
 import { test, expect, describe } from 'vitest';
-import { CompilerProject } from '@CompilerLib/compiler/types';
-import compiler from '@Basic4WebGL/index';
-import { cleanWhitespace, loadSampleFile } from '../../helpers';
+import { compileOk, loadSampleFile } from '../../helpers';
 
 const folder = 'classComposition';
 
 const keyFile = { name: 'Key', source: loadSampleFile('Key', folder) };
 const carFile = { name: 'Car', source: loadSampleFile('Car', folder) };
 const mainFile = { name: 'Main', source: loadSampleFile('Main', folder) };
-
-// Helper: compile and assert no diagnostics, return cleaned code
-function compileOk(project: CompilerProject): string {
-  const result = compiler.transpile(project);
-  const errorMessages = result.diagnostics.map((d) => d.message).join('; ');
-  expect(errorMessages, `compile errors: ${errorMessages}`).toBe('');
-  expect(result.code).toBeDefined();
-  return cleanWhitespace(result.code!);
-}
 
 // ---------------------------------------------------------------------------
 // Level 1: dim x as Type  →  x = new Type()
