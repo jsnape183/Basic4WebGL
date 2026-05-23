@@ -32,6 +32,8 @@ export const tokens = createKeyValueEnum<TokenMatch>([
   'Function',
   'Return',
   'EndFunction',
+  'Constructor',
+  'EndConstructor',
   'Comma',
   'BoolTrue',
   'BoolFalse',
