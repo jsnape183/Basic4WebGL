@@ -1,12 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { RootState } from '../../store';
 import { useFilesForProject } from '../../hooks/useFilesForProject';
 import { ModalWithInput } from '../Modal';
-import { IFile, addFile, removeFile } from '../../features/files/filesSlice';
+import { IFile, addFile, removeFile, reorderFiles } from '../../features/files/filesSlice';
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
+import SortableFileItem from './SortableFileItem';
 
 type FileTreeProps = {
   projectId: string;
@@ -21,11 +31,16 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     (state: RootState) => state.ui.selectedFileByProject[projectId]
   );
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
+
   const handleFileSelected = (id: string) => {
     dispatch(selectFile({ projectId, fileId: id }));
   };
 
-  // Auto-select first file when none is selected for this project
   useEffect(() => {
     if (!selectedFileId && files.length > 0) {
       dispatch(selectFile({ projectId, fileId: files[0].id }));
@@ -45,7 +60,6 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
 
   const handleDeleteFile = (id: string) => {
     dispatch(removeFile(id));
-    // If we just deleted the selected file, select the next available file
     if (id === selectedFileId) {
       const remaining = files.filter((f) => f.id !== id);
       if (remaining.length > 0) {
@@ -53,6 +67,16 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
       } else {
         dispatch(clearProjectSelection(projectId));
       }
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const fromIndex = files.findIndex((f) => f.id === active.id);
+    const toIndex = files.findIndex((f) => f.id === over.id);
+    if (fromIndex !== -1 && toIndex !== -1) {
+      dispatch(reorderFiles({ projectId, fromIndex, toIndex }));
     }
   };
 
@@ -77,6 +101,8 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     }
   };
 
+  const fileIds = files.map((f) => f.id);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -93,43 +119,32 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
           validate={validateFileName}
         />
       </div>
-      <ul
-        role="listbox"
-        aria-label="Files"
-        className="space-y-0.5"
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        {files.map((file, index) => (
-          <li
-            key={file.id}
-            ref={(el) => { itemRefs.current[index] = el; }}
-            role="option"
-            aria-selected={file.id === selectedFileId}
-            tabIndex={0}
-            onClick={() => handleFileSelected(file.id)}
-            onKeyDown={(e) => handleKeyDown(e, index, file.id)}
-            className={`
-              group flex items-center justify-between px-2 py-1 rounded text-xs cursor-pointer
-              focus:outline-none focus:ring-2 focus:ring-ds-accent
-              ${file.id === selectedFileId
-                ? 'bg-ds-accent-subtle text-ds-text font-semibold'
-                : 'text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text'
-              }
-            `}
+        <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
+          <ul
+            role="listbox"
+            aria-label="Files"
+            className="space-y-0.5"
           >
-            <span className="truncate">{file.name}</span>
-            {files.length > 1 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }}
-                className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error ml-1 leading-none transition-opacity"
-                aria-label={`Delete ${file.name}`}
-                tabIndex={-1}
-              >
-                ×
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+            {files.map((file, index) => (
+              <SortableFileItem
+                key={file.id}
+                file={file}
+                isSelected={file.id === selectedFileId}
+                showDelete={files.length > 1}
+                onSelect={handleFileSelected}
+                onDelete={handleDeleteFile}
+                onKeyDown={(e) => handleKeyDown(e, index, file.id)}
+                itemRef={(el) => { itemRefs.current[index] = el; }}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 };
