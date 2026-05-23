@@ -85,4 +85,22 @@ all construction through `node()` or typed subclass constructors.
 
 ---
 
-*Last updated: 2026-05-20 — identified during source-location & diagnostic pipeline implementation (see `docs/superpowers/plans/2026-05-20-source-location.md`).*
+---
+
+## 5. File load order is manually controlled — no automatic dependency resolution
+
+**File(s):** `src/lib/CompilerLib/parser/index.ts`, `src/lib/Basic4WebGL/index.ts`
+
+**Risk:** Medium for usability — users must manually order project files so that class definitions appear before any file that uses them as a type (`dim x as ClassName`). Getting the order wrong produces a `Class X has not been declared yet` compile error with no guidance on how to fix it.
+
+**Context:** The compiler shares a single `Symbols` table across all files and processes them sequentially in the order provided by the project. When `DimRule` parses `dim x as Car`, it does an immediate symbol table lookup for the `Car` class. If `Car.bas` has not yet been parsed, the symbol does not exist. This is a fundamental consequence of the single-pass architecture.
+
+**Desired behaviour:** The compiler should analyse all files for top-level class declarations in a first pass, then compile in full. This would make file order irrelevant for type references.
+
+**Suggested follow-up:** Add a pre-pass in `parse()` (or the lexer pipeline) that registers all module/class names before the main parse loop runs. Class bodies would still be compiled in the second pass, but their names would be available to all files from the start. This requires separating "symbol registration" from "body parsing" for the `Root` and `Class` rules.
+
+**Workaround:** Order files in the project with leaf classes first and consumers after. `Key.bas` before `Car.bas` before `Main.bas`.
+
+---
+
+*Last updated: 2026-05-23 — issue 5 added after class composition feature implementation.*

@@ -184,6 +184,67 @@ endfunction
 
 The order modules are registered in `_sbClasses` follows the order files were added to the project.
 
+### File ordering for class types
+
+**Classes must be declared before any file that uses them as a type.** The compiler processes files in project order against a shared symbol table. If `Car.bas` contains `dim carKey as Key`, then `Key.bas` must appear earlier in the project file list or the compiler will error with `Class Key has not been declared yet`.
+
+This is a known limitation — automatic dependency ordering is planned for a future release. For now, arrange files manually: leaf classes first, files that use them after.
+
+---
+
+## Class Composition (Classes as Members)
+
+A class can declare members of another class type using `dim x as ClassName`.
+
+```basic
+' Key.bas
+Class
+dim keyless
+
+' Car.bas
+Class
+dim carKey as Key
+
+' Main.bas
+function onenter()
+    dim myCar as Car
+    myCar.carKey.keyless = 1
+    print myCar.carKey.keyless
+endfunction
+```
+
+Project file order must be: `Key.bas`, `Car.bas`, `Main.bas`.
+
+### Instantiation
+
+`dim x as ClassName` declares an instance variable and emits `x = new ClassName()`:
+
+```basic
+dim myCar as Car    ' → onenter_mycar = new car();
+```
+
+### Property write
+
+Assign to a member using dot notation. Chains of any depth are supported:
+
+```basic
+myCar.carKey = myKey            ' → onenter_mycar.carkey = onenter_mykey;
+myCar.carKey.keyless = 1        ' → onenter_mycar.carkey.keyless = 1;
+```
+
+### Property read
+
+Read a member in any expression context:
+
+```basic
+result = myCar.carKey           ' → onenter_result = onenter_mycar.carkey;
+print myCar.carKey.keyless      ' → _print(onenter_mycar.carkey.keyless);
+```
+
+### Naming
+
+All identifiers are lowercased by the compiler. `myCar` and `mycar` are the same variable; `Car` and `car` refer to the same class.
+
 ---
 
 ## Control Flow
