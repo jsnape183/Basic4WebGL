@@ -13,7 +13,10 @@ class VariableDimRule implements IGeneratable {
       return `${node.data.scope.name}.prototype.${node.data.name} = undefined;`;
     }
 
-    if (node.data.scope.type === scopeTypes.Function) {
+    if (
+      node.data.scope.type === scopeTypes.Function ||
+      node.data.scope.type === scopeTypes.Constructor
+    ) {
       return `${node.data.scope.name}_${node.data.name} = undefined;`;
     }
 

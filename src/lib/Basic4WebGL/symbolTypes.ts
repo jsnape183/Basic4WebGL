@@ -7,6 +7,7 @@ export const scopeTypes = {
   Function: 'Function',
   Module: 'Module',
   Class: 'Class',
+  Constructor: 'Constructor',
 };
 
 export const symbolTypes = {
