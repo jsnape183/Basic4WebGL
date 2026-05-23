@@ -45,6 +45,7 @@ class _SoftBasicGfx {
   };
 
   constructor(sbClasses) {
+    console.log(sbClasses);
     this._sbClasses = sbClasses;
     this._sbClasses.forEach((c) => (c.enabled = false));
   }
@@ -142,11 +143,11 @@ class _SoftBasicGfx {
   }
 
   setPosition(obj, x, y) {
+    console.log({ obj, x, y });
     obj.position.set(x, y);
   }
 
   getPosition(obj) {
-    //console.log(obj.position);
     return obj.position;
   }
 

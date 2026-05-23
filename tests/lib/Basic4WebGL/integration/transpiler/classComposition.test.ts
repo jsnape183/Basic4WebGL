@@ -48,7 +48,7 @@ describe('object property write (obj.prop = val)', () => {
       lib: [],
       files: [keyFile, carFile, { name: 'Main', source: src }],
     });
-    expect(result).toContain('onenter_myCar.carKey=onenter_myKey');
+    expect(result).toContain('onenter_mycar.carkey=onenter_mykey');
   });
 });
 
@@ -68,7 +68,7 @@ describe('object property read (obj.prop as rvalue)', () => {
       lib: [],
       files: [keyFile, carFile, { name: 'Main', source: src }],
     });
-    expect(result).toContain('onenter_result=onenter_myCar.carKey');
+    expect(result).toContain('onenter_result=onenter_mycar.carkey');
   });
 });
 
@@ -81,6 +81,6 @@ describe('nested property access (obj.prop.subprop)', () => {
       lib: [],
       files: [keyFile, carFile, mainFile],
     });
-    expect(result).toContain('onenter_myCar.carKey.keyless=1');
+    expect(result).toContain('onenter_mycar.carkey.keyless=1');
   });
 });

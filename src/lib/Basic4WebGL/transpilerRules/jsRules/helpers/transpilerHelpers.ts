@@ -23,12 +23,23 @@ export const concatChildren = (
     .join(join);
 
 export const formatSymbol = (data: Symbol) => {
-  if (data.type === symbolTypes.Function || data.type === symbolTypes.Object) {
+  if (data.type === symbolTypes.Function) {
     return `${data.fullScope}.${data.name}`;
   }
 
   if (data.type === symbolTypes.Parameter) {
     return `${data.scope.name}_${data.name}`;
+  }
+
+  // Object instances: formatting depends on where they were declared
+  if (data.type === symbolTypes.Object) {
+    if (data.scope.type === scopeTypes.Function) {
+      return `${data.scope.name}_${data.name}`;
+    }
+    if (data.scope.type === scopeTypes.Class) {
+      return `${data.scope.name}.prototype.${data.name}`;
+    }
+    return `${data.scope.name}.${data.name}`;
   }
 
   if (data.scope.type === scopeTypes.Function) {

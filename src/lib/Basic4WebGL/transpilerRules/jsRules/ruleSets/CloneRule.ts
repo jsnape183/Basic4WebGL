@@ -9,9 +9,7 @@ import { formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.Clone)
 class CloneRule implements IGeneratable {
   generate(node: Tree): string {
-    return `${formatSymbol(node.data.object)} = new ${
-      node.data.module.name
-    }();`;
+    return `${formatSymbol(node.data.object)} = new ${node.data.classSymbol.name}();`;
   }
 }
 

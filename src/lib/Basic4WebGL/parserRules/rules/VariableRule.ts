@@ -1,4 +1,4 @@
-import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
 import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
 import IParserRule, {
   RegisterParserRule,
@@ -18,11 +18,25 @@ class VariableRule implements IParserRule {
     const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
-    if (
-      symbolTable.check(name, symbolTypes.Module) ||
-      symbolTable.check(name, symbolTypes.Object)
-    ) {
+    if (symbolTable.check(name, symbolTypes.Module)) {
       return getParserRule('Module').parse(tokenStream, symbolTable, name);
+    }
+
+    if (symbolTable.check(name, symbolTypes.Object)) {
+      // Dot access → property/method on the instance
+      if (check(tokens.Dot, tokenStream.current())) {
+        return getParserRule('ObjectProperty').parse(tokenStream, symbolTable, name);
+      }
+      // No dot → plain assignment to an object-typed variable (e.g. result = myCar.carKey)
+      const objSymbol = symbolTable.get(name, symbolTypes.Object);
+      matchAndMove(tokens.Equals, tokenStream);
+      const expr = getParserRule('BoolExpression').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      matchAndMove(newLines, tokenStream);
+      return new AssignNode(objSymbol, expr, loc);
     }
 
     if (symbolTable.check(name, symbolTypes.Function)) {
