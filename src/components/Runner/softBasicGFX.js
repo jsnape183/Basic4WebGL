@@ -58,7 +58,7 @@ class _SoftBasicGfx {
     });
   }
 
-  _componentToHex() {
+  _componentToHex(c) {
     var hex = c.toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   }
@@ -84,17 +84,17 @@ class _SoftBasicGfx {
   }
 
   clear() {
-    app.stage.clear();
+    app.stage.removeChildren();
   }
 
   setFillColor(r, g, b) {
-    const hexString = componentToHex(r) + componentToHex(g) + componentToHex(b);
-    graphicsStyles.fillColor = parseInt(hexString.replace(/^#/, ''), 16);
+    const hexString = this._componentToHex(r) + this._componentToHex(g) + this._componentToHex(b);
+    this._graphicsStyles.fillColor = parseInt(hexString.replace(/^#/, ''), 16);
   }
 
   setLineColor(r, g, b) {
-    const hexString = componentToHex(r) + componentToHex(g) + componentToHex(b);
-    graphicsStyles.lineColor = parseInt(hexString.replace(/^#/, ''), 16);
+    const hexString = this._componentToHex(r) + this._componentToHex(g) + this._componentToHex(b);
+    this._graphicsStyles.lineColor = parseInt(hexString.replace(/^#/, ''), 16);
   }
 
   setAlpha(obj, a) {
@@ -111,7 +111,7 @@ class _SoftBasicGfx {
   }
 
   drawLine(x, y, x2, y2) {
-    const obj = drawWithFill((obj) => {
+    const obj = this._drawWithFill((obj) => {
       obj.moveTo(0, 0);
       obj.lineTo(x2, y2);
       obj.position.set(x, y);
@@ -121,7 +121,7 @@ class _SoftBasicGfx {
   }
 
   drawRect(x, y, width, height) {
-    const obj = drawWithFill((obj) => {
+    const obj = this._drawWithFill((obj) => {
       obj.drawRect(0, 0, width, height);
       obj.pivot.set(width / 2, height / 2);
       obj.position.set(x, y);
@@ -130,7 +130,7 @@ class _SoftBasicGfx {
   }
 
   drawCircle(x, y, radius) {
-    let obj = drawWithFill((obj) => {
+    let obj = this._drawWithFill((obj) => {
       obj.drawCircle(0, 0, radius);
       obj.pivot.set(radius / 2, radius / 2);
       obj.position.set(x, y);
@@ -199,5 +199,5 @@ document.addEventListener('keydown', (e) => {
 });
 document.addEventListener('keyup', (e) => {
   _sb.registerKey(e.keyCode, false);
-  onkeydown(e.keyCode);
+  onkeyup(e.keyCode);
 });

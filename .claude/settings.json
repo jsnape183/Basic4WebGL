@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest*)",
+      "Bash(npm install*)",
+      "Bash(npm run*)",
+      "Bash(mv *)",
+      "Bash(mkdir*)",
+      "Bash(touch*)",
+      "Bash(cp *)",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git worktree*)",
+      "Bash(git checkout*)",
+      "Bash(git merge*)",
+      "Bash(git pull*)",
+      "Bash(git fetch*)",
+      "Bash(git add*)",
+      "Bash(git stash*)",
+      "WebSearch",
+      "WebFetch",
+      "Edit",
+      "Write",
+      "Read",
+      "EditFile",
+      "WriteFile",
+      "ReadFile",
+      "ListFiles"
+    ],
+    "deny": [
+      "Bash(sudo*)",
+      "Bash(rm *)",
+      "Bash(rm)",
+      "Bash(rmdir*)",
+      "Bash(rd *)",
+      "Bash(rd)",
+      "Bash(unlink*)"
+    ]
+  }
+}
