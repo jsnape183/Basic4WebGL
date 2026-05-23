@@ -13,3 +13,11 @@ describe('class instance methods use function() not arrow function', () => {
     expect(result).toContain('player.prototype.gethealth=function(');
   });
 });
+
+describe('class method body — instance property write', () => {
+  test('assignment to class-level property emits this.prop', () => {
+    const result = compileOk({ lib: [], files: [playerFile, mainFile] });
+    // takeDamage: health = health - amount  →  this.health = this.health - takedamage_amount
+    expect(result).toContain('this.health=this.health-takedamage_amount');
+  });
+});

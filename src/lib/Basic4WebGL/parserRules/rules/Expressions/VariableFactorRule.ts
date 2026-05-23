@@ -5,14 +5,22 @@ import IParserRule, {
 } from '@CompilerLib/parser/ParserRule';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import Symbols from '@CompilerLib/symbols';
+import { Symbol } from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
-import { symbolTypes } from '../../../symbolTypes';
+import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
+
+function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
+  if (symbol.scope.type !== scopeTypes.Class) return false;
+  const execScopeType = symbolTable.getScopeType();
+  if (execScopeType !== scopeTypes.Function && execScopeType !== scopeTypes.Constructor) return false;
+  return symbolTable.getFullScopeName().startsWith(symbol.scope.name + '.');
+}
 
 @RegisterParserRule('VariableFactor')
 class VariableFactorRule implements IParserRule {
@@ -69,7 +77,11 @@ class VariableFactorRule implements IParserRule {
       });
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      return new TermNode(symbolTable.get(name), new VariableNode(name), loc);
+      const varSymbol = symbolTable.get(name);
+      if (isInstancePropertyAccess(varSymbol, symbolTable)) {
+        return new PropertyTermNode(`this.${name}`, loc, varSymbol.dataType);
+      }
+      return new TermNode(varSymbol, new VariableNode(name), loc);
     }
     matchAndMove(tokens.OpenParen, tokenStream);
     const elems = getParserRule('ArrayList').parse(

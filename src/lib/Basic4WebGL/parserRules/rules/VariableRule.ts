@@ -4,13 +4,22 @@ import IParserRule, {
   RegisterParserRule,
 } from '@CompilerLib/parser/ParserRule';
 import Symbols from '@CompilerLib/symbols';
+import { Symbol } from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
-import { symbolTypes } from '../../symbolTypes';
+import { symbolTypes, scopeTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import ArrayAssignNode from '../../nodes/ArrayAssignNode';
 import AssignNode from '../../nodes/AssignNode';
+import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import { newLines } from '../../parserConfig';
+
+function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
+  if (symbol.scope.type !== scopeTypes.Class) return false;
+  const execScopeType = symbolTable.getScopeType();
+  if (execScopeType !== scopeTypes.Function && execScopeType !== scopeTypes.Constructor) return false;
+  return symbolTable.getFullScopeName().startsWith(symbol.scope.name + '.');
+}
 
 @RegisterParserRule('Variable')
 class VariableRule implements IParserRule {
@@ -36,6 +45,9 @@ class VariableRule implements IParserRule {
         undefined
       );
       matchAndMove(newLines, tokenStream);
+      if (isInstancePropertyAccess(objSymbol, symbolTable)) {
+        return new PropertyAssignNode({ chain: `this.${name}` }, expr, loc);
+      }
       return new AssignNode(objSymbol, expr, loc);
     }
 
@@ -71,6 +83,9 @@ class VariableRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
+    if (isInstancePropertyAccess(varSymbol, symbolTable)) {
+      return new PropertyAssignNode({ chain: `this.${name}` }, expr, loc);
+    }
     return new AssignNode(varSymbol, expr, loc);
   }
 }
