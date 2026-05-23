@@ -5,6 +5,7 @@ import { RootState } from '../../store';
 import { useFilesForProject } from '../../hooks/useFilesForProject';
 import { ModalWithInput } from '../Modal';
 import { IFile, addFile, removeFile } from '../../features/files/filesSlice';
+import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
 
 type FileTreeProps = {
@@ -34,7 +35,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const handleNewFile = (filename: string) => {
     const file: IFile = {
       id: uuidv4(),
-      name: filename,
+      name: normaliseFileName(filename),
       source: '',
       projectId,
     };
@@ -88,6 +89,8 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
           saveText="Save"
           closeText="Close"
           title="New file"
+          placeholder="e.g. Main"
+          validate={validateFileName}
         />
       </div>
       <ul

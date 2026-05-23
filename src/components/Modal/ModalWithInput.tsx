@@ -8,6 +8,8 @@ interface IModalWithInputProps {
   saveText?: string;
   closeText?: string;
   onSubmit: (inputText: string) => void;
+  /** Optional validator. Return an error message string when invalid, or null when valid. */
+  validate?: (value: string) => string | null;
 }
 
 const ModalWithInput: React.FC<IModalWithInputProps> = ({
@@ -17,9 +19,11 @@ const ModalWithInput: React.FC<IModalWithInputProps> = ({
   saveText = 'Save',
   closeText = 'Close',
   onSubmit,
+  validate,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2)}`);
@@ -27,14 +31,30 @@ const ModalWithInput: React.FC<IModalWithInputProps> = ({
   const open = () => {
     setIsOpen(true);
     setInputValue('');
+    setValidationError(null);
   };
 
   const close = () => {
     setIsOpen(false);
+    setValidationError(null);
     triggerRef.current?.focus();
   };
 
+  const handleChange = (value: string) => {
+    setInputValue(value);
+    if (validate) {
+      setValidationError(validate(value));
+    }
+  };
+
   const submit = () => {
+    if (validate) {
+      const error = validate(inputValue);
+      if (error) {
+        setValidationError(error);
+        return;
+      }
+    }
     onSubmit(inputValue);
     close();
   };
@@ -88,11 +108,22 @@ const ModalWithInput: React.FC<IModalWithInputProps> = ({
               ref={inputRef}
               type="text"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e) => handleChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
               placeholder={placeholder}
-              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-ds-accent"
+              aria-describedby={validationError ? `${titleId.current}-error` : undefined}
+              className={`w-full bg-ds-bg border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-accent ${
+                validationError ? 'border-ds-error mb-1' : 'border-ds-border mb-4'
+              }`}
             />
+            {validationError && (
+              <p
+                id={`${titleId.current}-error`}
+                className="text-ds-error text-xs mb-3"
+              >
+                {validationError}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button
                 onClick={submit}
