@@ -31,14 +31,39 @@ The module name is derived from the filename (lowercase).
 
 ## Classes
 
-If a file is explicitly defined as a **class** (mechanism TBD — not yet confirmed in codebase), variables are attached to the prototype instead, enabling multiple instances.
+A file is declared as a **class** by putting the `Class` keyword alone on line 1 of the file. Variables are then attached to the prototype, enabling multiple instances.
+
+```basic
+Class
+dim health
+dim x
+dim y
+
+function init(startX, startY)
+    health = 100
+    x = startX
+    y = startY
+endfunction
+```
+
+The class name is always the filename (lowercase). `Class` takes no argument — there is no `Class Dog` syntax. If you want a class named `dog`, the file must be named `Dog.bas` (or `dog.bas`).
+
+Transpiles to:
+
+```js
+class dog {}
+dog.prototype.health = undefined;
+dog.prototype.x = undefined;
+dog.prototype.y = undefined;
+dog.prototype.init = (init_startX, init_startY) => { ... };
+```
+
+**Important:** `Class` must appear on line 1 of the file. Writing it anywhere else is a compilation error.
 
 | Concept | Variable declaration | Transpiled form |
 |---|---|---|
-| Module (static) | `dim x` at top level | `moduleName.x = undefined` |
-| Class (instance) | `dim x` at top level | `className.prototype.x = undefined` |
-
-> **Note:** The distinction is tracked via `scope.type` (`'Module'` vs `'Class'`) in the symbol table. The Class branch exists in the transpiler but the softBASIC syntax to declare a class file is not yet documented.
+| Module (static, default) | `dim x` at top level | `moduleName.x = undefined` |
+| Class (instance, `Class` on line 1) | `dim x` at top level | `className.prototype.x = undefined` |
 
 ---
 
@@ -351,7 +376,6 @@ endfunction
 
 ## Known Gaps / To Document
 
-- How to explicitly declare a file as a Class (vs default Module)
 - `onupdate()` / game loop lifecycle hook
 - Array declarations: `dim arr(10)` syntax and transpiled form
 - Whether `print` accepts multiple arguments / expressions
