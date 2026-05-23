@@ -31,6 +31,10 @@ export const formatSymbol = (data: Symbol) => {
     return `${data.scope.name}_${data.name}`;
   }
 
+  if (data.scope.type === scopeTypes.Function) {
+    return `${data.scope.name}_${data.name}`;
+  }
+
   return `${data.scope.name}.${data.name}`;
 };
 
