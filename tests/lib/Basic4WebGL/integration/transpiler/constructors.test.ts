@@ -87,3 +87,48 @@ describe('Constructor transpiled output', () => {
     expect(result).toContain('classbox{}');
   });
 });
+
+describe('end-to-end: constructor + instance method', () => {
+  test('full class with constructor and method produces correct output', () => {
+    const classSrc = [
+      'Class',
+      'dim health',
+      'dim x',
+      '',
+      'Constructor(startHealth, startX)',
+      '    health = startHealth',
+      '    x = startX',
+      'EndConstructor',
+      '',
+      'function move(dx)',
+      '    x = x + dx',
+      'endfunction',
+    ].join('\n');
+
+    const mainSrc = [
+      'function onenter()',
+      '    dim player as Player(100, 0)',
+      'endfunction',
+    ].join('\n');
+
+    const result = compileOk({
+      lib: [],
+      files: [
+        { name: 'Player', source: classSrc },
+        { name: 'Main', source: mainSrc },
+      ],
+    });
+
+    // Class declaration with inline constructor
+    expect(result).toContain('constructor(constructor_startHealth,constructor_startX)');
+    expect(result).toContain('this.health=constructor_startHealth');
+    expect(result).toContain('this.x=constructor_startX');
+
+    // Instance method uses function() and this.
+    expect(result).toContain('player.prototype.move=function(move_dx)');
+    expect(result).toContain('this.x=this.x+move_dx');
+
+    // Call site passes args
+    expect(result).toContain('onenter_player=newplayer(100,0)');
+  });
+});
