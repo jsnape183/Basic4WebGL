@@ -40,6 +40,29 @@ describe('Constructor parsing', () => {
   });
 });
 
+describe('dim x as Type(args) — constructor call site', () => {
+  test('dim with args emits new Type(args)', () => {
+    const pointFile = { name: 'Point', source: loadSampleFile('Point', 'constructor') };
+    const mainSrc = [
+      'function onenter()',
+      '    dim p as Point(10, 20)',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [pointFile, { name: 'Main', source: mainSrc }] });
+    expect(result).toContain('onenter_p=newpoint(10,20)');
+  });
+
+  test('dim without args still emits new Type()', () => {
+    const src = ['Class', 'dim x'].join('\n');
+    const main = 'function onenter()\n    dim b as Box\nendfunction';
+    const result = compileOk({
+      lib: [],
+      files: [{ name: 'Box', source: src }, { name: 'Main', source: main }],
+    });
+    expect(result).toContain('onenter_b=newbox()');
+  });
+});
+
 describe('Constructor transpiled output', () => {
   test('class with constructor emits inline constructor in class declaration', () => {
     const src = [

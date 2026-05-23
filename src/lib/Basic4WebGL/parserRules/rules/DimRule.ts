@@ -30,7 +30,16 @@ class DimRule implements IParserRule {
       );
       const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
 
-      return new CloneNode({ object, classSymbol }, loc);
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(
+          tokenStream,
+          symbolTable,
+          undefined
+        );
+        return new CloneNode({ object, classSymbol }, [args], loc);
+      }
+
+      return new CloneNode({ object, classSymbol }, [], loc);
     }
 
     if (!check(tokens.OpenParen, tokenStream.current())) {
