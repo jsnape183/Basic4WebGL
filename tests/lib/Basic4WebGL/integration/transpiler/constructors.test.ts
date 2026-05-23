@@ -1,7 +1,7 @@
 import { test, expect, describe } from 'vitest';
 import { CompilerProject } from '@CompilerLib/compiler/types';
 import compiler from '@Basic4WebGL/index';
-import { cleanWhitespace } from '../../helpers';
+import { cleanWhitespace, compileOk, loadSampleFile } from '../../helpers';
 
 function compileErr(project: CompilerProject): string {
   const result = compiler.transpile(project);
@@ -37,5 +37,30 @@ describe('Constructor parsing', () => {
     ].join('\n');
     const err = compileErr({ lib: [], files: [{ name: 'Main', source: src }] });
     expect(err).toMatch(/constructor must be declared inside a class/i);
+  });
+});
+
+describe('Constructor transpiled output', () => {
+  test('class with constructor emits inline constructor in class declaration', () => {
+    const src = [
+      'Class',
+      'dim x',
+      'dim y',
+      'Constructor(startX, startY)',
+      '    x = startX',
+      '    y = startY',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Point', source: src }] });
+    expect(result).toContain('classpoint{');
+    expect(result).toContain('constructor(constructor_startX,constructor_startY)');
+    expect(result).toContain('this.x=constructor_startX');
+    expect(result).toContain('this.y=constructor_startY');
+  });
+
+  test('class without constructor still emits bare class declaration', () => {
+    const src = ['Class', 'dim x'].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Box', source: src }] });
+    expect(result).toContain('classbox{}');
   });
 });
