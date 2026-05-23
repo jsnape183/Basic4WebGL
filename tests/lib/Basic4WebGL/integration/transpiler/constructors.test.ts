@@ -17,8 +17,6 @@ describe('Constructor parsing', () => {
       '    x = startX',
       'EndConstructor',
     ].join('\n');
-    // Parser must handle Constructor/EndConstructor syntax without parser errors.
-    // A transpiler error about missing ConstructorDecl rule is acceptable at this stage.
     const result = compiler.transpile({ lib: [], files: [{ name: 'Point', source: src }] });
     const parserErrors = result.diagnostics.filter(
       (d) => !/cannot find transpiler rule/i.test(d.message)
@@ -37,6 +35,21 @@ describe('Constructor parsing', () => {
     ].join('\n');
     const err = compileErr({ lib: [], files: [{ name: 'Main', source: src }] });
     expect(err).toMatch(/constructor must be declared inside a class/i);
+  });
+
+  test('two constructors in one class produces a compile error', () => {
+    const src = [
+      'Class',
+      'dim x',
+      'Constructor(a)',
+      '    x = a',
+      'EndConstructor',
+      'Constructor(b)',
+      '    x = b',
+      'EndConstructor',
+    ].join('\n');
+    const err = compileErr({ lib: [], files: [{ name: 'Dup', source: src }] });
+    expect(err).toMatch(/a class may only have one constructor/i);
   });
 });
 

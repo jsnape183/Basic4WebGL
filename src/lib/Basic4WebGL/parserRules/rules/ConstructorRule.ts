@@ -5,7 +5,7 @@ import IParserRule, {
 } from '@CompilerLib/parser/ParserRule';
 import Symbols from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
-import { scopeTypes } from '../../symbolTypes';
+import { FunctionSymbol, scopeTypes, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import ConstructorDeclNode from '../../nodes/ConstructorDeclNode';
@@ -44,6 +44,21 @@ class ConstructorRule implements IParserRule {
       symbolTable.clearScope();
     }
     matchAndMove(newLines, tokenStream);
+
+    // Guard: at most one constructor per class
+    if (symbolTable.check('constructor', symbolTypes.Function)) {
+      throw new CompilationError('A class may only have one constructor');
+    }
+    // Register a marker so a second constructor triggers the guard
+    symbolTable.addTyped(
+      new FunctionSymbol(
+        'constructor',
+        symbolTypes.Function,
+        symbolTable.getScope(),
+        symbolTable.getFullScopeName(),
+        []
+      )
+    );
 
     return new ConstructorDeclNode(
       { className: symbolTable.getScopeName() },
