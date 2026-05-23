@@ -21,3 +21,11 @@ describe('class method body — instance property write', () => {
     expect(result).toContain('this.health=this.health-takedamage_amount');
   });
 });
+
+describe('class method body — instance property read', () => {
+  test('reading class-level property in expression emits this.prop', () => {
+    const result = compileOk({ lib: [], files: [playerFile, mainFile] });
+    // getHealth: return health  →  return this.health
+    expect(result).toContain('returnthis.health');
+  });
+});
