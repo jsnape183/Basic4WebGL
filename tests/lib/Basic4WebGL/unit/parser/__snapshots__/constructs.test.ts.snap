@@ -58,6 +58,7 @@ exports[`assignment > assigning a literal value produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -68,6 +69,7 @@ exports[`assignment > assigning a literal value produces correct tree 1`] = `
           "dataType": {
             "acceptsTypes": [
               "Number",
+              "Variant",
             ],
             "name": "Number",
           },
@@ -179,6 +181,7 @@ exports[`assignment > assigning an expression produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -189,6 +192,7 @@ exports[`assignment > assigning an expression produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -207,6 +211,7 @@ exports[`assignment > assigning an expression produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -217,6 +222,7 @@ exports[`assignment > assigning an expression produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -232,6 +238,7 @@ exports[`assignment > assigning an expression produces correct tree 1`] = `
           "dataType": {
             "acceptsTypes": [
               "Number",
+              "Variant",
             ],
             "name": "Number",
           },
@@ -343,6 +350,7 @@ exports[`for loop > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -353,6 +361,7 @@ exports[`for loop > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -371,6 +380,7 @@ exports[`for loop > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -381,6 +391,7 @@ exports[`for loop > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -673,6 +684,7 @@ exports[`if statement > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -683,6 +695,7 @@ exports[`if statement > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -701,6 +714,7 @@ exports[`if statement > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -711,6 +725,7 @@ exports[`if statement > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -864,6 +879,7 @@ exports[`return statement > produces correct tree 1`] = `
                           "dataType": {
                             "acceptsTypes": [
                               "Number",
+                              "Variant",
                             ],
                             "name": "Number",
                           },
@@ -874,6 +890,7 @@ exports[`return statement > produces correct tree 1`] = `
                       "dataType": {
                         "acceptsTypes": [
                           "Number",
+                          "Variant",
                         ],
                         "name": "Number",
                       },
@@ -889,6 +906,7 @@ exports[`return statement > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -987,6 +1005,7 @@ exports[`while loop > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -997,6 +1016,7 @@ exports[`while loop > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },
@@ -1015,6 +1035,7 @@ exports[`while loop > produces correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -1025,6 +1046,7 @@ exports[`while loop > produces correct tree 1`] = `
               "dataType": {
                 "acceptsTypes": [
                   "Number",
+                  "Variant",
                 ],
                 "name": "Number",
               },

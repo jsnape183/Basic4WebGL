@@ -17,6 +17,7 @@ exports[`test not comparison generates the correct tree 1`] = `
                       "dataType": {
                         "acceptsTypes": [
                           "Number",
+                          "Variant",
                         ],
                         "name": "Number",
                       },
@@ -27,6 +28,7 @@ exports[`test not comparison generates the correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
@@ -45,6 +47,7 @@ exports[`test not comparison generates the correct tree 1`] = `
                       "dataType": {
                         "acceptsTypes": [
                           "Number",
+                          "Variant",
                         ],
                         "name": "Number",
                       },
@@ -55,6 +58,7 @@ exports[`test not comparison generates the correct tree 1`] = `
                   "dataType": {
                     "acceptsTypes": [
                       "Number",
+                      "Variant",
                     ],
                     "name": "Number",
                   },
