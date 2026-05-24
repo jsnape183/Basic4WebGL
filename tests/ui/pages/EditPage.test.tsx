@@ -8,6 +8,7 @@ import { vi, afterEach } from 'vitest';
 import sessionReducer from '../../../src/features/session/sessionSlice';
 import filesReducer from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
+import packagesReducer from '../../../src/features/packages/packagesSlice';
 import assetsReducer from '../../../src/features/assets/assetsSlice';
 import uiReducer from '../../../src/features/ui/uiSlice';
 import EditPage from '../../../src/pages/EditPage';
@@ -28,11 +29,12 @@ const makeStore = (projectId: string) => {
       session: sessionReducer,
       files: filesReducer,
       projects: projectsReducer,
+      packages: packagesReducer,
       assets: assetsReducer,
       ui: uiReducer,
     },
   });
-  store.dispatch(addProject({ id: projectId, name: 'Test Project', fileIds: [] }));
+  store.dispatch(addProject({ id: projectId, name: 'Test Project', packageIds: [] }));
   return store;
 };
 
