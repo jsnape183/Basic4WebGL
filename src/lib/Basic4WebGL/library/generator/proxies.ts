@@ -4,7 +4,7 @@ export function makeParamProxy(fnName: string): ParamProxy {
   const prefix = fnName.toLowerCase();
   return new Proxy({} as ParamProxy, {
     get(_target, prop: string | symbol) {
-      return `${prefix}_${String(prop).toLowerCase()}`;
+      return `${prefix}_${String(prop)}`;
     },
   });
 }

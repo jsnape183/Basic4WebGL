@@ -2,7 +2,7 @@ Class
 dim _handle
 
 Constructor(imagePath)
-    _handle = call("_sb.createSprite(constructor_imagepath)")
+    _handle = call("_sb.createSprite(constructor_imagePath)")
 EndConstructor
 
 function setPosition(x, y)

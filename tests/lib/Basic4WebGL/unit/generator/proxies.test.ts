@@ -7,14 +7,14 @@ describe('makeParamProxy', () => {
     expect(p.x).toBe('setposition_x');
   });
 
-  test('lowercases the param name', () => {
+  test('preserves param name case', () => {
     const p = makeParamProxy('setPosition');
-    expect(p.imagePath).toBe('setposition_imagepath');
+    expect(p.imagePath).toBe('setposition_imagePath');
   });
 
-  test('constructor prefix produces constructor_paramname', () => {
+  test('constructor prefix produces constructor_paramName', () => {
     const p = makeParamProxy('constructor');
-    expect(p.imagePath).toBe('constructor_imagepath');
+    expect(p.imagePath).toBe('constructor_imagePath');
   });
 
   test('single-letter params work', () => {

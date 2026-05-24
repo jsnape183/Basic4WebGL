@@ -52,7 +52,7 @@ test('generates Constructor and EndConstructor blocks', () => {
 
 test('constructor param is prefixed with constructor_', () => {
   const output = generateClass(spriteDescriptor);
-  expect(output).toContain('_handle = call("_sb.createSprite(constructor_imagepath)")');
+  expect(output).toContain('_handle = call("_sb.createSprite(constructor_imagePath)")');
 });
 
 test('class self proxy resolves to this.prop', () => {

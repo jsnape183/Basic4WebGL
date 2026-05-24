@@ -60,6 +60,6 @@ describe('Sprite class — _handle in method body', () => {
   });
 
   test('sprite.bas constructor assigns _handle', () => {
-    expect(spriteLib.source).toContain('_handle = call("_sb.createSprite(constructor_imagepath)")');
+    expect(spriteLib.source).toContain('_handle = call("_sb.createSprite(constructor_imagePath)")');
   });
 });
