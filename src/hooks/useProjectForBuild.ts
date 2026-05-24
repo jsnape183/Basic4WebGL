@@ -10,10 +10,12 @@ type BuildProject = {
   files: Array<IFile>;
 };
 
+const DEFAULT_PACKAGE_IDS = ['softcore', 'softgfx'];
+
 export const useProjectForBuild = (projectId: string): BuildProject => {
   const packageIds = useSelector((state: RootState) => {
     const project = state.projects.items.find((p) => p.id === projectId);
-    return project?.packageIds ?? ['softcore', 'softgfx'];
+    return project?.packageIds ?? DEFAULT_PACKAGE_IDS;
   });
 
   const packagesById = useSelector((state: RootState) => state.packages.byId);

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../../store';
 import { addPackageToProject } from '../../features/projects/projectsSlice';
 import { IPackage } from '../../features/packages/packagesSlice';
@@ -11,21 +12,28 @@ type AddPackageModalProps = {
   onClose: () => void;
 };
 
+const makeSelectAvailablePackages = (projectId: string) =>
+  createSelector(
+    (state: RootState) => state.projects.items.find((p) => p.id === projectId)?.packageIds,
+    (state: RootState) => state.packages.byId,
+    (projectPackageIds, byId) => {
+      const currentIds = projectPackageIds ?? [];
+      return Object.values(byId).filter(
+        (pkg): pkg is IPackage => !currentIds.includes(pkg.id)
+      );
+    }
+  );
+
 const AddPackageModal: React.FC<AddPackageModalProps> = ({ projectId, isOpen, onClose }) => {
   const [search, setSearch] = React.useState('');
   const dispatch = useDispatch();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const projectPackageIds = useSelector((state: RootState) => {
-    const project = state.projects.items.find((p) => p.id === projectId);
-    return project?.packageIds ?? [];
-  });
-
-  const availablePackages = useSelector((state: RootState) =>
-    Object.values(state.packages.byId).filter(
-      (pkg): pkg is IPackage => !projectPackageIds.includes(pkg.id)
-    )
+  const selectAvailablePackages = useMemo(
+    () => makeSelectAvailablePackages(projectId),
+    [projectId]
   );
+  const availablePackages = useSelector(selectAvailablePackages);
 
   const filtered = availablePackages.filter((pkg) =>
     pkg.name.toLowerCase().includes(search.toLowerCase())

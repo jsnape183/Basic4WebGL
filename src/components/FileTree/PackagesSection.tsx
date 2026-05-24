@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../../store';
 import { removePackageFromProject } from '../../features/projects/projectsSlice';
 import { IPackage } from '../../features/packages/packagesSlice';
@@ -9,20 +10,24 @@ type PackagesSectionProps = {
   onAddClick?: () => void;
 };
 
+const makeSelectPackages = (projectId: string) =>
+  createSelector(
+    (state: RootState) => state.projects.items.find((p) => p.id === projectId)?.packageIds,
+    (state: RootState) => state.packages.byId,
+    (packageIds, byId) => {
+      const ids = packageIds ?? ['softcore', 'softgfx'];
+      return ids
+        .map((id) => byId[id])
+        .filter((pkg): pkg is IPackage => Boolean(pkg));
+    }
+  );
+
 const PackagesSection: React.FC<PackagesSectionProps> = ({ projectId, onAddClick = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const dispatch = useDispatch();
 
-  const packageIds = useSelector((state: RootState) => {
-    const project = state.projects.items.find((p) => p.id === projectId);
-    return project?.packageIds ?? ['softcore', 'softgfx'];
-  });
-
-  const packages = useSelector((state: RootState) =>
-    packageIds
-      .map((id) => state.packages.byId[id])
-      .filter((pkg): pkg is IPackage => Boolean(pkg))
-  );
+  const selectPackages = useMemo(() => makeSelectPackages(projectId), [projectId]);
+  const packages = useSelector(selectPackages);
 
   return (
     <div className="mb-2">
