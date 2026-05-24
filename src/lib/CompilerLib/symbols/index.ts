@@ -132,7 +132,12 @@ class Symbols {
     const clonedSymbol = this.add(name, newType, scope, symbol.dataType);
     this.setScope(name);
     childSymbols.forEach((c) => {
-      this.add(c.name, c.type, new SymbolScope(name, symbol.type));
+      const clonedChild = Object.create(Object.getPrototypeOf(c)) as Symbol;
+      Object.assign(clonedChild, c);
+      clonedChild.scope = new SymbolScope(name, symbol.type);
+      clonedChild.fullScope = this.getFullScopeName();
+      this.table.push(clonedChild);
+      this.indexSymbol(clonedChild);
     });
     this.clearScope();
     return clonedSymbol;

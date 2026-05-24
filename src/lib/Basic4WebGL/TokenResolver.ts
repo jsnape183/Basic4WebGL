@@ -184,6 +184,12 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchPattern(input, /^endclass(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
+      token: tokens.EndClass,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchChar(input, ','),
       token: tokens.Comma,
     }),
@@ -286,7 +292,7 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /[A-Za-z][A-Za-z_$0-9]*/),
+      ...matchPattern(input, /^[A-Za-z_][A-Za-z_$0-9]*/),
       token: tokens.Variable,
     }),
   },
