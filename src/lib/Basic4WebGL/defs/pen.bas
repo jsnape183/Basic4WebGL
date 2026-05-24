@@ -1,13 +1,7 @@
-' Start of PIXI manipulation functions
-function setFillColor(r,g,b)
-  call("_sb.setFillColor(r,g,b);")
+function setFillColor(r, g, b)
+    call("_sb.setFillColor(setfillcolor_r, setfillcolor_g, setfillcolor_b)")
 endfunction
 
-function setLineColor(r,g,b)
-  call("_sb.setLineColor(r,g,b);")
+function setLineColor(r, g, b)
+    call("_sb.setLineColor(setlinecolor_r, setlinecolor_g, setlinecolor_b)")
 endfunction
-
-function setAlpha(obj,a)
-  call("_sb.setAlpha(obj, a);")
-endfunction
-' End of PIXI manipulation functions

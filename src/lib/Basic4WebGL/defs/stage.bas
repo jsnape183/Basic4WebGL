@@ -1,11 +1,11 @@
-' Start of node registration function
-function registerNode(nodeName)
-  call("_SoftBasicGfx.getInstance().registerNode(registernode_nodeName.toLowerCase())")
+function add(obj)
+    call("_sb.addToStage(add_obj)")
 endfunction
-' End of node registration function
 
-' Start of PIXI clear function
-function clear()
-  call("_SoftBasicGfx.getInstance().clear()")
+function remove(obj)
+    call("_sb.removeFromStage(remove_obj)")
 endfunction
-' End of PIXI clear function
+
+function clear()
+    call("_sb.clear()")
+endfunction

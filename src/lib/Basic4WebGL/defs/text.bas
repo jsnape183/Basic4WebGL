@@ -1,9 +1,20 @@
-' Start of PIXI text functions
-function drawText(s, x, y)
-  return call("_sb.text(drawtext_s,drawtext_x,drawtext_y);")
+Class
+dim _handle
+
+Constructor(content, x, y)
+    _handle = call("_sb.createText(constructor_content, constructor_x, constructor_y)")
+EndConstructor
+
+function setText(content)
+    call("_sb.setText(this._handle, settext_content)")
 endfunction
 
-function setText(obj, text)
-  call("_sb.setText(settext_obj,settext_text)")
+function setPosition(x, y)
+    call("_sb.setPosition(this._handle, setposition_x, setposition_y)")
 endfunction
-' End of PIXI text functions
+
+function setAlpha(a)
+    call("_sb.setAlpha(this._handle, setalpha_a)")
+endfunction
+
+EndClass

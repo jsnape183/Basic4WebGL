@@ -1,13 +1,11 @@
-' Start of PIXI drawing functions
-function drawLine(x,y,x2,y2)
-  return call("_sb.drawLine(x,y,x2,y2)")
+function drawLine(x, y, x2, y2)
+    call("_sb.drawLine(drawline_x, drawline_y, drawline_x2, drawline_y2)")
 endfunction
 
-function drawRect(x,y,width,height)
-  return call("_sb.drawRect(x,y,width,height);")
+function drawRect(x, y, width, height)
+    call("_sb.drawRect(drawrect_x, drawrect_y, drawrect_width, drawrect_height)")
 endfunction
 
-function drawCircle(x,y,radius)
-  return call("_sb.drawCircle(x, y, radius);")
+function drawCircle(x, y, radius)
+    call("_sb.drawCircle(drawcircle_x, drawcircle_y, drawcircle_radius)")
 endfunction
-' End of PIXI drawing functions
