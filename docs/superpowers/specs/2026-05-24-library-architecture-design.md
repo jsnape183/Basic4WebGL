@@ -338,6 +338,30 @@ The compiler is untouched by any of this. It continues to receive `ProjectFile[]
 
 ---
 
+## Documentation Maintenance
+
+The following documents must be updated as part of this work, not as a follow-up. A PR that ships the implementation without updating these is incomplete.
+
+### `docs/language/softbasic-concepts.md`
+
+- **Built-in Modules section** — remove entries for `spritemanager`, `transform`, and the `text` module. Add entries for the `Sprite` class and `Text` class with their constructor signatures and method tables. Update `stage` to show `add(obj)` / `remove(obj)` instead of `registerNode(name)`. Update `pen` to remove `setAlpha`.
+- **Packages section** — update the softGfx module list to match the new `moduleNames` array.
+- **Typical Scene Setup example** — replace the old multi-module sprite setup with the new `dim bunny as Sprite("bunny.png")` pattern.
+- **Stale class limitation note** — remove the caveat: *"Methods that attempt to use bare property names inside the method body may not resolve correctly in all cases."* The implementation already handles this correctly; the note is inaccurate and misleading.
+- **Known Gaps section** — remove any gaps resolved by this work.
+
+### `docs/language/library-roadmap.md`
+
+- **Current State — Existing modules table** — update to reflect the new module and class list.
+- **Key File Locations table** — add entries for `engine/` subdirectory, descriptor files, and the generator script. Remove or update entries for the three old singleton files.
+- **Priorities section** — mark P3 (library architecture refactor) as done.
+
+### `docs/outstanding-issues.md`
+
+- Review all five outstanding issues after implementation. Remove or update any that are resolved by this work.
+
+---
+
 ## Test Coverage
 
 ### Generator (unit)
