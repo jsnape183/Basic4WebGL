@@ -1,13 +1,13 @@
 <html>
       <head>
-      
+
       </head>
       <body>
       <script type="text/javascript">
       const _createArrayDim = (sizes, depth) => {
         if (depth === sizes.length - 1)
           return Array.apply(null, new Array(sizes[depth])).map(() => false);
-    
+
         return Array.apply(null, new Array(sizes[depth])).map(() =>
           Array.apply(null, createArrayDim(sizes, depth + 1))
         );
@@ -17,7 +17,7 @@
       };
 
       const _print = (value) => {
-        console.log(value); 
+        console.log(value);
         if(typeof value === 'string' || typeof value === 'number'){
           window.parent.postMessage({type:'console.log', message: value});
           return;
@@ -28,8 +28,8 @@
             window.parent.postMessage({type:'console.log', message:'null'});
             return;
           }
-          
-            window.parent.postMessage({type:'console.log', message:json});  
+
+            window.parent.postMessage({type:'console.log', message:json});
           }
           catch{
             window.parent.postMessage({type:'console.log', message:'null'});
@@ -47,17 +47,37 @@
       </script>
       <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.x/dist/pixi.min.js"></script>
       <script type="text/javascript">
-        //${projectId}
-        try{
-          //${softBasicGFX}
+      var app;
+      //${projectId}
+      //${softBasicGFX}
+
+      (async () => {
+        try {
+          app = new PIXI.Application();
+          await app.init({
+            background: '#1099bb',
+            resizeTo: window,
+            width: 640,
+            height: 360,
+          });
+          app.stage.interactive = true;
+          document.body.appendChild(app.canvas);
+
+          await _sb.preloadFromLocalStorage(_sbProjectId);
+
           //${transpiled};
-          //${pixiInit}
-        }
-        catch(e){
+
+          app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
+
+          _sb._sbClasses.forEach((c) => {
+            if (c.symbol.onenter) {
+              c.symbol.onenter();
+            }
+          });
+        } catch(e) {
           _throwError(e);
         }
-        </script>
-      </div>
-
+      })();
+      </script>
       </body>
       </html>

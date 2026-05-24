@@ -6,7 +6,6 @@ import sbStage from './engine/stage.js?raw';
 import sbSprites from './engine/sprites.js?raw';
 import softBasicEngine from './softBasicEngine.js?raw';
 import bootstrapper from './bootstrapper.html?raw';
-import pixiInit from './pixiInit.js?raw';
 
 type RunnerProps = {
   width: string;
@@ -33,8 +32,7 @@ const Runner: React.FC<RunnerProps> = ({
             [sbLifecycle, sbInput, sbAssets, sbDrawing, sbStage, sbSprites, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
-          .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)
-          .replace('//${pixiInit}', pixiInit)}
+          .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)}
       ></iframe>
     </div>
   );
