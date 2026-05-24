@@ -338,6 +338,36 @@ The compiler is untouched by any of this. It continues to receive `ProjectFile[]
 
 ---
 
+## Test Coverage
+
+### Generator (unit)
+
+The generator is entirely new with no existing tests. Full coverage is required:
+
+- `ClassDescriptor` produces a `.bas` file beginning with `Class` and containing `dim`, `Constructor`, and `function` blocks in the correct structure
+- `ModuleDescriptor` produces a flat `.bas` file with no `Class` keyword
+- Proxy resolution — constructor params: `p.imagePath` → `constructor_imagepath`
+- Proxy resolution — method params: `p.x` in method `setPosition` → `setposition_x`
+- Proxy resolution — class `self._handle` → `this._handle`
+- Proxy resolution — module `self.volume` → `modulename.volume`
+- A `body` function emits `call("...")` (no `return`)
+- A `returns` function emits `return call("...")`
+- A constructor with `assignTo` emits `_handle = call("...")`
+- Properties produce `dim propName` declarations in the output
+
+### Compiler integration (existing pattern)
+
+- `Sprite` class compiles end-to-end: constructor, `setPosition`, `getX`, `setAlpha` all produce correct transpiler output
+- `Text` class compiles end-to-end: constructor, `setText`, `setPosition`, `setAlpha`
+- `stage.add(obj)` compiles correctly with a class instance argument
+- Module-level `dim` property accessed inside a module function body via `call()` resolves to `moduleName.prop` in transpiled output (verify existing coverage; add test if missing)
+
+### Existing tests
+
+All existing compiler and UI tests must continue to pass throughout. No regressions.
+
+---
+
 ## Out of Scope
 
 - **User-authored packages** — no mechanism for users to publish library modules; this is a future subproject
