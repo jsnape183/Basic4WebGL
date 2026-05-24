@@ -1,6 +1,10 @@
-import softBasicGFX from './softBasicGFX.js?raw';
-import softAssetManager from './softAssetManager.js?raw';
-import softSpriteManager from './softSpriteManager.js?raw';
+import sbLifecycle from './engine/lifecycle.js?raw';
+import sbInput from './engine/input.js?raw';
+import sbAssets from './engine/assets.js?raw';
+import sbDrawing from './engine/drawing.js?raw';
+import sbStage from './engine/stage.js?raw';
+import sbSprites from './engine/sprites.js?raw';
+import softBasicEngine from './softBasicEngine.js?raw';
 import bootstrapper from './bootstrapper.html?raw';
 import pixiInit from './pixiInit.js?raw';
 
@@ -26,9 +30,7 @@ const Runner: React.FC<RunnerProps> = ({
         srcDoc={bootstrapper
           .replace(
             '//${softBasicGFX}',
-            `${softBasicGFX}
-          ${softAssetManager}
-          ${softSpriteManager}`
+            [sbLifecycle, sbInput, sbAssets, sbDrawing, sbStage, sbSprites, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
           .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)

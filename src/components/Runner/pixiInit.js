@@ -12,6 +12,6 @@ app
 
     document.body.appendChild(app.canvas);
     app.view.focus();
-    app.ticker.add((ticker) => _SoftBasicGfx.getInstance()._update(ticker.deltaTime));
+    app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
     _sb_globalOnEnter();
   });
