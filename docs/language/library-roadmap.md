@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-05-23
+> Last updated: 2026-05-24
 
 ---
 
@@ -9,10 +9,19 @@
 
 ### How the library works
 
-Library modules are softBASIC source strings defined in `src/lib/Basic4WebGL/defs/`. They are
-registered in `src/constants/projectLib.ts`, compiled *before* user files, and become ordinary
-functions in the transpiled output. The `call("JavaScript")` escape hatch bridges them to the
-runtime managers.
+Library modules are real `.bas` source files in `src/lib/Basic4WebGL/defs/`. They are loaded via
+Vite `?raw` imports into `src/constants/packageModules.ts` (a `Record<string, string>` map of
+module name → source string). Modules are grouped into **packages** defined in
+`src/constants/firstPartyPackages.ts` and registered in the Redux store via `packagesSlice`.
+
+Each project stores an ordered list of package IDs (`project.packageIds`). On build,
+`useProjectForBuild` reads the project's packages from the store, expands module names through
+`packageModules`, and passes the resulting `ProjectFile[]` to the compiler — where they are
+compiled *before* user files and become ordinary functions in the transpiled output. The
+`call("JavaScript")` escape hatch bridges them to the runtime managers.
+
+`projectLib.ts` has been removed. First-party packages are seeded into the Redux store on app
+init via `App.tsx`.
 
 Three JavaScript singleton objects are injected into the sandboxed iframe at runtime:
 
@@ -40,30 +49,21 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `assetmanager` | `loadImage(name)` |
 | `spritemanager` | `create(name,texture)` |
 
-Lifecycle hooks: `onenter()` (wired), `onupdate(delta)` (defined but **broken** — see below).
+Lifecycle hooks: `onenter()` (wired), `onupdate()` (wired — PIXI ticker fires once per frame).
 
 ---
 
-## Known Bugs (fix before new features)
+## Fixed Bugs
 
-### Bug 1 — `onupdate()` never fires
-`_SoftBasicGfx._update(delta)` exists but is never connected to the PIXI ticker.
-Any user program relying on a game loop is silently broken.
-
-**Fix:** One line in `src/components/Runner/pixiInit.js`:
+### ~~Bug 1 — `onupdate()` never fires~~ **[FIXED]**
+`_SoftBasicGfx._update(delta)` is now connected to the PIXI ticker in `pixiInit.js`:
 ```js
-app.ticker.add(delta => _SoftBasicGfx.getInstance()._update(delta));
+app.ticker.add((ticker) => _SoftBasicGfx.getInstance()._update(ticker.deltaTime));
 ```
 
-### Bug 2 — Missing `this.` in `softBasicGFX.js`
-Several methods call instance members without `this.`, causing runtime errors when fill colours
-are used:
-
-- `componentToHex(...)` → should be `this._componentToHex(...)`
-- `graphicsStyles` → `this.graphicsStyles`
-- `drawWithFill(...)` → `this.drawWithFill(...)`
-
-**Files:** `src/components/Runner/softBasicGFX.js` (lines ~91, 92, 97, 114)
+### ~~Bug 2 — Missing `this.` in `softBasicGFX.js`~~ **[FIXED]**
+`this.` bindings corrected for `_componentToHex`, `setFillColor`, `setLineColor`, `drawLine`,
+`drawRect`, `drawCircle`, `clear()`, and the keyup handler.
 
 ---
 
@@ -71,13 +71,11 @@ are used:
 
 Priority order agreed 2026-05-23. Each item will get its own brainstorm → spec → plan cycle.
 
-### P1 — Fix `onupdate` wiring *(bug fix)*
-Unblocks every game loop. ~30 minutes of work.
-See Bug 1 above.
+### ~~P1 — Fix `onupdate` wiring~~ **[DONE]**
+Fixed. See above.
 
-### P2 — Fix `softBasicGFX.js` binding bugs *(bug fix)*
-Unblocks colour fill drawing.
-See Bug 2 above.
+### ~~P2 — Fix `softBasicGFX.js` binding bugs~~ **[DONE]**
+Fixed. See above.
 
 ### P3 — Library architecture refactor *(subproject)*
 Before adding significant new library surface, address the maintainability issues that would
@@ -197,8 +195,11 @@ These are noted for completeness but are not currently scheduled:
 
 | Purpose | Path |
 |---|---|
-| Library module definitions | `src/lib/Basic4WebGL/defs/` |
-| Library registration | `src/constants/projectLib.ts` |
+| Library source files (.bas) | `src/lib/Basic4WebGL/defs/*.bas` |
+| Module name → source map | `src/constants/packageModules.ts` |
+| First-party package definitions | `src/constants/firstPartyPackages.ts` |
+| Package Redux slice | `src/features/packages/packagesSlice.ts` |
+| Build hook (packages → ProjectFile[]) | `src/hooks/useProjectForBuild.ts` |
 | Compilation entry point | `src/lib/Basic4WebGL/index.ts` |
 | Runtime iframe template | `src/components/Runner/bootstrapper.html` |
 | Runtime managers | `src/components/Runner/softBasicGFX.js` `.../softAssetManager.js` `.../softSpriteManager.js` |

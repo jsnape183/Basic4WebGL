@@ -1,6 +1,4 @@
-export default `
 ' Start of PIXI manipulation functions
-
 function setFillColor(r,g,b)
   call("_sb.setFillColor(r,g,b);")
 endfunction
@@ -12,4 +10,4 @@ endfunction
 function setAlpha(obj,a)
   call("_sb.setAlpha(obj, a);")
 endfunction
-`;
+' End of PIXI manipulation functions

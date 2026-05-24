@@ -158,9 +158,56 @@ function onenter()
 endfunction
 ```
 
-### `onupdate()` / ticker
+### `onupdate()`
 
-The game loop hook. Not yet confirmed — driven by PIXI's `ticker.add(delta => ...)` in the runtime wrapper.
+The game loop hook. Called once per frame by the PIXI ticker. Use it for movement, collision checks, and any logic that must run every frame.
+
+```basic
+function onupdate()
+    transform.setPosition(mysprite, x, y)
+endfunction
+```
+
+The underlying `deltaTime` is passed to the runtime but not yet exposed as a parameter in user code — treat each call as one frame at 60 fps.
+
+---
+
+## Constructors
+
+Classes can define a constructor to initialise instance properties when they are created. At most one constructor per class is allowed.
+
+**Declaration** (inside a `Class` file):
+
+```basic
+Class
+
+dim health
+dim x
+dim y
+
+Constructor(startHealth, startX, startY)
+    health = startHealth
+    x = startX
+    y = startY
+EndConstructor
+
+EndClass
+```
+
+**Instantiation with arguments:**
+
+```basic
+dim myCar as Car(100, 0, 0)   ' passes args to Constructor
+dim myCar as Car               ' no args — works whether or not class has a Constructor
+```
+
+**Rules:**
+- `Constructor` / `EndConstructor` must appear inside a `Class` block
+- Parameters are accessible by name inside the constructor body
+- At most one constructor per class — no overloading
+- No inheritance
+
+**Current limitation:** Instance methods that read or write class-level properties work correctly when accessed via the object reference (e.g. `myCar.health`). Methods that attempt to use bare property names inside the method body may not resolve correctly in all cases. Access via the object reference is the safe pattern.
 
 ---
 
@@ -275,9 +322,33 @@ next
 
 ---
 
+## Packages
+
+softBASIC organises built-in library modules into packages. Packages are collections of ordered source modules compiled before your project files.
+
+**Built-in packages:**
+
+| Package  | Removable | Modules |
+|----------|-----------|---------|
+| softCore | No (core) | math, string, array |
+| softGfx  | Yes       | gfx, drawing, stage, pen, text, transform, assetmanager, spritemanager |
+
+**Managing packages in the editor:**
+
+The **PACKAGES** section in the file tree panel (above FILES) shows which packages are active for the current project. Click the header to expand/collapse. Use `✕` to remove a non-core package. Click `＋` on the header to open the add-package picker and restore a removed package.
+
+**Notes:**
+- Package source is not editable from the editor
+- `softCore` is always present and cannot be removed
+- Package modules compile in package order, then module order within each package, before your project files
+
+---
+
 ## Built-in Modules
 
 These are provided by the runtime and available without import. Each maps to an underlying PIXI.js / runtime API.
+
+Built-in modules are organised into packages — see the [Packages](#packages) section above for which package each module belongs to.
 
 ### `assetmanager`
 
@@ -437,9 +508,9 @@ endfunction
 
 ## Known Gaps / To Document
 
-- `onupdate()` / game loop lifecycle hook
 - Array declarations: `dim arr(10)` syntax and transpiled form
 - Whether `print` accepts multiple arguments / expressions
 - String concatenation syntax
 - Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=` (inferred from conditionals tests)
 - Boolean operators: `and`, `or`, `not` (inferred from parser rules)
+- `deltaTime` exposure in `onupdate()` parameters

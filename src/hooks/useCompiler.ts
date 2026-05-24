@@ -9,11 +9,10 @@ import {
 import { LogItemType } from '../Types/LogItem';
 import Basic4WebGL from '../lib/Basic4WebGL';
 import { useProjectForBuild } from './useProjectForBuild';
-import { projectLib } from '../constants/projectLib';
 
 export const useCompiler = (projectId: string) => {
   const dispatch = useDispatch<AppDispatch>();
-  const buildProject = useProjectForBuild(projectId, projectLib);
+  const buildProject = useProjectForBuild(projectId);
   const isRunning = useSelector((state: RootState) => state.session.isRunning);
 
   const run = () => {

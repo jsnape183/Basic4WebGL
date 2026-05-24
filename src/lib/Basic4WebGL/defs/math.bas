@@ -1,4 +1,4 @@
-export default `' Start of Math functions
+' Start of Math functions
 function abs(n):return call("Math.abs(abs_n)"):endfunction
 function acos(n):return call("Math.acos(acos_n)"):endfunction
 function acosh(n):return call("Math.acosh(acosh_n)"):endfunction
@@ -18,7 +18,7 @@ function log(n):return call("Math.log(log_n)"):endfunction
 function log2(n):return call("Math.log2(log2_n)"):endfunction
 function log10(n):return call("Math.log10(log10_n)"):endfunction
 function pi(): return call("Math.PI"):endfunction
-function pow(x,y):return call("Math.pow(pw_x,pow_y)"):endfunction
+function pow(x,y):return call("Math.pow(pow_x,pow_y)"):endfunction
 function random(max):return call("Math.random(random_max)"):endfunction
 function round(n):return call("Math.round(round_n)"):endfunction
 function sign(n):return call("Math.sign(sign_n)"):endfunction
@@ -29,4 +29,4 @@ function tan(n):return call("Math.tan(tan_n)"):endfunction
 function tanh(n):return call("Math.tanh(tanh_n)"):endfunction
 function trunc(n):return call("Math.trunc(trunc_n)"):endfunction
 function val(s):return call("Number(val_s)"):endfunction
-' End of Math functions`;
+' End of Math functions
