@@ -9,16 +9,6 @@ const _sbDrawing = (() => {
     return hex.length === 1 ? '0' + hex : hex;
   }
 
-  function _drawWithFill(drawMethod) {
-    const obj = new PIXI.Graphics();
-    obj.lineStyle(2, _styles.lineColor, 1);
-    obj.beginFill(_styles.fillColor);
-    drawMethod(obj);
-    obj.endFill();
-    app.stage.addChild(obj);
-    return obj;
-  }
-
   return {
     setFillColor(r, g, b) {
       const hex = _componentToHex(r) + _componentToHex(g) + _componentToHex(b);
@@ -29,26 +19,27 @@ const _sbDrawing = (() => {
       _styles.lineColor = parseInt(hex, 16);
     },
     drawLine(x, y, x2, y2) {
-      return _drawWithFill((obj) => {
-        obj.moveTo(0, 0);
-        obj.lineTo(x2, y2);
-        obj.position.set(x, y);
-        obj.closePath();
-      });
+      const obj = new PIXI.Graphics();
+      obj.moveTo(0, 0).lineTo(x2, y2).stroke({ width: 2, color: _styles.lineColor });
+      obj.position.set(x, y);
+      app.stage.addChild(obj);
+      return obj;
     },
     drawRect(x, y, width, height) {
-      return _drawWithFill((obj) => {
-        obj.drawRect(0, 0, width, height);
-        obj.pivot.set(width / 2, height / 2);
-        obj.position.set(x, y);
-      });
+      const obj = new PIXI.Graphics();
+      obj.rect(0, 0, width, height).fill(_styles.fillColor).stroke({ width: 2, color: _styles.lineColor });
+      obj.pivot.set(width / 2, height / 2);
+      obj.position.set(x, y);
+      app.stage.addChild(obj);
+      return obj;
     },
     drawCircle(x, y, radius) {
-      return _drawWithFill((obj) => {
-        obj.drawCircle(0, 0, radius);
-        obj.pivot.set(radius / 2, radius / 2);
-        obj.position.set(x, y);
-      });
+      const obj = new PIXI.Graphics();
+      obj.circle(0, 0, radius).fill(_styles.fillColor).stroke({ width: 2, color: _styles.lineColor });
+      obj.pivot.set(radius / 2, radius / 2);
+      obj.position.set(x, y);
+      app.stage.addChild(obj);
+      return obj;
     },
   };
 })();

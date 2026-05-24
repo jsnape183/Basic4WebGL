@@ -25,25 +25,24 @@ const _sbSprites = {
       fontStyle: 'italic',
       fontWeight: 'bold',
       fill: '#ffffff',
-      stroke: '#4a1850',
-      strokeThickness: 5,
-      dropShadow: true,
-      dropShadowColor: '#000000',
-      dropShadowBlur: 4,
-      dropShadowAngle: Math.PI / 6,
-      dropShadowDistance: 6,
+      stroke: { color: '#4a1850', width: 5 },
+      dropShadow: {
+        color: '#000000',
+        blur: 4,
+        angle: Math.PI / 6,
+        distance: 6,
+      },
       wordWrap: true,
       wordWrapWidth: 440,
       lineJoin: 'round',
     });
-    const text = new PIXI.Text(content, textStyle);
+    const text = new PIXI.Text({ text: content, style: textStyle });
     text.x = x;
     text.y = y;
     return text;
   },
   setText(obj, text) {
     obj.text = text;
-    obj.updateText();
   },
   boxCollide(a, b) {
     const ab = a.getBounds();

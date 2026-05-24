@@ -86,6 +86,26 @@ describe('literals', () => {
     expect(result[0].token.name).toBe(tokens.Variable.name);
     expect(result[0].text).toBe('myVar');
   });
+
+  // Regression: commit 3cd9040 fixed the Variable regex from /[A-Za-z][A-Za-z_$0-9]*/
+  // to /^[A-Za-z_][A-Za-z_$0-9]*/ — adding the `^` anchor and allowing underscore-
+  // initial identifiers. `_handle` is used in sprite.bas and text.bas as a class field.
+  test('underscore-prefixed identifier lexes as a single Variable token', () => {
+    const result = lex('_handle');
+    expect(result[0].token.name).toBe(tokens.Variable.name);
+    expect(result[0].text).toBe('_handle');
+    expect(result).toHaveLength(1);
+  });
+
+  test.each([
+    ['_handle',  '_handle'],   // dim _handle  (sprite.bas, text.bas)
+    ['_handle2', '_handle2'],  // with digit suffix
+    ['_x',       '_x'],        // short underscore-prefixed name
+  ])('underscore-initial identifier "%s" lexes as Variable with text "%s"', (source, expected) => {
+    const result = lex(source);
+    expect(result[0].token.name).toBe(tokens.Variable.name);
+    expect(result[0].text).toBe(expected);
+  });
 });
 
 // ─── Multi-token expressions ──────────────────────────────────────────────────
