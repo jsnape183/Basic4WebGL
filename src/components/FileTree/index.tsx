@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -17,6 +17,8 @@ import { IFile, addFile, removeFile, reorderFiles } from '../../features/files/f
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
 import SortableFileItem from './SortableFileItem';
+import PackagesSection from './PackagesSection';
+import AddPackageModal from '../AddPackageModal';
 
 type FileTreeProps = {
   projectId: string;
@@ -26,6 +28,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
   const files = useFilesForProject(projectId);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const [isAddPackageOpen, setIsAddPackageOpen] = useState(false);
 
   const selectedFileId: string | undefined = useSelector(
     (state: RootState) => state.ui.selectedFileByProject[projectId]
@@ -105,6 +108,15 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
 
   return (
     <div>
+      <PackagesSection
+        projectId={projectId}
+        onAddClick={() => setIsAddPackageOpen(true)}
+      />
+      <AddPackageModal
+        projectId={projectId}
+        isOpen={isAddPackageOpen}
+        onClose={() => setIsAddPackageOpen(false)}
+      />
       <div className="flex items-center justify-between mb-1">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-ds-text-dim">
           Files
