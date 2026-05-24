@@ -411,7 +411,6 @@ Control fill and stroke style for drawing.
 |---|---|
 | `pen.setFillColor(r, g, b)` | Set fill colour (0–255) |
 | `pen.setLineColor(r, g, b)` | Set stroke colour |
-| `pen.setAlpha(obj, a)` | Set opacity (0.0–1.0) |
 
 ### `math`
 
