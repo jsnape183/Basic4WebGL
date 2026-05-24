@@ -1,4 +1,3 @@
-export default `
 function setPosition(obj, x, y)
   call("_SoftBasicGfx.getInstance().setPosition(setposition_obj, setposition_x, setposition_y)")
 endfunction
@@ -14,4 +13,3 @@ endfunction
 function setAngle(obj, angle)
   call("_SoftBasicGfx.getInstance().setAngle(setangle_obj, setangle_angle);")
 endfunction
-`;

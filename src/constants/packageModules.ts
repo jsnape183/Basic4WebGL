@@ -9,18 +9,17 @@ import text from '../lib/Basic4WebGL/defs/text.bas?raw';
 import transform from '../lib/Basic4WebGL/defs/transform.bas?raw';
 import assetmanager from '../lib/Basic4WebGL/defs/assetmanager.bas?raw';
 import spritemanager from '../lib/Basic4WebGL/defs/spritemanager.bas?raw';
-import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 
-export const projectLib: Array<ProjectFile> = [
-  { name: 'gfx', source: gfx },
-  { name: 'string', source: string },
-  { name: 'math', source: math },
-  { name: 'array', source: array },
-  { name: 'drawing', source: drawing },
-  { name: 'stage', source: stage },
-  { name: 'pen', source: pen },
-  { name: 'text', source: text },
-  { name: 'transform', source: transform },
-  { name: 'assetmanager', source: assetmanager },
-  { name: 'spritemanager', source: spritemanager },
-];
+export const packageModules: Record<string, string> = {
+  math,
+  string,
+  array,
+  gfx,
+  drawing,
+  stage,
+  pen,
+  text,
+  transform,
+  assetmanager,
+  spritemanager,
+};
