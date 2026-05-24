@@ -23,19 +23,13 @@ compiled *before* user files and become ordinary functions in the transpiled out
 `projectLib.ts` has been removed. First-party packages are seeded into the Redux store on app
 init via `App.tsx`.
 
-Three JavaScript singleton objects are injected into the sandboxed iframe at runtime:
-
-| Object | File | Responsibility |
-|---|---|---|
-| `_SoftBasicGfx` | `src/components/Runner/softBasicGFX.js` | Drawing, keyboard, lifecycle |
-| `_SoftAssetManager` | `src/components/Runner/softAssetManager.js` | Texture preloading |
-| `_SoftSpriteManager` | `src/components/Runner/softSpriteManager.js` | Sprite creation/lookup |
+A single `_sb` engine object is injected into the sandboxed iframe at runtime, composed from domain modules in `src/components/Runner/engine/`. `Sprite` and `Text` are now classes instantiated directly from user code rather than managed through named-lookup singletons.
 
 PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 
 ### Existing modules
 
-| Module | Functions |
+| Module / Class | Functions / Methods |
 |---|---|
 | `gfx` | `boxCollide(a, b)`, `getKeyDown(keycode)` |
 | `math` | `abs` `sin` `cos` `tan` `asin` `acos` `atan` `atan2` `sinh` `cosh` `tanh` `asinh` `acosh` `atanh` `sqrt` `pow` `cbrt` `exp` `log` `log2` `log10` `floor` `ceil` `round` `trunc` `sign` `random(max)` `pi()` `euler()` `val(s)` |
@@ -43,11 +37,10 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `array` | `arrLength` `join` |
 | `drawing` | `drawLine(x,y,x2,y2)` `drawRect(x,y,w,h)` `drawCircle(x,y,r)` |
 | `pen` | `setFillColor(r,g,b)` `setLineColor(r,g,b)` `setAlpha(obj,a)` |
-| `text` | `drawText(s,x,y)` `setText(obj,text)` |
-| `transform` | `setPosition(obj,x,y)` `getPositionX(obj)` `getPositionY(obj)` `setAngle(obj,angle)` |
-| `stage` | `registerNode(name)` `clear()` |
+| `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `getX()` `getY()` `setAngle(angle)` `setAlpha(a)` |
+| `Text` *(class)* | `constructor(content,x,y)` `setText(content)` `setPosition(x,y)` `setAlpha(a)` |
+| `stage` | `add(obj)` `remove(obj)` `clear()` |
 | `assetmanager` | `loadImage(name)` |
-| `spritemanager` | `create(name,texture)` |
 
 Lifecycle hooks: `onenter()` (wired), `onupdate()` (wired — PIXI ticker fires once per frame).
 
@@ -77,35 +70,17 @@ Fixed. See above.
 ### ~~P2 — Fix `softBasicGFX.js` binding bugs~~ **[DONE]**
 Fixed. See above.
 
-### P3 — Library architecture refactor *(subproject)*
-Before adding significant new library surface, address the maintainability issues that would
-make all future additions painful. This is its own subproject — not a single task.
+### ~~P3 — Library architecture refactor~~ **[DONE]**
 
-Key concerns:
+Key work completed:
 
-1. **No type signatures for library functions**
-   Every library function is `Variant → Variant`. The symbol table knows nothing about return
-   types (e.g. what `spritemanager.create()` returns), so the compiler can't validate usage or
-   give useful errors. Requires a type manifest — probably a TypeScript descriptor per module.
+1. **Descriptor + generator system** — TypeScript descriptor files in `src/lib/Basic4WebGL/library/descriptors/` drive a `scripts/generateLibrary.ts` CLI that regenerates `.bas` source files, eliminating hand-written `call()` string templates.
 
-2. **Hand-written `call()` string templates**
-   ```basic
-   function abs(n):return call("Math.abs(abs_n)"):endfunction
-   ```
-   The parameter name must manually match the template variable (`abs_n`). Tedious and fragile
-   at scale. A generator or structured descriptor approach would make adding functions trivial.
+2. **`_sb` unified engine** — The three uncoordinated singletons (`_SoftBasicGfx`, `_SoftAssetManager`, `_SoftSpriteManager`) have been replaced by a single `_sb` object composed from domain modules in `src/components/Runner/engine/`.
 
-3. **Three uncoordinated runtime singletons**
-   `_SoftBasicGfx`, `_SoftAssetManager`, `_SoftSpriteManager` have no unified surface.
-   Extending the runtime means touching multiple files with no clear contract between them.
-   Worth unifying behind a single `SoftBasicEngine` (or similar) before the runtime grows
-   significantly larger.
+3. **`Sprite` and `Text` as classes** — Display objects are now first-class softBASIC classes with typed methods, replacing the `spritemanager`/`text` module pattern.
 
-4. **Hardcoded canvas size**
-   640×360 baked into `softBasicGFX.js` and `pixiInit.js`. No way to change from user code
-   or project settings.
-
-> Brainstorm this as a standalone subproject. Output: architecture spec + implementation plan.
+4. **softGfx package bumped to v2.0.0.**
 
 ### P4 — Audio system
 Highest-value missing feature for games. No sound at all currently.
@@ -202,7 +177,9 @@ These are noted for completeness but are not currently scheduled:
 | Build hook (packages → ProjectFile[]) | `src/hooks/useProjectForBuild.ts` |
 | Compilation entry point | `src/lib/Basic4WebGL/index.ts` |
 | Runtime iframe template | `src/components/Runner/bootstrapper.html` |
-| Runtime managers | `src/components/Runner/softBasicGFX.js` `.../softAssetManager.js` `.../softSpriteManager.js` |
+| Runtime engine (domain modules → `_sb`) | `src/components/Runner/engine/` |
 | PIXI initialisation | `src/components/Runner/pixiInit.js` |
 | Built-in type definitions | `src/lib/Basic4WebGL/builtInTypes/definitions/` |
+| Descriptor files (TypeScript sources) | `src/lib/Basic4WebGL/library/descriptors/` |
+| Generator script | `scripts/generateLibrary.ts` |
 | Runner component | `src/components/Runner/index.tsx` |

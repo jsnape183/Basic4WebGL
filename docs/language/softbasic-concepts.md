@@ -13,7 +13,8 @@ Every `.bas` file is a **module** by default. A module is a static class — all
 dim bunnysprite
 
 function onenter()
-    bunnysprite = spritemanager.create("bunny", bunnyimage)
+    bunnysprite = sprite("bunny.png")
+    stage.add(bunnysprite)
 endfunction
 ```
 
@@ -164,7 +165,7 @@ The game loop hook. Called once per frame by the PIXI ticker. Use it for movemen
 
 ```basic
 function onupdate()
-    transform.setPosition(mysprite, x, y)
+    mysprite.setPosition(x, y)
 endfunction
 ```
 
@@ -206,8 +207,6 @@ dim myCar as Car               ' no args — works whether or not class has a Co
 - Parameters are accessible by name inside the constructor body
 - At most one constructor per class — no overloading
 - No inheritance
-
-**Current limitation:** Instance methods that read or write class-level properties work correctly when accessed via the object reference (e.g. `myCar.health`). Methods that attempt to use bare property names inside the method body may not resolve correctly in all cases. Access via the object reference is the safe pattern.
 
 ---
 
@@ -331,7 +330,7 @@ softBASIC organises built-in library modules into packages. Packages are collect
 | Package  | Removable | Modules |
 |----------|-----------|---------|
 | softCore | No (core) | math, string, array |
-| softGfx  | Yes       | gfx, drawing, stage, pen, text, transform, assetmanager, spritemanager |
+| softGfx  | Yes       | gfx, drawing, stage, pen, assetmanager, sprite, text |
 
 **Managing packages in the editor:**
 
@@ -350,55 +349,49 @@ These are provided by the runtime and available without import. Each maps to an 
 
 Built-in modules are organised into packages — see the [Packages](#packages) section above for which package each module belongs to.
 
-### `assetmanager`
+### `Sprite`
 
-Load assets that were uploaded to the project.
+A display object wrapping a PIXI sprite. Created from a project asset image.
 
-| Function | Description |
-|---|---|
-| `assetmanager.loadimage(name)` | Returns a texture loaded from project assets |
+| Method | Signature | Description |
+|---|---|---|
+| Constructor | `Sprite(imagePath)` | Loads the named asset and creates the sprite |
+| `setPosition` | `(x, y)` | Sets the sprite's position |
+| `getX` | `()` | Returns current x position |
+| `getY` | `()` | Returns current y position |
+| `setAngle` | `(angle)` | Sets rotation in degrees |
+| `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
 
 ```basic
-dim img
-img = assetmanager.loadimage("bunny.png")
+dim bunny as Sprite("bunny.png")
+bunny.setPosition(100, 200)
+stage.add(bunny)
 ```
 
-### `spritemanager`
+### `Text`
 
-Create and manage PIXI sprites.
+A display object wrapping a PIXI text node.
 
-| Function | Description |
-|---|---|
-| `spritemanager.create(name, texture)` | Creates a sprite with the given name and texture, returns the sprite object |
+| Method | Signature | Description |
+|---|---|---|
+| Constructor | `Text(content, x, y)` | Creates a text object at position |
+| `setText` | `(content)` | Updates the displayed string |
+| `setPosition` | `(x, y)` | Moves the text object |
+| `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
 
 ```basic
-dim sprite
-sprite = spritemanager.create("bunny", img)
+dim label as Text("Score: 0", 10, 10)
+label.setText("Score: 100")
+stage.add(label)
 ```
 
 ### `stage`
 
-Register and manage display nodes.
-
 | Function | Description |
 |---|---|
-| `stage.registerNode(nodeName)` | Adds the named sprite to the display stage |
-| `stage.clear()` | Clears all nodes from the stage |
-
-```basic
-stage.registerNode("bunny")
-```
-
-### `transform`
-
-Move and rotate objects.
-
-| Function | Description |
-|---|---|
-| `transform.setPosition(obj, x, y)` | Set x/y position of an object |
-| `transform.getPositionX(obj)` | Get x position |
-| `transform.getPositionY(obj)` | Get y position |
-| `transform.setAngle(obj, angle)` | Set rotation angle |
+| `stage.add(obj)` | Adds a display object to the stage |
+| `stage.remove(obj)` | Removes a display object from the stage |
+| `stage.clear()` | Removes all display objects |
 
 ### `drawing`
 
@@ -419,15 +412,6 @@ Control fill and stroke style for drawing.
 | `pen.setFillColor(r, g, b)` | Set fill colour (0–255) |
 | `pen.setLineColor(r, g, b)` | Set stroke colour |
 | `pen.setAlpha(obj, a)` | Set opacity (0.0–1.0) |
-
-### `text`
-
-Draw and update text objects.
-
-| Function | Description |
-|---|---|
-| `text.drawText(s, x, y)` | Create a text object at position |
-| `text.setText(obj, text)` | Update an existing text object's content |
 
 ### `math`
 
@@ -493,16 +477,18 @@ return call("Math.abs(abs_n)")
 dim bunnysprite
 
 function onenter()
-    dim bunnyimage
-    bunnyimage = assetmanager.loadimage("bunny.png")
-    bunnysprite = spritemanager.create("bunny", bunnyimage)
-    stage.registerNode("bunny")
+    bunnysprite = sprite("bunny.png")
+    stage.add(bunnysprite)
+endfunction
+
+function onupdate()
+    bunnysprite.setPosition(100, 200)
 endfunction
 ```
 
 - `bunnysprite` is a module-level variable → `bunny.bunnysprite`
-- `bunnyimage` is function-local → `onenter_bunnyimage` (temporary, only needed during setup)
-- `spritemanager.create` returns the sprite handle stored at module level so it can be accessed in `onupdate`
+- `Sprite("bunny.png")` creates the sprite directly from the asset name — no separate texture load step
+- `stage.add` registers the display object; `bunnysprite` is accessible in `onupdate` because it is module-level
 
 ---
 

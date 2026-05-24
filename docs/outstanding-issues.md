@@ -104,3 +104,7 @@ all construction through `node()` or typed subclass constructors.
 ---
 
 *Last updated: 2026-05-23 — issue 5 added after class composition feature implementation.*
+
+---
+
+*Updated 2026-05-24 — Library architecture refactor (P3) complete. Runtime singletons replaced by `_sb` engine. Descriptor+generator system eliminates fragile `call()` strings. `Sprite` and `Text` are now classes. softGfx package bumped to v2.0.0.*
