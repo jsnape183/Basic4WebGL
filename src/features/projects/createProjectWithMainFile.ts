@@ -1,7 +1,7 @@
-import { AppDispatch } from "../../store";
-import { v4 as uuidv4 } from "uuid";
-import { addProject } from "./projectsSlice";
-import { addFile } from "../files/filesSlice";
+import { AppDispatch } from '../../store';
+import { v4 as uuidv4 } from 'uuid';
+import { addProject } from './projectsSlice';
+import { addFile } from '../files/filesSlice';
 
 export const createProjectWithMainFile =
   (name: string) => (dispatch: AppDispatch) => {
@@ -12,14 +12,15 @@ export const createProjectWithMainFile =
       addProject({
         id: projectId,
         name,
+        packageIds: ['softcore', 'softgfx'],
       })
     );
 
     dispatch(
       addFile({
         id: mainFileId,
-        name: "Main.bas",
-        source: "",
+        name: 'Main.bas',
+        source: '',
         projectId: projectId,
       })
     );
