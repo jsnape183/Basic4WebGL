@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:ci": "vitest run --coverage"
+    "test:ci": "vitest run --coverage",
+    "generate:library": "vite-node scripts/generateLibrary.ts"
   },
   "imports": {
     "#CompilerLib/*": "./src/CompilerLib/*",
