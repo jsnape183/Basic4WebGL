@@ -13,5 +13,5 @@ app
     document.body.appendChild(app.canvas);
     app.view.focus();
     app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
-    _sb_globalOnEnter();
+    _sb_globalOnEnter().catch((e) => _throwError(e));
   });

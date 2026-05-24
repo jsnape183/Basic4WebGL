@@ -3,7 +3,11 @@ const _sbLifecycle = {
   _update(delta) {
     this._sbClasses.forEach((c) => {
       if (c.symbol.onupdate) {
-        c.symbol.onupdate(delta);
+        try {
+          c.symbol.onupdate(delta);
+        } catch (e) {
+          _throwError(e);
+        }
       }
     });
   },

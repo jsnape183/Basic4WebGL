@@ -40,6 +40,10 @@
         window.parent.postMessage({type:'runtimeError', message: e.message});
         throw Error(e.message);
       }
+
+      window.addEventListener('unhandledrejection', (e) => {
+        _throwError({ message: e.reason?.message ?? String(e.reason) });
+      });
       </script>
       <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.x/dist/pixi.min.js"></script>
       <script type="text/javascript">
