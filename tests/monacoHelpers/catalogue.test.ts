@@ -79,6 +79,10 @@ describe('getModuleMethod', () => {
   it('is case-insensitive on method name', () => {
     expect(getModuleMethod('math', 'SIN')).toBeDefined();
   });
+
+  it('is case-insensitive on module name', () => {
+    expect(getModuleMethod('MATH', 'sin')).toBeDefined();
+  });
 });
 
 describe('getConstructor', () => {
