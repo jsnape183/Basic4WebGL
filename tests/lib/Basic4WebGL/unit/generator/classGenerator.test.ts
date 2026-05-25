@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { generateClass } from '@Basic4WebGL/library/generator/classGenerator';
 import { ClassDescriptor } from '@Basic4WebGL/library/generator/types';
+import { transformDescriptor } from '@Basic4WebGL/library/descriptors/transform.descriptor';
 
 const spriteDescriptor: ClassDescriptor = {
   name: 'sprite',
@@ -118,4 +119,41 @@ test('constructor after lines are emitted after the assignTo line', () => {
   const afterIdx = lines.findIndex((l) => l.includes('dim transform as ObjectTransform'));
   expect(afterIdx).toBeGreaterThan(assignIdx);
   expect(output).toContain('dim transform as ObjectTransform(call("this._handle"))');
+});
+
+describe('transformDescriptor', () => {
+  test('generates Class / EndClass wrapper', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output.trimStart().startsWith('Class')).toBe(true);
+    expect(output.trimEnd().endsWith('EndClass')).toBe(true);
+  });
+
+  test('generates dim _handle property', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output).toContain('dim _handle');
+  });
+
+  test('constructor stores handle param', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output).toContain('Constructor(handle)');
+    expect(output).toContain('_handle = call("constructor_handle")');
+  });
+
+  test('setPosition delegates to _sb.setPosition with this._handle', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output).toContain('function setPosition(x, y)');
+    expect(output).toContain('call("_sb.setPosition(this._handle, setposition_x, setposition_y)")');
+  });
+
+  test('x returns _sb.getPositionX', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output).toContain('function x()');
+    expect(output).toContain('return call("_sb.getPositionX(this._handle)")');
+  });
+
+  test('y returns _sb.getPositionY', () => {
+    const output = generateClass(transformDescriptor);
+    expect(output).toContain('function y()');
+    expect(output).toContain('return call("_sb.getPositionY(this._handle)")');
+  });
 });
