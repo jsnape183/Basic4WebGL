@@ -28,7 +28,7 @@ const _sbAssets = (() => {
       }
       const assets = Object.values(assetsById).filter((a) => a.projectId === projectId);
       if (assets.length === 0) { _ready = true; return; }
-      await this.preload(assets.map((a) => ({ name: a.name, src: a.content })));
+      await this.preload(assets.map((a) => ({ name: a.fullName ?? a.name, src: a.content })));
     },
 
     isReady() {
