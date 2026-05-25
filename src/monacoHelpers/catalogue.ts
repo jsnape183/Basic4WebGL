@@ -138,19 +138,19 @@ export const CATALOGUE: Record<string, CatalogueEntry> = {
       {
         name: 'setPosition',
         params: ['x', 'y'],
-        description: 'Move object to absolute position',
+        description: d('objecttransform', 'setPosition'),
         hasReturn: false,
       },
       {
         name: 'x',
         params: [],
-        description: 'Get current X coordinate',
+        description: d('objecttransform', 'x'),
         hasReturn: true,
       },
       {
         name: 'y',
         params: [],
-        description: 'Get current Y coordinate',
+        description: d('objecttransform', 'y'),
         hasReturn: true,
       },
     ],

@@ -87,4 +87,9 @@ export const DESCRIPTIONS: Record<string, Record<string, string>> = {
     arrLength: 'Returns the number of elements in array a.',
     join: 'Joins all elements of array a into a string, separated by s.',
   },
+  objecttransform: {
+    setPosition: 'Move object to absolute position',
+    x: 'Get current X coordinate',
+    y: 'Get current Y coordinate',
+  },
 };
