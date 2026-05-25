@@ -30,8 +30,7 @@ describe('CATALOGUE', () => {
 describe('getModuleMethods', () => {
   it('returns methods for sprite', () => {
     const names = getModuleMethods('sprite').map(m => m.name);
-    expect(names).toContain('setPosition');
-    expect(names).toContain('getX');
+    expect(names).toContain('setAngle');
     expect(names).toContain('setAlpha');
   });
 
