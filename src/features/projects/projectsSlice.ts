@@ -51,6 +51,14 @@ const projectsSlice = createSlice({
         (id) => id !== action.payload.packageId
       );
     },
+    renameProject: (
+      state,
+      action: PayloadAction<{ projectId: string; name: string }>
+    ) => {
+      const project = state.items.find((p) => p.id === action.payload.projectId);
+      if (!project) return;
+      project.name = action.payload.name;
+    },
   },
 });
 
@@ -59,5 +67,6 @@ export const {
   removeProject,
   addPackageToProject,
   removePackageFromProject,
+  renameProject,
 } = projectsSlice.actions;
 export default projectsSlice.reducer;

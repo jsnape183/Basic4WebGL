@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
 import { createProjectWithMainFile } from '../../features/projects/createProjectWithMainFile';
 import { deleteProjectWithMainFile } from '../../features/projects/deleteProjectAndFiles';
-import { Project } from '../../features/projects/projectsSlice';
+import { Project, renameProject } from '../../features/projects/projectsSlice';
 import { useFilesForProject } from '../../hooks/useFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
 
@@ -25,9 +25,15 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
 }) => {
   const files = useFilesForProject(project.id);
   const assets = useAssetsForProject(project.id);
+  const dispatch = useDispatch<AppDispatch>();
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const deleteInputRef = useRef<HTMLInputElement>(null);
+
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const openDeleteModal = () => {
     setConfirmName('');
@@ -50,6 +56,77 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [showDeleteModal]);
+
+  const openRenameModal = () => {
+    setNewName(project.name);
+    setShowRenameModal(true);
+  };
+
+  const handleRename = () => {
+    const name = newName.trim();
+    if (!name || name === project.name) return;
+    dispatch(renameProject({ projectId: project.id, name }));
+    setShowRenameModal(false);
+  };
+
+  useEffect(() => {
+    if (showRenameModal) setTimeout(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }, 0);
+  }, [showRenameModal]);
+
+  useEffect(() => {
+    if (!showRenameModal) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowRenameModal(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showRenameModal]);
+
+  const renameModal = showRenameModal
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowRenameModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rename-project-modal-title"
+            className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl"
+          >
+            <h2 id="rename-project-modal-title" className="text-ds-text text-lg font-semibold mb-4">
+              Rename project
+            </h2>
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); }}
+              placeholder="Project name"
+              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-accent mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleRename}
+                disabled={!newName.trim() || newName.trim() === project.name}
+                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Rename
+              </button>
+              <button
+                onClick={() => setShowRenameModal(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   const deleteModal = showDeleteModal
     ? ReactDOM.createPortal(
@@ -101,12 +178,23 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
 
   return (
     <>
+      {renameModal}
       {deleteModal}
       <div className="relative group bg-ds-surface border border-ds-border rounded-xl overflow-hidden hover:border-ds-accent transition-colors">
         {/* Accent stripe */}
         <div className="h-1" style={{ background: projectAccent(project.id) }} />
         <div className="p-4">
-          <h3 className="font-semibold text-ds-text text-base mb-1 truncate">{project.name}</h3>
+          <div className="flex items-center gap-1 mb-1">
+            <h3 className="font-semibold text-ds-text text-base truncate">{project.name}</h3>
+            <button
+              onClick={openRenameModal}
+              className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-text transition-opacity flex-shrink-0 p-0.5"
+              aria-label={`Rename project ${project.name}`}
+              title="Rename"
+            >
+              ✏️
+            </button>
+          </div>
           <p className="text-ds-text-muted text-xs">
             {files.length} {files.length === 1 ? 'file' : 'files'}
             {assets.length > 0 && (
