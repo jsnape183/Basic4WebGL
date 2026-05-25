@@ -1,13 +1,12 @@
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { IFile } from '../features/files/filesSlice';
 import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 import { packageModules } from '../constants/packageModules';
 import { useFilesForProject } from './useFilesForProject';
 
 type BuildProject = {
   lib: Array<ProjectFile>;
-  files: Array<IFile>;
+  files: Array<ProjectFile>;
 };
 
 const DEFAULT_PACKAGE_IDS = ['softcore', 'softgfx'];
@@ -30,5 +29,13 @@ export const useProjectForBuild = (projectId: string): BuildProject => {
       .filter((m) => m.source !== '');
   });
 
-  return { lib, files };
+  // Map IFile → ProjectFile, using fullName (folder path) as the filename for
+  // error reporting (e.g. "ui/Menu.bas:5:3"). Falls back to name for legacy
+  // persisted files that predate the fullName field.
+  const projectFiles: ProjectFile[] = files.map((f) => ({
+    name: f.fullName ?? f.name,
+    source: f.source,
+  }));
+
+  return { lib, files: projectFiles };
 };
