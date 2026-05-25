@@ -36,6 +36,9 @@ export const formatSymbol = (data: Symbol) => {
     if (data.scope.type === scopeTypes.Function) {
       return `${data.scope.name}_${data.name}`;
     }
+    if (data.scope.type === scopeTypes.Constructor) {
+      return `this.${data.name}`;
+    }
     if (data.scope.type === scopeTypes.Class) {
       return `${data.scope.name}.prototype.${data.name}`;
     }

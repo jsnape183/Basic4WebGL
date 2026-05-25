@@ -132,6 +132,17 @@ describe('Sprite class — package module loader', () => {
     const result = compileOk({ lib: loaderLib, files: [{ name: 'Main', source: src }] });
     expect(result).toContain('transform.setposition(100,200)');
   });
+
+  test('sprite constructor emits this.transform = new objecttransform(...) — not constructor.transform', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: loaderLib, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('this.transform=newObjectTransform(');
+    expect(result).not.toContain('constructor.transform');
+  });
 });
 
 describe('Sprite class — _handle in method body', () => {
