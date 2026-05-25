@@ -128,6 +128,33 @@ export const CATALOGUE: Record<string, CatalogueEntry> = {
   stage: fromModule(stageDescriptor),
   pen: fromModule(penDescriptor),
   assetmanager: fromModule(assetmanagerDescriptor),
+  // NOTE: ObjectTransform stub for documentation purposes.
+  // Monaco completion for two-level chains (bunny.transform.x())
+  // requires extending the completion provider to resolve property chains.
+  // This is a follow-up task after core ObjectTransform implementation.
+  objecttransform: {
+    kind: 'class',
+    methods: [
+      {
+        name: 'setPosition',
+        params: ['x', 'y'],
+        description: 'Move object to absolute position',
+        hasReturn: false,
+      },
+      {
+        name: 'x',
+        params: [],
+        description: 'Get current X coordinate',
+        hasReturn: true,
+      },
+      {
+        name: 'y',
+        params: [],
+        description: 'Get current Y coordinate',
+        hasReturn: true,
+      },
+    ],
+  },
 };
 
 export function getModuleMethods(moduleName: string): CatalogueMethod[] {

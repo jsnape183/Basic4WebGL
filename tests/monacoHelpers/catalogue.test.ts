@@ -10,7 +10,7 @@ import {
 
 describe('CATALOGUE', () => {
   it('contains all expected modules', () => {
-    for (const name of ['sprite', 'text', 'gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'math', 'string', 'array']) {
+    for (const name of ['sprite', 'text', 'gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'math', 'string', 'array', 'objecttransform']) {
       expect(name in CATALOGUE).toBe(true);
     }
   });
