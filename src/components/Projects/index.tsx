@@ -25,36 +25,112 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
 }) => {
   const files = useFilesForProject(project.id);
   const assets = useAssetsForProject(project.id);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmName, setConfirmName] = useState('');
+  const deleteInputRef = useRef<HTMLInputElement>(null);
+
+  const openDeleteModal = () => {
+    setConfirmName('');
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = () => {
+    if (confirmName !== project.name) return;
+    onRemove(project.id);
+    setShowDeleteModal(false);
+  };
+
+  useEffect(() => {
+    if (showDeleteModal) setTimeout(() => deleteInputRef.current?.focus(), 0);
+  }, [showDeleteModal]);
+
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDeleteModal(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showDeleteModal]);
+
+  const deleteModal = showDeleteModal
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-project-modal-title"
+            className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl"
+          >
+            <h2 id="delete-project-modal-title" className="text-ds-text text-lg font-semibold mb-2">
+              Delete project
+            </h2>
+            <p className="text-ds-text-muted text-sm mb-4">
+              This will permanently delete <span className="text-ds-text font-medium">{project.name}</span> and all its files. Type the project name to confirm.
+            </p>
+            <input
+              ref={deleteInputRef}
+              type="text"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleDelete(); }}
+              placeholder={project.name}
+              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-error mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={confirmName !== project.name}
+                className="bg-ds-error text-white text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
-    <div className="relative group bg-ds-surface border border-ds-border rounded-xl overflow-hidden hover:border-ds-accent transition-colors">
-      {/* Accent stripe */}
-      <div className="h-1" style={{ background: projectAccent(project.id) }} />
-      <div className="p-4">
-        <h3 className="font-semibold text-ds-text text-base mb-1 truncate">{project.name}</h3>
-        <p className="text-ds-text-muted text-xs">
-          {files.length} {files.length === 1 ? 'file' : 'files'}
-          {assets.length > 0 && (
-            <> &middot; {assets.length} {assets.length === 1 ? 'asset' : 'assets'}</>
-          )}
-        </p>
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-ds-border-subtle">
-          <Link
-            to={`/projects/${project.id}/edit`}
-            className="text-ds-accent-btn-text bg-ds-accent-btn text-xs font-semibold px-3 py-1.5 rounded hover:opacity-90 transition"
-          >
-            Open →
-          </Link>
-          <button
-            onClick={() => onRemove(project.id)}
-            className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error text-xs transition-opacity"
-            aria-label={`Delete project ${project.name}`}
-          >
-            Delete
-          </button>
+    <>
+      {deleteModal}
+      <div className="relative group bg-ds-surface border border-ds-border rounded-xl overflow-hidden hover:border-ds-accent transition-colors">
+        {/* Accent stripe */}
+        <div className="h-1" style={{ background: projectAccent(project.id) }} />
+        <div className="p-4">
+          <h3 className="font-semibold text-ds-text text-base mb-1 truncate">{project.name}</h3>
+          <p className="text-ds-text-muted text-xs">
+            {files.length} {files.length === 1 ? 'file' : 'files'}
+            {assets.length > 0 && (
+              <> &middot; {assets.length} {assets.length === 1 ? 'asset' : 'assets'}</>
+            )}
+          </p>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-ds-border-subtle">
+            <Link
+              to={`/projects/${project.id}/edit`}
+              className="text-ds-accent-btn-text bg-ds-accent-btn text-xs font-semibold px-3 py-1.5 rounded hover:opacity-90 transition"
+            >
+              Open →
+            </Link>
+            <button
+              onClick={openDeleteModal}
+              className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error text-xs transition-opacity"
+              aria-label={`Delete project ${project.name}`}
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
