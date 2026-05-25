@@ -20,9 +20,9 @@ export const deleteProjectWithMainFile =
     assets.forEach((asset) => dispatch(removeAsset((asset as IAsset).id)));
 
     const folders = state.folders.items.filter(
-      (folder: IFolder) => folder.projectId === projectId
+      (folder) => folder.projectId === projectId
     );
-    folders.forEach((folder: IFolder) => dispatch(removeFolder(folder.id)));
+    folders.forEach((folder) => dispatch(removeFolder(folder.id)));
 
     dispatch(clearProjectSelection(projectId));
     dispatch(removeProject(projectId));
