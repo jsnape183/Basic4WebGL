@@ -23,7 +23,7 @@ const assetsSlice = createSlice({
   initialState,
   reducers: {
     addAsset: (
-      state: IAssetsState,
+      state,
       action: PayloadAction<Omit<IAsset, 'folderId' | 'fullName'> & Partial<Pick<IAsset, 'folderId' | 'fullName'>>>
     ) => {
       const asset: IAsset = {
@@ -33,14 +33,14 @@ const assetsSlice = createSlice({
       };
       state.byId[asset.id] = asset;
     },
-    updateAsset: (state: IAssetsState, action: PayloadAction<IAsset>) => {
+    updateAsset: (state, action: PayloadAction<IAsset>) => {
       state.byId[action.payload.id] = action.payload;
     },
-    removeAsset: (state: IAssetsState, action: PayloadAction<string>) => {
+    removeAsset: (state, action: PayloadAction<string>) => {
       delete state.byId[action.payload];
     },
     setAssetFolder: (
-      state: IAssetsState,
+      state,
       action: PayloadAction<{ assetId: string; folderId: string | null; fullName: string }>
     ) => {
       const asset = state.byId[action.payload.assetId];
@@ -49,7 +49,7 @@ const assetsSlice = createSlice({
       asset.fullName = action.payload.fullName;
     },
     batchSetAssetFolder: (
-      state: IAssetsState,
+      state,
       action: PayloadAction<{ id: string; folderId: string | null; fullName: string }[]>
     ) => {
       action.payload.forEach(({ id, folderId, fullName }) => {
@@ -60,7 +60,7 @@ const assetsSlice = createSlice({
       });
     },
     batchSetAssetFullNames: (
-      state: IAssetsState,
+      state,
       action: PayloadAction<{ id: string; fullName: string }[]>
     ) => {
       action.payload.forEach(({ id, fullName }) => {

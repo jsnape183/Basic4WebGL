@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import assetsReducer, {
-  IAsset,
   IAssetsState,
   addAsset,
   removeAsset,
