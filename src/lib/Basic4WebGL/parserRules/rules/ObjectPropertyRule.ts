@@ -9,16 +9,18 @@ import { symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
+import PropertyMethodCallNode from '../../nodes/PropertyMethodCallNode';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 import { newLines } from '../../parserConfig';
 
 /**
  * Handles dot-access on Object instances in statement context.
  *
- * Two forms:
- *   obj.prop = expr          — property assignment (one or more levels)
- *   obj.prop.sub = expr      — chained property assignment
- *   obj.method(args)         — method call (delegates to FunctionCall)
+ * Three forms:
+ *   obj.prop = expr               — property assignment (one or more levels)
+ *   obj.prop.sub = expr           — chained property assignment
+ *   obj.method(args)              — method call (delegates to FunctionCall)
+ *   obj.prop.method(args)         — chained method call → PropertyMethodCallNode
  */
 @RegisterParserRule('ObjectProperty')
 class ObjectPropertyRule implements IParserRule {
@@ -37,7 +39,7 @@ class ObjectPropertyRule implements IParserRule {
     matchAndMove(tokens.Variable, tokenStream);
     const memberName = tokenStream.prev().text.toLowerCase();
 
-    // If the next token is '(' this is a method call — delegate to FunctionCall
+    // If the next token is '(' this is a direct method call — delegate to FunctionCall
     if (check(tokens.OpenParen, tokenStream.current())) {
       symbolTable.setScope(ownerName);
       let node: Tree;
@@ -54,12 +56,23 @@ class ObjectPropertyRule implements IParserRule {
       return node;
     }
 
-    // Otherwise: property chain assignment  obj.a.b.c = expr
+    // Otherwise: property chain — may be an assignment or a chained method call
     let chain = `${ownerFormatted}.${memberName}`;
     while (check(tokens.Dot, tokenStream.current())) {
       matchAndMove(tokens.Dot, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
       chain += `.${tokenStream.prev().text.toLowerCase()}`;
+
+      // Chained method call: obj.prop.method(args) in statement context
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(
+          tokenStream,
+          symbolTable,
+          undefined
+        );
+        matchAndMove(newLines, tokenStream);
+        return new PropertyMethodCallNode(chain, args, loc);
+      }
     }
 
     matchAndMove(tokens.Equals, tokenStream);
