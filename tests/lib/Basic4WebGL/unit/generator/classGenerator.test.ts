@@ -99,3 +99,23 @@ test('class without constructor omits Constructor block', () => {
   expect(output).not.toContain('Constructor');
   expect(output).not.toContain('EndConstructor');
 });
+
+test('constructor after lines are emitted after the assignTo line', () => {
+  const desc: ClassDescriptor = {
+    name: 'sprite',
+    properties: ['_handle'],
+    constructor: {
+      params: ['imagePath'],
+      body: (p, _self) => `_sb.createSprite(${p.imagePath})`,
+      assignTo: '_handle',
+      after: (_p, self) => [`dim transform as ObjectTransform(call("${self._handle}"))`],
+    },
+    methods: [],
+  };
+  const output = generateClass(desc);
+  const lines = output.split('\n');
+  const assignIdx = lines.findIndex((l) => l.includes('_handle = call('));
+  const afterIdx = lines.findIndex((l) => l.includes('dim transform as ObjectTransform'));
+  expect(afterIdx).toBeGreaterThan(assignIdx);
+  expect(output).toContain('dim transform as ObjectTransform(call("this._handle"))');
+});

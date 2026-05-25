@@ -17,6 +17,7 @@ export interface ClassDescriptor {
     params: string[];
     body: BodyFn;     // return value is assigned to assignTo
     assignTo: string; // property name that receives the return value
+    after?: (p: ParamProxy, self: SelfProxy) => string[];
   };
   methods: FunctionDescriptor[];
 }
