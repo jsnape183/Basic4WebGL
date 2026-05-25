@@ -1,17 +1,9 @@
 // src/features/folders/folderThunks.ts
+import { AppDispatch, RootState } from '../../store';
 import { getFullName } from '../../selectors/getFullName';
 import { renameFolder, moveFolder, removeFolder, IFolder } from './foldersSlice';
 import { IFile, batchSetFileFolder, batchSetFileFullNames } from '../files/filesSlice';
 import { IAsset, batchSetAssetFolder, batchSetAssetFullNames } from '../assets/assetsSlice';
-
-interface ThunkState {
-  folders: { items: IFolder[] };
-  files: { byId: Record<string, IFile> };
-  assets: { byId: Record<string, IAsset> };
-}
-
-// TODO Task 6: replace with AppDispatch/RootState from '../../store' once foldersSlice is registered
-type ThunkDispatch = (action: unknown) => void;
 
 /** Returns the IDs of all folders in the subtree rooted at rootId (not including rootId itself). */
 function getSubtreeFolderIds(rootId: string, folders: IFolder[]): string[] {
@@ -27,7 +19,7 @@ function getSubtreeFolderIds(rootId: string, folders: IFolder[]): string[] {
 
 export const renameFolderWithCascade =
   ({ folderId, name }: { folderId: string; name: string }) =>
-  (dispatch: ThunkDispatch, getState: () => ThunkState) => {
+  (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(renameFolder({ folderId, name }));
     // getState() now has the updated folder name
     const { folders, files, assets } = getState();
@@ -49,7 +41,7 @@ export const renameFolderWithCascade =
 
 export const moveFolderWithCascade =
   ({ folderId, parentId }: { folderId: string; parentId: string | null }) =>
-  (dispatch: ThunkDispatch, getState: () => ThunkState) => {
+  (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(moveFolder({ folderId, parentId }));
     const { folders, files, assets } = getState();
     const allFolders = folders.items;
@@ -70,7 +62,7 @@ export const moveFolderWithCascade =
 
 export const removeFolderWithCascade =
   ({ folderId }: { folderId: string }) =>
-  (dispatch: ThunkDispatch, getState: () => ThunkState) => {
+  (dispatch: AppDispatch, getState: () => RootState) => {
     const { folders, files, assets } = getState();
     const folder = folders.items.find((f) => f.id === folderId);
     if (!folder) return;

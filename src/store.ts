@@ -3,6 +3,7 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import projectsReducer from "./features/projects/projectsSlice";
 import filesReducer from "./features/files/filesSlice";
 import assetsReducer from "./features/assets/assetsSlice";
+import foldersReducer from "./features/folders/foldersSlice";
 import packagesReducer from "./features/packages/packagesSlice";
 import uiReducer from "./features/ui/uiSlice";
 import sessionReducer from "./features/session/sessionSlice";
@@ -41,6 +42,7 @@ const rootReducer = combineReducers({
   projects: projectsReducer,
   files: filesReducer,
   assets: assetsReducer,
+  folders: foldersReducer,
   ui: uiReducer,
   session: sessionReducer,
   packages: packagesReducer,

@@ -4,6 +4,7 @@ import uiReducer, { selectFile, clearProjectSelection, UIState } from '../../../
 import projectsReducer, { addProject } from '../../../../src/features/projects/projectsSlice';
 import filesReducer, { addFile } from '../../../../src/features/files/filesSlice';
 import assetsReducer from '../../../../src/features/assets/assetsSlice';
+import foldersReducer from '../../../../src/features/folders/foldersSlice';
 import sessionReducer from '../../../../src/features/session/sessionSlice';
 import { deleteProjectWithMainFile } from '../../../../src/features/projects/deleteProjectAndFiles';
 
@@ -15,6 +16,7 @@ function makeStore() {
       projects: projectsReducer,
       files: filesReducer,
       assets: assetsReducer,
+      folders: foldersReducer,
       ui: uiReducer,
       session: sessionReducer,
     },

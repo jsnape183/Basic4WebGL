@@ -21,7 +21,9 @@ export const createProjectWithMainFile =
         id: mainFileId,
         name: 'Main.bas',
         source: '',
-        projectId: projectId,
+        projectId,
+        folderId: null,
+        fullName: 'Main.bas',
       })
     );
   };
