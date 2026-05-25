@@ -7,23 +7,11 @@ export const spriteDescriptor: ClassDescriptor = {
     params: ['imagePath'],
     body: (p, _self) => `_sb.createSprite(${p.imagePath})`,
     assignTo: '_handle',
+    after: (_p, self) => [
+      `dim transform as ObjectTransform(call("${self._handle}"))`,
+    ],
   },
   methods: [
-    {
-      name: 'setPosition',
-      params: ['x', 'y'],
-      body: (p, self) => `_sb.setPosition(${self._handle}, ${p.x}, ${p.y})`,
-    },
-    {
-      name: 'getX',
-      params: [],
-      returns: (_p, self) => `_sb.getPositionX(${self._handle})`,
-    },
-    {
-      name: 'getY',
-      params: [],
-      returns: (_p, self) => `_sb.getPositionY(${self._handle})`,
-    },
     {
       name: 'setAngle',
       params: ['angle'],

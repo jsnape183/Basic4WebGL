@@ -3,19 +3,8 @@ dim _handle
 
 Constructor(imagePath)
     _handle = call("_sb.createSprite(constructor_imagePath)")
+    dim transform as ObjectTransform(call("this._handle"))
 EndConstructor
-
-function setPosition(x, y)
-    call("_sb.setPosition(this._handle, setposition_x, setposition_y)")
-endfunction
-
-function getX()
-    return call("_sb.getPositionX(this._handle)")
-endfunction
-
-function getY()
-    return call("_sb.getPositionY(this._handle)")
-endfunction
 
 function setAngle(angle)
     call("_sb.setAngle(this._handle, setangle_angle)")

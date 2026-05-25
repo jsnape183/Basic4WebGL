@@ -7,6 +7,13 @@ const spriteLib = {
   source: readFileSync('src/lib/Basic4WebGL/defs/sprite.bas', 'utf-8'),
 };
 
+const transformLib = {
+  name: 'ObjectTransform',
+  source: readFileSync('src/lib/Basic4WebGL/defs/transform.bas', 'utf-8'),
+};
+
+const libs = [transformLib, spriteLib];
+
 describe('Sprite class — instantiation', () => {
   test('dim as sprite with constructor arg compiles without error', () => {
     const src = [
@@ -14,67 +21,83 @@ describe('Sprite class — instantiation', () => {
       '    dim s as sprite("bunny.png")',
       'endfunction',
     ].join('\n');
-    const result = compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
     expect(result).toContain('newsprite(');
   });
 });
 
-describe('Sprite class — instance methods', () => {
-  test('setPosition call on sprite instance compiles', () => {
+describe('Sprite class — transform.setPosition', () => {
+  test('s.transform.setPosition(x, y) compiles without error', () => {
     const src = [
       'function onenter()',
       '    dim s as sprite("bunny.png")',
-      '    s.setPosition(100, 200)',
+      '    s.transform.setPosition(100, 200)',
       'endfunction',
     ].join('\n');
-    const result = compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
-    expect(result).toContain('setposition(100,200)');
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('transform.setposition(100,200)');
   });
 
-  test('getX on sprite instance compiles and has return', () => {
+  test('s.transform.x() compiles and output contains x()', () => {
     const src = [
       'function onenter()',
       '    dim s as sprite("bunny.png")',
       '    dim x',
-      '    x = s.getX()',
+      '    x = s.transform.x()',
       'endfunction',
     ].join('\n');
-    const result = compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
-    expect(result).toContain('getx()');
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('transform.x()');
   });
 
-  test('setAlpha on sprite instance compiles', () => {
+  test('s.transform.y() compiles', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      '    dim y',
+      '    y = s.transform.y()',
+      'endfunction',
+    ].join('\n');
+    compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+  });
+
+  test('setPosition with arithmetic args — no spurious semicolons', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      '    s.transform.setPosition(s.transform.x()+10, s.transform.y())',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('transform.setposition(');
+    expect(result).not.toContain('transform.x();');
+    expect(result).not.toContain('transform.y();');
+    expect(result).toContain('transform.x()+10');
+  });
+});
+
+describe('Sprite class — setAlpha (still on Sprite directly)', () => {
+  test('s.setAlpha(0.5) still compiles', () => {
     const src = [
       'function onenter()',
       '    dim s as sprite("bunny.png")',
       '    s.setAlpha(0.5)',
       'endfunction',
     ].join('\n');
-    compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
-  });
-
-  test('getX return value used in arithmetic compiles without spurious semicolons', () => {
-    const src = [
-      'function onenter()',
-      '    dim s as sprite("bunny.png")',
-      '    s.setPosition(s.getX()+10, s.getY())',
-      'endfunction',
-    ].join('\n');
-    const result = compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
-    // Method calls used as sub-expressions must not emit semicolons (FunctionTermRule, not FunctionCallRule)
-    expect(result).toContain('setposition(');
-    expect(result).not.toContain('getx();');
-    expect(result).not.toContain('gety();');
-    expect(result).toContain('getx()+10');
+    compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
   });
 });
 
 describe('Sprite class — _handle in method body', () => {
-  test('sprite.bas setPosition emits this._handle in call string', () => {
-    expect(spriteLib.source).toContain('this._handle');
-  });
-
   test('sprite.bas constructor assigns _handle', () => {
     expect(spriteLib.source).toContain('_handle = call("_sb.createSprite(constructor_imagePath)")');
+  });
+
+  test('sprite.bas constructor initialises transform', () => {
+    expect(spriteLib.source).toContain('dim transform as ObjectTransform(call("this._handle"))');
+  });
+
+  test('transform.bas setPosition emits this._handle', () => {
+    expect(transformLib.source).toContain('this._handle');
   });
 });
