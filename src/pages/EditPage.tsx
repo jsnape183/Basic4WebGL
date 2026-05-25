@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateFile, removeFile } from '../features/files/filesSlice';
@@ -30,6 +30,8 @@ const EditPage: React.FC = () => {
   const transpiled = useSelector((state: RootState) => state.session.transpiled);
   const logs = useSelector((state: RootState) => state.session.logs);
   const dirtyFileIds = useSelector((state: RootState) => state.files.dirtyFileIds);
+
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   useRunnerMessages();
@@ -135,7 +137,12 @@ const EditPage: React.FC = () => {
               onClose={handleTabClose}
             />
             <div className="flex-1 min-h-0">
-              <Editor onChange={handleChange} file={selectedFile} height="100%" />
+              <Editor
+                onChange={handleChange}
+                file={selectedFile}
+                height="100%"
+                onCursorChange={(line, col) => setCursorPos({ line, col })}
+              />
             </div>
           </div>
         </ErrorBoundary>
@@ -153,7 +160,7 @@ const EditPage: React.FC = () => {
       panel={<BottomPanel logs={logs} />}
       footer={
         <>
-          <span>Ln 1, Col 1</span>
+          <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>
           <span>Spaces: 2 · UTF-8 · LF</span>
         </>
       }
