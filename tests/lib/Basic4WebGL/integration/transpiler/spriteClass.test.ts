@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import { compileOk } from '../../helpers';
+import { packageModules } from '../../../../../src/constants/packageModules';
+import { firstPartyPackages } from '../../../../../src/constants/firstPartyPackages';
 
 const spriteLib = {
   name: 'sprite',
@@ -91,6 +93,36 @@ describe('Sprite class — setAlpha (still on Sprite directly)', () => {
       'endfunction',
     ].join('\n');
     compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+  });
+});
+
+describe('Sprite class — package module loader', () => {
+  // This describe validates the real loader path (packageModules + firstPartyPackages),
+  // not hardcoded libs. If transform is ever removed from the softgfx module list,
+  // or loaded after sprite, these tests catch it before it reaches users.
+  const softgfx = firstPartyPackages.find((p) => p.id === 'softgfx')!;
+  const loaderLib = softgfx.moduleNames
+    .map((name) => ({ name, source: packageModules[name] ?? '' }))
+    .filter((m) => m.source !== '');
+
+  test('ObjectTransform is registered in softgfx module list', () => {
+    expect(softgfx.moduleNames).toContain('ObjectTransform');
+  });
+
+  test('ObjectTransform is loaded before sprite in module order', () => {
+    const names = loaderLib.map((m) => m.name);
+    expect(names.indexOf('ObjectTransform')).toBeLessThan(names.indexOf('sprite'));
+  });
+
+  test('sprite compiles via package loader without ObjectTransform missing error', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      '    s.transform.setPosition(100, 200)',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: loaderLib, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('transform.setposition(100,200)');
   });
 });
 
