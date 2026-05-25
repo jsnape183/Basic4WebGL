@@ -53,14 +53,19 @@ describe('Sprite class — instance methods', () => {
     compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
   });
 
-  test('getX return value used in arithmetic compiles (regression: method calls typed as Variant not Object)', () => {
+  test('getX return value used in arithmetic compiles without spurious semicolons', () => {
     const src = [
       'function onenter()',
       '    dim s as sprite("bunny.png")',
       '    s.setPosition(s.getX()+10, s.getY())',
       'endfunction',
     ].join('\n');
-    compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
+    const result = compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
+    // Method calls used as sub-expressions must not emit semicolons (FunctionTermRule, not FunctionCallRule)
+    expect(result).toContain('setposition(');
+    expect(result).not.toContain('getx();');
+    expect(result).not.toContain('gety();');
+    expect(result).toContain('getx()+10');
   });
 });
 

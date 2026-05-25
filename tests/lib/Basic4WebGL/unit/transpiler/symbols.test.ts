@@ -173,9 +173,9 @@ describe('FunctionCall rule', () => {
 });
 
 describe('FunctionTerm rule', () => {
-  test('generates scope.name() inline (no trailing semicolon from caller)', () => {
+  test('generates scope.name() as expression — no semicolon (FunctionCallRule adds ; for statements)', () => {
     const call = node(nodeTypes.FunctionTerm, fnSym('greet'), [emptyList(nodeTypes.ExpressionList)]);
-    expect(new FunctionTermRule().generate(call, undefined)).toBe('main.greet();');
+    expect(new FunctionTermRule().generate(call, undefined)).toBe('main.greet()');
   });
 });
 
