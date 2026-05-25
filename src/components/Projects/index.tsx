@@ -1,5 +1,6 @@
 // src/components/Projects/index.tsx
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
@@ -60,17 +61,85 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
 const ProjectList: React.FC = () => {
   const projects = useSelector((state: RootState) => state.projects.items);
   const dispatch = useDispatch<AppDispatch>();
+  const [showModal, setShowModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleAdd = () => {
-    dispatch(createProjectWithMainFile(`Project ${projects.length + 1}`));
+  const openModal = () => {
+    setNewName('');
+    setShowModal(true);
+  };
+
+  const handleConfirm = () => {
+    const name = newName.trim();
+    if (!name) return;
+    dispatch(createProjectWithMainFile(name));
+    setShowModal(false);
   };
 
   const handleRemove = (id: string) => {
     dispatch(deleteProjectWithMainFile(id));
   };
 
+  useEffect(() => {
+    if (showModal) setTimeout(() => inputRef.current?.focus(), 0);
+  }, [showModal]);
+
+  useEffect(() => {
+    if (!showModal) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowModal(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showModal]);
+
+  const modal = showModal
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-project-modal-title"
+            className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl"
+          >
+            <h2 id="new-project-modal-title" className="text-ds-text text-lg font-semibold mb-4">
+              New project
+            </h2>
+            <input
+              ref={inputRef}
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleConfirm(); }}
+              placeholder="Project name"
+              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-accent mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleConfirm}
+                disabled={!newName.trim()}
+                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   return (
     <>
+      {modal}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-ds-text">My Projects</h1>
@@ -85,7 +154,7 @@ const ProjectList: React.FC = () => {
           <div className="text-5xl mb-4 opacity-20">📁</div>
           <p className="text-ds-text-muted mb-4">No projects yet.</p>
           <button
-            onClick={handleAdd}
+            onClick={openModal}
             className="bg-ds-accent-btn text-ds-accent-btn-text text-sm font-semibold px-5 py-2 rounded-lg hover:opacity-90 transition"
           >
             Create your first project
@@ -98,7 +167,7 @@ const ProjectList: React.FC = () => {
           ))}
           {/* New project dashed slot */}
           <button
-            onClick={handleAdd}
+            onClick={openModal}
             className="border-2 border-dashed border-ds-border rounded-xl p-4 flex flex-col items-center justify-center min-h-[108px] text-ds-text-dim hover:border-ds-accent hover:text-ds-text-muted transition-colors"
             aria-label="Create new project"
           >
