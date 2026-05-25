@@ -3,6 +3,7 @@ import { SOFTBASIC_KEYWORDS, SOFTBASIC_LIFECYCLE_EVENTS } from '../lib/Basic4Web
 
 export function buildMonarchRules() {
   return {
+    ignoreCase: true,
     keywords: SOFTBASIC_KEYWORDS,
     lifecycleEvents: SOFTBASIC_LIFECYCLE_EVENTS,
     tokenizer: {
@@ -12,7 +13,7 @@ export function buildMonarchRules() {
         // String literals
         [/"[^"]*"/, 'string'],
         // Numeric literals (integer and decimal)
-        [/[+-]?([0-9]*[.])?[0-9]+/, 'number'],
+        [/([0-9]*[.])?[0-9]+/, 'number'],
         // Identifiers — keywords, lifecycle events, plain identifiers
         [/[A-Za-z_][A-Za-z_$0-9]*/, {
           cases: {
@@ -48,7 +49,7 @@ export function buildLanguageConfig() {
     ],
     indentationRules: {
       // Indent the next line when the current line starts with these keywords
-      increaseIndentPattern: /^\s*(function|if|while|for|constructor)\b.*/i,
+      increaseIndentPattern: /^\s*(function|if|while|for|do|constructor)\b.*/i,
       // Outdent when the current line starts with an end-keyword
       decreaseIndentPattern: /^\s*(endfunction|endif|endwhile|endclass|next|endconstructor|until)\b/i,
     },
