@@ -102,4 +102,21 @@ describe('removeFolderWithCascade', () => {
     store.dispatch(removeFolderWithCascade({ folderId: 'f1' }));
     expect(store.getState().folders.items).toHaveLength(0);
   });
+
+  test('recomputes fullName for items in sub-folders when parent folder is removed', () => {
+    const store = makeStore();
+    store.dispatch(addFolder(f1)); // f1 = Game (root)
+    store.dispatch(addFolder(f2)); // f2 = Enemies, child of f1
+    store.dispatch(addFile({
+      id: 'file1', name: 'Goblin.bas', source: '', projectId: 'p1',
+      folderId: 'f2', fullName: 'Game/Enemies/Goblin.bas',
+    }));
+    // Remove f1 — f2 should become a root folder, file1 fullName should update
+    store.dispatch(removeFolderWithCascade({ folderId: 'f1' }));
+    const file = store.getState().files.byId['file1'];
+    expect(file.folderId).toBe('f2'); // still in f2
+    expect(file.fullName).toBe('Enemies/Goblin.bas'); // path no longer includes 'Game'
+    // f2 should now be a root folder
+    expect(store.getState().folders.items.find((f) => f.id === 'f2')?.parentId).toBeNull();
+  });
 });

@@ -10,6 +10,7 @@ interface ThunkState {
   assets: { byId: Record<string, IAsset> };
 }
 
+// TODO Task 6: replace with AppDispatch/RootState from '../../store' once foldersSlice is registered
 type ThunkDispatch = (action: unknown) => void;
 
 /** Returns the IDs of all folders in the subtree rooted at rootId (not including rootId itself). */
@@ -75,9 +76,15 @@ export const removeFolderWithCascade =
     if (!folder) return;
 
     const newFolderId = folder.parentId; // null = root
-    const allFoldersAfterRemove = folders.items.filter((f) => f.id !== folderId);
+    // Compute subtree BEFORE removing (so we know who the descendants are)
+    const subtreeIds = getSubtreeFolderIds(folderId, folders.items);
+    // The post-remove folder list: remove folderId but keep sub-folders (they get re-parented by the slice)
+    const allFoldersAfterRemove = folders.items
+      .filter((f) => f.id !== folderId)
+      .map((f) => f.parentId === folderId ? { ...f, parentId: newFolderId } : f);
 
-    const fileUpdates = Object.values(files.byId)
+    // Items directly in the deleted folder → move to parent
+    const directFileUpdates = Object.values(files.byId)
       .filter((f) => f.folderId === folderId)
       .map((f) => ({
         id: f.id,
@@ -85,7 +92,7 @@ export const removeFolderWithCascade =
         fullName: getFullName(f.name, newFolderId, allFoldersAfterRemove),
       }));
 
-    const assetUpdates = Object.values(assets.byId)
+    const directAssetUpdates = Object.values(assets.byId)
       .filter((a) => a.folderId === folderId)
       .map((a) => ({
         id: a.id,
@@ -93,8 +100,25 @@ export const removeFolderWithCascade =
         fullName: getFullName(a.name, newFolderId, allFoldersAfterRemove),
       }));
 
-    // removeFolder (in foldersSlice) re-parents child folders automatically
+    // Items in sub-folders → keep their folderId but recompute fullName
+    const subtreeFileUpdates = Object.values(files.byId)
+      .filter((f) => f.folderId !== null && subtreeIds.includes(f.folderId))
+      .map((f) => ({
+        id: f.id,
+        fullName: getFullName(f.name, f.folderId, allFoldersAfterRemove),
+      }));
+
+    const subtreeAssetUpdates = Object.values(assets.byId)
+      .filter((a) => a.folderId !== null && subtreeIds.includes(a.folderId))
+      .map((a) => ({
+        id: a.id,
+        fullName: getFullName(a.name, a.folderId, allFoldersAfterRemove),
+      }));
+
+    // removeFolder in foldersSlice re-parents direct child folders automatically
     dispatch(removeFolder(folderId));
-    if (fileUpdates.length) dispatch(batchSetFileFolder(fileUpdates));
-    if (assetUpdates.length) dispatch(batchSetAssetFolder(assetUpdates));
+    if (directFileUpdates.length) dispatch(batchSetFileFolder(directFileUpdates));
+    if (directAssetUpdates.length) dispatch(batchSetAssetFolder(directAssetUpdates));
+    if (subtreeFileUpdates.length) dispatch(batchSetFileFullNames(subtreeFileUpdates));
+    if (subtreeAssetUpdates.length) dispatch(batchSetAssetFullNames(subtreeAssetUpdates));
   };
