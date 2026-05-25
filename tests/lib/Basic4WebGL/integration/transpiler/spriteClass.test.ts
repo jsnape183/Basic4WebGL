@@ -64,10 +64,6 @@ describe('Sprite class — transform methods', () => {
     expect(result).toContain('transform.y()');
   });
 
-  // Note: arithmetic on chained method results (e.g. transform.x()+10) is not tested here
-  // because PropertyMethodTerm bypasses symbol resolution and returns Unknown type,
-  // which fails the type checker when combined with arithmetic. This is a known limitation
-  // tracked in the roadmap (P-level: type inference for composed class methods).
   test('transform methods used as args — no spurious semicolons', () => {
     const src = [
       'function onenter()',
@@ -81,6 +77,18 @@ describe('Sprite class — transform methods', () => {
     expect(result).not.toContain('transform.y();');
     expect(result).toContain('transform.x()');
     expect(result).toContain('transform.y()');
+  });
+
+  test('chained method result used in arithmetic — Unknown + Number is valid', () => {
+    const src = [
+      'function onupdate()',
+      '    dim s as sprite("bunny.png")',
+      '    s.transform.setPosition(s.transform.x()+1, s.transform.y())',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('transform.setposition(');
+    expect(result).toContain('transform.x()+1');
   });
 });
 
