@@ -13,7 +13,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { RootState } from '../../store';
 import { useFilesForProject } from '../../hooks/useFilesForProject';
 import { ModalWithInput } from '../Modal';
-import { IFile, addFile, removeFile, reorderFiles } from '../../features/files/filesSlice';
+import { addFile, removeFile, reorderFiles } from '../../features/files/filesSlice';
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
 import SortableFileItem from './SortableFileItem';
@@ -51,7 +51,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   }, [selectedFileId, files, dispatch, projectId]);
 
   const handleNewFile = (filename: string) => {
-    const file: IFile = {
+    const file = {
       id: uuidv4(),
       name: normaliseFileName(filename),
       source: '',

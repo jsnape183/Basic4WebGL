@@ -2,7 +2,7 @@ import { AppDispatch, RootState } from "../../store";
 import { removeProject } from "./projectsSlice";
 import { IFile, removeFile } from "../files/filesSlice";
 import { IAsset, removeAsset } from "../assets/assetsSlice";
-import { IFolder, removeFolder } from "../folders/foldersSlice";
+import { removeFolder } from '../folders/foldersSlice';
 import { clearProjectSelection } from "../ui/uiSlice";
 
 export const deleteProjectWithMainFile =
