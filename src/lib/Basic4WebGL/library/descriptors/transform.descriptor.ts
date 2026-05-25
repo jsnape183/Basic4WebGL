@@ -5,6 +5,8 @@ export const transformDescriptor: ClassDescriptor = {
   properties: ['_handle'],
   constructor: {
     params: ['handle'],
+    // 'constructor_handle' is the mangled param name (prefix 'constructor_' + param 'handle').
+    // Using the literal directly rather than p.handle avoids a proxy round-trip.
     body: (_p, _self) => `constructor_handle`,
     assignTo: '_handle',
   },

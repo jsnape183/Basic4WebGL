@@ -47,6 +47,13 @@ describe('getModuleMethods', () => {
     expect(names).toContain('split');
   });
 
+  it('returns methods for objecttransform', () => {
+    const methods = getModuleMethods('objecttransform');
+    expect(methods.map((m) => m.name)).toEqual(
+      expect.arrayContaining(['setPosition', 'x', 'y'])
+    );
+  });
+
   it('returns empty array for unknown module', () => {
     expect(getModuleMethods('unknown')).toEqual([]);
   });

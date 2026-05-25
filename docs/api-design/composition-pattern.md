@@ -12,11 +12,10 @@ When reusable behaviour emerges across multiple classes—such as position, rota
 
 ```basic
 ' Host class (Sprite) contains a Transform instance
-Sub Sprite_Initialize(x As Float, y As Float, ...)
-    ' dim the composed object in the constructor
-    dim transform as ObjectTransform
-    ...
-End Sub
+Constructor(imagePath)
+    _handle = call("_sb.createSprite(constructor_imagePath)")
+    dim transform as ObjectTransform(call("this._handle"))
+EndConstructor
 ```
 
 ### User-Facing API
@@ -28,8 +27,9 @@ Callers access shared functionality through the composition:
 bunny.transform.setPosition(100, 50)
 newX = bunny.transform.x()
 newY = bunny.transform.y()
-bunny.transform.setRotation(45)
-bunny.transform.setScale(2.0, 2.0)
+' # planned, not yet implemented:
+' bunny.transform.setRotation(45)
+' bunny.transform.setScale(2.0, 2.0)
 
 ' Host-specific methods remain on the host
 bunny.setAlpha(0.5)           ' Sprite-specific

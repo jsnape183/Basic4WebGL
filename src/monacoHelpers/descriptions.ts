@@ -7,9 +7,6 @@
 export const DESCRIPTIONS: Record<string, Record<string, string>> = {
   sprite: {
     constructor: 'Creates a sprite from a named image asset in the project.',
-    setPosition: 'Moves the sprite to coordinates (x, y).',
-    getX: "Returns the sprite's current x position.",
-    getY: "Returns the sprite's current y position.",
     setAngle: 'Rotates the sprite to the given angle in degrees.',
     setAlpha: 'Sets the sprite opacity. 0.0 = invisible, 1.0 = fully opaque.',
   },

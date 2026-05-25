@@ -4,7 +4,7 @@ import { makeParamProxy, makeSelfProxy } from './proxies';
 export function generateClass(descriptor: ClassDescriptor): string {
   const { name, properties, methods } = descriptor;
   const ctor = Object.prototype.hasOwnProperty.call(descriptor, 'constructor')
-    ? (descriptor as any).constructor as { params: string[]; body: (p: any, self: any) => string; assignTo: string }
+    ? descriptor.constructor
     : undefined;
   const self = makeSelfProxy('class', name);
   const lines: string[] = [];
