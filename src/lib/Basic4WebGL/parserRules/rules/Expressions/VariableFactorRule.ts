@@ -11,6 +11,7 @@ import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
+import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
@@ -68,6 +69,16 @@ class VariableFactorRule implements IParserRule {
         matchAndMove(tokens.Dot, tokenStream);
         matchAndMove(tokens.Variable, tokenStream);
         chain += `.${tokenStream.prev().text.toLowerCase()}`;
+
+        // Chained method call: obj.prop.method(args) in expression context
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const args = getParserRule('ExpressionList').parse(
+            tokenStream,
+            symbolTable,
+            undefined
+          );
+          return new PropertyMethodTermNode(chain, args, loc);
+        }
       }
       return new PropertyTermNode(chain, loc);
     }

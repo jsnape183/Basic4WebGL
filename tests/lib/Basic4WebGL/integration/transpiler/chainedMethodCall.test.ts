@@ -42,3 +42,38 @@ describe('chained method call — statement context', () => {
     expect(result).toContain('actuator.doaction()');
   });
 });
+
+// ─── Expression context: x = obj.prop.method() ───────────────────────────────
+
+describe('chained method call — expression context', () => {
+  test('obj.prop.method() as RHS of assignment compiles', () => {
+    const src = [
+      'function onenter()',
+      '    dim r as Robot',
+      '    dim result',
+      '    result = r.actuator.getValue()',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({
+      lib: [],
+      files: [actuatorFile, robotFile, { name: 'Main', source: src }],
+    });
+    expect(result).toContain('actuator.getvalue()');
+  });
+
+  test('obj.prop.method() used as argument — no spurious semicolons', () => {
+    const src = [
+      'function onenter()',
+      '    dim r as Robot',
+      '    r.actuator.doAction(r.actuator.getValue())',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({
+      lib: [],
+      files: [actuatorFile, robotFile, { name: 'Main', source: src }],
+    });
+    expect(result).toContain('actuator.doaction(');
+    expect(result).not.toContain('getvalue();');
+    expect(result).toContain('actuator.getvalue()');
+  });
+});
