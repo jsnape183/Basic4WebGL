@@ -209,6 +209,14 @@ describe('PropertyMethodTermRule', () => {
       'onenter_bunny.transform.x()'
     );
   });
+
+  test('emits chain with populated args without semicolon', () => {
+    const args = node(nodeTypes.ExpressionList, null, [term('42')]);
+    const n = node(nodeTypes.PropertyMethodTerm, 'onenter_bunny.transform.getvalue', [args]);
+    expect(new PropertyMethodTermRule().generate(n, undefined)).toBe(
+      'onenter_bunny.transform.getvalue(42)'
+    );
+  });
 });
 
 describe('FunctionDecl rule', () => {

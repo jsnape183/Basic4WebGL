@@ -9,7 +9,7 @@ import { doChild } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.PropertyMethodCall)
 class PropertyMethodCallRule implements IGeneratable {
-  generate(node: Tree, table: Symbols | undefined): string {
+  generate(node: Tree, table: Symbols): string {
     return `${node.data}(${doChild(node, 0, table)});`;
   }
 }

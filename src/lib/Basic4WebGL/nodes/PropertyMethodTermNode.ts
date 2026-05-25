@@ -4,7 +4,7 @@ import type { SourceLocation } from '@CompilerLib/compiler/types';
 
 /**
  * Represents a chained method call in expression context: obj.prop.method(args)
- * data is the fully-formatted chain string (e.g. "onenter_bunny.transform.x")
+ * data is the fully-formatted chain string (e.g. "onenter_bunny.transform.getvalue")
  * children[0] is the ExpressionList of arguments
  * No semicolon — used as sub-expression (e.g. RHS of assignment, function arg).
  */
