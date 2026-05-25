@@ -15,6 +15,8 @@ const sampleFile: IFile = {
   name: 'Main.bas',
   source: 'PRINT "hello"',
   projectId: 'p1',
+  folderId: null,
+  fullName: 'Main.bas',
 };
 
 const initial: IFilesState = { byId: {}, dirtyFileIds: [], fileOrder: {} };
@@ -46,14 +48,14 @@ describe('dirtyFileIds', () => {
   it('updateFile marks the file as dirty', () => {
     const store = configureStore({ reducer: { files: filesReducer } });
     store.dispatch(addFile({ id: 'f1', name: 'main.bas', source: '', projectId: 'p1' }));
-    store.dispatch(updateFile({ id: 'f1', name: 'main.bas', source: 'PRINT "hi"', projectId: 'p1' }));
+    store.dispatch(updateFile({ id: 'f1', name: 'main.bas', source: 'PRINT "hi"', projectId: 'p1', folderId: null, fullName: 'main.bas' }));
     expect(store.getState().files.dirtyFileIds).toContain('f1');
   });
 
   it('clearAllDirty removes all dirty ids', () => {
     const store = configureStore({ reducer: { files: filesReducer } });
     store.dispatch(addFile({ id: 'f1', name: 'main.bas', source: '', projectId: 'p1' }));
-    store.dispatch(updateFile({ id: 'f1', name: 'main.bas', source: 'x', projectId: 'p1' }));
+    store.dispatch(updateFile({ id: 'f1', name: 'main.bas', source: 'x', projectId: 'p1', folderId: null, fullName: 'main.bas' }));
     store.dispatch(clearAllDirty());
     expect(store.getState().files.dirtyFileIds).toHaveLength(0);
   });
@@ -97,5 +99,56 @@ describe('fileOrder', () => {
   test('reorderFiles does nothing when the project has no order entry', () => {
     const s = filesReducer(clean, reorderFiles({ projectId: 'no-such', fromIndex: 0, toIndex: 1 }));
     expect(s.fileOrder['no-such']).toBeUndefined();
+  });
+});
+
+// --- folderId + fullName ---
+import {
+  setFileFolder,
+  batchSetFileFolder,
+  batchSetFileFullNames,
+} from '../../../../src/features/files/filesSlice';
+
+describe('folderId and fullName fields', () => {
+  const clean: IFilesState = { byId: {}, dirtyFileIds: [], fileOrder: {} };
+
+  test('addFile defaults folderId to null and fullName to name', () => {
+    const s = filesReducer(clean, addFile({ id: 'f1', name: 'Main.bas', source: '', projectId: 'p1' }));
+    expect(s.byId['f1'].folderId).toBeNull();
+    expect(s.byId['f1'].fullName).toBe('Main.bas');
+  });
+
+  test('addFile accepts explicit folderId and fullName', () => {
+    const s = filesReducer(
+      clean,
+      addFile({ id: 'f1', name: 'Main.bas', source: '', projectId: 'p1', folderId: 'folder1', fullName: 'Game/Main.bas' })
+    );
+    expect(s.byId['f1'].folderId).toBe('folder1');
+    expect(s.byId['f1'].fullName).toBe('Game/Main.bas');
+  });
+
+  test('setFileFolder updates folderId and fullName', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'Main.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, setFileFolder({ fileId: 'f1', folderId: 'folder1', fullName: 'Game/Main.bas' }));
+    expect(s.byId['f1'].folderId).toBe('folder1');
+    expect(s.byId['f1'].fullName).toBe('Game/Main.bas');
+  });
+
+  test('batchSetFileFolder updates multiple files', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'A.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, addFile({ id: 'f2', name: 'B.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, batchSetFileFolder([
+      { id: 'f1', folderId: 'folder1', fullName: 'Game/A.bas' },
+      { id: 'f2', folderId: null, fullName: 'B.bas' },
+    ]));
+    expect(s.byId['f1'].folderId).toBe('folder1');
+    expect(s.byId['f2'].folderId).toBeNull();
+  });
+
+  test('batchSetFileFullNames updates fullName only', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'Main.bas', source: '', projectId: 'p1', folderId: 'folder1', fullName: 'OldPath/Main.bas' }));
+    s = filesReducer(s, batchSetFileFullNames([{ id: 'f1', fullName: 'NewPath/Main.bas' }]));
+    expect(s.byId['f1'].fullName).toBe('NewPath/Main.bas');
+    expect(s.byId['f1'].folderId).toBe('folder1'); // unchanged
   });
 });

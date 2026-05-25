@@ -1,3 +1,4 @@
+// src/features/files/filesSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { reorder } from '../../utils/reorder';
 
@@ -6,6 +7,8 @@ export interface IFile {
   name: string;
   source: string;
   projectId: string;
+  folderId: string | null;
+  fullName: string;
 }
 
 export interface IFilesState {
@@ -24,13 +27,17 @@ const filesSlice = createSlice({
   name: 'files',
   initialState,
   reducers: {
-    addFile: (state, action: PayloadAction<IFile>) => {
-      state.byId[action.payload.id] = action.payload;
-      const { projectId, id } = action.payload;
-      if (!state.fileOrder[projectId]) {
-        state.fileOrder[projectId] = [];
+    addFile: (state, action: PayloadAction<Omit<IFile, 'folderId' | 'fullName'> & Partial<Pick<IFile, 'folderId' | 'fullName'>>>) => {
+      const file: IFile = {
+        folderId: null,
+        fullName: action.payload.name,
+        ...action.payload,
+      };
+      state.byId[file.id] = file;
+      if (!state.fileOrder[file.projectId]) {
+        state.fileOrder[file.projectId] = [];
       }
-      state.fileOrder[projectId].push(id);
+      state.fileOrder[file.projectId].push(file.id);
     },
     updateFile: (state, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
@@ -63,8 +70,47 @@ const filesSlice = createSlice({
       if (!order) return;
       state.fileOrder[projectId] = reorder(order, fromIndex, toIndex);
     },
+    setFileFolder: (
+      state,
+      action: PayloadAction<{ fileId: string; folderId: string | null; fullName: string }>
+    ) => {
+      const file = state.byId[action.payload.fileId];
+      if (!file) return;
+      file.folderId = action.payload.folderId;
+      file.fullName = action.payload.fullName;
+    },
+    batchSetFileFolder: (
+      state,
+      action: PayloadAction<{ id: string; folderId: string | null; fullName: string }[]>
+    ) => {
+      action.payload.forEach(({ id, folderId, fullName }) => {
+        const file = state.byId[id];
+        if (!file) return;
+        file.folderId = folderId;
+        file.fullName = fullName;
+      });
+    },
+    batchSetFileFullNames: (
+      state,
+      action: PayloadAction<{ id: string; fullName: string }[]>
+    ) => {
+      action.payload.forEach(({ id, fullName }) => {
+        const file = state.byId[id];
+        if (!file) return;
+        file.fullName = fullName;
+      });
+    },
   },
 });
 
-export const { addFile, updateFile, removeFile, clearAllDirty, reorderFiles } = filesSlice.actions;
+export const {
+  addFile,
+  updateFile,
+  removeFile,
+  clearAllDirty,
+  reorderFiles,
+  setFileFolder,
+  batchSetFileFolder,
+  batchSetFileFullNames,
+} = filesSlice.actions;
 export default filesSlice.reducer;
