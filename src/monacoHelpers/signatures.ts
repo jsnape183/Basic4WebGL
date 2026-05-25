@@ -86,7 +86,9 @@ export function registerSignatureHelpProvider(monaco: Monaco): { dispose(): void
         signatureLabel = `${className}(${method.params.join(', ')})`;
       }
 
-      const activeParameter = Math.min(ctx.activeParameter, method.params.length - 1);
+      const activeParameter = method.params.length > 0
+        ? Math.min(ctx.activeParameter, method.params.length - 1)
+        : 0;
 
       return {
         value: {

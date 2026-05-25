@@ -22,8 +22,8 @@ const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorCha
     if (!monaco) return;
 
     monaco.languages.register({ id: 'softBasic' });
-    monaco.languages.setMonarchTokensProvider('softBasic', buildMonarchRules());
-    monaco.languages.setLanguageConfiguration('softBasic', buildLanguageConfig());
+    const monarchDisposable = monaco.languages.setMonarchTokensProvider('softBasic', buildMonarchRules());
+    const languageConfigDisposable = monaco.languages.setLanguageConfiguration('softBasic', buildLanguageConfig());
     monaco.editor.defineTheme('softBasicTheme', getMonacoTheme());
 
     const completionDisposable = registerCompletionProvider(monaco);
@@ -33,6 +33,8 @@ const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorCha
     setLanguageLoaded(true);
 
     return () => {
+      monarchDisposable.dispose();
+      languageConfigDisposable.dispose();
       completionDisposable.dispose();
       hoverDisposable.dispose();
       signatureDisposable.dispose();
