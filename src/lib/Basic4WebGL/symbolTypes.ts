@@ -1,6 +1,6 @@
 import { Symbol, SymbolScope } from '@CompilerLib/symbols';
 import builtInTypes from './builtInTypes';
-import ObjectType from './builtInTypes/definitions/ObjectType';
+import { getBuiltInType } from '@CompilerLib/builtInTypes/builtInTypeFactory';
 
 export const scopeTypes = {
   Globals: '',
@@ -29,7 +29,7 @@ export class FunctionSymbol extends Symbol {
     fullScope: string,
     parameters: Array<Symbol> = new Array<Symbol>()
   ) {
-    super(name, type, scope, fullScope, new ObjectType(`${fullScope}.${name}`));
+    super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
     this.parameters = parameters;
   }
 }

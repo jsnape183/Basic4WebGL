@@ -630,10 +630,9 @@ exports[`function declaration > produces correct tree 1`] = `
       "data": {
         "dataType": {
           "acceptsTypes": [
-            "Object",
+            "Variant",
           ],
-          "fullName": "main.greet",
-          "name": "Object",
+          "name": "Variant",
         },
         "fullScope": "main",
         "name": "greet",
@@ -951,10 +950,9 @@ exports[`return statement > produces correct tree 1`] = `
       "data": {
         "dataType": {
           "acceptsTypes": [
-            "Object",
+            "Variant",
           ],
-          "fullName": "main.getvalue",
-          "name": "Object",
+          "name": "Variant",
         },
         "fullScope": "main",
         "name": "getvalue",

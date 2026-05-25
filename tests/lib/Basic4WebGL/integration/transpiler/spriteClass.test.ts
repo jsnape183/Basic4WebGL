@@ -52,6 +52,16 @@ describe('Sprite class — instance methods', () => {
     ].join('\n');
     compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
   });
+
+  test('getX return value used in arithmetic compiles (regression: method calls typed as Variant not Object)', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      '    s.setPosition(s.getX()+10, s.getY())',
+      'endfunction',
+    ].join('\n');
+    compileOk({ lib: [spriteLib], files: [{ name: 'Main', source: src }] });
+  });
 });
 
 describe('Sprite class — _handle in method body', () => {
