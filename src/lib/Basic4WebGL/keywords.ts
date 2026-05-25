@@ -1,4 +1,4 @@
-export const SOFTBASIC_KEYWORDS: string[] = [
+export const SOFTBASIC_KEYWORDS = [
   // Declarations
   'dim', 'class', 'as',
   'constructor', 'endconstructor', 'endclass',
@@ -15,12 +15,13 @@ export const SOFTBASIC_KEYWORDS: string[] = [
   'true', 'false',
   // Built-in statements
   'print', 'call',
-];
+] as const;
 
-export const SOFTBASIC_LIFECYCLE_EVENTS: string[] = [
+export const SOFTBASIC_LIFECYCLE_EVENTS = [
   'onenter',
   'onupdate',
   'onkeydown',
+  'onkeyup',
   'onpointerdown',
   'onpointermove',
-];
+] as const;

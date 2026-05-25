@@ -27,8 +27,12 @@ describe('SOFTBASIC_KEYWORDS', () => {
 
 describe('SOFTBASIC_LIFECYCLE_EVENTS', () => {
   it('contains lifecycle hook names', () => {
-    for (const e of ['onenter', 'onupdate', 'onkeydown', 'onpointerdown', 'onpointermove']) {
+    for (const e of ['onenter', 'onupdate', 'onkeydown', 'onkeyup', 'onpointerdown', 'onpointermove']) {
       expect(SOFTBASIC_LIFECYCLE_EVENTS).toContain(e);
     }
+  });
+
+  it('has no duplicates', () => {
+    expect(SOFTBASIC_LIFECYCLE_EVENTS.length).toBe(new Set(SOFTBASIC_LIFECYCLE_EVENTS).size);
   });
 });
