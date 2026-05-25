@@ -17,6 +17,8 @@ import FunctionReturnRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/Fu
 import FunctionTermRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/FunctionTermRule';
 import VariableListRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/VariableListRule';
 import ExpressionListRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/ExpressionListRule';
+import PropertyMethodCallRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/PropertyMethodCallRule';
+import PropertyMethodTermRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/PropertyMethodTermRule';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -176,6 +178,36 @@ describe('FunctionTerm rule', () => {
   test('generates scope.name() as expression — no semicolon (FunctionCallRule adds ; for statements)', () => {
     const call = node(nodeTypes.FunctionTerm, fnSym('greet'), [emptyList(nodeTypes.ExpressionList)]);
     expect(new FunctionTermRule().generate(call, undefined)).toBe('main.greet()');
+  });
+});
+
+// ─── PropertyMethodCall / PropertyMethodTerm ─────────────────────────────────
+
+describe('PropertyMethodCallRule', () => {
+  test('emits chain(args); with semicolon', () => {
+    const args = node(nodeTypes.ExpressionList, null, []);
+    const n = node(nodeTypes.PropertyMethodCall, 'onenter_bunny.transform.setposition', [args]);
+    expect(new PropertyMethodCallRule().generate(n, undefined)).toBe(
+      'onenter_bunny.transform.setposition();'
+    );
+  });
+
+  test('emits chain with populated args', () => {
+    const args = node(nodeTypes.ExpressionList, null, [term('100'), term('200')]);
+    const n = node(nodeTypes.PropertyMethodCall, 'onenter_bunny.transform.setposition', [args]);
+    expect(new PropertyMethodCallRule().generate(n, undefined)).toBe(
+      'onenter_bunny.transform.setposition(100,200);'
+    );
+  });
+});
+
+describe('PropertyMethodTermRule', () => {
+  test('emits chain(args) without semicolon', () => {
+    const args = node(nodeTypes.ExpressionList, null, []);
+    const n = node(nodeTypes.PropertyMethodTerm, 'onenter_bunny.transform.x', [args]);
+    expect(new PropertyMethodTermRule().generate(n, undefined)).toBe(
+      'onenter_bunny.transform.x()'
+    );
   });
 });
 
