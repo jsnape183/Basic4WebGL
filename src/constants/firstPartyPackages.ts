@@ -15,6 +15,6 @@ export const firstPartyPackages: IPackage[] = [
     version: '2.0.0',
     isCore: false,
     isFirstParty: true,
-    moduleNames: ['gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'sprite', 'text'],
+    moduleNames: ['gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'transform', 'sprite', 'text'],
   },
 ];

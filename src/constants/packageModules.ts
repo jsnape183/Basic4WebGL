@@ -7,6 +7,7 @@ import stage from '../lib/Basic4WebGL/defs/stage.bas?raw';
 import pen from '../lib/Basic4WebGL/defs/pen.bas?raw';
 import text from '../lib/Basic4WebGL/defs/text.bas?raw';
 import assetmanager from '../lib/Basic4WebGL/defs/assetmanager.bas?raw';
+import transform from '../lib/Basic4WebGL/defs/transform.bas?raw';
 import sprite from '../lib/Basic4WebGL/defs/sprite.bas?raw';
 
 export const packageModules: Record<string, string> = {
@@ -19,5 +20,6 @@ export const packageModules: Record<string, string> = {
   pen,
   text,
   assetmanager,
+  transform,
   sprite,
 };
