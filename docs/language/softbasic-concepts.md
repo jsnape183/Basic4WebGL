@@ -512,6 +512,7 @@ endfunction
 ## Known Gaps / To Document
 
 - Array declarations: `dim arr(10)` syntax and transpiled form
+- Typed array declarations: `dim arr(10) as Sprite("bunny.png")` syntax — constructs N instances of Type
 - Whether `print` accepts multiple arguments / expressions
 - String concatenation syntax
 - Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=` (inferred from conditionals tests)
