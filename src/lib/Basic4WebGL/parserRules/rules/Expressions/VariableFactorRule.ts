@@ -88,7 +88,7 @@ class VariableFactorRule implements IParserRule {
       });
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      // Prefer Variable lookup; fall back to Array for bare array references
+      // Prefer Array lookup for bare array references; fall back to Variable
       let varSymbol: Symbol;
       if (symbolTable.check(name, symbolTypes.Array)) {
         varSymbol = symbolTable.get(name, symbolTypes.Array);
@@ -108,7 +108,7 @@ class VariableFactorRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
 
-    return new ArrayLookupNode(symbolTable.get(name, 'Array'), elems, loc);
+    return new ArrayLookupNode(symbolTable.get(name, symbolTypes.Array), elems, loc);
   }
 }
 

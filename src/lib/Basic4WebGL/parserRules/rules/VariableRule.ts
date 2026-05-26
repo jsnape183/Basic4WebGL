@@ -63,7 +63,7 @@ class VariableRule implements IParserRule {
     const isArrayLike =
       symbolTable.check(name, symbolTypes.Array) ||
       (check(tokens.OpenParen, tokenStream.current()) &&
-        symbolTable.check(name, symbolTypes.Variable));
+        symbolTable.check(name, symbolTypes.Parameter));
     if (isArrayLike) {
       const dims = getParserRule('ExpressionList').parse(
         tokenStream,
