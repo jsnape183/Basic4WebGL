@@ -1,5 +1,5 @@
 // src/components/TreePanel/AssetTree/index.tsx
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -12,7 +12,9 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '../../../store';
+import { makeSelectFoldersBySection } from '../../../selectors/folderSelectors';
 import { IAsset, addAsset, removeAsset, reorderAssets, setAssetFolder } from '../../../features/assets/assetsSlice';
 import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
 import { renameFolderWithCascade, removeFolderWithCascade } from '../../../features/folders/folderThunks';
@@ -75,6 +77,12 @@ const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onR
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
+const makeSelectAssetsByProject = (projectId: string) =>
+  createSelector(
+    (state: RootState) => state.assets.byId,
+    (byId) => Object.values(byId).filter((a) => a.projectId === projectId) as IAsset[]
+  );
+
 function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]): number {
   const direct = allAssets.filter((a) => a.folderId === folderId).length;
   const children = folders.filter((f) => f.parentId === folderId);
@@ -84,10 +92,8 @@ function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]):
 const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch<AppDispatch>();
 
-  // Get ALL assets for the project (not just root level)
-  const allAssets = useSelector((state: RootState) =>
-    Object.values(state.assets.byId).filter((a) => a.projectId === projectId)
-  ) as IAsset[];
+  const selectAssets = useMemo(() => makeSelectAssetsByProject(projectId), [projectId]);
+  const allAssets = useSelector(selectAssets);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
@@ -104,11 +110,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const folders: IFolder[] = useSelector((state: RootState) =>
-    state.folders.items.filter(
-      (f) => f.projectId === projectId && (f.section ?? 'files') === 'assets'
-    )
-  );
+  const selectFolders = useMemo(() => makeSelectFoldersBySection(projectId, 'assets'), [projectId]);
+  const folders: IFolder[] = useSelector(selectFolders);
 
   const assetOrder = useSelector((state: RootState) => state.assets.assetOrder);
 

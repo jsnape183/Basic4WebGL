@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import ReactDOM from 'react-dom';
@@ -12,6 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { RootState, AppDispatch } from '../../store';
+import { makeSelectFoldersBySection } from '../../selectors/folderSelectors';
 import { ModalWithInput } from '../Modal';
 import { IFile, addFile, removeFile, reorderFiles, setFileFolder } from '../../features/files/filesSlice';
 import { getFullName } from '../../selectors/getFullName';
@@ -41,11 +42,8 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   // ALL files for the project (not just root)
   const allFiles = useAllFilesForProject(projectId);
 
-  const folders: IFolder[] = useSelector((state: RootState) =>
-    state.folders.items.filter(
-      (f) => f.projectId === projectId && (f.section ?? 'files') === 'files'
-    )
-  );
+  const selectFolders = useMemo(() => makeSelectFoldersBySection(projectId, 'files'), [projectId]);
+  const folders: IFolder[] = useSelector(selectFolders);
 
   const [isAddPackageOpen, setIsAddPackageOpen] = useState(false);
 

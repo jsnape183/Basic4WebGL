@@ -51,6 +51,6 @@ describe('AssetTree section filtering', () => {
       </Provider>
     );
 
-    expect(getByText('Sprites')).toBeDefined();
+    expect(getByText('Sprites')).toBeInTheDocument();
   });
 });
