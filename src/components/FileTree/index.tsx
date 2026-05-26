@@ -11,7 +11,7 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { RootState } from '../../store';
+import { RootState, AppDispatch } from '../../store';
 import { ModalWithInput } from '../Modal';
 import { IFile, addFile, removeFile, reorderFiles, setFileFolder } from '../../features/files/filesSlice';
 import { getFullName } from '../../selectors/getFullName';
@@ -36,7 +36,7 @@ function countFiles(folderId: string, folders: IFolder[], allFiles: IFile[]): nu
 }
 
 const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
 
   // ALL files for the project (not just root)
   const allFiles = useAllFilesForProject(projectId);
@@ -66,6 +66,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const [deletingFolder, setDeletingFolder] = useState<IFolder | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const deleteInputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const selectedFileId: string | undefined = useSelector(
     (state: RootState) => state.ui.selectedFileByProject[projectId]
@@ -326,6 +327,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
               Rename folder
             </h2>
             <input
+              ref={renameInputRef}
               autoFocus
               defaultValue={renamingFolder.name}
               type="text"
@@ -344,9 +346,8 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
             />
             <div className="flex justify-end gap-3">
               <button
-                onClick={(e) => {
-                  const input = (e.currentTarget.closest('[role="dialog"]') as HTMLElement)?.querySelector('input') as HTMLInputElement;
-                  const name = input?.value.trim();
+                onClick={() => {
+                  const name = renameInputRef.current?.value.trim();
                   if (name && name !== renamingFolder!.name) {
                     dispatch(renameFolderWithCascade({ folderId: renamingFolder!.id, name }));
                   }
