@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 import { packageModules } from '../constants/packageModules';
-import { useFilesForProject } from './useFilesForProject';
+import { useAllFilesForProject } from './useAllFilesForProject';
 
 type BuildProject = {
   lib: Array<ProjectFile>;
@@ -19,7 +19,7 @@ export const useProjectForBuild = (projectId: string): BuildProject => {
 
   const packagesById = useSelector((state: RootState) => state.packages.byId);
 
-  const files = useFilesForProject(projectId);
+  const files = useAllFilesForProject(projectId);
 
   const lib: ProjectFile[] = packageIds.flatMap((pkgId) => {
     const pkg = packagesById[pkgId];
@@ -29,11 +29,11 @@ export const useProjectForBuild = (projectId: string): BuildProject => {
       .filter((m) => m.source !== '');
   });
 
-  // Map IFile → ProjectFile, using fullName (folder path) as the filename for
-  // error reporting (e.g. "ui/Menu.bas:5:3"). Falls back to name for legacy
-  // persisted files that predate the fullName field.
+  // Map IFile → ProjectFile. Use plain name (not fullName) so the lexer
+  // derives the correct class name — filenames are unique across the project
+  // regardless of folder, so there is no ambiguity in error reporting.
   const projectFiles: ProjectFile[] = files.map((f) => ({
-    name: f.fullName ?? f.name,
+    name: f.name,
     source: f.source,
   }));
 
