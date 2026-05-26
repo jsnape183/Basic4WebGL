@@ -43,7 +43,7 @@ export class ArraySymbol extends Symbol {
     fullScope: string,
     dimensions: number
   ) {
-    super(name, type, scope, fullScope, builtInTypes.Variant);
+    super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
     this.dimensions = dimensions;
   }
 }

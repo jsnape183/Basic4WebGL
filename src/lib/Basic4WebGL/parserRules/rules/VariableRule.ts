@@ -59,7 +59,12 @@ class VariableRule implements IParserRule {
         functionSymbol
       );
     }
-    if (symbolTable.check(name, symbolTypes.Array)) {
+    // Handle array indexing: arr(i) = v for both Array and Variable (pass-by-ref array param)
+    const isArrayLike =
+      symbolTable.check(name, symbolTypes.Array) ||
+      (check(tokens.OpenParen, tokenStream.current()) &&
+        symbolTable.check(name, symbolTypes.Variable));
+    if (isArrayLike) {
       const dims = getParserRule('ExpressionList').parse(
         tokenStream,
         symbolTable,
@@ -72,7 +77,9 @@ class VariableRule implements IParserRule {
         undefined
       );
       matchAndMove(newLines, tokenStream);
-      const arraySymbol = symbolTable.get(name, 'Array');
+      const arraySymbol = symbolTable.check(name, symbolTypes.Array)
+        ? symbolTable.get(name, 'Array')
+        : symbolTable.get(name, symbolTypes.Variable);
       return new ArrayAssignNode(arraySymbol, [dims, expr], loc);
     }
     const varSymbol = symbolTable.get(name, symbolTypes.Variable);

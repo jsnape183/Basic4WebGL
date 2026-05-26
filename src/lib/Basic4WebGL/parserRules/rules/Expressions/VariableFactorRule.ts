@@ -88,7 +88,13 @@ class VariableFactorRule implements IParserRule {
       });
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      const varSymbol = symbolTable.get(name);
+      // Prefer Variable lookup; fall back to Array for bare array references
+      let varSymbol: Symbol;
+      if (symbolTable.check(name, symbolTypes.Array)) {
+        varSymbol = symbolTable.get(name, symbolTypes.Array);
+      } else {
+        varSymbol = symbolTable.get(name);
+      }
       if (isInstancePropertyAccess(varSymbol, symbolTable)) {
         return new PropertyTermNode(`this.${name}`, loc, varSymbol.dataType);
       }
