@@ -6,7 +6,7 @@ export const isMatchingType = (expected: string, actual: string): boolean =>
   expected === actual || (expected === "Variable" && actual === "Parameter");
 
 export const symbolRules = (table: Symbols, scope: SymbolScope): string => {
-  if (scope.name !== "") {
+  if (scope.name !== "" || scope.type !== "") {
     return "";
   }
 
