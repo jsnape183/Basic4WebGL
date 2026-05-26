@@ -203,7 +203,11 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     const overAsset = allAssets.find((a) => a.id === over.id);
     if (!overAsset || overAsset.folderId !== activeAsset.folderId) return;
     const key = `${projectId}:${activeAsset.folderId ?? 'root'}`;
-    const levelAssets = allAssets.filter((a) => (a.folderId ?? null) === (activeAsset.folderId ?? null));
+    // Use assetOrder to derive indices so they match what renderLevel renders
+    const orderIds = assetOrder[key];
+    const levelAssets = orderIds?.length
+      ? (orderIds.map((id) => allAssets.find((a) => a.id === id)).filter(Boolean) as IAsset[])
+      : allAssets.filter((a) => (a.folderId ?? null) === (activeAsset.folderId ?? null));
     const fromIndex = levelAssets.findIndex((a) => a.id === active.id);
     const toIndex = levelAssets.findIndex((a) => a.id === over.id);
     if (fromIndex !== -1 && toIndex !== -1) {
