@@ -11,6 +11,7 @@ import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import CloneNode from '../../nodes/CloneNode';
 import VariableDimNode from '../../nodes/VariableDimNode';
 import DimNode from '../../nodes/DimNode';
+import TypedArrayDimNode from '../../nodes/TypedArrayDimNode';
 import { newLines } from '../../parserConfig';
 
 @RegisterParserRule('Dim')
@@ -61,8 +62,31 @@ class DimRule implements IParserRule {
         dims.children.length
       )
     );
-    matchAndMove(newLines, tokenStream);
 
+    // dim name(sizes) as Type — typed array declaration (new path)
+    if (check(tokens.As, tokenStream.current())) {
+      matchAndMove(tokens.As, tokenStream);
+      matchAndMove(tokens.Variable, tokenStream);
+      const classSymbol = symbolTable.get(
+        tokenStream.prev().text,
+        symbolTypes.Class
+      );
+
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(
+          tokenStream,
+          symbolTable,
+          undefined
+        );
+        matchAndMove(newLines, tokenStream);
+        return new TypedArrayDimNode({ arraySymbol, classSymbol }, [dims, args], loc);
+      }
+
+      matchAndMove(newLines, tokenStream);
+      return new TypedArrayDimNode({ arraySymbol, classSymbol }, [dims], loc);
+    }
+
+    matchAndMove(newLines, tokenStream);
     return new DimNode(arraySymbol, dims, loc);
   }
 }

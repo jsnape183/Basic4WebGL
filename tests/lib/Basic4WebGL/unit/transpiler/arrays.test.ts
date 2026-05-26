@@ -172,3 +172,41 @@ describe('TypedArrayDimRule', () => {
       .toBe('main.grid = _createTypedArray([5,3], () => new Tile());');
   });
 });
+
+describe('Typed array declaration — integration', () => {
+  test('dim arr(10) as Enemy compiles to _createTypedArray', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [
+        { name: 'Enemy.bas', source: 'Class\nEndClass' },
+        { name: 'Main.bas', source: 'dim enemies(10) as Enemy' },
+      ],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_createTypedArray([10], () => new enemy())');
+  });
+
+  test('dim arr(5) as Sprite("bunny.png") compiles with constructor args', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [
+        { name: 'Sprite.bas', source: 'Class\nConstructor(img)\nEndConstructor\nEndClass' },
+        { name: 'Main.bas', source: 'dim sprites(5) as Sprite("bunny.png")' },
+      ],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_createTypedArray([5], () => new sprite("bunny.png"))');
+  });
+
+  test('dim arr(5, 3) as Tile() multi-dimensional', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [
+        { name: 'Tile.bas', source: 'Class\nEndClass' },
+        { name: 'Main.bas', source: 'dim grid(5, 3) as Tile()' },
+      ],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_createTypedArray([5,3], () => new tile())');
+  });
+});
