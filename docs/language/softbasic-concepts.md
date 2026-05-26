@@ -4,6 +4,24 @@
 
 ---
 
+## Vision
+
+**The most BASIC way to publish a game.**
+
+softBASIC is not a competitor to Unity or Godot. It is not a full game engine. It is a stepping stone — a deliberately streamlined environment where the concepts you need to build simple to mid-sized 2D games are available with minimal code and no boilerplate overhead.
+
+The benchmark for every language and library decision is: *does this make publishing a game simpler, or does it add friction?* If it adds friction without a clear payoff, it does not belong in the core language.
+
+**What this means in practice:**
+
+- A working game should be expressible in a handful of lines. Scaffolding, configuration, and ceremony are failure modes, not features.
+- The library system is the extensibility mechanism. Core stays small; power users reach for packages.
+- softBASIC teaches real game development concepts — lifecycle functions, modules, classes, composition — in a form that transfers directly to larger engines when the learner is ready to move on.
+
+The target is developers who want to go from idea to published game as directly as possible, and learners who want to understand what a game loop actually does before a framework hides it from them.
+
+---
+
 ## Files and Modules
 
 Every `.bas` file is a **module** by default. A module is a static class — all its variables and functions belong to the type itself, not to instances. There is no instantiation. Think of a module like a VB6 `.bas` module or a C# `static class`.

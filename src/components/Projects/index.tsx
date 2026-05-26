@@ -7,7 +7,7 @@ import { RootState, AppDispatch } from '../../store';
 import { createProjectWithMainFile } from '../../features/projects/createProjectWithMainFile';
 import { deleteProjectWithMainFile } from '../../features/projects/deleteProjectAndFiles';
 import { Project, renameProject } from '../../features/projects/projectsSlice';
-import { useFilesForProject } from '../../hooks/useFilesForProject';
+import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
 
 const ACCENT_SHADES = [
@@ -23,7 +23,7 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
   project,
   onRemove,
 }) => {
-  const files = useFilesForProject(project.id);
+  const files = useAllFilesForProject(project.id);
   const assets = useAssetsForProject(project.id);
   const dispatch = useDispatch<AppDispatch>();
 

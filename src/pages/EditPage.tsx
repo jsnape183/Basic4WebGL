@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateFile, removeFile } from '../features/files/filesSlice';
 import useSelectedFile from '../features/ui/useSelectedFile';
-import { useFilesForProject } from '../hooks/useFilesForProject';
+import { useAllFilesForProject } from '../hooks/useAllFilesForProject';
 import { selectFile } from '../features/ui/uiSlice';
 import { Project } from '../features/projects/projectsSlice';
 import { AppDispatch, RootState } from '../store';
@@ -39,7 +39,7 @@ const EditPage: React.FC = () => {
 
   // Hooks must be called unconditionally — above early return
   const selectedFile = useSelectedFile(id ?? '');
-  const files = useFilesForProject(id ?? '');
+  const files = useAllFilesForProject(id ?? '');
 
   useEffect(() => {
     if (!project?.id) {

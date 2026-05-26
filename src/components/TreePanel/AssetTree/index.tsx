@@ -12,9 +12,9 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { createSelector } from '@reduxjs/toolkit';
 import { RootState, AppDispatch } from '../../../store';
 import { makeSelectFoldersBySection } from '../../../selectors/folderSelectors';
+import { makeSelectAssetsByProject } from '../../../selectors/assetSelectors';
 import { IAsset, addAsset, removeAsset, reorderAssets, setAssetFolder } from '../../../features/assets/assetsSlice';
 import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
 import { renameFolderWithCascade, removeFolderWithCascade } from '../../../features/folders/folderThunks';
@@ -76,12 +76,6 @@ const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onR
 };
 
 const MAX_BYTES = 4 * 1024 * 1024;
-
-const makeSelectAssetsByProject = (projectId: string) =>
-  createSelector(
-    (state: RootState) => state.assets.byId,
-    (byId) => Object.values(byId).filter((a) => a.projectId === projectId) as IAsset[]
-  );
 
 function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]): number {
   const direct = allAssets.filter((a) => a.folderId === folderId).length;
