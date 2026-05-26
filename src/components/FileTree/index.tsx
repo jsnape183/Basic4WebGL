@@ -42,7 +42,9 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const allFiles = useAllFilesForProject(projectId);
 
   const folders: IFolder[] = useSelector((state: RootState) =>
-    state.folders.items.filter((f) => f.projectId === projectId)
+    state.folders.items.filter(
+      (f) => f.projectId === projectId && (f.section ?? 'files') === 'files'
+    )
   );
 
   const [isAddPackageOpen, setIsAddPackageOpen] = useState(false);
@@ -169,6 +171,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
       name,
       projectId,
       parentId: creatingFolderParent ?? null,
+      section: 'files',
     }));
     setNewFolderName('');
     setCreatingFolderParent(undefined);

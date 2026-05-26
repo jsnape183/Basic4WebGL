@@ -8,7 +8,7 @@ import filesReducer, { addFile } from '../../../../src/features/files/filesSlice
 import uiReducer from '../../../../src/features/ui/uiSlice';
 import projectsReducer, { addProject } from '../../../../src/features/projects/projectsSlice';
 import packagesReducer, { seedPackages } from '../../../../src/features/packages/packagesSlice';
-import foldersReducer from '../../../../src/features/folders/foldersSlice';
+import foldersReducer, { addFolder } from '../../../../src/features/folders/foldersSlice';
 import { firstPartyPackages } from '../../../../src/constants/firstPartyPackages';
 import FileTree from '../../../../src/components/FileTree';
 
@@ -60,4 +60,28 @@ test('Enter selects focused file', async () => {
   items[1].focus();
   await user.keyboard('{Enter}');
   expect(store.getState().ui.selectedFileByProject['p1']).toBe('f2');
+});
+
+test('does not render folders with section: assets', async () => {
+  const store = configureStore({
+    reducer: {
+      files: filesReducer,
+      ui: uiReducer,
+      projects: projectsReducer,
+      packages: packagesReducer,
+      folders: foldersReducer,
+    },
+  });
+
+  store.dispatch(addProject({ id: 'p1', name: 'Test', packageIds: [] }));
+  store.dispatch(addFolder({ id: 'af1', name: 'Sprites', projectId: 'p1', parentId: null, section: 'assets' }));
+  store.dispatch(addFile({ id: 'file1', name: 'Main.bas', source: '', projectId: 'p1' }));
+
+  const { queryByText } = render(
+    <Provider store={store}>
+      <FileTree projectId="p1" />
+    </Provider>
+  );
+
+  expect(queryByText('Sprites')).toBeNull();
 });
