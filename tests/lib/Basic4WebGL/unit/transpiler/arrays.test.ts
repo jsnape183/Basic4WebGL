@@ -173,6 +173,41 @@ describe('TypedArrayDimRule', () => {
   });
 });
 
+describe('Array utility functions — compile without error', () => {
+  const withArray = (body: string) =>
+    transpileWithArrayLib(['dim arr(0)', body].join('\n'));
+
+  test('array.push compiles', () => {
+    const result = withArray('array.push(arr, 42)');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('array.pop compiles', () => {
+    const result = withArray('function test()\n  dim x\n  x = array.pop(arr)\nendfunction');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('array.contains compiles', () => {
+    const result = withArray('function test()\n  dim x\n  x = array.contains(arr, 42)\nendfunction');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('array.indexOf compiles', () => {
+    const result = withArray('function test()\n  dim x\n  x = array.indexOf(arr, 42)\nendfunction');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('array.remove compiles', () => {
+    const result = withArray('array.remove(arr, 0)');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('array.clear compiles', () => {
+    const result = withArray('array.clear(arr)');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});
+
 describe('Typed array declaration — integration', () => {
   test('dim arr(10) as Enemy compiles to _createTypedArray', () => {
     const result = compiler.transpile({
