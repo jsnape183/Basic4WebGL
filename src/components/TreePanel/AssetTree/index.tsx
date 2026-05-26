@@ -108,6 +108,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     state.folders.items.filter((f) => f.projectId === projectId)
   );
 
+  const assetOrder = useSelector((state: RootState) => state.assets.assetOrder);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   useEffect(() => {
@@ -211,7 +213,11 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
 
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
     const levelFolders = folders.filter((f) => f.parentId === parentId);
-    const levelAssets = allAssets.filter((a) => (a.folderId ?? null) === parentId);
+    const scopedKey = `${projectId}:${parentId ?? 'root'}`;
+    const orderIds = assetOrder[scopedKey];
+    const levelAssets = orderIds?.length
+      ? (orderIds.map((id) => allAssets.find((a) => a.id === id)).filter(Boolean) as IAsset[])
+      : allAssets.filter((a) => (a.folderId ?? null) === parentId);
     const assetIds = levelAssets.map((a) => a.id);
 
     return (
@@ -282,8 +288,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
           className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
           onClick={(e) => { if (e.target === e.currentTarget) setRenamingFolder(null); }}
         >
-          <div role="dialog" aria-modal="true" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
-            <h2 className="text-ds-text text-lg font-semibold mb-4">Rename folder</h2>
+          <div role="dialog" aria-modal="true" aria-labelledby="at-rename-folder-title" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h2 id="at-rename-folder-title" className="text-ds-text text-lg font-semibold mb-4">Rename folder</h2>
             <input
               ref={renameInputRef}
               autoFocus
@@ -332,8 +338,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
           className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
           onClick={(e) => { if (e.target === e.currentTarget) setDeletingFolder(null); }}
         >
-          <div role="dialog" aria-modal="true" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
-            <h2 className="text-ds-text text-lg font-semibold mb-2">Delete folder</h2>
+          <div role="dialog" aria-modal="true" aria-labelledby="at-delete-folder-title" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h2 id="at-delete-folder-title" className="text-ds-text text-lg font-semibold mb-2">Delete folder</h2>
             <p className="text-ds-text-muted text-sm mb-4">
               Items inside will move to the parent level. Type <span className="text-ds-text font-medium">{deletingFolder.name}</span> to confirm.
             </p>
