@@ -8,11 +8,12 @@ import filesReducer, { addFile } from '../../../../src/features/files/filesSlice
 import uiReducer from '../../../../src/features/ui/uiSlice';
 import projectsReducer, { addProject } from '../../../../src/features/projects/projectsSlice';
 import packagesReducer, { seedPackages } from '../../../../src/features/packages/packagesSlice';
+import foldersReducer from '../../../../src/features/folders/foldersSlice';
 import { firstPartyPackages } from '../../../../src/constants/firstPartyPackages';
 import FileTree from '../../../../src/components/FileTree';
 
 const makeStore = () => {
-  const store = configureStore({ reducer: { files: filesReducer, ui: uiReducer, projects: projectsReducer, packages: packagesReducer } });
+  const store = configureStore({ reducer: { files: filesReducer, ui: uiReducer, projects: projectsReducer, packages: packagesReducer, folders: foldersReducer } });
   store.dispatch(seedPackages(firstPartyPackages));
   store.dispatch(addProject({ id: 'p1', name: 'Test', packageIds: ['softcore', 'softgfx'] }));
   store.dispatch(addFile({ id: 'f1', name: 'main.bas', source: '', projectId: 'p1' }));

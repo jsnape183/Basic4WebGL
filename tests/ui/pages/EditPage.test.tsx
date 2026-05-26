@@ -11,6 +11,7 @@ import projectsReducer, { addProject } from '../../../src/features/projects/proj
 import packagesReducer from '../../../src/features/packages/packagesSlice';
 import assetsReducer from '../../../src/features/assets/assetsSlice';
 import uiReducer from '../../../src/features/ui/uiSlice';
+import foldersReducer from '../../../src/features/folders/foldersSlice';
 import EditPage from '../../../src/pages/EditPage';
 import { LogItemType } from '../../../src/Types/LogItem';
 
@@ -32,6 +33,7 @@ const makeStore = (projectId: string) => {
       packages: packagesReducer,
       assets: assetsReducer,
       ui: uiReducer,
+      folders: foldersReducer,
     },
   });
   store.dispatch(addProject({ id: projectId, name: 'Test Project', packageIds: [] }));
