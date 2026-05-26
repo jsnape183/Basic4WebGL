@@ -105,7 +105,9 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const folders: IFolder[] = useSelector((state: RootState) =>
-    state.folders.items.filter((f) => f.projectId === projectId)
+    state.folders.items.filter(
+      (f) => f.projectId === projectId && (f.section ?? 'files') === 'assets'
+    )
   );
 
   const assetOrder = useSelector((state: RootState) => state.assets.assetOrder);
@@ -179,7 +181,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const handleCreateFolder = () => {
     const name = newFolderName.trim();
     if (!name) { setCreatingFolderParent(undefined); return; }
-    dispatch(addFolder({ id: uuidv4(), name, projectId, parentId: creatingFolderParent ?? null }));
+    dispatch(addFolder({ id: uuidv4(), name, projectId, parentId: creatingFolderParent ?? null, section: 'assets' }));
     setNewFolderName('');
     setCreatingFolderParent(undefined);
   };
