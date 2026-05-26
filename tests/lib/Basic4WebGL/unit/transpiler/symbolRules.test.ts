@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 import Symbols, { SymbolScope } from '@CompilerLib/symbols';
 import BuiltInType from '@CompilerLib/builtInTypes';
 import { symbolRules } from '@Basic4WebGL/transpilerRules/symbolRules';
+import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 
 const variant = new BuiltInType('Variant');
 const globalScope = () => new SymbolScope('', '');
@@ -40,5 +41,16 @@ describe('symbolRules', () => {
     // module-scoped vars handled by VariableDimRule, not symbolRules
     const result = symbolRules(table, globalScope());
     expect(result).not.toContain('let');
+  });
+});
+
+describe('symbolRules — formatSymbol consistency', () => {
+  test('pre-declared global variable name matches formatSymbol output', () => {
+    const { table, scope } = tableWith('counter');
+    const sym = table.getAll('Variable', scope)[0];
+    // symbolRules should produce the same identifier as formatSymbol
+    const fromSymbolRules = symbolRules(table, scope);
+    const fromFormatSymbol = formatSymbol(sym);
+    expect(fromSymbolRules).toContain(`let ${fromFormatSymbol} = null`);
   });
 });

@@ -23,6 +23,11 @@ export const concatChildren = (
     .join(join);
 
 export const formatSymbol = (data: Symbol) => {
+  // Global scope: both scope.name and scope.type are empty strings
+  if (data.scope.name === '' && data.scope.type === scopeTypes.Globals) {
+    return `_${data.name}`;
+  }
+
   if (data.type === symbolTypes.Function) {
     return `${data.fullScope}.${data.name}`;
   }
