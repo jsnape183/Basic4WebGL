@@ -50,6 +50,10 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   // Folder open/close state
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 
+  // Auto-expand on drag hover
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Inline folder creation
   const [creatingFolderParent, setCreatingFolderParent] = useState<string | null | undefined>(undefined);
   const [newFolderName, setNewFolderName] = useState('');
@@ -115,6 +119,20 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [deletingFolder]);
+
+  // Auto-expand folder on drag hover (500ms)
+  useEffect(() => {
+    if (dragOverFolderId === null) {
+      if (autoExpandTimerRef.current) clearTimeout(autoExpandTimerRef.current);
+      return;
+    }
+    autoExpandTimerRef.current = setTimeout(() => {
+      setOpenFolders((prev) => ({ ...prev, [dragOverFolderId]: true }));
+    }, 500);
+    return () => {
+      if (autoExpandTimerRef.current) clearTimeout(autoExpandTimerRef.current);
+    };
+  }, [dragOverFolderId]);
 
   const handleNewFile = (filename: string) => {
     const name = normaliseFileName(filename);
@@ -440,7 +458,23 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
         </div>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragOver={(event) => {
+          const overId = String(event.over?.id ?? '');
+          if (overId.startsWith('folder-drop:')) {
+            const fId = overId.replace('folder-drop:', '');
+            setDragOverFolderId((prev) => (prev === fId ? prev : fId));
+          } else {
+            setDragOverFolderId(null);
+          }
+        }}
+        onDragEnd={(event) => {
+          setDragOverFolderId(null);
+          handleDragEnd(event);
+        }}
+      >
         {renderLevel(null, 0)}
       </DndContext>
     </div>
