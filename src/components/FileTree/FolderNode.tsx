@@ -1,7 +1,9 @@
 // src/components/FileTree/FolderNode.tsx
 import React from 'react';
+import { useDroppable } from '@dnd-kit/core';
 
 type FolderNodeProps = {
+  folderId: string;   // used to register droppable
   name: string;
   isOpen: boolean;
   itemCount: number;         // total descendant count — shown in badge when collapsed
@@ -15,6 +17,7 @@ type FolderNodeProps = {
 };
 
 const FolderNode: React.FC<FolderNodeProps> = ({
+  folderId,
   name,
   isOpen,
   itemCount,
@@ -26,11 +29,17 @@ const FolderNode: React.FC<FolderNodeProps> = ({
   isDragging,
 }) => {
   const indent = depth * 12; // px per level
+  const { setNodeRef, isOver } = useDroppable({ id: `folder-drop:${folderId}` });
 
   return (
     <div
+      ref={setNodeRef}
       style={{ paddingLeft: indent, opacity: isDragging ? 0.5 : 1 }}
-      className="group flex items-center gap-1 px-2 py-1 rounded text-xs cursor-pointer text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text select-none"
+      className={`group flex items-center gap-1 px-2 py-1 rounded text-xs cursor-pointer select-none transition-colors
+        ${isOver
+          ? 'bg-ds-accent-subtle text-ds-text border border-ds-accent'
+          : 'text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text'
+        }`}
       onClick={onToggle}
     >
       {/* Drag handle */}

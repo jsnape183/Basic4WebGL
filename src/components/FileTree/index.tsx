@@ -13,7 +13,8 @@ import {
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { RootState } from '../../store';
 import { ModalWithInput } from '../Modal';
-import { IFile, addFile, removeFile, reorderFiles } from '../../features/files/filesSlice';
+import { IFile, addFile, removeFile, reorderFiles, setFileFolder } from '../../features/files/filesSlice';
+import { getFullName } from '../../selectors/getFullName';
 import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
@@ -154,19 +155,36 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     setCreatingFolderParent(undefined);
   };
 
-  const handleDragEnd = useCallback((event: DragEndEvent, orderKey: string) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const filesAtLevel = allFiles.filter((f) => {
-      const key = `${projectId}:${f.folderId ?? 'root'}`;
-      return key === orderKey;
-    });
-    const fromIndex = filesAtLevel.findIndex((f) => f.id === active.id);
-    const toIndex = filesAtLevel.findIndex((f) => f.id === over.id);
-    if (fromIndex !== -1 && toIndex !== -1) {
-      dispatch(reorderFiles({ orderKey, fromIndex, toIndex }));
+
+    const activeFile = allFiles.find((f) => f.id === active.id);
+    if (!activeFile) return;
+
+    // Case 1: dropped onto a folder-drop target
+    if (String(over.id).startsWith('folder-drop:')) {
+      const targetFolderId = String(over.id).replace('folder-drop:', '');
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      if (!targetFolder) return;
+      const newFullName = getFullName(activeFile.name, targetFolderId, folders);
+      dispatch(setFileFolder({ fileId: activeFile.id, folderId: targetFolderId, fullName: newFullName }));
+      // Expand the target folder
+      setOpenFolders((prev) => ({ ...prev, [targetFolderId]: true }));
+      return;
     }
-  }, [allFiles, dispatch, projectId]);
+
+    // Case 2: same-level sort (over.id is a file id)
+    const overFile = allFiles.find((f) => f.id === over.id);
+    if (!overFile || overFile.folderId !== activeFile.folderId) return;
+    const levelOrderKey = `${projectId}:${activeFile.folderId ?? 'root'}`;
+    const levelFiles = allFiles.filter((f) => (f.folderId ?? null) === (activeFile.folderId ?? null));
+    const fromIndex = levelFiles.findIndex((f) => f.id === active.id);
+    const toIndex = levelFiles.findIndex((f) => f.id === over.id);
+    if (fromIndex !== -1 && toIndex !== -1) {
+      dispatch(reorderFiles({ orderKey: levelOrderKey, fromIndex, toIndex }));
+    }
+  }, [allFiles, folders, dispatch, projectId]);
 
   // Counter object shared across recursive calls so file items get unique indices
   // for keyboard navigation. Reset before each render pass.
@@ -200,7 +218,6 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
     const levelFolders = folders.filter((f) => f.parentId === parentId);
     const levelFiles = allFiles.filter((f) => (f.folderId ?? null) === parentId);
-    const levelOrderKey = `${projectId}:${parentId ?? 'root'}`;
     const fileIds = levelFiles.map((f) => f.id);
 
     return (
@@ -212,6 +229,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
           return (
             <div key={folder.id}>
               <FolderNode
+                folderId={folder.id}
                 name={folder.name}
                 isOpen={isOpen}
                 itemCount={count}
@@ -229,32 +247,26 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
           );
         })}
 
-        {/* Files at this level — each level gets its own DndContext+SortableContext */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={(e) => handleDragEnd(e, levelOrderKey)}
-        >
-          <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
-            <ul role="listbox" aria-label="Files" className="space-y-0.5">
-              {levelFiles.map((file) => {
-                const index = fileIndexCounter.current.value++;
-                return (
-                  <SortableFileItem
-                    key={file.id}
-                    file={file}
-                    isSelected={file.id === selectedFileId}
-                    showDelete={allFiles.length > 1}
-                    onSelect={handleFileSelected}
-                    onDelete={handleDeleteFile}
-                    onKeyDown={(e) => handleKeyDown(e, index, file.id)}
-                    itemRef={(el) => { itemRefs.current[index] = el; }}
-                  />
-                );
-              })}
-            </ul>
-          </SortableContext>
-        </DndContext>
+        {/* Files at this level */}
+        <SortableContext items={fileIds} strategy={verticalListSortingStrategy}>
+          <ul role="listbox" aria-label="Files" className="space-y-0.5">
+            {levelFiles.map((file) => {
+              const index = fileIndexCounter.current.value++;
+              return (
+                <SortableFileItem
+                  key={file.id}
+                  file={file}
+                  isSelected={file.id === selectedFileId}
+                  showDelete={allFiles.length > 1}
+                  onSelect={handleFileSelected}
+                  onDelete={handleDeleteFile}
+                  onKeyDown={(e) => handleKeyDown(e, index, file.id)}
+                  itemRef={(el) => { itemRefs.current[index] = el; }}
+                />
+              );
+            })}
+          </ul>
+        </SortableContext>
 
         {/* Inline folder creation input */}
         {creatingFolderParent === parentId && (
@@ -428,7 +440,9 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
         </div>
       </div>
 
-      {renderLevel(null, 0)}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        {renderLevel(null, 0)}
+      </DndContext>
     </div>
   );
 };
