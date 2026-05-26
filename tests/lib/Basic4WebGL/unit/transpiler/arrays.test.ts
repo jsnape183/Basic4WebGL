@@ -1,6 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
+import { node } from '@CompilerLib/tree';
+import BuiltInType from '@CompilerLib/builtInTypes';
+import { Symbol, SymbolScope } from '@CompilerLib/symbols';
+import { ArraySymbol } from '@Basic4WebGL/symbolTypes';
+import nodeTypes from '@Basic4WebGL/nodeTypes';
+import '@Basic4WebGL/transpilerRules';
+import TypedArrayDimRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/TypedArrayDimRule';
+
+// ─── Helpers for TypedArrayDimRule tests ──────────────────────────────────────
+
+const variant = new BuiltInType('Variant');
+const modScope = (name = 'main') => new SymbolScope(name, 'Module');
+const fnScope = (name: string) => new SymbolScope(name, 'Function');
+const classScope = (name: string) => new SymbolScope(name, 'Class');
+
+const arrSym = (name: string, scope = modScope()) =>
+  new ArraySymbol(name, 'Array', scope, scope.name, 1);
+const classSym = (name: string) =>
+  new Symbol(name, 'Class', modScope(), 'main', variant);
+const term = (v: string) => node(nodeTypes.Term, v);
 
 const transpile = (source: string) => {
   const result = compiler.transpile({
@@ -97,5 +117,58 @@ describe('Array — arrLength and join compile with module-level array', () => {
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
+  });
+});
+
+describe('TypedArrayDimRule', () => {
+  test('module-scope typed array without constructor args', () => {
+    const dims = node(nodeTypes.ExpressionList, null, [term('10')]);
+    const n = node(nodeTypes.TypedArrayDim, {
+      arraySymbol: arrSym('enemies'),
+      classSymbol: classSym('Enemy'),
+    }, [dims]);
+    expect(new TypedArrayDimRule().generate(n, undefined))
+      .toBe('main.enemies = _createTypedArray([10], () => new Enemy());');
+  });
+
+  test('module-scope typed array with constructor args', () => {
+    const dims = node(nodeTypes.ExpressionList, null, [term('5')]);
+    const args = node(nodeTypes.ExpressionList, null, [term('"bunny.png"')]);
+    const n = node(nodeTypes.TypedArrayDim, {
+      arraySymbol: arrSym('sprites'),
+      classSymbol: classSym('Sprite'),
+    }, [dims, args]);
+    expect(new TypedArrayDimRule().generate(n, undefined))
+      .toBe('main.sprites = _createTypedArray([5], () => new Sprite("bunny.png"));');
+  });
+
+  test('function-scope typed array retains let', () => {
+    const dims = node(nodeTypes.ExpressionList, null, [term('20')]);
+    const n = node(nodeTypes.TypedArrayDim, {
+      arraySymbol: arrSym('bullets', fnScope('onenter')),
+      classSymbol: classSym('Bullet'),
+    }, [dims]);
+    expect(new TypedArrayDimRule().generate(n, undefined))
+      .toBe('let onenter_bullets = _createTypedArray([20], () => new Bullet());');
+  });
+
+  test('class-scope typed array emits prototype form', () => {
+    const dims = node(nodeTypes.ExpressionList, null, [term('3')]);
+    const n = node(nodeTypes.TypedArrayDim, {
+      arraySymbol: arrSym('tiles', classScope('Level')),
+      classSymbol: classSym('Tile'),
+    }, [dims]);
+    expect(new TypedArrayDimRule().generate(n, undefined))
+      .toBe('Level.prototype.tiles = _createTypedArray([3], () => new Tile());');
+  });
+
+  test('multi-dimensional typed array', () => {
+    const dims = node(nodeTypes.ExpressionList, null, [term('5'), term('3')]);
+    const n = node(nodeTypes.TypedArrayDim, {
+      arraySymbol: new ArraySymbol('grid', 'Array', modScope(), 'main', 2),
+      classSymbol: classSym('Tile'),
+    }, [dims]);
+    expect(new TypedArrayDimRule().generate(n, undefined))
+      .toBe('main.grid = _createTypedArray([5,3], () => new Tile());');
   });
 });
