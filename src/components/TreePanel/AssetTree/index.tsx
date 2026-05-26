@@ -213,7 +213,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     if (fromIndex !== -1 && toIndex !== -1) {
       dispatch(reorderAssets({ orderKey: key, fromIndex, toIndex }));
     }
-  }, [allAssets, folders, dispatch, projectId]);
+  }, [allAssets, assetOrder, folders, dispatch, projectId]);
 
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
     const levelFolders = folders.filter((f) => f.parentId === parentId);
