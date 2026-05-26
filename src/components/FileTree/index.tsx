@@ -14,6 +14,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { RootState } from '../../store';
 import { ModalWithInput } from '../Modal';
 import { IFile, addFile, removeFile, reorderFiles } from '../../features/files/filesSlice';
+import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
 import { selectFile, clearProjectSelection } from '../../features/ui/uiSlice';
 import { IFolder, addFolder } from '../../features/folders/foldersSlice';
@@ -37,9 +38,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   const dispatch = useDispatch();
 
   // ALL files for the project (not just root)
-  const allFiles = useSelector((state: RootState) =>
-    Object.values(state.files.byId).filter((f) => f.projectId === projectId)
-  ) as IFile[];
+  const allFiles = useAllFilesForProject(projectId);
 
   const folders: IFolder[] = useSelector((state: RootState) =>
     state.folders.items.filter((f) => f.projectId === projectId)
@@ -103,15 +102,18 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
 
   // Escape key handlers for modals
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (renamingFolder) setRenamingFolder(null);
-        if (deletingFolder) setDeletingFolder(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [renamingFolder, deletingFolder]);
+    if (!renamingFolder) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRenamingFolder(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [renamingFolder]);
+
+  useEffect(() => {
+    if (!deletingFolder) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDeletingFolder(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [deletingFolder]);
 
   const handleNewFile = (filename: string) => {
     const name = normaliseFileName(filename);
