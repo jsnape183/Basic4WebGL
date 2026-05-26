@@ -10,7 +10,8 @@ import {
   useSensors,
   DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { RootState, AppDispatch } from '../../../store';
 import { IAsset, addAsset, removeAsset, reorderAssets, setAssetFolder } from '../../../features/assets/assetsSlice';
 import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
@@ -20,6 +21,57 @@ import FolderNode from '../../FileTree/FolderNode';
 import ReactDOM from 'react-dom';
 
 type AssetTreeProps = { projectId: string };
+
+type SortableAssetItemProps = {
+  asset: IAsset;
+  depth: number;
+  onRemove: (id: string) => void;
+};
+
+const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onRemove }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: asset.id });
+
+  const style: React.CSSProperties = {
+    paddingLeft: depth * 12,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="group flex items-center justify-between px-2 py-1 rounded text-xs text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text"
+    >
+      <button
+        {...listeners}
+        {...attributes}
+        aria-label="Drag to reorder"
+        tabIndex={-1}
+        className="opacity-0 group-hover:opacity-100 text-ds-text-dim cursor-grab active:cursor-grabbing leading-none transition-opacity flex-shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        ⠿
+      </button>
+      <span className="truncate flex-1">{asset.name}</span>
+      <button
+        onClick={() => onRemove(asset.id)}
+        className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error ml-1 leading-none transition-opacity"
+        aria-label={`Remove ${asset.name}`}
+      >
+        ×
+      </button>
+    </li>
+  );
+};
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
@@ -40,6 +92,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
   const deleteInputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const [dragging, setDragging] = useState(false);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
@@ -190,20 +243,12 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
         <SortableContext items={assetIds} strategy={verticalListSortingStrategy}>
           <ul className="space-y-0.5">
             {levelAssets.map((asset) => (
-              <li
+              <SortableAssetItem
                 key={asset.id}
-                style={{ paddingLeft: depth * 12 }}
-                className="group flex items-center justify-between px-2 py-1 rounded text-xs text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text"
-              >
-                <span className="truncate">{asset.name}</span>
-                <button
-                  onClick={() => dispatch(removeAsset(asset.id))}
-                  className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error ml-1 leading-none transition-opacity"
-                  aria-label={`Remove ${asset.name}`}
-                >
-                  ×
-                </button>
-              </li>
+                asset={asset}
+                depth={depth}
+                onRemove={(id) => dispatch(removeAsset(id))}
+              />
             ))}
           </ul>
         </SortableContext>
@@ -240,6 +285,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
           <div role="dialog" aria-modal="true" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
             <h2 className="text-ds-text text-lg font-semibold mb-4">Rename folder</h2>
             <input
+              ref={renameInputRef}
               autoFocus
               defaultValue={renamingFolder.name}
               type="text"
@@ -258,9 +304,8 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
             />
             <div className="flex justify-end gap-3">
               <button
-                onClick={(e) => {
-                  const input = (e.currentTarget.closest('[role="dialog"]') as HTMLElement)?.querySelector('input') as HTMLInputElement;
-                  const name = input?.value.trim();
+                onClick={() => {
+                  const name = renameInputRef.current?.value.trim();
                   if (name && name !== renamingFolder!.name) {
                     dispatch(renameFolderWithCascade({ folderId: renamingFolder!.id, name }));
                   }
