@@ -80,10 +80,21 @@ const filesSlice = createSlice({
       state,
       action: PayloadAction<{ fileId: string; folderId: string | null; fullName: string }>
     ) => {
-      const file = state.byId[action.payload.fileId];
+      const { fileId, folderId, fullName } = action.payload;
+      const file = state.byId[fileId];
       if (!file) return;
-      file.folderId = action.payload.folderId;
-      file.fullName = action.payload.fullName;
+      // Remove from old order bucket
+      const oldKey = orderKey(file.projectId, file.folderId ?? null);
+      if (state.fileOrder[oldKey]) {
+        state.fileOrder[oldKey] = state.fileOrder[oldKey].filter((id) => id !== fileId);
+      }
+      // Add to new order bucket
+      const newKey = orderKey(file.projectId, folderId ?? null);
+      if (!state.fileOrder[newKey]) state.fileOrder[newKey] = [];
+      state.fileOrder[newKey].push(fileId);
+      // Update record
+      file.folderId = folderId;
+      file.fullName = fullName;
     },
     batchSetFileFolder: (
       state,
@@ -92,6 +103,13 @@ const filesSlice = createSlice({
       action.payload.forEach(({ id, folderId, fullName }) => {
         const file = state.byId[id];
         if (!file) return;
+        const oldKey = orderKey(file.projectId, file.folderId ?? null);
+        if (state.fileOrder[oldKey]) {
+          state.fileOrder[oldKey] = state.fileOrder[oldKey].filter((fid) => fid !== id);
+        }
+        const newKey = orderKey(file.projectId, folderId ?? null);
+        if (!state.fileOrder[newKey]) state.fileOrder[newKey] = [];
+        state.fileOrder[newKey].push(id);
         file.folderId = folderId;
         file.fullName = fullName;
       });

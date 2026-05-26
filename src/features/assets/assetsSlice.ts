@@ -63,10 +63,18 @@ const assetsSlice = createSlice({
       state,
       action: PayloadAction<{ assetId: string; folderId: string | null; fullName: string }>
     ) => {
-      const asset = state.byId[action.payload.assetId];
+      const { assetId, folderId, fullName } = action.payload;
+      const asset = state.byId[assetId];
       if (!asset) return;
-      asset.folderId = action.payload.folderId;
-      asset.fullName = action.payload.fullName;
+      const oldKey = orderKey(asset.projectId, asset.folderId ?? null);
+      if (state.assetOrder[oldKey]) {
+        state.assetOrder[oldKey] = state.assetOrder[oldKey].filter((id) => id !== assetId);
+      }
+      const newKey = orderKey(asset.projectId, folderId ?? null);
+      if (!state.assetOrder[newKey]) state.assetOrder[newKey] = [];
+      state.assetOrder[newKey].push(assetId);
+      asset.folderId = folderId;
+      asset.fullName = fullName;
     },
     batchSetAssetFolder: (
       state,
@@ -75,6 +83,13 @@ const assetsSlice = createSlice({
       action.payload.forEach(({ id, folderId, fullName }) => {
         const asset = state.byId[id];
         if (!asset) return;
+        const oldKey = orderKey(asset.projectId, asset.folderId ?? null);
+        if (state.assetOrder[oldKey]) {
+          state.assetOrder[oldKey] = state.assetOrder[oldKey].filter((aid) => aid !== id);
+        }
+        const newKey = orderKey(asset.projectId, folderId ?? null);
+        if (!state.assetOrder[newKey]) state.assetOrder[newKey] = [];
+        state.assetOrder[newKey].push(id);
         asset.folderId = folderId;
         asset.fullName = fullName;
       });

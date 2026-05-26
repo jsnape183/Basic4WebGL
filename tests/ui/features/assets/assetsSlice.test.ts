@@ -59,6 +59,17 @@ describe('batchSetAssetFullNames', () => {
   });
 });
 
+describe('setAssetFolder — updates assetOrder buckets', () => {
+  const clean: IAssetsState = { byId: {}, assetOrder: {} };
+
+  test('removes from old bucket and adds to new bucket', () => {
+    let s = assetsReducer(clean, addAsset({ id: 'a1', name: 'hero.png', content: '', projectId: 'p1' }));
+    s = assetsReducer(s, setAssetFolder({ assetId: 'a1', folderId: 'f1', fullName: 'Sprites/hero.png' }));
+    expect(s.assetOrder['p1:root']).not.toContain('a1');
+    expect(s.assetOrder['p1:f1']).toContain('a1');
+  });
+});
+
 describe('assetOrder', () => {
   const clean: IAssetsState = { byId: {}, assetOrder: {} };
 

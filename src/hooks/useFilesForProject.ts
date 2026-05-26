@@ -11,8 +11,10 @@ export const useFilesForProject = (projectId: string, folderId: string | null = 
     let order = state.files.fileOrder[scopedKey];
 
     if (!order || order.length === 0) {
-      // Fall back to legacy key (persisted data before this migration)
-      order = state.files.fileOrder[legacyKey];
+      if (folderId === null) {
+        // Only apply legacy fallback at root — the pre-migration key had all files at root
+        order = state.files.fileOrder[legacyKey];
+      }
     }
 
     if (!order || order.length === 0) {

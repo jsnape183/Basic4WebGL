@@ -6,7 +6,7 @@ import { IAsset } from '../features/assets/assetsSlice';
 export const useAssetsForProject = (projectId: string, folderId: string | null = null): IAsset[] => {
   return useSelector((state: RootState) => {
     const key = `${projectId}:${folderId ?? 'root'}`;
-    const order = state.assets.assetOrder?.[key];
+    const order = state.assets.assetOrder[key];
 
     if (!order || order.length === 0) {
       // Fallback: unordered enumeration (legacy persisted state)

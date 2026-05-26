@@ -79,7 +79,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
     const fromIndex = files.findIndex((f) => f.id === active.id);
     const toIndex = files.findIndex((f) => f.id === over.id);
     if (fromIndex !== -1 && toIndex !== -1) {
-      dispatch(reorderFiles({ projectId, fromIndex, toIndex }));
+      dispatch(reorderFiles({ orderKey: `${projectId}:root`, fromIndex, toIndex }));
     }
   };
 

@@ -136,6 +136,29 @@ import {
   batchSetFileFullNames,
 } from '../../../../src/features/files/filesSlice';
 
+describe('setFileFolder — updates fileOrder buckets', () => {
+  const clean: IFilesState = { byId: {}, dirtyFileIds: [], fileOrder: {} };
+
+  test('removes from old bucket and adds to new bucket', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, setFileFolder({ fileId: 'f1', folderId: 'folder1', fullName: 'Game/a.bas' }));
+    expect(s.fileOrder['p1:root']).not.toContain('f1');
+    expect(s.fileOrder['p1:folder1']).toContain('f1');
+  });
+
+  test('batchSetFileFolder moves multiple files between buckets', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, batchSetFileFolder([
+      { id: 'f1', folderId: 'folder1', fullName: 'Game/a.bas' },
+      { id: 'f2', folderId: 'folder1', fullName: 'Game/b.bas' },
+    ]));
+    expect(s.fileOrder['p1:root']).toEqual([]);
+    expect(s.fileOrder['p1:folder1']).toContain('f1');
+    expect(s.fileOrder['p1:folder1']).toContain('f2');
+  });
+});
+
 describe('folderId and fullName fields', () => {
   const clean: IFilesState = { byId: {}, dirtyFileIds: [], fileOrder: {} };
 
