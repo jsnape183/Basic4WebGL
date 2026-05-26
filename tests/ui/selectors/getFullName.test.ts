@@ -3,9 +3,9 @@ import { getFullName } from '../../../src/selectors/getFullName';
 import { IFolder } from '../../../src/features/folders/foldersSlice';
 
 const folders: IFolder[] = [
-  { id: 'f1', name: 'Game', projectId: 'p1', parentId: null },
-  { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1' },
-  { id: 'f3', name: 'Bosses', projectId: 'p1', parentId: 'f2' },
+  { id: 'f1', name: 'Game', projectId: 'p1', parentId: null, section: 'files' },
+  { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1', section: 'files' },
+  { id: 'f3', name: 'Bosses', projectId: 'p1', parentId: 'f2', section: 'files' },
 ];
 
 describe('getFullName', () => {

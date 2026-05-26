@@ -21,8 +21,8 @@ function makeStore() {
 }
 
 // Folder tree: root → f1 (Game) → f2 (Enemies)
-const f1: IFolder = { id: 'f1', name: 'Game', projectId: 'p1', parentId: null };
-const f2: IFolder = { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1' };
+const f1: IFolder = { id: 'f1', name: 'Game', projectId: 'p1', parentId: null, section: 'files' };
+const f2: IFolder = { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1', section: 'files' };
 
 describe('renameFolderWithCascade', () => {
   test('updates fullName of files inside the renamed folder', () => {
@@ -62,8 +62,8 @@ describe('renameFolderWithCascade', () => {
 describe('moveFolderWithCascade', () => {
   test('updates fullName of files after folder is moved under a new parent', () => {
     const store = makeStore();
-    const fA: IFolder = { id: 'fA', name: 'Assets', projectId: 'p1', parentId: null };
-    const fB: IFolder = { id: 'fB', name: 'Sprites', projectId: 'p1', parentId: null };
+    const fA: IFolder = { id: 'fA', name: 'Assets', projectId: 'p1', parentId: null, section: 'files' };
+    const fB: IFolder = { id: 'fB', name: 'Sprites', projectId: 'p1', parentId: null, section: 'files' };
     store.dispatch(addFolder(fA));
     store.dispatch(addFolder(fB));
     store.dispatch(addFile({ id: 'file1', name: 'hero.png', source: '', projectId: 'p1', folderId: 'fB', fullName: 'Sprites/hero.png' }));

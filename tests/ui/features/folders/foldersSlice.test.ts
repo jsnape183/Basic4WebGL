@@ -10,9 +10,9 @@ import foldersReducer, {
 
 const initial: IFoldersState = { items: [] };
 
-const f1: IFolder = { id: 'f1', name: 'Game', projectId: 'p1', parentId: null };
-const f2: IFolder = { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1' };
-const f3: IFolder = { id: 'f3', name: 'Bosses', projectId: 'p1', parentId: 'f2' };
+const f1: IFolder = { id: 'f1', name: 'Game', projectId: 'p1', parentId: null, section: 'files' };
+const f2: IFolder = { id: 'f2', name: 'Enemies', projectId: 'p1', parentId: 'f1', section: 'files' };
+const f3: IFolder = { id: 'f3', name: 'Bosses', projectId: 'p1', parentId: 'f2', section: 'files' };
 
 describe('addFolder', () => {
   test('stores the folder', () => {
@@ -63,7 +63,7 @@ describe('renameFolder', () => {
 
 describe('moveFolder', () => {
   test('updates parentId', () => {
-    const f4: IFolder = { id: 'f4', name: 'UI', projectId: 'p1', parentId: null };
+    const f4: IFolder = { id: 'f4', name: 'UI', projectId: 'p1', parentId: null, section: 'files' };
     let s = foldersReducer(initial, addFolder(f1));
     s = foldersReducer(s, addFolder(f4));
     s = foldersReducer(s, moveFolder({ folderId: 'f4', parentId: 'f1' }));

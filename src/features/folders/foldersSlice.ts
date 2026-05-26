@@ -5,6 +5,7 @@ export interface IFolder {
   name: string;
   projectId: string;
   parentId: string | null;
+  section: 'files' | 'assets';
 }
 
 export interface IFoldersState {
