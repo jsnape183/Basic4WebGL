@@ -6,10 +6,9 @@
       <script type="text/javascript">
       const _createArrayDim = (sizes, depth) => {
         if (depth === sizes.length - 1)
-          return Array.apply(null, new Array(sizes[depth])).map(() => false);
-
-        return Array.apply(null, new Array(sizes[depth])).map(() =>
-          Array.apply(null, createArrayDim(sizes, depth + 1))
+          return Array.from({length: sizes[depth]}, () => false);
+        return Array.from({length: sizes[depth]}, () =>
+          _createArrayDim(sizes, depth + 1)
         );
       };
       const _createArray = (sizes) => {
