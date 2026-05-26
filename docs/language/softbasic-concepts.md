@@ -509,10 +509,118 @@ endfunction
 
 ---
 
+## Arrays
+
+### Declaring arrays
+
+**Fixed-size** — elements pre-filled with `false`:
+
+```basic
+dim scores(10)          ' 10 elements
+dim grid(5, 3)          ' 5×3 two-dimensional array
+```
+
+**Dynamic (growable)** — start empty, grow with `push`:
+
+```basic
+dim enemies(0)
+array.push(enemies, newEnemy)
+```
+
+**Typed** — every element is a constructed instance:
+
+```basic
+dim sprites(10) as Sprite("bunny.png")
+dim grid(5, 3) as Tile()
+```
+
+### Accessing elements
+
+Array index uses parentheses — `arr(i)`, not `arr[i]`:
+
+```basic
+scores(0) = 100
+print scores(0)
+
+grid(2, 1) = true
+print grid(2, 1)
+```
+
+### Arrays are passed by reference
+
+Modifications inside a function are visible to the caller:
+
+```basic
+dim enemies(5)
+enemies(0) = 10
+resetFirst(enemies)
+print enemies(0)    ' prints 0
+
+function resetFirst(arr)
+    arr(0) = 0
+endfunction
+```
+
+### Array module
+
+| Function | Returns | Description |
+|---|---|---|
+| `array.arrLength(arr)` | number | Number of elements |
+| `array.push(arr, item)` | nothing | Add item to end |
+| `array.pop(arr)` | removed value | Remove and return last item |
+| `array.contains(arr, item)` | boolean | True if item is in array |
+| `array.indexOf(arr, item)` | number | Index of item, or -1 if not found |
+| `array.remove(arr, index)` | nothing | Remove element at index |
+| `array.clear(arr)` | nothing | Empty the array |
+| `array.join(arr, separator)` | string | Join elements into a string |
+
+### Typed array declarations
+
+Every element is constructed immediately when `as Type` is used:
+
+```basic
+dim sprites(10) as Sprite("bunny.png")
+sprites(0).setPosition(100, 200)
+stage.add(sprites(0))
+```
+
+No constructor — no brackets:
+
+```basic
+dim enemies(20) as Enemy
+enemies(0).init(100, 200)
+```
+
+Multi-dimensional typed arrays work the same way:
+
+```basic
+dim grid(5, 3) as Tile()
+grid(2)(1).setActive(true)
+```
+
+### Typical usage — dynamic enemy list
+
+```basic
+dim enemies(0)
+
+function onenter()
+    for i = 0 to 9
+        dim e as Enemy()
+        array.push(enemies, e)
+    next
+endfunction
+
+function onupdate()
+    for i = 0 to array.arrLength(enemies) - 1
+        enemies(i).update()
+    next
+endfunction
+```
+
+---
+
 ## Known Gaps / To Document
 
-- Array declarations: `dim arr(10)` syntax and transpiled form
-- Typed array declarations: `dim arr(10) as Sprite("bunny.png")` syntax — constructs N instances of Type
 - Whether `print` accepts multiple arguments / expressions
 - String concatenation syntax
 - Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=` (inferred from conditionals tests)
