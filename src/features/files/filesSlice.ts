@@ -23,6 +23,10 @@ const initialState: IFilesState = {
   fileOrder: {},
 };
 
+function orderKey(projectId: string, folderId: string | null): string {
+  return `${projectId}:${folderId ?? 'root'}`;
+}
+
 const filesSlice = createSlice({
   name: 'files',
   initialState,
@@ -34,10 +38,11 @@ const filesSlice = createSlice({
         ...action.payload,
       };
       state.byId[file.id] = file;
-      if (!state.fileOrder[file.projectId]) {
-        state.fileOrder[file.projectId] = [];
+      const key = orderKey(file.projectId, file.folderId ?? null);
+      if (!state.fileOrder[key]) {
+        state.fileOrder[key] = [];
       }
-      state.fileOrder[file.projectId].push(file.id);
+      state.fileOrder[key].push(file.id);
     },
     updateFile: (state, action: PayloadAction<IFile>) => {
       state.byId[action.payload.id] = action.payload;
@@ -50,9 +55,10 @@ const filesSlice = createSlice({
     removeFile: (state, action: PayloadAction<string>) => {
       const file = state.byId[action.payload];
       if (file) {
-        const order = state.fileOrder[file.projectId];
+        const key = orderKey(file.projectId, file.folderId ?? null);
+        const order = state.fileOrder[key];
         if (order) {
-          state.fileOrder[file.projectId] = order.filter((id) => id !== action.payload);
+          state.fileOrder[key] = order.filter((id) => id !== action.payload);
         }
       }
       delete state.byId[action.payload];
@@ -63,12 +69,12 @@ const filesSlice = createSlice({
     },
     reorderFiles: (
       state,
-      action: PayloadAction<{ projectId: string; fromIndex: number; toIndex: number }>
+      action: PayloadAction<{ orderKey: string; fromIndex: number; toIndex: number }>
     ) => {
-      const { projectId, fromIndex, toIndex } = action.payload;
-      const order = state.fileOrder[projectId];
+      const { orderKey: key, fromIndex, toIndex } = action.payload;
+      const order = state.fileOrder[key];
       if (!order) return;
-      state.fileOrder[projectId] = reorder(order, fromIndex, toIndex);
+      state.fileOrder[key] = reorder(order, fromIndex, toIndex);
     },
     setFileFolder: (
       state,

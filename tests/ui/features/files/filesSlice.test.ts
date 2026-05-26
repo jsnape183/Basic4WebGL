@@ -73,32 +73,59 @@ describe('fileOrder', () => {
   test('addFile appends the new file id to fileOrder for the project', () => {
     const s1 = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
     const s2 = filesReducer(s1, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
-    expect(s2.fileOrder['p1']).toEqual(['f1', 'f2']);
+    expect(s2.fileOrder['p1:root']).toEqual(['f1', 'f2']);
   });
 
   test('addFile creates the order array when the project has no files yet', () => {
     const s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p99' }));
-    expect(s.fileOrder['p99']).toEqual(['f1']);
+    expect(s.fileOrder['p99:root']).toEqual(['f1']);
   });
 
   test('removeFile removes the id from fileOrder', () => {
     let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
     s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
     s = filesReducer(s, removeFile('f1'));
-    expect(s.fileOrder['p1']).toEqual(['f2']);
+    expect(s.fileOrder['p1:root']).toEqual(['f2']);
   });
 
   test('reorderFiles moves a file id from one index to another', () => {
     let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
     s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
     s = filesReducer(s, addFile({ id: 'f3', name: 'c.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, reorderFiles({ projectId: 'p1', fromIndex: 0, toIndex: 2 }));
-    expect(s.fileOrder['p1']).toEqual(['f2', 'f3', 'f1']);
+    s = filesReducer(s, reorderFiles({ orderKey: 'p1:root', fromIndex: 0, toIndex: 2 }));
+    expect(s.fileOrder['p1:root']).toEqual(['f2', 'f3', 'f1']);
   });
 
   test('reorderFiles does nothing when the project has no order entry', () => {
-    const s = filesReducer(clean, reorderFiles({ projectId: 'no-such', fromIndex: 0, toIndex: 1 }));
-    expect(s.fileOrder['no-such']).toBeUndefined();
+    const s = filesReducer(clean, reorderFiles({ orderKey: 'no-such:root', fromIndex: 0, toIndex: 1 }));
+    expect(s.fileOrder['no-such:root']).toBeUndefined();
+  });
+});
+
+describe('fileOrder — folder-scoped keys', () => {
+  const clean: IFilesState = { byId: {}, dirtyFileIds: [], fileOrder: {} };
+
+  test('addFile with no folderId uses projectId:root key', () => {
+    const s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
+    expect(s.fileOrder['p1:root']).toEqual(['f1']);
+  });
+
+  test('addFile with a folderId uses projectId:folderId key', () => {
+    const s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1', folderId: 'folder1', fullName: 'Game/a.bas' }));
+    expect(s.fileOrder['p1:folder1']).toEqual(['f1']);
+  });
+
+  test('removeFile removes from the correct scoped key', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1', folderId: 'folder1', fullName: 'Game/a.bas' }));
+    s = filesReducer(s, removeFile('f1'));
+    expect(s.fileOrder['p1:folder1']).toEqual([]);
+  });
+
+  test('reorderFiles accepts a scoped key', () => {
+    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
+    s = filesReducer(s, reorderFiles({ orderKey: 'p1:root', fromIndex: 0, toIndex: 1 }));
+    expect(s.fileOrder['p1:root']).toEqual(['f2', 'f1']);
   });
 });
 

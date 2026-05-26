@@ -6,9 +6,10 @@ import assetsReducer, {
   setAssetFolder,
   batchSetAssetFolder,
   batchSetAssetFullNames,
+  reorderAssets,
 } from '../../../../src/features/assets/assetsSlice';
 
-const initial: IAssetsState = { byId: {} };
+const initial: IAssetsState = { byId: {}, assetOrder: {} };
 
 describe('addAsset', () => {
   test('defaults folderId to null and fullName to name', () => {
@@ -55,5 +56,27 @@ describe('batchSetAssetFullNames', () => {
     s = assetsReducer(s, batchSetAssetFullNames([{ id: 'a1', fullName: 'New/a.png' }]));
     expect(s.byId['a1'].fullName).toBe('New/a.png');
     expect(s.byId['a1'].folderId).toBe('f1');
+  });
+});
+
+describe('assetOrder', () => {
+  const clean: IAssetsState = { byId: {}, assetOrder: {} };
+
+  test('addAsset adds id to assetOrder with scoped key', () => {
+    const s = assetsReducer(clean, addAsset({ id: 'a1', name: 'bunny.png', content: '', projectId: 'p1' }));
+    expect(s.assetOrder['p1:root']).toEqual(['a1']);
+  });
+
+  test('removeAsset removes id from assetOrder', () => {
+    let s = assetsReducer(clean, addAsset({ id: 'a1', name: 'bunny.png', content: '', projectId: 'p1' }));
+    s = assetsReducer(s, removeAsset('a1'));
+    expect(s.assetOrder['p1:root']).toEqual([]);
+  });
+
+  test('reorderAssets moves an id from one index to another', () => {
+    let s = assetsReducer(clean, addAsset({ id: 'a1', name: 'a.png', content: '', projectId: 'p1' }));
+    s = assetsReducer(s, addAsset({ id: 'a2', name: 'b.png', content: '', projectId: 'p1' }));
+    s = assetsReducer(s, reorderAssets({ orderKey: 'p1:root', fromIndex: 0, toIndex: 1 }));
+    expect(s.assetOrder['p1:root']).toEqual(['a2', 'a1']);
   });
 });
