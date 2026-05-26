@@ -3,6 +3,7 @@ import { node } from '@CompilerLib/tree';
 import BuiltInType from '@CompilerLib/builtInTypes';
 import { Symbol, SymbolScope } from '@CompilerLib/symbols';
 import nodeTypes from '@Basic4WebGL/nodeTypes';
+import { ArraySymbol } from '@Basic4WebGL/symbolTypes';
 import '@Basic4WebGL/transpilerRules';
 
 import AssignRule from '@Basic4WebGL/transpilerRules/jsRules/ruleSets/AssignRule';
@@ -32,6 +33,15 @@ const fnSym = (name: string, scopeName = 'main', fullScope = 'main') =>
 
 const paramSym = (name: string, fnName: string) =>
   new Symbol(name, 'Parameter', new SymbolScope(fnName, 'Function'), `main.${fnName}`, variant);
+
+const arrSym = (name: string, scopeName = 'main', scopeType = 'Module') =>
+  new ArraySymbol(name, 'Array', new SymbolScope(scopeName, scopeType), scopeName, 1);
+
+const fnArrSym = (name: string, fnName: string) =>
+  new ArraySymbol(name, 'Array', new SymbolScope(fnName, 'Function'), `main.${fnName}`, 1);
+
+const classArrSym = (name: string, className: string) =>
+  new ArraySymbol(name, 'Array', new SymbolScope(className, 'Class'), className, 1);
 
 const term = (v: string) => node(nodeTypes.Term, v);
 const emptyBlock = () => node(nodeTypes.Block, null, []);
@@ -87,9 +97,19 @@ describe('Assign rule', () => {
 // ─── Dim ──────────────────────────────────────────────────────────────────────
 
 describe('Dim rule', () => {
-  test('generates let with _createArray wrapper', () => {
-    const d = node(nodeTypes.Dim, varSym('x'), [emptyList(nodeTypes.VariableList)]);
-    expect(new DimRule().generate(d, undefined)).toBe('let main.x = _createArray([]);');
+  test('module-scope array emits without let', () => {
+    const d = node(nodeTypes.Dim, arrSym('arr'), [emptyList(nodeTypes.VariableList)]);
+    expect(new DimRule().generate(d, undefined)).toBe('main.arr = _createArray([]);');
+  });
+
+  test('function-scope array retains let', () => {
+    const d = node(nodeTypes.Dim, fnArrSym('arr', 'onenter'), [emptyList(nodeTypes.VariableList)]);
+    expect(new DimRule().generate(d, undefined)).toBe('let onenter_arr = _createArray([]);');
+  });
+
+  test('class-scope array emits prototype form without let', () => {
+    const d = node(nodeTypes.Dim, classArrSym('arr', 'Enemy'), [emptyList(nodeTypes.VariableList)]);
+    expect(new DimRule().generate(d, undefined)).toBe('Enemy.prototype.arr = _createArray([]);');
   });
 });
 
