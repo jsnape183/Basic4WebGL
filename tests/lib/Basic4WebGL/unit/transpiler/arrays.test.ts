@@ -96,6 +96,18 @@ describe('Array — index read and write', () => {
     expect(result.diagnostics).toHaveLength(0);
     expect(result.code).toContain('main.arr[0]');
   });
+
+  test('grid(2, 1) = x on 2D array emits main.grid[2][1]', () => {
+    const result = transpile('dim grid(5, 3)\ngrid(2, 1) = true');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.grid[2][1]');
+  });
+
+  test('print grid(2, 1) on 2D array emits main.grid[2][1]', () => {
+    const result = transpile('dim grid(5, 3)\nprint grid(2, 1)');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.grid[2][1]');
+  });
 });
 
 describe('Array — arrLength and join compile with module-level array', () => {

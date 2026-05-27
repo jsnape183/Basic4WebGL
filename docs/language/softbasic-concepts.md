@@ -595,7 +595,7 @@ Multi-dimensional typed arrays work the same way:
 
 ```basic
 dim grid(5, 3) as Tile()
-grid(2)(1).setActive(true)
+grid(2, 1).setActive(true)
 ```
 
 ### Typical usage — dynamic enemy list
