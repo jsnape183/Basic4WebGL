@@ -156,3 +156,38 @@ describe('Sprite — height', () => {
     expect(result.code).toContain('_sb.getSpriteHeight(');
   });
 });
+
+// ─── ExpressionList regression — numeric args still work after BoolExpression widening ──
+
+describe('ExpressionList — numeric arguments still parse correctly', () => {
+  test('function call with arithmetic args compiles', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [{ name: 'Main.bas', source: [
+        'function add(a, b)',
+        '  return a + b',
+        'endfunction',
+        'function test()',
+        '  dim x',
+        '  x = add(1 + 2, x * 3)',
+        'endfunction',
+      ].join('\n') }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('function call with multiple numeric args compiles', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [{ name: 'Main.bas', source: [
+        'function sum(a, b, c)',
+        '  return a + b + c',
+        'endfunction',
+        'function test()',
+        '  dim x',
+        '  x = sum(10, 20, 30)',
+        'endfunction',
+      ].join('\n') }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});
