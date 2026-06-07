@@ -300,3 +300,26 @@ describe('stage — setBackground', () => {
     expect(result.code).toContain('_sb.setBackground(setbackground_r');
   });
 });
+
+// ─── Text — setStyle ──────────────────────────────────────────────────────────
+
+describe('Text — setStyle', () => {
+  test('compiles without error', () => {
+    const result = transpileWithText([
+      'function test()',
+      '  dim t as Text("hi", 10, 10)',
+      '  t.setStyle(24, 255, 255, 0)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setTextStyle(', () => {
+    const result = transpileWithText([
+      'function test()',
+      '  dim t as Text("hi", 10, 10)',
+      '  t.setStyle(24, 255, 255, 0)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setTextStyle(');
+  });
+});

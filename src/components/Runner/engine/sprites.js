@@ -73,4 +73,8 @@ const _sbSprites = {
       ab.y < bb.y + bb.height
     );
   },
+  setTextStyle(obj, size, r, g, b) {
+    obj.style.fontSize = size;
+    obj.style.fill = `rgb(${r},${g},${b})`;
+  },
 };

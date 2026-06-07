@@ -17,4 +17,8 @@ function setAlpha(a)
     call("_sb.setAlpha(this._handle, setalpha_a)")
 endfunction
 
+function setStyle(size, r, g, b)
+    call("_sb.setTextStyle(this._handle, setstyle_size, setstyle_r, setstyle_g, setstyle_b)")
+endfunction
+
 EndClass
