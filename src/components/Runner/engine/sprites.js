@@ -75,6 +75,6 @@ const _sbSprites = {
   },
   setTextStyle(obj, size, r, g, b) {
     obj.style.fontSize = size;
-    obj.style.fill = `rgb(${r},${g},${b})`;
+    obj.style.fill = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
   },
 };

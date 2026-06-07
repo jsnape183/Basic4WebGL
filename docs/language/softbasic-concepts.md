@@ -210,7 +210,15 @@ endfunction
 
 Common key codes: 32 = Space, 13 = Enter, 37 = Left, 38 = Up, 39 = Right, 40 = Down, 65–90 = A–Z.
 
-Both functions are optional — define only the ones you need. If a module does not define `onkeydown`, key presses are silently ignored for that module.
+Both functions are **required** — the runtime calls them unconditionally on every key event. If either function is missing, the browser will throw a `ReferenceError` at runtime. If you do not need to handle a particular event, define it as an empty function:
+
+```basic
+function onkeydown(k)
+endfunction
+
+function onkeyup(k)
+endfunction
+```
 
 ---
 
