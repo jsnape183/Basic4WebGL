@@ -206,3 +206,50 @@ describe('ExpressionList — numeric arguments still parse correctly', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 });
+
+// ─── gfx — mouse input ────────────────────────────────────────────────────────
+
+describe('gfx — mouseX', () => {
+  test('compiles without error', () => {
+    const result = transpileWithGfx(
+      'function test()\n  dim x\n  x = gfx.mouseX()\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getMouseX()', () => {
+    const result = transpileWithGfx(
+      'function test()\n  dim x\n  x = gfx.mouseX()\nendfunction'
+    );
+    expect(result.code).toContain('_sb.getMouseX()');
+  });
+});
+
+describe('gfx — mouseY', () => {
+  test('compiles without error', () => {
+    const result = transpileWithGfx(
+      'function test()\n  dim y\n  y = gfx.mouseY()\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getMouseY()', () => {
+    const result = transpileWithGfx(
+      'function test()\n  dim y\n  y = gfx.mouseY()\nendfunction'
+    );
+    expect(result.code).toContain('_sb.getMouseY()');
+  });
+});
+
+describe('gfx — mouseDown', () => {
+  test('compiles without error', () => {
+    const result = transpileWithGfx(
+      'function test()\n  if gfx.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getMouseDown()', () => {
+    const result = transpileWithGfx(
+      'function test()\n  if gfx.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.code).toContain('_sb.getMouseDown()');
+  });
+});

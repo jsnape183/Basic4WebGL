@@ -7,6 +7,8 @@ const _sb = {
   ..._sbSprites,
 };
 
+_sb._initMouse(app.canvas || app.view);
+
 document.addEventListener('keydown', (e) => {
   _sb.registerKey(e.keyCode, true);
   onkeydown(e.keyCode);
