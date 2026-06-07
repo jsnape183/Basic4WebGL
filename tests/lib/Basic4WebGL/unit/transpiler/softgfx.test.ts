@@ -253,3 +253,50 @@ describe('gfx — mouseDown', () => {
     expect(result.code).toContain('_sb.getMouseDown()');
   });
 });
+
+// ─── stage — width, height, setBackground ─────────────────────────────────────
+
+describe('stage — width', () => {
+  test('compiles without error', () => {
+    const result = transpileWithStage(
+      'function test()\n  dim w\n  w = stage.width()\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getStageWidth()', () => {
+    const result = transpileWithStage(
+      'function test()\n  dim w\n  w = stage.width()\nendfunction'
+    );
+    expect(result.code).toContain('_sb.getStageWidth()');
+  });
+});
+
+describe('stage — height', () => {
+  test('compiles without error', () => {
+    const result = transpileWithStage(
+      'function test()\n  dim h\n  h = stage.height()\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getStageHeight()', () => {
+    const result = transpileWithStage(
+      'function test()\n  dim h\n  h = stage.height()\nendfunction'
+    );
+    expect(result.code).toContain('_sb.getStageHeight()');
+  });
+});
+
+describe('stage — setBackground', () => {
+  test('compiles without error', () => {
+    const result = transpileWithStage(
+      'function test()\n  stage.setBackground(20, 20, 40)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setBackground(', () => {
+    const result = transpileWithStage(
+      'function test()\n  stage.setBackground(20, 20, 40)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setBackground(');
+  });
+});

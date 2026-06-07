@@ -8,4 +8,13 @@ const _sbStage = {
   clear() {
     app.stage.removeChildren();
   },
+  getStageWidth() {
+    return app.renderer.width;
+  },
+  getStageHeight() {
+    return app.renderer.height;
+  },
+  setBackground(r, g, b) {
+    app.renderer.background.color = (r << 16) | (g << 8) | b;
+  },
 };
