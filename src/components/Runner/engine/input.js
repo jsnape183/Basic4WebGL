@@ -30,5 +30,8 @@ const _sbInput = {
     canvas.addEventListener('pointerup', () => {
       this._mouseDown = false;
     });
+    canvas.addEventListener('pointercancel', () => {
+      this._mouseDown = false;
+    });
   },
 };
