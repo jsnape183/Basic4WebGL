@@ -19,7 +19,13 @@ function log2(n):return call("Math.log2(log2_n)"):endfunction
 function log10(n):return call("Math.log10(log10_n)"):endfunction
 function pi(): return call("Math.PI"):endfunction
 function pow(x,y):return call("Math.pow(pow_x,pow_y)"):endfunction
-function random(max):return call("Math.random(random_max)"):endfunction
+function random(max):return call("Math.random()*random_max"):endfunction
+function randomint(max):return call("Math.floor(Math.random()*randomint_max)"):endfunction
+function min(a, b):return call("Math.min(min_a,min_b)"):endfunction
+function max(a, b):return call("Math.max(max_a,max_b)"):endfunction
+function clamp(v, lo, hi):return call("Math.min(Math.max(clamp_v,clamp_lo),clamp_hi)"):endfunction
+function lerp(a, b, t):return call("lerp_a+(lerp_b-lerp_a)*lerp_t"):endfunction
+function distance(x1, y1, x2, y2):return call("Math.sqrt(Math.pow(distance_x2-distance_x1,2)+Math.pow(distance_y2-distance_y1,2))"):endfunction
 function round(n):return call("Math.round(round_n)"):endfunction
 function sign(n):return call("Math.sign(sign_n)"):endfunction
 function sin(n):return call("Math.sin(sin_n)"):endfunction

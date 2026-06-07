@@ -434,11 +434,29 @@ Control fill and stroke style for drawing.
 
 Standard maths functions (delegates to `Math.*`).
 
-`abs`, `acos`, `asin`, `atan`, `atan2`, `ceil`, `cos`, `floor`, `log`, `log2`, `log10`, `pi`, `pow`, `random`, `round`, `sin`, `sqrt`, `tan`, `trunc`, `val`
+Trig and general: `abs`, `acos`, `asin`, `atan`, `atan2`, `ceil`, `cos`, `floor`, `log`, `log2`, `log10`, `pi`, `pow`, `round`, `sign`, `sin`, `sqrt`, `tan`, `trunc`, `val`
+
+Game utilities:
+
+| Function | Returns | Description |
+|---|---|---|
+| `math.random(max)` | float | Random float 0..max |
+| `math.randomint(max)` | integer | Random integer 0..max-1 |
+| `math.min(a, b)` | number | Smaller of two values |
+| `math.max(a, b)` | number | Larger of two values |
+| `math.clamp(v, lo, hi)` | number | Constrain value to range |
+| `math.lerp(a, b, t)` | number | Linear interpolation (t = 0..1) |
+| `math.distance(x1, y1, x2, y2)` | number | Euclidean distance between two points |
 
 ```basic
 dim angle
 angle = math.atan2(dy, dx)
+
+' Clamp speed to max
+speed = math.clamp(speed, 0, maxSpeed)
+
+' Random spawn position
+x = math.randomint(800)
 ```
 
 ### `string`
@@ -452,8 +470,13 @@ String utility functions.
 | `string.ucase(s)` | Uppercase |
 | `string.str(n)` | Number to string |
 | `string.substr(s, start, end)` | Substring |
-| `string.split(s, c)` | Split by character |
+| `string.split(s, c)` | Split by character — returns array |
 | `string.trim(s)` | Trim whitespace |
+| `string.replace(s, a, b)` | Replace all occurrences of `a` with `b` |
+| `string.contains(s, sub)` | True if `sub` is found in `s` |
+| `string.indexof(s, sub)` | Index of `sub` in `s`, or -1 |
+| `string.char(n)` | Character from ASCII code |
+| `string.asc(s)` | ASCII code of first character |
 
 ### `gfx`
 

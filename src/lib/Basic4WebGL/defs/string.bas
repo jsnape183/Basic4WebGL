@@ -8,4 +8,9 @@ function str(n):return call("str_n.toString()"):endfunction
 function substr(s, start, end):return call("substr_s.substring(substr_start,substr_end)"):endfunction
 function trim(s):return call("trim_s.trim()"):endfunction
 function ucase(s):return call("ucase_s.toUpperCase()"):endfunction
+function replace(s, a, b):return call("replace_s.replaceAll(replace_a,replace_b)"):endfunction
+function contains(s, sub):return call("contains_s.includes(contains_sub)"):endfunction
+function indexof(s, sub):return call("indexof_s.indexOf(indexof_sub)"):endfunction
+function char(n):return call("String.fromCharCode(char_n)"):endfunction
+function asc(s):return call("asc_s.charCodeAt(0)"):endfunction
 ' End of string functions
