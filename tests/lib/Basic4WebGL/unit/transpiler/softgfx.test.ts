@@ -1,0 +1,158 @@
+import { readFileSync } from 'node:fs';
+import { describe, test, expect } from 'vitest';
+import compiler from '@Basic4WebGL/index';
+import '@Basic4WebGL/transpilerRules';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const transformSource = readFileSync('src/lib/Basic4WebGL/defs/transform.bas', 'utf-8');
+const spriteSource = readFileSync('src/lib/Basic4WebGL/defs/sprite.bas', 'utf-8');
+const gfxSource = readFileSync('src/lib/Basic4WebGL/defs/gfx.bas', 'utf-8');
+const stageSource = readFileSync('src/lib/Basic4WebGL/defs/stage.bas', 'utf-8');
+const textSource = readFileSync('src/lib/Basic4WebGL/defs/text.bas', 'utf-8');
+const penSource = readFileSync('src/lib/Basic4WebGL/defs/pen.bas', 'utf-8');
+
+const transpileWithSprite = (source: string) =>
+  compiler.transpile({
+    lib: [],
+    files: [
+      { name: 'ObjectTransform.bas', source: transformSource },
+      { name: 'Sprite.bas', source: spriteSource },
+      { name: 'Main.bas', source },
+    ],
+  });
+
+const transpileWithGfx = (source: string) =>
+  compiler.transpile({
+    lib: [{ name: 'gfx', source: gfxSource }],
+    files: [{ name: 'Main.bas', source }],
+  });
+
+const transpileWithStage = (source: string) =>
+  compiler.transpile({
+    lib: [{ name: 'stage', source: stageSource }],
+    files: [{ name: 'Main.bas', source }],
+  });
+
+const transpileWithText = (source: string) =>
+  compiler.transpile({
+    lib: [],
+    files: [
+      { name: 'Text.bas', source: textSource },
+      { name: 'Main.bas', source },
+    ],
+  });
+
+const transpileWithPen = (source: string) =>
+  compiler.transpile({
+    lib: [{ name: 'pen', source: penSource }],
+    files: [{ name: 'Main.bas', source }],
+  });
+
+// ─── Sprite — new methods ─────────────────────────────────────────────────────
+
+describe('Sprite — setScale', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setScale(2, 2)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setScale(', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setScale(2, 2)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setScale(');
+  });
+});
+
+describe('Sprite — setFlip', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setFlip(true, false)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setFlip(', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setFlip(true, false)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setFlip(');
+  });
+});
+
+describe('Sprite — setVisible', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setVisible(false)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setVisible(', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setVisible(false)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setVisible(');
+  });
+});
+
+describe('Sprite — setTexture', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setTexture("other.png")\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setTexture(', () => {
+    const result = transpileWithSprite(
+      'function test()\n  dim s as Sprite("t.png")\n  s.setTexture("other.png")\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setTexture(');
+  });
+});
+
+describe('Sprite — width', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim s as Sprite("t.png")',
+      '  dim w',
+      '  w = s.width()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getSpriteWidth(', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim s as Sprite("t.png")',
+      '  dim w',
+      '  w = s.width()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.getSpriteWidth(');
+  });
+});
+
+describe('Sprite — height', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim s as Sprite("t.png")',
+      '  dim h',
+      '  h = s.height()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getSpriteHeight(', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim s as Sprite("t.png")',
+      '  dim h',
+      '  h = s.height()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.getSpriteHeight(');
+  });
+});

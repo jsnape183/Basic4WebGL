@@ -18,6 +18,25 @@ const _sbSprites = {
   setAlpha(obj, a) {
     obj.alpha = a;
   },
+  setScale(obj, sx, sy) {
+    obj.scale.set(sx, sy);
+  },
+  setFlip(obj, h, v) {
+    obj.scale.x = h ? -Math.abs(obj.scale.x) : Math.abs(obj.scale.x);
+    obj.scale.y = v ? -Math.abs(obj.scale.y) : Math.abs(obj.scale.y);
+  },
+  setVisible(obj, v) {
+    obj.visible = v;
+  },
+  setTexture(obj, path) {
+    obj.texture = _sbAssets.get(path);
+  },
+  getSpriteWidth(obj) {
+    return obj.width;
+  },
+  getSpriteHeight(obj) {
+    return obj.height;
+  },
   createText(content, x, y) {
     const textStyle = new PIXI.TextStyle({
       fontFamily: 'Arial',

@@ -19,12 +19,12 @@ class ExpressionListRule implements IParserRule {
       return new ExpressionListNode(null, undefined, loc);
     }
     let expr = [
-      getParserRule('Expression').parse(tokenStream, symbolTable, undefined),
+      getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined),
     ];
     while (check(tokens.Comma, tokenStream.current())) {
       matchAndMove(tokens.Comma, tokenStream);
       expr.push(
-        getParserRule('Expression').parse(tokenStream, symbolTable, undefined)
+        getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined)
       );
     }
     matchAndMove(tokens.CloseParen, tokenStream);
