@@ -189,6 +189,29 @@ endfunction
 
 The underlying `deltaTime` is passed to the runtime but not yet exposed as a parameter in user code — treat each call as one frame at 60 fps.
 
+### `onkeydown(keyCode)` and `onkeyup(keyCode)`
+
+Called when a key is pressed or released. `keyCode` is the standard browser key code integer.
+
+```basic
+function onkeydown(k)
+    if k == 32          ' Space
+        jump()
+    endif
+    if k == 37          ' Left arrow
+        moveLeft()
+    endif
+endfunction
+
+function onkeyup(k)
+    ' react to key release
+endfunction
+```
+
+Common key codes: 32 = Space, 13 = Enter, 37 = Left, 38 = Up, 39 = Right, 40 = Down, 65–90 = A–Z.
+
+Both functions are optional — define only the ones you need. If a module does not define `onkeydown`, key presses are silently ignored for that module.
+
 ---
 
 ## Constructors
@@ -379,6 +402,12 @@ A display object wrapping a PIXI sprite. Created from a project asset image.
 | `getY` | `()` | Returns current y position |
 | `setAngle` | `(angle)` | Sets rotation in degrees |
 | `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
+| `setScale` | `(sx, sy)` | Sets scale on both axes (`1` = natural size) |
+| `setFlip` | `(h, v)` | Flips horizontally and/or vertically. Pass `true`/`false` for each axis. Preserves scale magnitude. |
+| `setVisible` | `(v)` | Shows (`true`) or hides (`false`) the sprite without removing it from the stage |
+| `setTexture` | `(path)` | Swaps the sprite image. `path` must be a pre-loaded asset (declared as a `Sprite` somewhere in the program). |
+| `width` | `()` | Returns current width in pixels (after scale) |
+| `height` | `()` | Returns current height in pixels (after scale) |
 
 ```basic
 dim bunny as Sprite("bunny.png")
@@ -396,6 +425,7 @@ A display object wrapping a PIXI text node.
 | `setText` | `(content)` | Updates the displayed string |
 | `setPosition` | `(x, y)` | Moves the text object |
 | `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
+| `setStyle` | `(size, r, g, b)` | Sets font size and fill colour in one call (r/g/b: 0–255) |
 
 ```basic
 dim label as Text("Score: 0", 10, 10)
@@ -410,6 +440,9 @@ stage.add(label)
 | `stage.add(obj)` | Adds a display object to the stage |
 | `stage.remove(obj)` | Removes a display object from the stage |
 | `stage.clear()` | Removes all display objects |
+| `stage.width()` | Returns the canvas width in pixels |
+| `stage.height()` | Returns the canvas height in pixels |
+| `stage.setBackground(r, g, b)` | Sets the background colour (0–255 per channel) |
 
 ### `drawing`
 
@@ -429,6 +462,7 @@ Control fill and stroke style for drawing.
 |---|---|
 | `pen.setFillColor(r, g, b)` | Set fill colour (0–255) |
 | `pen.setLineColor(r, g, b)` | Set stroke colour |
+| `pen.setLineWidth(n)` | Set stroke width in pixels (default: 2) |
 
 ### `math`
 
@@ -486,6 +520,9 @@ Top-level graphics helpers.
 |---|---|
 | `gfx.boxCollide(a, b)` | Returns true if two objects' bounding boxes overlap |
 | `gfx.getKeyDown(keycode)` | Returns true if the key is currently held |
+| `gfx.mouseX()` | Returns the pointer's current X position, canvas-relative |
+| `gfx.mouseY()` | Returns the pointer's current Y position, canvas-relative |
+| `gfx.mouseDown()` | Returns true if any mouse button is currently held |
 
 ---
 
