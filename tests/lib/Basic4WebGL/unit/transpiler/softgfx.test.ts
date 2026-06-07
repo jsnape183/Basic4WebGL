@@ -323,3 +323,20 @@ describe('Text — setStyle', () => {
     expect(result.code).toContain('_sb.setTextStyle(');
   });
 });
+
+// ─── pen — setLineWidth ───────────────────────────────────────────────────────
+
+describe('pen — setLineWidth', () => {
+  test('compiles without error', () => {
+    const result = transpileWithPen(
+      'function test()\n  pen.setLineWidth(4)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setLineWidth(setlinewidth_n', () => {
+    const result = transpileWithPen(
+      'function test()\n  pen.setLineWidth(4)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setLineWidth(setlinewidth_n');
+  });
+});
