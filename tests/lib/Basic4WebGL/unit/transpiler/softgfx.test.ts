@@ -297,6 +297,6 @@ describe('stage — setBackground', () => {
     const result = transpileWithStage(
       'function test()\n  stage.setBackground(20, 20, 40)\nendfunction'
     );
-    expect(result.code).toContain('_sb.setBackground(');
+    expect(result.code).toContain('_sb.setBackground(setbackground_r');
   });
 });
