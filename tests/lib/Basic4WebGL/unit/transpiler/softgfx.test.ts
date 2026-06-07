@@ -190,4 +190,19 @@ describe('ExpressionList — numeric arguments still parse correctly', () => {
     });
     expect(result.diagnostics).toHaveLength(0);
   });
+  test('function call with boolean literal arg compiles', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [{ name: 'Main.bas', source: [
+        'function toggle(flag)',
+        '  return flag',
+        'endfunction',
+        'function test()',
+        '  dim x',
+        '  x = toggle(true)',
+        'endfunction',
+      ].join('\n') }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });
