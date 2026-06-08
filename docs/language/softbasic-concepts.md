@@ -195,10 +195,10 @@ Called when a key is pressed or released. `keyCode` is the standard browser key 
 
 ```basic
 function onkeydown(k)
-    if k == 32          ' Space
+    if k = 32          ' Space
         jump()
     endif
-    if k == 37          ' Left arrow
+    if k = 37          ' Left arrow
         moveLeft()
     endif
 endfunction
@@ -347,7 +347,7 @@ All identifiers are lowercased by the compiler. `myCar` and `mycar` are the same
 ### If / EndIf
 
 ```basic
-if x == 10
+if x = 10
     print "ten"
 endif
 ```
@@ -691,6 +691,6 @@ endfunction
 
 - Whether `print` accepts multiple arguments / expressions
 - String concatenation syntax
-- Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=` (inferred from conditionals tests)
-- Boolean operators: `and`, `or`, `not` (inferred from parser rules)
+- Comparison operators: `=` (equals), `<>` (not-equals), `<`, `>`, `<=`, `>=`
+- Boolean operators: `and`, `or`, `not`
 - `deltaTime` exposure in `onupdate()` parameters

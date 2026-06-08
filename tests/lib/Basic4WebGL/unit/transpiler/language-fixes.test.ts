@@ -103,3 +103,35 @@ describe('for loop — auto-declares loop variable', () => {
     expect(result.code).toContain('test_i');
   });
 });
+
+// ─── Fix 3: Truthy if — no = true required ────────────────────────────────────
+
+describe('truthy if — function call result as condition', () => {
+  test('if functioncall() compiles without = true', () => {
+    const result = transpile([
+      'function isReady()',
+      '  return true',
+      'endfunction',
+      'function test()',
+      '  if isReady()',
+      '    print "yes"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('if functioncall(arg) compiles without = true', () => {
+    const result = transpile([
+      'function check(n)',
+      '  return n > 0',
+      'endfunction',
+      'function test()',
+      '  if check(37)',
+      '    print "key"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});
