@@ -8,15 +8,17 @@ const penSource     = readFileSync('src/lib/Basic4WebGL/defs/pen.bas',     'utf-
 const drawingSource = readFileSync('src/lib/Basic4WebGL/defs/drawing.bas', 'utf-8');
 const gfxSource     = readFileSync('src/lib/Basic4WebGL/defs/gfx.bas',     'utf-8');
 const mathSource    = readFileSync('src/lib/Basic4WebGL/defs/math.bas',    'utf-8');
+const arraySource   = readFileSync('src/lib/Basic4WebGL/defs/array.bas',   'utf-8');
 
 const transpileGame = (source: string) =>
   compiler.transpile({
     lib: [
+      { name: 'math',    source: mathSource    },
+      { name: 'array',   source: arraySource   },
       { name: 'stage',   source: stageSource   },
       { name: 'pen',     source: penSource     },
       { name: 'drawing', source: drawingSource },
       { name: 'gfx',     source: gfxSource     },
-      { name: 'math',    source: mathSource    },
     ],
     files: [{ name: 'Main.bas', source }],
   });

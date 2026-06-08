@@ -268,13 +268,16 @@ class Symbols {
   }
   getAll(
     type: string = 'Variable',
-    scope: SymbolScope = this.currentScope
+    scope: SymbolScope = this.currentScope,
+    fullScope?: string
   ): Array<Symbol> {
     const result: Array<Symbol> = Object.values(
       Object.fromEntries(
         Object.entries(this.table).filter(
           ([, _value]) =>
-            _value.type === type && _value.scope.name === scope.name
+            _value.type === type &&
+            _value.scope.name === scope.name &&
+            (fullScope === undefined || _value.fullScope === fullScope)
         )
       )
     );

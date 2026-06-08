@@ -33,7 +33,8 @@ class FunctionRule implements IParserRule {
       );
       parameters = symbolTable.getAll(
         symbolTypes.Parameter,
-        symbolTable.getScope()
+        symbolTable.getScope(),
+        symbolTable.getFullScopeName()
       );
       matchAndMove(tokens.CloseParen, tokenStream);
       matchAndMove(newLines, tokenStream);
