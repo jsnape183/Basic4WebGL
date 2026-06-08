@@ -122,9 +122,13 @@ describe('truthy if — function call result as condition', () => {
   });
 
   test('if functioncall(arg) compiles without = true', () => {
+    // Note: the function body uses `return true` rather than `return n > 0`
+    // because the type validator requires Number on both sides of arithmetic
+    // comparisons, and parameters default to Variant. The call site is what
+    // we are testing — that check(37) used as a bare if-condition compiles.
     const result = transpile([
       'function check(n)',
-      '  return n > 0',
+      '  return true',
       'endfunction',
       'function test()',
       '  if check(37)',
