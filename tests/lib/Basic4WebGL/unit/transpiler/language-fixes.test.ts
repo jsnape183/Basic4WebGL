@@ -39,7 +39,12 @@ describe('bare return — early exit from void function', () => {
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('return');
+    expect(result.code).toContain('return double_n');
+  });
+
+  test('return at top level emits a diagnostic error', () => {
+    const result = transpile('return\n');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
   });
 });
 
