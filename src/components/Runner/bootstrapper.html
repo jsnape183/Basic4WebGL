@@ -53,6 +53,13 @@
       window.addEventListener('unhandledrejection', (e) => {
         _throwError({ message: e.reason?.message ?? String(e.reason) });
       });
+
+      // Catch synchronous script errors that occur outside the async IIFE
+      // (e.g. engine initialisation before app is ready) and surface them in the IDE.
+      window.onerror = (_msg, _src, _line, _col, error) => {
+        _throwError({ message: error?.message ?? String(_msg) });
+        return true;
+      };
       </script>
       <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.x/dist/pixi.min.js"></script>
       <script type="text/javascript">
@@ -72,9 +79,23 @@
           app.stage.interactive = true;
           document.body.appendChild(app.canvas);
 
+          // Mouse tracking must be attached after app.canvas exists.
+          _sb._initMouse(app.canvas);
+
           await _sb.preloadFromLocalStorage(_sbProjectId);
 
           //${transpiled};
+
+          // Key listeners are registered after the transpiled code so that
+          // _sbClasses is populated and onkeydown/onkeyup resolve correctly.
+          document.addEventListener('keydown', (e) => {
+            _sb.registerKey(e.keyCode, true);
+            _sb._sbClasses.forEach((c) => { if (c.symbol.onkeydown) c.symbol.onkeydown(e.keyCode); });
+          });
+          document.addEventListener('keyup', (e) => {
+            _sb.registerKey(e.keyCode, false);
+            _sb._sbClasses.forEach((c) => { if (c.symbol.onkeyup) c.symbol.onkeyup(e.keyCode); });
+          });
 
           app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
 
