@@ -18,9 +18,11 @@ class ForExpressionRule implements IParserRule {
     const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
-    const forSymbol = symbolTable.check(name, symbolTypes.Variable)
-      ? symbolTable.get(name, symbolTypes.Variable)
-      : symbolTable.add(name, symbolTypes.Variable, symbolTable.getScope(), builtInTypes.Number);
+    const currentScope = symbolTable.getScope();
+    const currentFullScope = symbolTable.getFullScopeName();
+    const forSymbol = symbolTable.check(name, symbolTypes.Variable, currentScope, currentFullScope)
+      ? symbolTable.get(name, symbolTypes.Variable, currentScope, currentFullScope)
+      : symbolTable.add(name, symbolTypes.Variable, currentScope, builtInTypes.Number);
     if (check(tokens.In, tokenStream.current())) {
       matchAndMove(tokens.In, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);

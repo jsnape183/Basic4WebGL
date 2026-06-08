@@ -226,9 +226,10 @@ class Symbols {
   get(
     name: string,
     type: string = 'Variable',
-    scope: SymbolScope | undefined = undefined
+    scope: SymbolScope | undefined = undefined,
+    fullScope: string = ''
   ): Symbol {
-    const symbol = this.retrieveSymbol(name, type, scope);
+    const symbol = this.retrieveSymbol(name, type, scope, fullScope);
     if (symbol) {
       return symbol;
     }
@@ -242,9 +243,10 @@ class Symbols {
   check(
     name: string,
     type: string,
-    scope: SymbolScope | undefined = undefined
+    scope: SymbolScope | undefined = undefined,
+    fullScope: string = ''
   ) {
-    return this.retrieveSymbol(name, type, scope) !== undefined;
+    return this.retrieveSymbol(name, type, scope, fullScope) !== undefined;
   }
   getAll(
     type: string = 'Variable',

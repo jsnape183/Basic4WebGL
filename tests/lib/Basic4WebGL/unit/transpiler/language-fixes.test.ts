@@ -85,4 +85,19 @@ describe('for loop — auto-declares loop variable', () => {
     expect(result.diagnostics).toHaveLength(0);
     expect(result.code).toContain('test_i');
   });
+
+  test('for loop at module scope with prior dim compiles', () => {
+    const result = compiler.transpile({
+      lib: [],
+      files: [{ name: 'Main.bas', source: [
+        'dim i',
+        'function test()',
+        '  for i = 0 to 9',
+        '    print i',
+        '  next',
+        'endfunction',
+      ].join('\n') }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });
