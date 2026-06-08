@@ -1,4 +1,4 @@
-import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
 import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
 import IParserRule, {
   RegisterParserRule,
@@ -15,6 +15,10 @@ class ReturnRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     const loc = tokenStream.current().loc();
     matchAndMove(tokens.Return, tokenStream);
+    if (check(newLines, tokenStream.current())) {
+      matchAndMove(newLines, tokenStream);
+      return new FunctionReturnNode(null, null, loc);
+    }
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,
       symbolTable,
