@@ -12,8 +12,9 @@ import ParenNode from '@Basic4WebGL/nodes/ParenNode';
 import StringNode from '@Basic4WebGL/nodes/StringNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import UMinusNode from '@Basic4WebGL/nodes/UMinusNode';
-import { factors } from '../../../parserConfig';
+import { factors, booleans } from '../../../parserConfig';
 import tokens from '@Basic4WebGL/tokens';
+import BoolNode from '@Basic4WebGL/nodes/BoolNode';
 
 @RegisterParserRule('Factor')
 class FactorRule implements IParserRule {
@@ -50,6 +51,14 @@ class FactorRule implements IParserRule {
         tokenStream,
         symbolTable,
         undefined
+      );
+    }
+    if (check(booleans, tokenStream.current())) {
+      matchAndMove(booleans, tokenStream);
+      return new TermNode(
+        tokenStream.prev().text,
+        new BoolNode(tokenStream.prev().text, loc),
+        loc
       );
     }
     if (!check(factors, tokenStream.current())) {
