@@ -115,11 +115,23 @@ describe('AnimatedSprite — visual methods', () => {
     );
     expect(result.diagnostics).toHaveLength(0);
   });
+  test('setScale emits _sb.setAnimScale(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setScale(2, 2)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setAnimScale(');
+  });
   test('setFlip compiles without error', () => {
     const result = transpileWithAnimSprite(
       'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setFlip(true, false)\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
+  });
+  test('setFlip emits _sb.setAnimFlip(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setFlip(true, false)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setAnimFlip(');
   });
   test('setVisible compiles without error', () => {
     const result = transpileWithAnimSprite(
@@ -127,17 +139,35 @@ describe('AnimatedSprite — visual methods', () => {
     );
     expect(result.diagnostics).toHaveLength(0);
   });
+  test('setVisible emits _sb.setAnimVisible(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setVisible(false)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setAnimVisible(');
+  });
   test('setAlpha compiles without error', () => {
     const result = transpileWithAnimSprite(
       'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setAlpha(0.5)\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
   });
+  test('setAlpha emits _sb.setAnimAlpha(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setAlpha(0.5)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setAnimAlpha(');
+  });
   test('setAngle compiles without error', () => {
     const result = transpileWithAnimSprite(
       'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setAngle(45)\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
+  });
+  test('setAngle emits _sb.setAnimAngle(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setAngle(45)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setAnimAngle(');
   });
   test('width compiles without error', () => {
     const result = transpileWithAnimSprite([
@@ -149,6 +179,16 @@ describe('AnimatedSprite — visual methods', () => {
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
   });
+  test('width emits _sb.getAnimWidth(', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim w',
+      '  w = s.width()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.getAnimWidth(');
+  });
   test('height compiles without error', () => {
     const result = transpileWithAnimSprite([
       'function test()',
@@ -158,6 +198,16 @@ describe('AnimatedSprite — visual methods', () => {
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
+  });
+  test('height emits _sb.getAnimHeight(', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim h',
+      '  h = s.height()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.getAnimHeight(');
   });
 });
 
