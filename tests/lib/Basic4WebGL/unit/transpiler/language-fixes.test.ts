@@ -139,3 +139,64 @@ describe('truthy if — function call result as condition', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 });
+
+// ─── Fix 4: else / elseif ─────────────────────────────────────────────────────
+
+describe('if/else/elseif', () => {
+  test('if/else compiles and emits both branches', () => {
+    const result = transpile([
+      'function test(x)',
+      '  if x = 1',
+      '    print "one"',
+      '  else',
+      '    print "other"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('else{');
+  });
+
+  test('if/elseif compiles and emits else if', () => {
+    const result = transpile([
+      'function test(x)',
+      '  if x = 1',
+      '    print "one"',
+      '  elseif x = 2',
+      '    print "two"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('else if(');
+  });
+
+  test('if/elseif/else chain compiles and emits both else if and else', () => {
+    const result = transpile([
+      'function test(x)',
+      '  if x = 1',
+      '    print "one"',
+      '  elseif x = 2',
+      '    print "two"',
+      '  else',
+      '    print "other"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('else if(');
+    expect(result.code).toContain('else{');
+  });
+
+  test('plain if without else still works', () => {
+    const result = transpile([
+      'function test(x)',
+      '  if x = 1',
+      '    print "one"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).not.toContain('else');
+  });
+});

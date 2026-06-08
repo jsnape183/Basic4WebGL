@@ -226,6 +226,18 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchPattern(input, /^elseif(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
+      token: tokens.ElseIf,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchPattern(input, /^else(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
+      token: tokens.Else,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchPattern(input, /^if(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.If,
     }),
