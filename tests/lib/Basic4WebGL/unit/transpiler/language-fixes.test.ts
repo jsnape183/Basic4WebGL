@@ -86,7 +86,7 @@ describe('for loop — auto-declares loop variable', () => {
     expect(result.code).toContain('test_i');
   });
 
-  test('for loop at module scope with prior dim compiles', () => {
+  test('module-scope dim i and function for i produce distinct symbols', () => {
     const result = compiler.transpile({
       lib: [],
       files: [{ name: 'Main.bas', source: [
@@ -99,5 +99,7 @@ describe('for loop — auto-declares loop variable', () => {
       ].join('\n') }],
     });
     expect(result.diagnostics).toHaveLength(0);
+    // function-scoped i emits as test_i, confirming it's distinct from module-level i
+    expect(result.code).toContain('test_i');
   });
 });
