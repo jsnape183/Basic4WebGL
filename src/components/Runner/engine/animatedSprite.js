@@ -16,12 +16,15 @@ const _sbAnimatedSprites = {
     }
     const pixi = new PIXI.AnimatedSprite(frames);
     pixi.anchor.set(0.5);
-    app.stage.addChild(pixi);
-    return { pixi, frames, animations: new Map(), currentAnim: null, playing: false };
+    pixi._allFrames = frames;
+    pixi._animations = new Map();
+    pixi._currentAnim = null;
+    pixi._playing = false;
+    return pixi;
   },
 
   addAnim(handle, name, startFrame, endFrame, fps, loop) {
-    handle.animations.set(String(name), {
+    handle._animations.set(String(name), {
       startFrame: Number(startFrame),
       endFrame:   Number(endFrame),
       fps:        Number(fps),
@@ -31,50 +34,50 @@ const _sbAnimatedSprites = {
 
   playAnim(handle, name) {
     const key = String(name);
-    const def = handle.animations.get(key);
+    const def = handle._animations.get(key);
     if (!def) return;
-    handle.pixi.textures = handle.frames.slice(def.startFrame, def.endFrame + 1);
-    handle.pixi.animationSpeed = def.fps / 60;
-    handle.pixi.loop = def.loop;
-    handle.pixi.onComplete = null;
-    handle.currentAnim = key;
-    handle.playing = true;
+    handle.textures = handle._allFrames.slice(def.startFrame, def.endFrame + 1);
+    handle.animationSpeed = def.fps / 60;
+    handle.loop = def.loop;
+    handle.onComplete = null;
+    handle._currentAnim = key;
+    handle._playing = true;
     if (!def.loop) {
-      handle.pixi.onComplete = () => { handle.playing = false; };
+      handle.onComplete = () => { handle._playing = false; };
     }
-    handle.pixi.gotoAndPlay(0);
+    handle.gotoAndPlay(0);
   },
 
   isPlayingAnim(handle, name) {
-    return (handle.currentAnim === String(name) && handle.playing) ? 1 : 0;
+    return (handle._currentAnim === String(name) && handle._playing) ? 1 : 0;
   },
 
   setAnimAngle(handle, angle) {
-    handle.pixi.angle = Number(angle);
+    handle.angle = Number(angle);
   },
 
   setAnimAlpha(handle, a) {
-    handle.pixi.alpha = Number(a);
+    handle.alpha = Number(a);
   },
 
   setAnimScale(handle, sx, sy) {
-    handle.pixi.scale.set(Number(sx), Number(sy));
+    handle.scale.set(Number(sx), Number(sy));
   },
 
   setAnimFlip(handle, h, v) {
-    handle.pixi.scale.x = h ? -Math.abs(handle.pixi.scale.x) : Math.abs(handle.pixi.scale.x);
-    handle.pixi.scale.y = v ? -Math.abs(handle.pixi.scale.y) : Math.abs(handle.pixi.scale.y);
+    handle.scale.x = h ? -Math.abs(handle.scale.x) : Math.abs(handle.scale.x);
+    handle.scale.y = v ? -Math.abs(handle.scale.y) : Math.abs(handle.scale.y);
   },
 
   setAnimVisible(handle, v) {
-    handle.pixi.visible = Boolean(v);
+    handle.visible = Boolean(v);
   },
 
   getAnimWidth(handle) {
-    return handle.pixi.width;
+    return handle.width;
   },
 
   getAnimHeight(handle) {
-    return handle.pixi.height;
+    return handle.height;
   },
 };
