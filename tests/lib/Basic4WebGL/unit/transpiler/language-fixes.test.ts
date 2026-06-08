@@ -140,7 +140,41 @@ describe('truthy if — function call result as condition', () => {
   });
 });
 
-// ─── Fix 4: else / elseif ─────────────────────────────────────────────────────
+// ─── Fix 4: Module function shadowing ────────────────────────────────────────
+
+describe('module function lookup is scoped to the module', () => {
+  test('user-defined clear(x) does not shadow stage.clear()', () => {
+    // If the scope-priority search is used, the module-level clear(x) (outer scope)
+    // wins over stage.clear() (inner scope), giving "expects 1 arguments, got 0".
+    const result = compiler.transpile({
+      lib: [],
+      files: [
+        {
+          name: 'stage',
+          source: [
+            'function clear()',
+            '  call("_sb.clear()")',
+            'endfunction',
+          ].join('\n'),
+        },
+        {
+          name: 'Main.bas',
+          source: [
+            'function clear(x)',
+            '  print x',
+            'endfunction',
+            'function game()',
+            '  stage.clear()',
+            'endfunction',
+          ].join('\n'),
+        },
+      ],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});
+
+// ─── Fix 5: else / elseif ─────────────────────────────────────────────────────
 
 describe('if/else/elseif', () => {
   test('if/else compiles and emits both branches', () => {

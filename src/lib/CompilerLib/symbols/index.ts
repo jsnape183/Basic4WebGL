@@ -240,6 +240,24 @@ class Symbols {
       } has not been declared yet.`
     );
   }
+  /** Lookup by name and type within a specific scope name, ignoring fullScope.
+   * Used by module rules where the function was registered under a different
+   * fullScope than the current call-site fullScope. */
+  getInScope(name: string, type: string, scopeName: string): Symbol {
+    const formattedName = name.toLowerCase();
+    const match = this.table.find(
+      (s) =>
+        s.name.toLowerCase() === formattedName &&
+        this.isMatchingType(type, s.type) &&
+        s.scope.name === scopeName
+    );
+    if (!match) {
+      throw new SymbolError(
+        `${type} ${name} in ${scopeName} has not been declared yet.`
+      );
+    }
+    return match;
+  }
   check(
     name: string,
     type: string,

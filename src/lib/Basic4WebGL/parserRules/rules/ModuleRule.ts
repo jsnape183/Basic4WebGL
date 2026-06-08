@@ -23,7 +23,7 @@ class ModuleRule implements IParserRule {
     try {
       matchAndMove(tokens.Variable, tokenStream);
       const functionName = tokenStream.prev().text;
-      const functionSymbol = symbolTable.get(functionName, symbolTypes.Function);
+      const functionSymbol = symbolTable.getInScope(functionName, symbolTypes.Function, name);
       node = getParserRule('FunctionCall').parse(
         tokenStream,
         symbolTable,
