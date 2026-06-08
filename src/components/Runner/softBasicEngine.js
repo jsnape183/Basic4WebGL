@@ -5,4 +5,5 @@ const _sb = {
   ..._sbDrawing,
   ..._sbStage,
   ..._sbSprites,
+  ..._sbAnimatedSprites,
 };

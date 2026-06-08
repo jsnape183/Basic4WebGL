@@ -4,6 +4,7 @@ import sbAssets from './engine/assets.js?raw';
 import sbDrawing from './engine/drawing.js?raw';
 import sbStage from './engine/stage.js?raw';
 import sbSprites from './engine/sprites.js?raw';
+import sbAnimatedSprites from './engine/animatedSprite.js?raw';
 import softBasicEngine from './softBasicEngine.js?raw';
 import bootstrapper from './bootstrapper.html?raw';
 
@@ -29,7 +30,7 @@ const Runner: React.FC<RunnerProps> = ({
         srcDoc={bootstrapper
           .replace(
             '//${softBasicGFX}',
-            [sbLifecycle, sbInput, sbAssets, sbDrawing, sbStage, sbSprites, softBasicEngine].join('\n')
+            [sbLifecycle, sbInput, sbAssets, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
           .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)}
