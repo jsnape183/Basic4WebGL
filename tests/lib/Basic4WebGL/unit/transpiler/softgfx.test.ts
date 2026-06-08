@@ -301,6 +301,21 @@ describe('stage — setBackground', () => {
   });
 });
 
+describe('stage — clear', () => {
+  test('compiles without error', () => {
+    const result = transpileWithStage(
+      'function test()\n  stage.clear()\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.clear()', () => {
+    const result = transpileWithStage(
+      'function test()\n  stage.clear()\nendfunction'
+    );
+    expect(result.code).toContain('_sb.clear()');
+  });
+});
+
 // ─── Text — setStyle ──────────────────────────────────────────────────────────
 
 describe('Text — setStyle', () => {
