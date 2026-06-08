@@ -188,6 +188,20 @@ describe('if/else/elseif', () => {
     expect(result.code).toContain('else{');
   });
 
+  test('== is accepted as an alias for = in conditions', () => {
+    const result = transpile([
+      'function test()',
+      '  dim x',
+      '  x = 1',
+      '  if x == 1',
+      '    print "one"',
+      '  endif',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('==');
+  });
+
   test('plain if without else still works', () => {
     const result = transpile([
       'function test(x)',
