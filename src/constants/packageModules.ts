@@ -9,6 +9,7 @@ import text from '../lib/Basic4WebGL/defs/text.bas?raw';
 import assetmanager from '../lib/Basic4WebGL/defs/assetmanager.bas?raw';
 import ObjectTransform from '../lib/Basic4WebGL/defs/transform.bas?raw';
 import sprite from '../lib/Basic4WebGL/defs/sprite.bas?raw';
+import animatedsprite from '../lib/Basic4WebGL/defs/animatedsprite.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -22,4 +23,5 @@ export const packageModules: Record<string, string> = {
   assetmanager,
   ObjectTransform,
   sprite,
+  animatedsprite,
 };
