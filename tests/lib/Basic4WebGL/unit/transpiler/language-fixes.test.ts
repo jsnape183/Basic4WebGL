@@ -42,3 +42,42 @@ describe('bare return — early exit from void function', () => {
     expect(result.code).toContain('return');
   });
 });
+
+// ─── Fix 2: For loop with already-declared variable ───────────────────────────
+
+describe('for loop — auto-declares loop variable', () => {
+  test('for loop without prior dim compiles', () => {
+    const result = transpile([
+      'function test()',
+      '  for i = 0 to 9',
+      '    print i',
+      '  next',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('for loop with prior dim i compiles (no duplicate declaration error)', () => {
+    const result = transpile([
+      'function test()',
+      '  dim i',
+      '  for i = 0 to 9',
+      '    print i',
+      '  next',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('for loop variable is accessible inside loop body', () => {
+    const result = transpile([
+      'function test()',
+      '  for i = 0 to 9',
+      '    print i',
+      '  next',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('test_i');
+  });
+});
