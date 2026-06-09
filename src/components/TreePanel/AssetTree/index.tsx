@@ -389,7 +389,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
               value={newFileName}
               onChange={(e) => {
                 setNewFileName(e.target.value);
-                setNewFileError(validateAssetName(e.target.value, allAssets, null));
+                setNewFileError(validateAssetName(e.target.value.trim(), allAssets, null));
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateNewFile(); }}
               placeholder="filename.txt"
