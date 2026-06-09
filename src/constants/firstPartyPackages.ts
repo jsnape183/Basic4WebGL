@@ -12,9 +12,9 @@ export const firstPartyPackages: IPackage[] = [
   {
     id: 'softgfx',
     name: 'softGfx',
-    version: '2.1.0',
+    version: '2.2.0',
     isCore: false,
     isFirstParty: true,
-    moduleNames: ['gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'text'],
+    moduleNames: ['gfx', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap'],
   },
 ];
