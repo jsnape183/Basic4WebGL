@@ -5,6 +5,7 @@ import IParserRule, {
 } from '@CompilerLib/parser/ParserRule';
 import Symbols from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
+import type { SourceLocation } from '@CompilerLib/compiler/types';
 import { ArraySymbol, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
@@ -54,7 +55,7 @@ class DimRule implements IParserRule {
     tokenStream: TokenStream,
     symbolTable: Symbols,
     nodesSoFar: Tree[],
-    loc: unknown
+    loc: SourceLocation | undefined
   ): Tree {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
@@ -141,6 +142,10 @@ class DimRule implements IParserRule {
 
       // Array restriction: arrays are only allowed as the sole declarator.
       // Check AFTER parsing so dim sizes are available for the error message.
+      // Note: arraySymbol has been added to the symbol table above, but we throw
+      // before using it. This is safe — CompilationError is always fatal here
+      // (caught by index.ts transpile() which aborts immediately), so the dangling
+      // symbol entry is never observed.
       if (
         nodesSoFar.length > 0 ||
         check(tokens.Comma, tokenStream.current())
