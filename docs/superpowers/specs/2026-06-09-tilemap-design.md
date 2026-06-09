@@ -58,11 +58,10 @@ Same as `Sprite` and `AnimatedSprite` — the `_handle` is a raw `PIXI.Container
 ### Position / Transform
 
 ```basic
-bg.transform.x = -scrollX
-bg.transform.y = 0
+bg.transform.setPosition(-scrollX, 0)
 ```
 
-Uses the same `ObjectTransform` composition as `Sprite`. Setting `transform.x`/`transform.y` scrolls the layer — useful for camera offset and parallax.
+Uses the same `ObjectTransform` composition as `Sprite`. Calling `transform.setPosition(x, y)` scrolls the layer — useful for camera offset and parallax.
 
 ### Dimensions
 
