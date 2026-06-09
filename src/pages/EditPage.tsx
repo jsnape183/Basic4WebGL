@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateFile, removeFile } from '../features/files/filesSlice';
+import { updateFile } from '../features/files/filesSlice';
 import useSelectedFile from '../features/ui/useSelectedFile';
 import { useAllFilesForProject } from '../hooks/useAllFilesForProject';
 import { selectFile } from '../features/ui/uiSlice';
@@ -48,6 +48,17 @@ const EditPage: React.FC = () => {
   const selectedFile = useSelectedFile(id ?? '');
   const files = useAllFilesForProject(id ?? '');
 
+  // Track which file tabs are open (all files open by default; closing a tab hides it without deleting)
+  const [openFileIds, setOpenFileIds] = useState<string[]>(() => files.map(f => f.id));
+
+  // Auto-open newly created files
+  useEffect(() => {
+    setOpenFileIds(prev => {
+      const newIds = files.map(f => f.id).filter(fid => !prev.includes(fid));
+      return newIds.length > 0 ? [...prev, ...newIds] : prev;
+    });
+  }, [files]);
+
   useEffect(() => {
     if (!project?.id) {
       if (location.key !== 'default') {
@@ -78,7 +89,14 @@ const EditPage: React.FC = () => {
   };
 
   const handleTabClose = (fileId: string) => {
-    dispatch(removeFile(fileId));
+    // Switch selection to an adjacent tab before closing
+    if (selectedFile?.id === fileId) {
+      const currentIndex = openFileIds.indexOf(fileId);
+      const remaining = openFileIds.filter(fid => fid !== fileId);
+      const nextId = remaining[currentIndex] ?? remaining[currentIndex - 1];
+      if (nextId) dispatch(selectFile({ projectId: project.id, fileId: nextId }));
+    }
+    setOpenFileIds(prev => prev.filter(fid => fid !== fileId));
   };
 
   const handleOpenAsset = (assetId: string) => {
@@ -110,6 +128,8 @@ const EditPage: React.FC = () => {
         : prev.filter((entryId) => entryId !== assetId)
     );
   };
+
+  const openFiles = files.filter(f => openFileIds.includes(f.id));
 
   const assetTabDescriptors = openAssetTabs.map((t) => ({
     id: t.assetId,
@@ -175,7 +195,7 @@ const EditPage: React.FC = () => {
         >
           <div className="flex flex-col h-full">
             <FileTabs
-              files={files}
+              files={openFiles}
               selectedFileId={activeAssetTabId ? undefined : selectedFile?.id}
               dirtyFileIds={dirtyFileIds}
               onSelect={handleTabSelect}
