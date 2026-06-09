@@ -73,6 +73,7 @@ const EditPage: React.FC = () => {
   };
 
   const handleTabSelect = (fileId: string) => {
+    setActiveAssetTabId(null);
     dispatch(selectFile({ projectId: project.id, fileId }));
   };
 
@@ -96,7 +97,7 @@ const EditPage: React.FC = () => {
       if (!window.confirm('Discard unsaved changes?')) return;
     }
     setOpenAssetTabs((prev) => prev.filter((t) => t.assetId !== assetId));
-    setDirtyAssetIds((prev) => prev.filter((id) => id !== assetId));
+    setDirtyAssetIds((prev) => prev.filter((entryId) => entryId !== assetId));
     if (activeAssetTabId === assetId) {
       setActiveAssetTabId(null);
     }
@@ -106,7 +107,7 @@ const EditPage: React.FC = () => {
     setDirtyAssetIds((prev) =>
       dirty
         ? prev.includes(assetId) ? prev : [...prev, assetId]
-        : prev.filter((id) => id !== assetId)
+        : prev.filter((entryId) => entryId !== assetId)
     );
   };
 
