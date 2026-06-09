@@ -87,7 +87,7 @@ class FactorRule implements IParserRule {
       );
     }
     throw new CompilationError(
-      `Expected String, Number but found ${tokenStream.current().text}`
+      `Expected String or Number but found ${tokenStream.current().text}`
     );
   }
 }

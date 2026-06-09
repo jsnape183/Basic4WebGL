@@ -18,8 +18,8 @@ const _sbAnimatedSprites = {
     pixi.anchor.set(0.5);
     pixi._allFrames = frames;
     pixi._animations = new Map();
-    pixi._currentAnim = null;
-    pixi._playing = false;
+    pixi._sbCurrentAnim = null;
+    pixi._sbPlaying = false;
     return pixi;
   },
 
@@ -40,16 +40,16 @@ const _sbAnimatedSprites = {
     handle.animationSpeed = def.fps / 60;
     handle.loop = def.loop;
     handle.onComplete = null;
-    handle._currentAnim = key;
-    handle._playing = true;
+    handle._sbCurrentAnim = key;
+    handle._sbPlaying = true;
     if (!def.loop) {
-      handle.onComplete = () => { handle._playing = false; };
+      handle.onComplete = () => { handle._sbPlaying = false; };
     }
     handle.gotoAndPlay(0);
   },
 
   isPlayingAnim(handle, name) {
-    return (handle._currentAnim === String(name) && handle._playing) ? 1 : 0;
+    return (handle._sbCurrentAnim === String(name) && handle._sbPlaying) ? 1 : 0;
   },
 
   setAnimAngle(handle, angle) {
