@@ -53,7 +53,7 @@ const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onR
     <li
       ref={setNodeRef}
       style={style}
-      className="group flex items-center justify-between px-2 py-1 rounded text-xs text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text"
+      className="group flex items-center justify-between px-2 py-1 rounded text-xs text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text cursor-pointer"
       onDoubleClick={() => onDoubleClick?.(asset.id)}
     >
       <button
