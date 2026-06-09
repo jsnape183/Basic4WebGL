@@ -6,4 +6,5 @@ const _sb = {
   ..._sbStage,
   ..._sbSprites,
   ..._sbAnimatedSprites,
+  ..._sbTilemaps,
 };
