@@ -1,5 +1,5 @@
 // src/components/AssetPreview/TextEditor.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { IAsset, updateAsset } from '../../features/assets/assetsSlice';
 import { AppDispatch } from '../../store';
@@ -13,8 +13,9 @@ function decodeContent(content: string): string {
   const comma = content.indexOf(',');
   if (comma === -1) return '';
   try {
-    return atob(content.slice(comma + 1));
-  } catch {
+    return decodeURIComponent(escape(atob(content.slice(comma + 1))));
+  } catch (e) {
+    console.error('TextEditor: failed to decode asset content', e);
     return '';
   }
 }
@@ -22,7 +23,17 @@ function decodeContent(content: string): string {
 const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [draftText, setDraftText] = useState(() => decodeContent(asset.content));
-  const storedText = decodeContent(asset.content);
+
+  // C1: memoize decoded content so it is not recomputed on every render
+  const storedText = useMemo(() => decodeContent(asset.content), [asset.content]);
+
+  // I1: reset draft when the asset switches
+  useEffect(() => {
+    setDraftText(decodeContent(asset.content));
+  }, [asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // I2: explicit dirty flag
+  const isDirty = draftText !== storedText;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
@@ -30,8 +41,12 @@ const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     onDirtyChange?.(asset.id, newText !== storedText);
   };
 
+  // M2: preserve original MIME type; C2: Unicode-safe encoding
   const handleSave = () => {
-    const encoded = 'data:text/plain;base64,' + btoa(draftText);
+    const mime = asset.content.startsWith('data:')
+      ? asset.content.slice(5, asset.content.indexOf(';'))
+      : 'text/plain';
+    const encoded = `data:${mime};base64,` + btoa(unescape(encodeURIComponent(draftText)));
     dispatch(updateAsset({ ...asset, content: encoded }));
     onDirtyChange?.(asset.id, false);
   };
@@ -46,8 +61,10 @@ const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
       />
       <div className="flex justify-end">
         <button
+          type="button"
+          disabled={!isDirty}
           onClick={handleSave}
-          className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-1.5 rounded hover:opacity-90 transition"
+          className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-1.5 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save
         </button>
