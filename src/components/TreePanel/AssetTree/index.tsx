@@ -21,16 +21,18 @@ import { renameFolderWithCascade, removeFolderWithCascade } from '../../../featu
 import { getFullName } from '../../../selectors/getFullName';
 import FolderNode from '../../FileTree/FolderNode';
 import ReactDOM from 'react-dom';
+import { validateAssetName } from './validateAssetName';
 
-type AssetTreeProps = { projectId: string };
+type AssetTreeProps = { projectId: string; onOpenAsset?: (assetId: string) => void };
 
 type SortableAssetItemProps = {
   asset: IAsset;
   depth: number;
   onRemove: (id: string) => void;
+  onDoubleClick?: (id: string) => void;
 };
 
-const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onRemove }) => {
+const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onRemove, onDoubleClick }) => {
   const {
     attributes,
     listeners,
@@ -52,6 +54,7 @@ const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onR
       ref={setNodeRef}
       style={style}
       className="group flex items-center justify-between px-2 py-1 rounded text-xs text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text"
+      onDoubleClick={() => onDoubleClick?.(asset.id)}
     >
       <button
         {...listeners}
@@ -83,7 +86,7 @@ function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]):
   return direct + children.reduce((sum, cf) => sum + countAssets(cf.id, folders, allAssets), 0);
 }
 
-const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
+const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const selectAssets = useMemo(() => makeSelectAssetsByProject(projectId), [projectId]);
@@ -103,6 +106,10 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [newFileModalOpen, setNewFileModalOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+  const [newFileError, setNewFileError] = useState<string | null>(null);
+  const newFileInputRef = useRef<HTMLInputElement>(null);
 
   const selectFolders = useMemo(() => makeSelectFoldersBySection(projectId, 'assets'), [projectId]);
   const folders: IFolder[] = useSelector(selectFolders);
@@ -146,6 +153,19 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     return () => { if (autoExpandTimerRef.current) clearTimeout(autoExpandTimerRef.current); };
   }, [dragOverFolderId]);
 
+  useEffect(() => {
+    if (newFileModalOpen) {
+      setTimeout(() => newFileInputRef.current?.focus(), 0);
+    }
+  }, [newFileModalOpen]);
+
+  useEffect(() => {
+    if (!newFileModalOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNewFileModalOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [newFileModalOpen]);
+
   const processFiles = async (fileList: FileList, targetFolderId: string | null = null) => {
     for (const f of Array.from(fileList)) {
       if (f.size > MAX_BYTES) { alert(`${f.name} is too large (max 4 MB).`); return; }
@@ -181,6 +201,25 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     dispatch(addFolder({ id: uuidv4(), name, projectId, parentId: creatingFolderParent ?? null, section: 'assets' }));
     setNewFolderName('');
     setCreatingFolderParent(undefined);
+  };
+
+  const handleCreateNewFile = () => {
+    const name = newFileName.trim();
+    const error = validateAssetName(name, allAssets, null);
+    if (error) { setNewFileError(error); return; }
+    const id = crypto.randomUUID();
+    dispatch(addAsset({
+      id,
+      name,
+      content: 'data:text/plain;base64,',
+      projectId,
+      folderId: null,
+      fullName: name,
+    }));
+    onOpenAsset?.(id);
+    setNewFileModalOpen(false);
+    setNewFileName('');
+    setNewFileError(null);
   };
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -257,6 +296,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
                 asset={asset}
                 depth={depth}
                 onRemove={(id) => dispatch(removeAsset(id))}
+                onDoubleClick={onOpenAsset}
               />
             ))}
           </ul>
@@ -334,6 +374,54 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
       )
     : null;
 
+  // New file modal
+  const newFileModal = newFileModalOpen
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setNewFileModalOpen(false); }}
+        >
+          <div role="dialog" aria-modal="true" aria-labelledby="at-new-file-title" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h2 id="at-new-file-title" className="text-ds-text text-lg font-semibold mb-4">New text file</h2>
+            <input
+              ref={newFileInputRef}
+              type="text"
+              value={newFileName}
+              onChange={(e) => {
+                setNewFileName(e.target.value);
+                setNewFileError(validateAssetName(e.target.value, allAssets, null));
+              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreateNewFile(); }}
+              placeholder="filename.txt"
+              aria-describedby={newFileError ? 'at-new-file-error' : undefined}
+              className={`w-full bg-ds-bg border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-accent ${
+                newFileError ? 'border-ds-error mb-1' : 'border-ds-border mb-4'
+              }`}
+            />
+            {newFileError && (
+              <p id="at-new-file-error" className="text-ds-error text-xs mb-3">{newFileError}</p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCreateNewFile}
+                disabled={!!newFileError || !newFileName.trim()}
+                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+              <button
+                onClick={() => setNewFileModalOpen(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   // Delete modal
   const deleteModal = deletingFolder
     ? ReactDOM.createPortal(
@@ -382,6 +470,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
     <div>
       {renameModal}
       {deleteModal}
+      {newFileModal}
 
       {/* Section header */}
       <div className="flex items-center justify-between mb-1">
@@ -394,6 +483,14 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId }) => {
             title="New folder"
           >
             📁+
+          </button>
+          <button
+            onClick={() => { setNewFileModalOpen(true); setNewFileName(''); setNewFileError(null); }}
+            className="text-ds-text-muted hover:text-ds-text transition text-sm leading-none"
+            aria-label="New text file"
+            title="New text file"
+          >
+            📄+
           </button>
           <button
             onClick={() => inputRef.current?.click()}
