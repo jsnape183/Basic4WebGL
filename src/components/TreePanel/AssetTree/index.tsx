@@ -86,6 +86,18 @@ function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]):
   return direct + children.reduce((sum, cf) => sum + countAssets(cf.id, folders, allAssets), 0);
 }
 
+/** Build a display path like "sprites" or "sprites/animated" for a folder. */
+function getFolderPath(folderId: string | null, folders: IFolder[]): string {
+  if (folderId === null) return '';
+  const parts: string[] = [];
+  let current: IFolder | undefined = folders.find((f) => f.id === folderId);
+  while (current) {
+    parts.unshift(current.name);
+    current = current.parentId ? folders.find((f) => f.id === current!.parentId) : undefined;
+  }
+  return parts.join('/');
+}
+
 const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
   const dispatch = useDispatch<AppDispatch>();
 
@@ -106,6 +118,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const autoExpandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [newFileModalOpen, setNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFileError, setNewFileError] = useState<string | null>(null);
@@ -205,17 +218,22 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
 
   const handleCreateNewFile = () => {
     const name = newFileName.trim();
-    const error = validateAssetName(name, allAssets, null);
+    const error = validateAssetName(name, allAssets, selectedFolderId);
     if (error) { setNewFileError(error); return; }
     const id = crypto.randomUUID();
+    const fullName = getFullName(name, selectedFolderId, folders);
     dispatch(addAsset({
       id,
       name,
       content: 'data:text/plain;base64,',
       projectId,
-      folderId: null,
-      fullName: name,
+      folderId: selectedFolderId,
+      fullName,
     }));
+    // Ensure the target folder is open so the new file is visible
+    if (selectedFolderId) {
+      setOpenFolders((prev) => ({ ...prev, [selectedFolderId]: true }));
+    }
     onOpenAsset?.(id);
     setNewFileModalOpen(false);
     setNewFileName('');
@@ -275,7 +293,11 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
                 isOpen={isOpen}
                 itemCount={count}
                 depth={depth}
-                onToggle={() => setOpenFolders((prev) => ({ ...prev, [folder.id]: !isOpen }))}
+                isSelected={selectedFolderId === folder.id}
+                onToggle={() => {
+                  setOpenFolders((prev) => ({ ...prev, [folder.id]: !isOpen }));
+                  setSelectedFolderId(folder.id);
+                }}
                 onRename={() => setRenamingFolder(folder)}
                 onDelete={() => { setDeletingFolder(folder); setDeleteConfirmName(''); }}
               />
@@ -382,14 +404,21 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
           onClick={(e) => { if (e.target === e.currentTarget) setNewFileModalOpen(false); }}
         >
           <div role="dialog" aria-modal="true" aria-labelledby="at-new-file-title" className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl">
-            <h2 id="at-new-file-title" className="text-ds-text text-lg font-semibold mb-4">New text file</h2>
+            <h2 id="at-new-file-title" className="text-ds-text text-lg font-semibold mb-1">New text file</h2>
+            {selectedFolderId ? (
+              <p className="text-ds-text-muted text-xs mb-3">
+                Creating in <span className="text-ds-text font-medium">{getFolderPath(selectedFolderId, folders)}</span>
+              </p>
+            ) : (
+              <p className="text-ds-text-muted text-xs mb-3">Creating in root</p>
+            )}
             <input
               ref={newFileInputRef}
               type="text"
               value={newFileName}
               onChange={(e) => {
                 setNewFileName(e.target.value);
-                setNewFileError(validateAssetName(e.target.value.trim(), allAssets, null));
+                setNewFileError(validateAssetName(e.target.value.trim(), allAssets, selectedFolderId));
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleCreateNewFile(); }}
               placeholder="filename.txt"
@@ -467,7 +496,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
     : null;
 
   return (
-    <div>
+    <div onClick={() => setSelectedFolderId(null)}>
       {renameModal}
       {deleteModal}
       {newFileModal}

@@ -14,6 +14,8 @@ type FolderNodeProps = {
   /** dnd-kit drag handle props passed through from useSortable */
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   isDragging?: boolean;
+  /** Whether this folder row is currently selected as the new-file target */
+  isSelected?: boolean;
 };
 
 const FolderNode: React.FC<FolderNodeProps> = ({
@@ -27,9 +29,15 @@ const FolderNode: React.FC<FolderNodeProps> = ({
   onDelete,
   dragHandleProps,
   isDragging,
+  isSelected = false,
 }) => {
   const indent = depth * 12; // px per level
   const { setNodeRef, isOver } = useDroppable({ id: `folder-drop:${folderId}` });
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent bubbling to parent deselect handlers
+    onToggle();
+  };
 
   return (
     <div
@@ -38,9 +46,11 @@ const FolderNode: React.FC<FolderNodeProps> = ({
       className={`group flex items-center gap-1 px-2 py-1 rounded text-xs cursor-pointer select-none transition-colors
         ${isOver
           ? 'bg-ds-accent-subtle text-ds-text border border-ds-accent'
-          : 'text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text'
+          : isSelected
+            ? 'bg-ds-accent/15 text-ds-text border border-ds-accent/40'
+            : 'text-ds-text-muted hover:bg-ds-surface-2 hover:text-ds-text'
         }`}
-      onClick={onToggle}
+      onClick={handleClick}
     >
       {/* Drag handle */}
       <button
