@@ -59,7 +59,7 @@ describe('TileMap — load', () => {
 // ─── tileAt ───────────────────────────────────────────────────────────────────
 
 describe('TileMap — tileAt', () => {
-  test('return value usable in numeric expression', () => {
+  test('compiles without error', () => {
     const result = transpileWithTileMap([
       'function test()',
       '  dim m as TileMap("tileset.png", 32, 32)',
