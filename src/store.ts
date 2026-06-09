@@ -34,7 +34,7 @@ const clearDirtyOnRehydrate = createTransform<IFilesState, IFilesState>(
 const persistedConfig = {
   key: "softBASIC",
   storage,
-  blacklist: ["session"],
+  blacklist: ["session", "packages"],
   transforms: [clearDirtyOnRehydrate],
 };
 
