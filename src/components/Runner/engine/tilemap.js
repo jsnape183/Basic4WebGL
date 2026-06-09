@@ -31,6 +31,7 @@ const _sbTilemaps = {
       for (let col = 0; col < data[row].length; col++) {
         const id = data[row][col];
         if (!id) continue;
+        if (id < 1 || id > handle._frames.length) continue;
         const sprite = new PIXI.Sprite(handle._frames[id - 1]);
         sprite.x = col * handle._tileW;
         sprite.y = row * handle._tileH;
@@ -41,6 +42,7 @@ const _sbTilemaps = {
   },
 
   tileAt(handle, worldX, worldY) {
+    // handle.x / handle.y reflect the scroll offset applied by ObjectTransform.setPosition
     const col = Math.floor((Number(worldX) - handle.x) / handle._tileW);
     const row = Math.floor((Number(worldY) - handle.y) / handle._tileH);
     if (row < 0 || row >= handle._map.length) return 0;
