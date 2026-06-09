@@ -17,6 +17,9 @@ import TreePanel from '../components/TreePanel';
 import ProjectShell, { FilesIcon } from '../components/ProjectShell';
 import FileTabs from '../components/FileTabs';
 import BottomPanel from '../components/BottomPanel';
+import AssetPreview from '../components/AssetPreview';
+
+type AssetTabEntry = { assetId: string };
 
 const EditPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,8 +33,12 @@ const EditPage: React.FC = () => {
   const transpiled = useSelector((state: RootState) => state.session.transpiled);
   const logs = useSelector((state: RootState) => state.session.logs);
   const dirtyFileIds = useSelector((state: RootState) => state.files.dirtyFileIds);
+  const allAssetsById = useSelector((state: RootState) => state.assets.byId);
 
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const [openAssetTabs, setOpenAssetTabs] = useState<AssetTabEntry[]>([]);
+  const [activeAssetTabId, setActiveAssetTabId] = useState<string | null>(null);
+  const [dirtyAssetIds, setDirtyAssetIds] = useState<string[]>([]);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   useRunnerMessages();
@@ -72,6 +79,43 @@ const EditPage: React.FC = () => {
   const handleTabClose = (fileId: string) => {
     dispatch(removeFile(fileId));
   };
+
+  const handleOpenAsset = (assetId: string) => {
+    if (!openAssetTabs.some((t) => t.assetId === assetId)) {
+      setOpenAssetTabs((prev) => [...prev, { assetId }]);
+    }
+    setActiveAssetTabId(assetId);
+  };
+
+  const handleAssetTabSelect = (assetId: string) => {
+    setActiveAssetTabId(assetId);
+  };
+
+  const handleAssetTabClose = (assetId: string) => {
+    if (dirtyAssetIds.includes(assetId)) {
+      if (!window.confirm('Discard unsaved changes?')) return;
+    }
+    setOpenAssetTabs((prev) => prev.filter((t) => t.assetId !== assetId));
+    setDirtyAssetIds((prev) => prev.filter((id) => id !== assetId));
+    if (activeAssetTabId === assetId) {
+      setActiveAssetTabId(null);
+    }
+  };
+
+  const handleAssetDirtyChange = (assetId: string, dirty: boolean) => {
+    setDirtyAssetIds((prev) =>
+      dirty
+        ? prev.includes(assetId) ? prev : [...prev, assetId]
+        : prev.filter((id) => id !== assetId)
+    );
+  };
+
+  const assetTabDescriptors = openAssetTabs.map((t) => ({
+    id: t.assetId,
+    name: allAssetsById[t.assetId]?.name ?? 'Unknown',
+  }));
+
+  const activeAsset = activeAssetTabId ? allAssetsById[activeAssetTabId] : undefined;
 
   return (
     <ProjectShell
@@ -120,7 +164,7 @@ const EditPage: React.FC = () => {
           id: 'files',
           icon: <FilesIcon />,
           ariaLabel: 'Files',
-          content: <TreePanel projectId={project.id} />,
+          content: <TreePanel projectId={project.id} onOpenAsset={handleOpenAsset} />,
         },
       ]}
       editor={
@@ -131,18 +175,30 @@ const EditPage: React.FC = () => {
           <div className="flex flex-col h-full">
             <FileTabs
               files={files}
-              selectedFileId={selectedFile?.id}
+              selectedFileId={activeAssetTabId ? undefined : selectedFile?.id}
               dirtyFileIds={dirtyFileIds}
               onSelect={handleTabSelect}
               onClose={handleTabClose}
+              assetTabs={assetTabDescriptors}
+              selectedAssetTabId={activeAssetTabId ?? undefined}
+              dirtyAssetIds={dirtyAssetIds}
+              onSelectAsset={handleAssetTabSelect}
+              onCloseAsset={handleAssetTabClose}
             />
             <div className="flex-1 min-h-0">
-              <Editor
-                onChange={handleChange}
-                file={selectedFile}
-                height="100%"
-                onCursorChange={(line, col) => setCursorPos({ line, col })}
-              />
+              {activeAssetTabId && activeAsset ? (
+                <AssetPreview
+                  asset={activeAsset}
+                  onDirtyChange={handleAssetDirtyChange}
+                />
+              ) : (
+                <Editor
+                  onChange={handleChange}
+                  file={selectedFile}
+                  height="100%"
+                  onCursorChange={(line, col) => setCursorPos({ line, col })}
+                />
+              )}
             </div>
           </div>
         </ErrorBoundary>
