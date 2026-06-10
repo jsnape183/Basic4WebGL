@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { docsManifest } from '../../docs/manifest';
+import { docsManifest, type DocTopic } from '../../docs/manifest';
 import MarkdownContent from './MarkdownContent';
 
 const allFiles = import.meta.glob<string>('../../docs/**/*.md', {
@@ -34,7 +34,7 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
   }
 
   const topicIndex = section.topics.findIndex(t => t.slug === slug);
-  const topic = section.topics[topicIndex];
+  const topic: DocTopic | undefined = section.topics[topicIndex];
 
   if (!topic) {
     return (
