@@ -16,11 +16,20 @@ const AssetsIcon = () => (
   </svg>
 );
 
+const ExportIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+);
+
 export type ActivitySection = {
   id: string;
   icon: React.ReactNode;
   ariaLabel: string;
-  content: React.ReactNode;
+  content?: React.ReactNode;
+  onAction?: () => void;
 };
 
 type ProjectShellProps = {
@@ -66,7 +75,7 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
           {activitySections.map((section) => (
             <button
               key={section.id}
-              onClick={() => toggleSection(section.id)}
+              onClick={() => section.onAction ? section.onAction() : toggleSection(section.id)}
               aria-label={section.ariaLabel}
               title={section.ariaLabel}
               className={`
@@ -126,5 +135,5 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
   );
 };
 
-export { FilesIcon, AssetsIcon };
+export { FilesIcon, AssetsIcon, ExportIcon };
 export default ProjectShell;

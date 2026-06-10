@@ -14,7 +14,8 @@ import { useCompiler } from '../hooks/useCompiler';
 import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import { useAutoSave } from '../hooks/useAutoSave';
 import TreePanel from '../components/TreePanel';
-import ProjectShell, { FilesIcon } from '../components/ProjectShell';
+import ProjectShell, { FilesIcon, ExportIcon } from '../components/ProjectShell';
+import { exportProject } from '../features/projects/exportProject';
 import FileTabs from '../components/FileTabs';
 import BottomPanel from '../components/BottomPanel';
 import AssetPreview from '../components/AssetPreview';
@@ -186,6 +187,12 @@ const EditPage: React.FC = () => {
           icon: <FilesIcon />,
           ariaLabel: 'Files',
           content: <TreePanel projectId={project.id} onOpenAsset={handleOpenAsset} />,
+        },
+        {
+          id: 'export',
+          icon: <ExportIcon />,
+          ariaLabel: 'Export project',
+          onAction: () => dispatch(exportProject(project.id)),
         },
       ]}
       editor={
