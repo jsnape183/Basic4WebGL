@@ -15,6 +15,7 @@ import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
+import { CompilationError } from '@CompilerLib/errors';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -96,7 +97,7 @@ class VariableFactorRule implements IParserRule {
         varSymbol = symbolTable.get(name);
       }
       if (isInstancePropertyAccess(varSymbol, symbolTable)) {
-        return new PropertyTermNode(`this.${name}`, loc, varSymbol.dataType);
+        throw new CompilationError(`'${name}' is a class property — use self.${name}`);
       }
       return new TermNode(varSymbol, new VariableNode(name), loc);
     }

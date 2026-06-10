@@ -2,7 +2,7 @@ Class
 dim _handle
 
 Constructor(tilesetPath, tileW, tileH)
-    _handle = call("_sb.createTileMap(constructor_tilesetPath, constructor_tileW, constructor_tileH)")
+    self._handle = call("_sb.createTileMap(constructor_tilesetPath, constructor_tileW, constructor_tileH)")
     dim transform as ObjectTransform(call("this._handle"))
 EndConstructor
 

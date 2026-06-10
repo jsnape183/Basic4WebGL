@@ -14,7 +14,7 @@ describe('Constructor parsing', () => {
       'Class',
       'dim x',
       'Constructor(startX)',
-      '    x = startX',
+      '    self.x = startX',
       'EndConstructor',
     ].join('\n');
     const result = compiler.transpile({ lib: [], files: [{ name: 'Point', source: src }] });
@@ -42,10 +42,10 @@ describe('Constructor parsing', () => {
       'Class',
       'dim x',
       'Constructor(a)',
-      '    x = a',
+      '    self.x = a',
       'EndConstructor',
       'Constructor(b)',
-      '    x = b',
+      '    self.x = b',
       'EndConstructor',
     ].join('\n');
     const err = compileErr({ lib: [], files: [{ name: 'Dup', source: src }] });
@@ -83,8 +83,8 @@ describe('Constructor transpiled output', () => {
       'dim x',
       'dim y',
       'Constructor(startX, startY)',
-      '    x = startX',
-      '    y = startY',
+      '    self.x = startX',
+      '    self.y = startY',
       'EndConstructor',
     ].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Point', source: src }] });
@@ -109,12 +109,12 @@ describe('end-to-end: constructor + instance method', () => {
       'dim x',
       '',
       'Constructor(startHealth, startX)',
-      '    health = startHealth',
-      '    x = startX',
+      '    self.health = startHealth',
+      '    self.x = startX',
       'EndConstructor',
       '',
       'function move(dx)',
-      '    x = x + dx',
+      '    self.x = self.x + dx',
       'endfunction',
     ].join('\n');
 

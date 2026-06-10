@@ -2,7 +2,7 @@ Class
 dim _handle
 
 Constructor(content, x, y)
-    _handle = call("_sb.createText(constructor_content, constructor_x, constructor_y)")
+    self._handle = call("_sb.createText(constructor_content, constructor_x, constructor_y)")
 EndConstructor
 
 function setText(content)

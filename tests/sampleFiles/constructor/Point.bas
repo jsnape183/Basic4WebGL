@@ -1,8 +1,9 @@
-Class
+Class Point
+
 dim x
 dim y
 
 Constructor(startX, startY)
-    x = startX
-    y = startY
+  self.x = startX
+  self.y = startY
 EndConstructor

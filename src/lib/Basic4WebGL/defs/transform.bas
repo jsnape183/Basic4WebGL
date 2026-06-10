@@ -2,7 +2,7 @@ Class
 dim _handle
 
 Constructor(handle)
-    _handle = call("constructor_handle")
+    self._handle = call("constructor_handle")
 EndConstructor
 
 function setPosition(x, y)

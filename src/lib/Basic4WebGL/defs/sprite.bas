@@ -2,7 +2,7 @@ Class
 dim _handle
 
 Constructor(imagePath)
-    _handle = call("_sb.createSprite(constructor_imagePath)")
+    self._handle = call("_sb.createSprite(constructor_imagePath)")
     dim transform as ObjectTransform(call("this._handle"))
 EndConstructor
 

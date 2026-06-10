@@ -1,10 +1,15 @@
-Class
+Class Player
+
 dim health
 
+Constructor(startHealth)
+  self.health = startHealth
+EndConstructor
+
 function takeDamage(amount)
-    health = health - amount
+  self.health = self.health - amount
 endfunction
 
 function getHealth()
-    return health
+  return self.health
 endfunction

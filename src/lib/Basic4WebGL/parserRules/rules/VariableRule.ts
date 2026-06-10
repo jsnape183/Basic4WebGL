@@ -13,6 +13,7 @@ import ArrayAssignNode from '../../nodes/ArrayAssignNode';
 import AssignNode from '../../nodes/AssignNode';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import { newLines } from '../../parserConfig';
+import { CompilationError } from '@CompilerLib/errors';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -83,6 +84,9 @@ class VariableRule implements IParserRule {
       return new ArrayAssignNode(arraySymbol, [dims, expr], loc);
     }
     const varSymbol = symbolTable.get(name, symbolTypes.Variable);
+    if (isInstancePropertyAccess(varSymbol, symbolTable)) {
+      throw new CompilationError(`'${name}' is a class property — use self.${name}`);
+    }
     matchAndMove(tokens.Equals, tokenStream);
     const expr = getParserRule('BoolExpression').parse(
       tokenStream,
@@ -90,9 +94,6 @@ class VariableRule implements IParserRule {
       undefined
     );
     matchAndMove(newLines, tokenStream);
-    if (isInstancePropertyAccess(varSymbol, symbolTable)) {
-      return new PropertyAssignNode({ chain: `this.${name}` }, expr, loc);
-    }
     return new AssignNode(varSymbol, expr, loc);
   }
 }

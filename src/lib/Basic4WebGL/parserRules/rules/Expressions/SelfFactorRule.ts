@@ -10,6 +10,7 @@ import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
 import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { assertInsideClass } from '../classGuards';
+import { symbolTypes } from '../../../symbolTypes';
 
 @RegisterParserRule('SelfFactor')
 class SelfFactorRule implements IParserRule {
@@ -28,8 +29,11 @@ class SelfFactorRule implements IParserRule {
       return new PropertyMethodTermNode(`this.${memberName}`, args, loc);
     }
 
-    // self.property in expression context
-    return new PropertyTermNode(`this.${memberName}`, loc);
+    // self.property in expression context — look up symbol type so arithmetic type-checks pass
+    const dataType = symbolTable.check(memberName, symbolTypes.Variable)
+      ? symbolTable.get(memberName, symbolTypes.Variable).dataType
+      : undefined;
+    return new PropertyTermNode(`this.${memberName}`, loc, dataType);
   }
 }
 
