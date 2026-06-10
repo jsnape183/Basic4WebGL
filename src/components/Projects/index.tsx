@@ -302,6 +302,12 @@ const ProjectList: React.FC = () => {
     setImportConfirmName('');
   };
 
+  const handleImportOverwriteCancel = () => {
+    setShowImportOverwriteModal(false);
+    setImportPendingJson(null);
+    setImportConfirmName('');
+  };
+
   useEffect(() => {
     if (showModal) setTimeout(() => inputRef.current?.focus(), 0);
   }, [showModal]);
@@ -319,7 +325,7 @@ const ProjectList: React.FC = () => {
 
   useEffect(() => {
     if (!showImportOverwriteModal) return;
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowImportOverwriteModal(false); };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') handleImportOverwriteCancel(); };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [showImportOverwriteModal]);
@@ -373,7 +379,7 @@ const ProjectList: React.FC = () => {
     ? ReactDOM.createPortal(
         <div
           className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowImportOverwriteModal(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) handleImportOverwriteCancel(); }}
         >
           <div
             role="dialog"
@@ -405,7 +411,7 @@ const ProjectList: React.FC = () => {
                 Import & Overwrite
               </button>
               <button
-                onClick={() => setShowImportOverwriteModal(false)}
+                onClick={handleImportOverwriteCancel}
                 className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
               >
                 Cancel
