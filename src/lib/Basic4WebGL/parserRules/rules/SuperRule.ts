@@ -52,7 +52,11 @@ class SuperRule implements IParserRule {
     }
 
     if (check(tokens.Dot, tokenStream.current())) {
-      // super.method(args)
+      // super.method(args) — only valid inside a method or constructor
+      const methodScopeType = symbolTable.getScopeType();
+      if (methodScopeType !== scopeTypes.Function && methodScopeType !== scopeTypes.Constructor) {
+        throw new CompilationError("'super' can only be used inside a class method or constructor");
+      }
       matchAndMove(tokens.Dot, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
       const methodName = tokenStream.prev().text.toLowerCase();
