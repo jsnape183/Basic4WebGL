@@ -44,3 +44,49 @@ describe('class extends — compile errors', () => {
     expect(result.diagnostics[0].message).toMatch(/already extends.*cannot be chained/i);
   });
 });
+
+// ── self. keyword ────────────────────────────────────────────────────────────
+
+describe('self. keyword — transpiler output', () => {
+  test('self.property = expr emits this.property = rhs', () => {
+    const src = [
+      'Class Player',
+      'dim health',
+      'Constructor(h)',
+      '  self.health = h',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Player', source: src }] });
+    expect(result).toContain('this.health=constructor_h');
+  });
+
+  test('self.property in expression emits this.property', () => {
+    const src = [
+      'Class Player',
+      'dim health',
+      'function getHealth()',
+      '  return self.health',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Player', source: src }] });
+    expect(result).toContain('returnthis.health');
+  });
+
+  test('self.method(args) in statement emits this.method(args)', () => {
+    const src = [
+      'Class Player',
+      'dim health',
+      'Constructor(h)',
+      '  self.health = h',
+      'EndConstructor',
+      'function reset()',
+      '  self.init(100)',
+      'endfunction',
+      'function init(h)',
+      '  self.health = h',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Player', source: src }] });
+    expect(result).toContain('this.init(');
+  });
+});
