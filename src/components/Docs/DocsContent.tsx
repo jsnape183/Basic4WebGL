@@ -19,7 +19,7 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
 
   if (!section) {
     return (
-      <div className="flex-1 p-8 text-ds-text-muted text-sm">
+      <div className="flex-1 p-8 text-ds-text-dim text-sm">
         Section not found.
       </div>
     );
@@ -38,7 +38,7 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
 
   if (!topic) {
     return (
-      <div className="flex-1 p-8 text-ds-text-muted text-sm">
+      <div className="flex-1 p-8 text-ds-text-dim text-sm">
         Topic not found.
       </div>
     );
@@ -52,7 +52,7 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl px-8 py-6">
+      <div className="max-w-3xl mx-auto px-8 py-6">
         <div className="text-xs text-ds-text-dim mb-6">
           {section.label} › {topic.title}
         </div>
