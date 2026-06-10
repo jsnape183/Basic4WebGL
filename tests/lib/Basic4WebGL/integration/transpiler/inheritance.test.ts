@@ -207,4 +207,53 @@ describe('super — compile errors', () => {
     const err = compileErr(src, 'Lone');
     expect(err).toMatch(/which has no parent/i);
   });
+
+  test('calling super() twice in constructor throws compile error', () => {
+    const childSrc = [
+      'Class Child extends Enemy',
+      'Constructor(h)',
+      '  super(h)',
+      '  super(h)',
+      'EndConstructor',
+    ].join('\n');
+    const childMainSrc = [
+      'function onenter()',
+      '  dim c as Child(100)',
+      'endfunction',
+    ].join('\n');
+    const err = compiler.transpile({
+      lib: [],
+      files: [
+        enemyFile,
+        { name: 'Child', source: childSrc },
+        { name: 'ChildMain', source: childMainSrc },
+      ],
+    }).diagnostics[0]?.message ?? '';
+    expect(err).toMatch(/super\(\) called more than once/i);
+  });
+});
+
+// ── remaining error cases ────────────────────────────────────────────────────
+
+describe('self — additional error cases', () => {
+  test('self used in a module (no class declaration) throws compile error', () => {
+    const src = [
+      'function doThing()',
+      '  self.x = 5',
+      'endfunction',
+    ].join('\n');
+    const err = compileErr(src, 'Main');
+    expect(err).toMatch(/'self' can only be used inside a class/i);
+  });
+
+  test('self.property in expression in a module throws compile error', () => {
+    const src = [
+      'function doThing()',
+      '  dim n',
+      '  n = self.health',
+      'endfunction',
+    ].join('\n');
+    const err = compileErr(src, 'Main');
+    expect(err).toMatch(/'self' can only be used inside a class/i);
+  });
 });
