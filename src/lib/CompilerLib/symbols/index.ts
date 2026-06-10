@@ -218,7 +218,7 @@ class Symbols {
       if (!best) return current;
 
       const bestPriority = scopePriority.get(best.scope.name)!;
-      return currentPriority < bestPriority ? current : best;
+      return currentPriority > bestPriority ? current : best;
     }, undefined as (typeof symbolMatches)[number] | undefined);
 
     return symbol;
