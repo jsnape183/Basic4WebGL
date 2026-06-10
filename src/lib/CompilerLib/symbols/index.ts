@@ -241,6 +241,34 @@ class Symbols {
       } has not been declared yet.`
     );
   }
+  /**
+   * Copy all symbols from sourceScopeName into targetScopeName, skipping any
+   * that already exist (so child-class overrides take precedence over parent).
+   * Used by DimRule to pull inherited members into an object instance's scope.
+   */
+  mergeSymbolsIntoScope(targetScopeName: string, sourceScopeName: string): void {
+    const sourceSymbols = this.table.filter(s => s.scope.name === sourceScopeName);
+    this.setScope(targetScopeName);
+    const fullScope = this.getFullScopeName();
+    sourceSymbols.forEach(s => {
+      const alreadyPresent = this.table.some(
+        t =>
+          t.scope.name === targetScopeName &&
+          t.name.toLowerCase() === s.name.toLowerCase() &&
+          t.type === s.type
+      );
+      if (!alreadyPresent) {
+        const cloned = Object.create(Object.getPrototypeOf(s)) as Symbol;
+        Object.assign(cloned, s);
+        cloned.scope = new SymbolScope(targetScopeName, s.scope.type);
+        cloned.fullScope = fullScope;
+        this.table.push(cloned);
+        this.indexSymbol(cloned);
+      }
+    });
+    this.clearScope();
+  }
+
   /** Lookup by name and type within a specific scope name, ignoring fullScope.
    * Used by module rules where the function was registered under a different
    * fullScope than the current call-site fullScope. */

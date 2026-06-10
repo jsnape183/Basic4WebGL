@@ -23,12 +23,6 @@ class ClassRule implements IParserRule {
 
     matchAndMove(tokens.Class, tokenStream);
 
-    // Optionally consume the class name (e.g. "Class Enemy") — ignored,
-    // the class name is always the file name set by RootRule.
-    if (check(tokens.Variable, tokenStream.current())) {
-      matchAndMove(tokens.Variable, tokenStream);
-    }
-
     // Upgrade current module symbol → class
     const moduleName = symbolTable.getScopeName();
     const module = symbolTable.get(moduleName, symbolTypes.Module);

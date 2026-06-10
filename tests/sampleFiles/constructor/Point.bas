@@ -1,4 +1,4 @@
-Class Point
+Class
 
 dim x
 dim y

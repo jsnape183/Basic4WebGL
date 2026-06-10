@@ -1,4 +1,4 @@
-Class Boss extends Enemy
+Class extends Enemy
 
 dim phase
 

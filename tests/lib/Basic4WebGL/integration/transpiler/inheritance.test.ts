@@ -23,7 +23,7 @@ describe('class extends — transpiler output', () => {
   });
 
   test('class without extends still emits class X {}', () => {
-    const src = ['Class Enemy', 'dim health'].join('\n');
+    const src = ['Class', 'dim health'].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Enemy', source: src }] });
     expect(result).toContain('classenemy{');
     expect(result).not.toContain('extends');
@@ -34,15 +34,15 @@ describe('class extends — transpiler output', () => {
 
 describe('class extends — compile errors', () => {
   test('extending an unknown class throws compile error', () => {
-    const src = 'Class Boss extends Unknown';
+    const src = 'Class extends Unknown';
     const err = compileErr(src, 'Boss');
     expect(err).toMatch(/unknown.*has not been declared/i);
   });
 
   test('chained inheritance throws compile error', () => {
-    const enemySrc = 'Class Enemy';
-    const bossSrc = 'Class Boss extends Enemy';
-    const minibossSrc = 'Class MiniBoss extends Boss';
+    const enemySrc = 'Class';
+    const bossSrc = 'Class extends Enemy';
+    const minibossSrc = 'Class extends Boss';
     const result = compiler.transpile({
       lib: [],
       files: [
@@ -60,7 +60,7 @@ describe('class extends — compile errors', () => {
 describe('self. keyword — transpiler output', () => {
   test('self.property = expr emits this.property = rhs', () => {
     const src = [
-      'Class Player',
+      'Class',
       'dim health',
       'Constructor(h)',
       '  self.health = h',
@@ -72,7 +72,7 @@ describe('self. keyword — transpiler output', () => {
 
   test('self.property in expression emits this.property', () => {
     const src = [
-      'Class Player',
+      'Class',
       'dim health',
       'function getHealth()',
       '  return self.health',
@@ -84,7 +84,7 @@ describe('self. keyword — transpiler output', () => {
 
   test('self.method(args) in statement emits this.method(args)', () => {
     const src = [
-      'Class Player',
+      'Class',
       'dim health',
       'Constructor(h)',
       '  self.health = h',
@@ -106,7 +106,7 @@ describe('self. keyword — transpiler output', () => {
 describe('self. enforcement — bare class property access is a compile error', () => {
   test('bare access to a class Variable property in a method throws compile error', () => {
     const src = [
-      'Class Player',
+      'Class',
       'dim health',
       'function takeDamage(amount)',
       '  health = health - amount',
@@ -118,7 +118,7 @@ describe('self. enforcement — bare class property access is a compile error', 
 
   test('bare access to a class Variable property in a constructor throws compile error', () => {
     const src = [
-      'Class Player',
+      'Class',
       'dim health',
       'Constructor(h)',
       '  health = h',
@@ -139,7 +139,7 @@ describe('super() in constructor', () => {
 
   test('child with no super() call auto-emits super() at top of constructor', () => {
     const childSrc = [
-      'Class Child extends Enemy',
+      'Class extends Enemy',
       'Constructor(h)',
       '  self.phase = 1',
       'EndConstructor',
@@ -171,7 +171,7 @@ describe('super.method() — transpiler output', () => {
 describe('super — compile errors', () => {
   test('super() in a method (not constructor) throws compile error', () => {
     const childSrc = [
-      'Class Child extends Enemy',
+      'Class extends Enemy',
       'function reset()',
       '  super(100)',
       'endfunction',
@@ -185,7 +185,7 @@ describe('super — compile errors', () => {
 
   test('super.missingMethod() throws compile error', () => {
     const childSrc = [
-      'Class Child extends Enemy',
+      'Class extends Enemy',
       'function reset()',
       '  super.nonexistent()',
       'endfunction',
@@ -199,7 +199,7 @@ describe('super — compile errors', () => {
 
   test('super in class with no parent throws compile error', () => {
     const src = [
-      'Class Lone',
+      'Class',
       'function reset()',
       '  super.someMethod()',
       'endfunction',
@@ -210,7 +210,7 @@ describe('super — compile errors', () => {
 
   test('calling super() twice in constructor throws compile error', () => {
     const childSrc = [
-      'Class Child extends Enemy',
+      'Class extends Enemy',
       'Constructor(h)',
       '  super(h)',
       '  super(h)',

@@ -30,13 +30,21 @@ class SelfFactorRule implements IParserRule {
     }
 
     // self.property in expression context — look up symbol type from class scope so arithmetic
-    // type-checks pass correctly even when a local variable shadows the class property name
+    // type-checks pass correctly even when a local variable shadows the class property name.
+    // Walk up the inheritance chain so inherited properties resolve to the correct type.
     const className = symbolTable.getFullScopeName().split('.')[0];
     let dataType;
-    try {
-      dataType = symbolTable.getInScope(memberName, symbolTypes.Variable, className).dataType;
-    } catch {
-      dataType = undefined;
+    let searchClass: string | undefined = className;
+    while (searchClass !== undefined && dataType === undefined) {
+      try {
+        dataType = symbolTable.getInScope(memberName, symbolTypes.Variable, searchClass).dataType;
+      } catch {
+        try {
+          searchClass = symbolTable.get(searchClass, symbolTypes.Class).parentClassName;
+        } catch {
+          searchClass = undefined;
+        }
+      }
     }
     return new PropertyTermNode(`this.${memberName}`, loc, dataType);
   }

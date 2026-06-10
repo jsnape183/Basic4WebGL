@@ -1,4 +1,4 @@
-Class Enemy
+Class
 
 dim health
 

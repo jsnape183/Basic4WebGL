@@ -28,7 +28,7 @@
       const _print = (value) => {
         console.log(value);
         if(typeof value === 'string' || typeof value === 'number'){
-          window.parent.postMessage({type:'console.log', message: value});
+          window.parent.postMessage({type:'console.log', message: String(value)});
           return;
         }
         try{
@@ -37,12 +37,11 @@
             window.parent.postMessage({type:'console.log', message:'null'});
             return;
           }
-
-            window.parent.postMessage({type:'console.log', message:json});
-          }
-          catch{
-            window.parent.postMessage({type:'console.log', message:'null'});
-          }
+          window.parent.postMessage({type:'console.log', message:json});
+        }
+        catch{
+          window.parent.postMessage({type:'console.log', message:'null'});
+        }
       }
 
       const _throwError = (e)=>{

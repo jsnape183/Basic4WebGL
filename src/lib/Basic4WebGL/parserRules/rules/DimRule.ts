@@ -81,6 +81,16 @@ class DimRule implements IParserRule {
       );
       const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
 
+      // Pull inherited members into this object's scope so method/property
+      // lookups work on instances of child classes (e.g. dim e as SquishyEnemy
+      // still exposes BaseEnemy.hit() under the 'e' scope).
+      let ancestor = classSymbol;
+      while (ancestor.parentClassName) {
+        const parentClass = symbolTable.get(ancestor.parentClassName, symbolTypes.Class);
+        symbolTable.mergeSymbolsIntoScope(name, ancestor.parentClassName);
+        ancestor = parentClass;
+      }
+
       if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(
           tokenStream,
