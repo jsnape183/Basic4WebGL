@@ -15,6 +15,8 @@ export const SOFTBASIC_KEYWORDS = [
   'true', 'false',
   // Built-in statements
   'print', 'call',
+  // Object-oriented
+  'self', 'extends', 'super',
 ] as const;
 
 export const SOFTBASIC_LIFECYCLE_EVENTS = [

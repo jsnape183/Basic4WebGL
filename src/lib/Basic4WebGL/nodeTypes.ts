@@ -55,6 +55,9 @@ export const nodeTypes = createEnum([
   'TypedArrayDim',
   'VariableDimAssign',
   'MultiDim',
+  'SuperConstructorCall',
+  'SuperMethodCall',
+  'SuperMethodTerm',
 ]);
 
 export default nodeTypes;
