@@ -5,7 +5,7 @@ import IParserRule, {
 } from '@CompilerLib/parser/ParserRule';
 import Symbols from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
-import { symbolTypes } from '../../../symbolTypes';
+import { scopeTypes, symbolTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import SuperMethodTermNode from '@Basic4WebGL/nodes/SuperMethodTermNode';
@@ -19,6 +19,10 @@ class SuperFactorRule implements IParserRule {
     const fullScope = symbolTable.getFullScopeName();
     const className = fullScope.split('.')[0];
 
+    const scopeType = symbolTable.getScopeType();
+    if (scopeType !== scopeTypes.Function && scopeType !== scopeTypes.Constructor) {
+      throw new CompilationError("'super' can only be used inside a class method or constructor");
+    }
     if (!className || !symbolTable.check(className, symbolTypes.Class)) {
       throw new CompilationError("'super' can only be used inside a class");
     }

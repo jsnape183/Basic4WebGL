@@ -41,7 +41,7 @@ class SuperRule implements IParserRule {
       if (scopeType !== scopeTypes.Constructor) {
         throw new CompilationError("super() can only be called in a constructor");
       }
-      // Prevent multiple super() calls in same constructor
+      // '__supercall__' is a parse-phase sentinel — never emitted, only prevents duplicate super() calls
       if (symbolTable.check('__supercall__', symbolTypes.Variable)) {
         throw new CompilationError('super() called more than once in constructor');
       }
