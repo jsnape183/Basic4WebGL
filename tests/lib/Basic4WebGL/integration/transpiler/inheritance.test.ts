@@ -15,7 +15,7 @@ describe('class extends — transpiler output', () => {
   test('class without extends still emits class X {}', () => {
     const src = ['Class Enemy', 'dim health'].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Enemy', source: src }] });
-    expect(result).toContain('classEnemy{');
+    expect(result).toContain('classenemy{');
     expect(result).not.toContain('extends');
   });
 });

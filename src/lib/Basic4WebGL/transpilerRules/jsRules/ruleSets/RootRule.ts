@@ -6,6 +6,7 @@ import {
 import { getTranspilerRule } from '@CompilerLib/transpiler/transpilerRuleFactory';
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
+import { symbolTypes } from '../../../symbolTypes';
 import { formatRoot } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.Root)
@@ -23,7 +24,11 @@ class RootRule implements IGeneratable {
       .filter((n) => n.type !== nodeTypes.ConstructorDecl)
       .map((n) => `${getTranspilerRule(n.type).generate(n, table)}`);
 
-    return formatRoot(node, children, constructorContent);
+    const className = node.data as string;
+    const classSymbol = table?.retrieveSymbol(className, symbolTypes.Class);
+    const parentName = classSymbol?.parentClassName;
+
+    return formatRoot(node, children, constructorContent, parentName);
   }
 }
 

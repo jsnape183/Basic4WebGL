@@ -73,10 +73,11 @@ export const formatClass = (className: string): string => {
   return `class ${className}{}`;
 };
 
-export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string) => {
+export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string, parentName?: string): string => {
+  const extendsClause = parentName ? ` extends ${parentName}` : '';
   const classDecl = constructorContent
-    ? `class ${node.data}{ ${constructorContent} }`
-    : formatClass(node.data);
+    ? `class ${node.data}${extendsClause}{ ${constructorContent} }`
+    : `class ${node.data}${extendsClause}{}`;
   return `${classDecl}
     ${children.join(';')}`;
 };

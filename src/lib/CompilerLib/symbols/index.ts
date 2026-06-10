@@ -17,6 +17,7 @@ export class Symbol {
   public scope: SymbolScope;
   public fullScope: string = '';
   public dataType: BuiltInType;
+  public parentClassName?: string;
 
   constructor(
     name: string,
