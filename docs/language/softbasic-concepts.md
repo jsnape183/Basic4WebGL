@@ -59,9 +59,9 @@ dim x
 dim y
 
 function init(startX, startY)
-    health = 100
-    x = startX
-    y = startY
+    self.health = 100
+    self.x = startX
+    self.y = startY
 endfunction
 ```
 
@@ -74,7 +74,11 @@ class dog {}
 dog.prototype.health = undefined;
 dog.prototype.x = undefined;
 dog.prototype.y = undefined;
-dog.prototype.init = (init_startX, init_startY) => { ... };
+dog.prototype.init = function(init_startX, init_startY) {
+    this.health = 100;
+    this.x = init_startX;
+    this.y = init_startY;
+};
 ```
 
 **Important:** `Class` must appear on line 1 of the file. Writing it anywhere else is a compilation error.
@@ -120,6 +124,27 @@ The underscore prefix avoids collisions when multiple functions declare variable
 | Module top-level | `moduleName.varName` | `bunny.score` |
 | Class top-level | `className.prototype.varName` | `Dog.prototype.name` |
 | Inside a function | `functionName_varName` | `onenter_bunnyimage` |
+
+---
+
+## `self.`
+
+Inside a class method or constructor, `self.` is the required prefix for accessing instance properties. Bare property access (without `self.`) is a compile error.
+
+```basic
+Class
+dim health
+
+Constructor(startHealth)
+    self.health = startHealth    ' required — bare 'health = startHealth' is a compile error
+EndConstructor
+
+function takeDamage(amount)
+    self.health = self.health - amount    ' both reads and writes need self.
+endfunction
+```
+
+`self.` compiles to JavaScript's `this.`, binding each access to the current instance.
 
 ---
 
@@ -177,17 +202,18 @@ function onenter()
 endfunction
 ```
 
-### `onupdate()`
+### `onupdate(delta)`
 
 The game loop hook. Called once per frame by the PIXI ticker. Use it for movement, collision checks, and any logic that must run every frame.
 
 ```basic
-function onupdate()
-    mysprite.setPosition(x, y)
+function onupdate(delta)
+    x = x + speed * delta
+    mysprite.transform.setPosition(x, y)
 endfunction
 ```
 
-The underlying `deltaTime` is passed to the runtime but not yet exposed as a parameter in user code — treat each call as one frame at 60 fps.
+`delta` is the PIXI ticker delta time — `1.0` at a steady 60 fps, higher when frames are slow. Declaring the parameter is optional; omit it if you don't need frame-rate-independent movement.
 
 ### `onkeydown(keyCode)` and `onkeyup(keyCode)`
 
@@ -210,15 +236,7 @@ endfunction
 
 Common key codes: 32 = Space, 13 = Enter, 37 = Left, 38 = Up, 39 = Right, 40 = Down, 65–90 = A–Z.
 
-Both functions are **required** — the runtime calls them unconditionally on every key event. If either function is missing, the browser will throw a `ReferenceError` at runtime. If you do not need to handle a particular event, define it as an empty function:
-
-```basic
-function onkeydown(k)
-endfunction
-
-function onkeyup(k)
-endfunction
-```
+Both functions are **optional** — the runtime checks for their presence before calling them. If a module does not define `onkeydown` or `onkeyup`, key events for that module are silently ignored.
 
 ---
 
@@ -236,12 +254,10 @@ dim x
 dim y
 
 Constructor(startHealth, startX, startY)
-    health = startHealth
-    x = startX
-    y = startY
+    self.health = startHealth
+    self.x = startX
+    self.y = startY
 EndConstructor
-
-EndClass
 ```
 
 **Instantiation with arguments:**
@@ -252,10 +268,55 @@ dim myCar as Car               ' no args — works whether or not class has a Co
 ```
 
 **Rules:**
-- `Constructor` / `EndConstructor` must appear inside a `Class` block
+- `Constructor` / `EndConstructor` must appear inside a `Class` file
 - Parameters are accessible by name inside the constructor body
 - At most one constructor per class — no overloading
-- No inheritance
+- `self.` is required for all property assignments inside the constructor body
+- `EndClass` is valid (it closes the class block explicitly) but optional
+
+---
+
+## Inheritance
+
+A class can extend a parent class using `Class extends ParentName`. The child inherits all properties and methods of the parent.
+
+```basic
+' Enemy.bas — parent class
+Class
+
+dim health
+
+Constructor(startHealth)
+    self.health = startHealth
+EndConstructor
+
+function hit()
+    self.health = self.health - 10
+endfunction
+```
+
+```basic
+' Boss.bas — child class
+Class extends Enemy
+
+Constructor()
+    super(200)    ' calls Enemy's Constructor with startHealth = 200
+EndConstructor
+```
+
+```basic
+' Main.bas
+dim boss as Boss()
+boss.hit()          ' method inherited from Enemy
+print boss.health   ' 190
+```
+
+**Rules:**
+- The parent class file must appear earlier in the project file list than the child
+- `super()` in a child constructor calls the parent constructor
+- `super.method()` calls a parent method from a child override
+- Single-level only — if `Enemy` already extends another class, `Boss extends Enemy` is a compile error
+- Parent methods and properties are fully accessible on child instances
 
 ---
 
@@ -368,6 +429,50 @@ for i = 0 to 9
 next
 ```
 
+The loop counter (`i` above) is auto-declared — no prior `dim i` is needed.
+
+---
+
+## Operators
+
+### Arithmetic
+
+| Operator | Description |
+|---|---|
+| `+` | Addition; also string concatenation |
+| `-` | Subtraction |
+| `*` | Multiplication |
+| `/` | Division |
+
+### Comparison
+
+| Operator | Description |
+|---|---|
+| `=` | Equal |
+| `<>` | Not equal |
+| `<` | Less than |
+| `>` | Greater than |
+| `<=` | Less than or equal |
+| `>=` | Greater than or equal |
+
+### Boolean
+
+| Operator | Description |
+|---|---|
+| `and` | Logical AND |
+| `or` | Logical OR |
+| `not` | Logical NOT |
+
+### String concatenation
+
+The `+` operator concatenates strings:
+
+```basic
+dim greeting
+greeting = "Hello, " + name
+print "Score: " + score
+```
+
 ---
 
 ## Packages
@@ -379,7 +484,7 @@ softBASIC organises built-in library modules into packages. Packages are collect
 | Package  | Removable | Modules |
 |----------|-----------|---------|
 | softCore | No (core) | math, string, array |
-| softGfx  | Yes       | gfx, drawing, stage, pen, assetmanager, sprite, text |
+| softGfx  | Yes       | gfx, drawing, stage, pen, assetmanager, ObjectTransform, sprite, animatedsprite, text, tilemap |
 
 **Managing packages in the editor:**
 
@@ -405,9 +510,6 @@ A display object wrapping a PIXI sprite. Created from a project asset image.
 | Method | Signature | Description |
 |---|---|---|
 | Constructor | `Sprite(imagePath)` | Loads the named asset and creates the sprite |
-| `setPosition` | `(x, y)` | Sets the sprite's position |
-| `getX` | `()` | Returns current x position |
-| `getY` | `()` | Returns current y position |
 | `setAngle` | `(angle)` | Sets rotation in degrees |
 | `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
 | `setScale` | `(sx, sy)` | Sets scale on both axes (`1` = natural size) |
@@ -417,10 +519,79 @@ A display object wrapping a PIXI sprite. Created from a project asset image.
 | `width` | `()` | Returns current width in pixels (after scale) |
 | `height` | `()` | Returns current height in pixels (after scale) |
 
+Position is managed via the `.transform` member — see [ObjectTransform](#objecttransform) below.
+
 ```basic
 dim bunny as Sprite("bunny.png")
-bunny.setPosition(100, 200)
+bunny.transform.setPosition(100, 200)
 stage.add(bunny)
+```
+
+### `ObjectTransform`
+
+A shared position interface attached to `Sprite`, `AnimatedSprite`, and `TileMap` instances as the `.transform` property. It is not instantiated directly.
+
+| Method | Signature | Description |
+|---|---|---|
+| `setPosition` | `(x, y)` | Sets the object's position |
+| `x` | `()` | Returns current x position |
+| `y` | `()` | Returns current y position |
+
+```basic
+dim bunny as Sprite("bunny.png")
+bunny.transform.setPosition(100, 200)
+print bunny.transform.x()    ' 100
+```
+
+### `AnimatedSprite`
+
+A display object backed by a sprite sheet with named animation clips.
+
+| Method | Signature | Description |
+|---|---|---|
+| Constructor | `AnimatedSprite(imagePath, frameW, frameH)` | Loads the sheet and sets the frame size in pixels |
+| `addAnim` | `(name, startFrame, endFrame, fps, loop)` | Register a named animation clip |
+| `play` | `(name)` | Start playing a named animation |
+| `isPlaying` | `(name)` | Returns true if the named animation is currently active |
+| `setAngle` | `(angle)` | Sets rotation in degrees |
+| `setAlpha` | `(a)` | Sets opacity (0.0–1.0) |
+| `setScale` | `(sx, sy)` | Sets scale |
+| `setFlip` | `(h, v)` | Horizontal/vertical flip |
+| `setVisible` | `(v)` | Show or hide |
+| `width` | `()` | Frame width in pixels |
+| `height` | `()` | Frame height in pixels |
+
+Position via `.transform` (see [ObjectTransform](#objecttransform)).
+
+```basic
+dim hero as AnimatedSprite("hero_sheet.png", 64, 64)
+hero.addAnim("walk", 0, 7, 12, true)
+hero.addAnim("idle", 8, 8, 1, false)
+hero.play("walk")
+hero.transform.setPosition(100, 200)
+stage.add(hero)
+```
+
+### `TileMap`
+
+A tile-based display object loaded from a Tiled-format JSON asset.
+
+| Method | Signature | Description |
+|---|---|---|
+| Constructor | `TileMap(tilesetPath, tileW, tileH)` | Loads the tileset image and sets tile dimensions |
+| `load` | `(jsonPath)` | Load tile layout from a Tiled-format JSON asset |
+| `tileAt` | `(x, y)` | Returns the tile ID at grid coordinates |
+| `widthPx` | `()` | Map width in pixels |
+| `heightPx` | `()` | Map height in pixels |
+
+Position via `.transform` (see [ObjectTransform](#objecttransform)).
+
+```basic
+dim map as TileMap("tiles.png", 32, 32)
+map.load("level1.json")
+map.transform.setPosition(0, 0)
+stage.add(map)
+print map.tileAt(2, 3)
 ```
 
 ### `Text`
@@ -532,16 +703,27 @@ Top-level graphics helpers.
 | `gfx.mouseY()` | Returns the pointer's current Y position, canvas-relative |
 | `gfx.mouseDown()` | Returns true if any mouse button is currently held |
 
+### `assetmanager`
+
+Low-level asset access. Most projects load assets implicitly via `Sprite`, `AnimatedSprite`, or `TileMap` constructors. Use `assetmanager` when you need to load a texture separately from its display object.
+
+| Function | Description |
+|---|---|
+| `assetmanager.loadImage(name)` | Returns the texture handle for a pre-loaded asset |
+
 ---
 
 ## `print` Statement
 
-Outputs to the IDE console (BottomPanel).
+Outputs a single expression to the IDE console (BottomPanel).
 
 ```basic
 print "Hello, World!"
 print score
+print "Score: " + score
 ```
+
+`print` accepts one expression. Use `+` to combine values in a single output line.
 
 ---
 
@@ -559,21 +741,20 @@ return call("Math.abs(abs_n)")
 
 ```basic
 ' bunny.bas
-dim bunnysprite
+dim bunnysprite as Sprite("bunny.png")
 
 function onenter()
-    bunnysprite = sprite("bunny.png")
     stage.add(bunnysprite)
 endfunction
 
-function onupdate()
-    bunnysprite.setPosition(100, 200)
+function onupdate(delta)
+    bunnysprite.transform.setPosition(100, 200)
 endfunction
 ```
 
-- `bunnysprite` is a module-level variable → `bunny.bunnysprite`
-- `Sprite("bunny.png")` creates the sprite directly from the asset name — no separate texture load step
-- `stage.add` registers the display object; `bunnysprite` is accessible in `onupdate` because it is module-level
+- `dim bunnysprite as Sprite("bunny.png")` declares a module-level sprite — it is created once when the module initialises (after PIXI and assets are ready)
+- `stage.add` registers the display object for rendering
+- Position is set via `.transform.setPosition` — `Sprite` does not expose `setPosition` directly
 
 ---
 
@@ -648,7 +829,7 @@ Every element is constructed immediately when `as Type` is used:
 
 ```basic
 dim sprites(10) as Sprite("bunny.png")
-sprites(0).setPosition(100, 200)
+sprites(0).transform.setPosition(100, 200)
 stage.add(sprites(0))
 ```
 
@@ -684,13 +865,3 @@ function onupdate()
     next
 endfunction
 ```
-
----
-
-## Known Gaps / To Document
-
-- Whether `print` accepts multiple arguments / expressions
-- String concatenation syntax
-- Comparison operators: `=` (equals), `<>` (not-equals), `<`, `>`, `<=`, `>=`
-- Boolean operators: `and`, `or`, `not`
-- `deltaTime` exposure in `onupdate()` parameters
