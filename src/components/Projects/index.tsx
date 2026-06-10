@@ -6,7 +6,8 @@ import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
 import { createProjectWithMainFile } from '../../features/projects/createProjectWithMainFile';
 import { deleteProjectWithMainFile } from '../../features/projects/deleteProjectAndFiles';
-import { exportProject } from '../../features/projects/exportProject';
+import { exportProject, ProjectExportJson } from '../../features/projects/exportProject';
+import { importProject } from '../../features/projects/importProject';
 import { Project, renameProject } from '../../features/projects/projectsSlice';
 import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
@@ -238,6 +239,11 @@ const ProjectList: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importPendingJson, setImportPendingJson] = useState<ProjectExportJson | null>(null);
+  const [showImportOverwriteModal, setShowImportOverwriteModal] = useState(false);
+  const [importConfirmName, setImportConfirmName] = useState('');
+  const importOverwriteInputRef = useRef<HTMLInputElement>(null);
 
   const openModal = () => {
     setNewName('');
@@ -255,6 +261,47 @@ const ProjectList: React.FC = () => {
     dispatch(deleteProjectWithMainFile(id));
   };
 
+  const handleImportFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!importInputRef.current) return;
+    importInputRef.current.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      let json: ProjectExportJson;
+      try {
+        json = JSON.parse(event.target?.result as string) as ProjectExportJson;
+      } catch {
+        alert('Invalid file: not valid JSON');
+        return;
+      }
+      if (json.version !== 1) {
+        alert('Unsupported export version');
+        return;
+      }
+      const existing = projects.find((p) => p.name === json.project.name);
+      if (existing) {
+        setImportPendingJson(json);
+        setImportConfirmName('');
+        setShowImportOverwriteModal(true);
+      } else {
+        dispatch(importProject(json));
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportOverwrite = () => {
+    if (!importPendingJson || importConfirmName !== importPendingJson.project.name) return;
+    const existing = projects.find((p) => p.name === importPendingJson.project.name);
+    if (existing) dispatch(deleteProjectWithMainFile(existing.id));
+    dispatch(importProject(importPendingJson));
+    setShowImportOverwriteModal(false);
+    setImportPendingJson(null);
+    setImportConfirmName('');
+  };
+
   useEffect(() => {
     if (showModal) setTimeout(() => inputRef.current?.focus(), 0);
   }, [showModal]);
@@ -265,6 +312,17 @@ const ProjectList: React.FC = () => {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [showModal]);
+
+  useEffect(() => {
+    if (showImportOverwriteModal) setTimeout(() => importOverwriteInputRef.current?.focus(), 0);
+  }, [showImportOverwriteModal]);
+
+  useEffect(() => {
+    if (!showImportOverwriteModal) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowImportOverwriteModal(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showImportOverwriteModal]);
 
   const modal = showModal
     ? ReactDOM.createPortal(
@@ -311,9 +369,65 @@ const ProjectList: React.FC = () => {
       )
     : null;
 
+  const importOverwriteModal = showImportOverwriteModal && importPendingJson
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowImportOverwriteModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-overwrite-modal-title"
+            className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-sm shadow-xl"
+          >
+            <h2 id="import-overwrite-modal-title" className="text-ds-text text-lg font-semibold mb-2">
+              Overwrite project
+            </h2>
+            <p className="text-ds-text-muted text-sm mb-4">
+              A project named <span className="text-ds-text font-medium">{importPendingJson.project.name}</span> already exists. This will replace all its files and assets. Type the project name to confirm.
+            </p>
+            <input
+              ref={importOverwriteInputRef}
+              type="text"
+              value={importConfirmName}
+              onChange={(e) => setImportConfirmName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleImportOverwrite(); }}
+              placeholder={importPendingJson.project.name}
+              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-error mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleImportOverwrite}
+                disabled={importConfirmName !== importPendingJson.project.name}
+                className="bg-ds-error text-white text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Import & Overwrite
+              </button>
+              <button
+                onClick={() => setShowImportOverwriteModal(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
+
   return (
     <>
       {modal}
+      {importOverwriteModal}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={handleImportFileSelected}
+      />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-ds-text">My Projects</h1>
@@ -321,6 +435,13 @@ const ProjectList: React.FC = () => {
             {projects.length} {projects.length === 1 ? 'project' : 'projects'}
           </p>
         </div>
+        <button
+          onClick={() => importInputRef.current?.click()}
+          className="text-ds-text-dim hover:text-ds-text-muted text-sm transition-colors"
+          aria-label="Import project"
+        >
+          Import
+        </button>
       </div>
 
       {projects.length === 0 ? (
