@@ -6,7 +6,7 @@ import { IFolder } from '../folders/foldersSlice';
 
 export interface ProjectExportJson {
   version: 1;
-  project: { name: string };
+  project: { name: string }; // packageIds excluded — importer applies a fresh default
   folders: Array<{ id: string; name: string; parentId: string | null; section: 'files' | 'assets' }>;
   files: Array<{ id: string; name: string; source: string; folderId: string | null; fullName: string }>;
   assets: Array<{ id: string; name: string; content: string; folderId: string | null; fullName: string }>;
