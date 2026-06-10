@@ -298,7 +298,7 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
-      ...matchPattern(input, /^self(?=[ \r\n]|[^a-zA-Z0-9._$]|$)/i),
+      ...matchPattern(input, /^self(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
       token: tokens.Self,
     }),
   },
