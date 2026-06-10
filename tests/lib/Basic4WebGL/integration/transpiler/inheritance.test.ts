@@ -1,16 +1,26 @@
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
-import { cleanWhitespace, compileOk } from '../../helpers';
+import { cleanWhitespace, compileOk, loadSampleFile } from '../../helpers';
 
 function compileErr(src: string, name = 'Test'): string {
   const result = compiler.transpile({ lib: [], files: [{ name, source: src }] });
   return result.diagnostics.map((d) => d.message).join('; ');
 }
 
+// ── sample files ─────────────────────────────────────────────────────────────
+
+const folder = 'inheritance';
+const enemyFile = { name: 'Enemy', source: loadSampleFile('Enemy', folder) };
+const bossFile = { name: 'Boss', source: loadSampleFile('Boss', folder) };
+const mainFile = { name: 'Main', source: loadSampleFile('Main', folder) };
+
 // ── class X extends Y — output ──────────────────────────────────────────────
 
 describe('class extends — transpiler output', () => {
-  test.todo('class with extends emits class Boss extends Enemy — requires Tasks 4 and 6');
+  test('class with extends emits class Boss extends Enemy {}', () => {
+    const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
+    expect(result).toContain('classBossextendsEnemy');
+  });
 
   test('class without extends still emits class X {}', () => {
     const src = ['Class Enemy', 'dim health'].join('\n');
@@ -116,5 +126,80 @@ describe('self. enforcement — bare class property access is a compile error', 
     ].join('\n');
     const err = compileErr(src, 'Player');
     expect(err).toMatch(/'health' is a class property — use self\.health/i);
+  });
+});
+
+// ── super ────────────────────────────────────────────────────────────────────
+
+describe('super() in constructor', () => {
+  test('explicit super(args) emits super(args) at start of constructor', () => {
+    const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
+    expect(result).toContain('constructor(constructor_h){super(constructor_h)');
+  });
+
+  test('child with no super() call auto-emits super() at top of constructor', () => {
+    const childSrc = [
+      'Class Child extends Enemy',
+      'Constructor(h)',
+      '  self.phase = 1',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({
+      lib: [],
+      files: [
+        enemyFile,
+        { name: 'Child', source: childSrc },
+        mainFile,
+      ],
+    });
+    expect(result).toContain('constructor(constructor_h){super()');
+  });
+});
+
+describe('super.method() — transpiler output', () => {
+  test('super.takeDamage(amount) emits Enemy.prototype.takeDamage.call(this, amount)', () => {
+    const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
+    expect(result).toContain('enemy.prototype.takedamage.call(this');
+  });
+});
+
+describe('super — compile errors', () => {
+  test('super() in a method (not constructor) throws compile error', () => {
+    const childSrc = [
+      'Class Child extends Enemy',
+      'function reset()',
+      '  super(100)',
+      'endfunction',
+    ].join('\n');
+    const err = compiler.transpile({
+      lib: [],
+      files: [enemyFile, { name: 'Child', source: childSrc }, mainFile],
+    }).diagnostics[0]?.message ?? '';
+    expect(err).toMatch(/super\(\) can only be called in a constructor/i);
+  });
+
+  test('super.missingMethod() throws compile error', () => {
+    const childSrc = [
+      'Class Child extends Enemy',
+      'function reset()',
+      '  super.nonexistent()',
+      'endfunction',
+    ].join('\n');
+    const err = compiler.transpile({
+      lib: [],
+      files: [enemyFile, { name: 'Child', source: childSrc }, mainFile],
+    }).diagnostics[0]?.message ?? '';
+    expect(err).toMatch(/nonexistent.*not defined on parent/i);
+  });
+
+  test('super in class with no parent throws compile error', () => {
+    const src = [
+      'Class Lone',
+      'function reset()',
+      '  super.someMethod()',
+      'endfunction',
+    ].join('\n');
+    const err = compileErr(src, 'Lone');
+    expect(err).toMatch(/which has no parent/i);
   });
 });
