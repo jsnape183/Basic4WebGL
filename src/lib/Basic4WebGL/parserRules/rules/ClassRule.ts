@@ -9,6 +9,7 @@ import { scopeTypes, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { CompilationError } from '@CompilerLib/errors';
 import EmptyNode from '../../nodes/EmptyNode';
+import { newLines } from '../../parserConfig';
 
 @RegisterParserRule('Class')
 class ClassRule implements IParserRule {
@@ -54,6 +55,10 @@ class ClassRule implements IParserRule {
       }
 
       module.parentClassName = parentName;
+    }
+
+    if (check(newLines, tokenStream.current())) {
+      matchAndMove(newLines, tokenStream);
     }
 
     return new EmptyNode(loc);
