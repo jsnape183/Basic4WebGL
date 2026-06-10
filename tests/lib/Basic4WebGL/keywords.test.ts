@@ -20,6 +20,12 @@ describe('SOFTBASIC_KEYWORDS', () => {
     }
   });
 
+  it('contains self, extends, super keywords', () => {
+    for (const kw of ['self', 'extends', 'super']) {
+      expect(SOFTBASIC_KEYWORDS).toContain(kw);
+    }
+  });
+
   it('has no duplicates', () => {
     expect(SOFTBASIC_KEYWORDS.length).toBe(new Set(SOFTBASIC_KEYWORDS).size);
   });
