@@ -10,11 +10,26 @@ import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import PropertyMethodCallNode from '../../nodes/PropertyMethodCallNode';
 import { newLines } from '../../parserConfig';
+import { CompilationError } from '@CompilerLib/errors';
+import { scopeTypes, symbolTypes } from '../../symbolTypes';
+
+function assertInsideClass(symbolTable: Symbols): void {
+  const scopeType = symbolTable.getScopeType();
+  if (scopeType !== scopeTypes.Function && scopeType !== scopeTypes.Constructor) {
+    throw new CompilationError("'self' can only be used inside a class method or constructor");
+  }
+  const fullScope = symbolTable.getFullScopeName();
+  const topName = fullScope.split('.')[0];
+  if (!topName || !symbolTable.check(topName, symbolTypes.Class)) {
+    throw new CompilationError("'self' can only be used inside a class");
+  }
+}
 
 @RegisterParserRule('Self')
 class SelfRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     const loc = tokenStream.current().loc();
+    assertInsideClass(symbolTable);
 
     matchAndMove(tokens.Self, tokenStream);
     matchAndMove(tokens.Dot, tokenStream);
