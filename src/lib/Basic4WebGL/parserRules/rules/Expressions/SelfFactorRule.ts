@@ -29,10 +29,15 @@ class SelfFactorRule implements IParserRule {
       return new PropertyMethodTermNode(`this.${memberName}`, args, loc);
     }
 
-    // self.property in expression context — look up symbol type so arithmetic type-checks pass
-    const dataType = symbolTable.check(memberName, symbolTypes.Variable)
-      ? symbolTable.get(memberName, symbolTypes.Variable).dataType
-      : undefined;
+    // self.property in expression context — look up symbol type from class scope so arithmetic
+    // type-checks pass correctly even when a local variable shadows the class property name
+    const className = symbolTable.getFullScopeName().split('.')[0];
+    let dataType;
+    try {
+      dataType = symbolTable.getInScope(memberName, symbolTypes.Variable, className).dataType;
+    } catch {
+      dataType = undefined;
+    }
     return new PropertyTermNode(`this.${memberName}`, loc, dataType);
   }
 }
