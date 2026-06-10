@@ -162,6 +162,14 @@ const EditPage: React.FC = () => {
             </>
           )}
           <div className="flex-1" />
+          <a
+            href="/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-ds-text-muted hover:text-ds-text transition-colors mr-2"
+          >
+            Docs
+          </a>
           {!isRunning ? (
             <button
               onClick={run}
