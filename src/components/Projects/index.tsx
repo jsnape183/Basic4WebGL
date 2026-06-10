@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
 import { createProjectWithMainFile } from '../../features/projects/createProjectWithMainFile';
 import { deleteProjectWithMainFile } from '../../features/projects/deleteProjectAndFiles';
+import { exportProject } from '../../features/projects/exportProject';
 import { Project, renameProject } from '../../features/projects/projectsSlice';
 import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
@@ -208,13 +209,22 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
             >
               Open →
             </Link>
-            <button
-              onClick={openDeleteModal}
-              className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error text-xs transition-opacity"
-              aria-label={`Delete project ${project.name}`}
-            >
-              Delete
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => dispatch(exportProject(project.id))}
+                className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-text-muted text-xs transition-opacity"
+                aria-label={`Export project ${project.name}`}
+              >
+                Export
+              </button>
+              <button
+                onClick={openDeleteModal}
+                className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-error text-xs transition-opacity"
+                aria-label={`Delete project ${project.name}`}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>
