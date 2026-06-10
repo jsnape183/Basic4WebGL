@@ -19,7 +19,7 @@ const mainFile = { name: 'Main', source: loadSampleFile('Main', folder) };
 describe('class extends — transpiler output', () => {
   test('class with extends emits class Boss extends Enemy {}', () => {
     const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
-    expect(result).toContain('classBossextendsEnemy');
+    expect(result).toContain('classbossextendsenemy');
   });
 
   test('class without extends still emits class X {}', () => {
@@ -134,7 +134,7 @@ describe('self. enforcement — bare class property access is a compile error', 
 describe('super() in constructor', () => {
   test('explicit super(args) emits super(args) at start of constructor', () => {
     const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
-    expect(result).toContain('constructor(constructor_h){super(constructor_h)');
+    expect(result).toContain('constructor(constructor_startHealth){super(constructor_startHealth)');
   });
 
   test('child with no super() call auto-emits super() at top of constructor', () => {
@@ -144,12 +144,17 @@ describe('super() in constructor', () => {
       '  self.phase = 1',
       'EndConstructor',
     ].join('\n');
+    const childMainSrc = [
+      'function onenter()',
+      '  dim c as Child(100)',
+      'endfunction',
+    ].join('\n');
     const result = compileOk({
       lib: [],
       files: [
         enemyFile,
         { name: 'Child', source: childSrc },
-        mainFile,
+        { name: 'ChildMain', source: childMainSrc },
       ],
     });
     expect(result).toContain('constructor(constructor_h){super()');
