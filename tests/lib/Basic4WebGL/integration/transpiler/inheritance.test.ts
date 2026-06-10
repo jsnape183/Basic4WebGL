@@ -90,3 +90,31 @@ describe('self. keyword — transpiler output', () => {
     expect(result).toContain('this.init(');
   });
 });
+
+// ── self. enforcement ────────────────────────────────────────────────────────
+
+describe('self. enforcement — bare class property access is a compile error', () => {
+  test('bare access to a class Variable property in a method throws compile error', () => {
+    const src = [
+      'Class Player',
+      'dim health',
+      'function takeDamage(amount)',
+      '  health = health - amount',
+      'endfunction',
+    ].join('\n');
+    const err = compileErr(src, 'Player');
+    expect(err).toMatch(/'health' is a class property — use self\.health/i);
+  });
+
+  test('bare access to a class Variable property in a constructor throws compile error', () => {
+    const src = [
+      'Class Player',
+      'dim health',
+      'Constructor(h)',
+      '  health = h',
+      'EndConstructor',
+    ].join('\n');
+    const err = compileErr(src, 'Player');
+    expect(err).toMatch(/'health' is a class property — use self\.health/i);
+  });
+});
