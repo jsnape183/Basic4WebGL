@@ -46,6 +46,20 @@ class FactorRule implements IParserRule {
         undefined
       );
     }
+    if (check(tokens.Self, tokenStream.current())) {
+      return getParserRule('SelfFactor').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+    }
+    if (check(tokens.Super, tokenStream.current())) {
+      return getParserRule('SuperFactor').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+    }
     if (check(tokens.Variable, tokenStream.current())) {
       return getParserRule('VariableFactor').parse(
         tokenStream,
