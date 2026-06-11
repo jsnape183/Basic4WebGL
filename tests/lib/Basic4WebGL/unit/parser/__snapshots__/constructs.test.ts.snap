@@ -531,7 +531,9 @@ exports[`function declaration > produces correct tree 1`] = `
       "children": [
         {
           "children": [],
-          "data": null,
+          "data": {
+            "params": [],
+          },
           "dataType": {
             "acceptsTypes": [
               "Unknown",
@@ -850,7 +852,9 @@ exports[`return statement > produces correct tree 1`] = `
       "children": [
         {
           "children": [],
-          "data": null,
+          "data": {
+            "params": [],
+          },
           "dataType": {
             "acceptsTypes": [
               "Unknown",

@@ -31,11 +31,12 @@ class FunctionRule implements IParserRule {
         symbolTable,
         undefined
       );
-      parameters = symbolTable.getAll(
-        symbolTypes.Parameter,
-        symbolTable.getScope(),
-        symbolTable.getFullScopeName()
-      );
+      parameters = (variables.data as any)?.params
+        ?? symbolTable.getAll(
+          symbolTypes.Parameter,
+          symbolTable.getScope(),
+          symbolTable.getFullScopeName()
+        );
       matchAndMove(tokens.CloseParen, tokenStream);
       matchAndMove(newLines, tokenStream);
       children = getParserRule('Block').parse(tokenStream, symbolTable, {
