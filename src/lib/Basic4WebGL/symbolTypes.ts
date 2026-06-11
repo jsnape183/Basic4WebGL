@@ -37,25 +37,31 @@ export class FunctionSymbol extends Symbol {
 
 export class ArraySymbol extends Symbol {
   dimensions: number;
+  classSymbol: any | null;
   constructor(
     name: string,
     type: string,
     scope: SymbolScope,
     fullScope: string,
-    dimensions: number
+    dimensions: number,
+    classSymbol: any = null
   ) {
     super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
     this.dimensions = dimensions;
+    this.classSymbol = classSymbol;
   }
 }
 
 export class DictionarySymbol extends Symbol {
+  classSymbol: any | null;
   constructor(
     name: string,
     type: string,
     scope: SymbolScope,
-    fullScope: string
+    fullScope: string,
+    classSymbol: any = null
   ) {
     super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
+    this.classSymbol = classSymbol;
   }
 }

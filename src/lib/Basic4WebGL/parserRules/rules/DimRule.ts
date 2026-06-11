@@ -82,6 +82,7 @@ class DimRule implements IParserRule {
         symbolTypes.Class
       );
       const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
+      (object as any).classSymbol = classSymbol;
 
       // Pull inherited members into this object's scope so method/property
       // lookups work on instances of child classes (e.g. dim e as SquishyEnemy
