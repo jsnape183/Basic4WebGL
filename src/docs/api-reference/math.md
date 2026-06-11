@@ -144,31 +144,34 @@ result = trunc(3.9)   ' result is 3
 
 ## Random Numbers
 
-### random()
+### random(max)
 
-Returns a random decimal number between 0 and 1.
-
-**Returns:** number
-
-```bas
-dim roll
-roll = random()   ' e.g. 0.7342
-```
-
-### randomint(min, max)
-
-Returns a random whole number between `min` and `max` (inclusive).
+Returns a random decimal number from 0 up to (but not including) `max`.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
-| min       | number | Smallest possible value |
-| max       | number | Largest possible value |
+| max       | number | The upper limit (not included in results) |
 
 **Returns:** number
 
 ```bas
 dim roll
-roll = randomint(1, 6)   ' rolls a six-sided die
+roll = random(1.0)   ' a random float between 0 and 1
+```
+
+### randomint(max)
+
+Returns a random whole number from 0 up to (but not including) `max`.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| max       | number | The number of possible values (results range from 0 to max-1) |
+
+**Returns:** number
+
+```bas
+dim side
+side = randomint(4)   ' gives 0, 1, 2, or 3
 ```
 
 ## Comparison
