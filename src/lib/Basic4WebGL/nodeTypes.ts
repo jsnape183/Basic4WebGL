@@ -58,6 +58,9 @@ export const nodeTypes = createEnum([
   'SuperConstructorCall',
   'SuperMethodCall',
   'SuperMethodTerm',
+  'DictionaryDim',
+  'DictionaryLookup',
+  'DictionaryAssign',
 ]);
 
 export default nodeTypes;

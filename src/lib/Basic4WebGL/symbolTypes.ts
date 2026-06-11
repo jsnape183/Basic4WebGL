@@ -18,6 +18,7 @@ export const symbolTypes = {
   Module: 'Module',
   Object: 'Object',
   Class: 'Class',
+  Dictionary: 'Dictionary',
 };
 
 export class FunctionSymbol extends Symbol {
@@ -45,5 +46,16 @@ export class ArraySymbol extends Symbol {
   ) {
     super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
     this.dimensions = dimensions;
+  }
+}
+
+export class DictionarySymbol extends Symbol {
+  constructor(
+    name: string,
+    type: string,
+    scope: SymbolScope,
+    fullScope: string
+  ) {
+    super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
   }
 }
