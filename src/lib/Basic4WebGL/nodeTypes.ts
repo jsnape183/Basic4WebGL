@@ -61,6 +61,8 @@ export const nodeTypes = createEnum([
   'DictionaryDim',
   'DictionaryLookup',
   'DictionaryAssign',
+  'NewObject',
+  'TypedElementAccess',
 ]);
 
 export default nodeTypes;

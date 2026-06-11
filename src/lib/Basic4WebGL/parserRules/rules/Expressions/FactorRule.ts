@@ -60,6 +60,9 @@ class FactorRule implements IParserRule {
         undefined
       );
     }
+    if (check(tokens.New, tokenStream.current())) {
+      return getParserRule('NewObjectFactor').parse(tokenStream, symbolTable, undefined);
+    }
     if (check(tokens.Variable, tokenStream.current())) {
       return getParserRule('VariableFactor').parse(
         tokenStream,

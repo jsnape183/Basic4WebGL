@@ -322,6 +322,12 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchPattern(input, /^new(?=[ \r\n]|[^a-zA-Z0-9]|$)/i),
+      token: tokens.New,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchPattern(input, /^'.*/),
       token: tokens.Comment,
     }),

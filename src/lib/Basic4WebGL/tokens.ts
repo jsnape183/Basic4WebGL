@@ -58,6 +58,7 @@ export const tokens = createKeyValueEnum<TokenMatch>([
   'Self',
   'Extends',
   'Super',
+  'New',
 ]);
 
 tokens.WhiteSpace.stripped = true;
