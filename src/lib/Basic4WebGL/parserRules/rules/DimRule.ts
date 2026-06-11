@@ -6,7 +6,7 @@ import IParserRule, {
 import Symbols from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import type { SourceLocation } from '@CompilerLib/compiler/types';
-import { ArraySymbol, symbolTypes } from '../../symbolTypes';
+import { ArraySymbol, DictionarySymbol, symbolTypes } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import { CompilationError } from '@CompilerLib/errors';
@@ -16,6 +16,7 @@ import VariableDimAssignNode from '../../nodes/VariableDimAssignNode';
 import DimNode from '../../nodes/DimNode';
 import TypedArrayDimNode from '../../nodes/TypedArrayDimNode';
 import MultiDimNode from '../../nodes/MultiDimNode';
+import DictionaryDimNode from '../../nodes/DictionaryDimNode';
 import nodeTypes from '../../nodeTypes';
 import { newLines } from '../../parserConfig';
 
@@ -41,7 +42,8 @@ class DimRule implements IParserRule {
       const single = nodes[0];
       if (
         single.type === nodeTypes.Dim ||
-        single.type === nodeTypes.TypedArrayDim
+        single.type === nodeTypes.TypedArrayDim ||
+        single.type === nodeTypes.DictionaryDim
       ) {
         matchAndMove(newLines, tokenStream);
       }
@@ -169,6 +171,36 @@ class DimRule implements IParserRule {
       }
 
       return arrayNode;
+
+    } else if (check(tokens.OpenBracket, tokenStream.current())) {
+      // ── dim name[] ───────────────────────────────────────────────────────
+      matchAndMove(tokens.OpenBracket, tokenStream);
+      if (!check(tokens.CloseBracket, tokenStream.current())) {
+        throw new CompilationError(
+          `Dictionary declaration must use empty brackets: 'dim ${name}[]'`
+        );
+      }
+      matchAndMove(tokens.CloseBracket, tokenStream);
+
+      const dictSymbol = symbolTable.addTyped(
+        new DictionarySymbol(
+          name,
+          symbolTypes.Dictionary,
+          symbolTable.getScope(),
+          symbolTable.getFullScopeName()
+        )
+      );
+
+      if (
+        nodesSoFar.length > 0 ||
+        check(tokens.Comma, tokenStream.current())
+      ) {
+        throw new CompilationError(
+          `Dictionary declaration '${name}[]' cannot appear in a multi-variable dim — move it to its own line.`
+        );
+      }
+
+      return new DictionaryDimNode(dictSymbol, loc);
 
     } else {
       // ── dim name ─────────────────────────────────────────────────────────
