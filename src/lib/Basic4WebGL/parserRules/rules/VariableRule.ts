@@ -15,6 +15,7 @@ import DictionaryAssignNode from '../../nodes/DictionaryAssignNode';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import { newLines } from '../../parserConfig';
 import { CompilationError } from '@CompilerLib/errors';
+import nodeTypes from '../../nodeTypes';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -46,6 +47,15 @@ class VariableRule implements IParserRule {
         symbolTable,
         undefined
       );
+      if (expr.type === nodeTypes.NewObject) {
+        const objClass = (objSymbol as any).classSymbol?.name;
+        const newClass = expr.data.classSymbol.name;
+        if (objClass && objClass !== newClass) {
+          throw new CompilationError(
+            `Type mismatch: '${name}' is typed as '${objClass}' but 'new ${newClass}' was assigned`
+          );
+        }
+      }
       matchAndMove(newLines, tokenStream);
       if (isInstancePropertyAccess(objSymbol, symbolTable)) {
         return new PropertyAssignNode({ chain: `this.${name}` }, expr, loc);
@@ -77,6 +87,15 @@ class VariableRule implements IParserRule {
         symbolTable,
         undefined
       );
+      if (valExpr.type === nodeTypes.NewObject) {
+        const dictClass = (dictSymbol as any).classSymbol?.name;
+        const newClass = valExpr.data.classSymbol.name;
+        if (dictClass && dictClass !== newClass) {
+          throw new CompilationError(
+            `Type mismatch: '${name}' holds values of type '${dictClass}' but 'new ${newClass}' was assigned`
+          );
+        }
+      }
       matchAndMove(newLines, tokenStream);
       return new DictionaryAssignNode(dictSymbol, [keyExpr, valExpr], loc);
     }
@@ -98,10 +117,19 @@ class VariableRule implements IParserRule {
         symbolTable,
         undefined
       );
-      matchAndMove(newLines, tokenStream);
       const arraySymbol = symbolTable.check(name, symbolTypes.Array)
         ? symbolTable.get(name, 'Array')
         : symbolTable.get(name, symbolTypes.Variable);
+      if (expr.type === nodeTypes.NewObject) {
+        const arrClass = (arraySymbol as any).classSymbol?.name;
+        const newClass = expr.data.classSymbol.name;
+        if (arrClass && arrClass !== newClass) {
+          throw new CompilationError(
+            `Type mismatch: '${name}' holds elements of type '${arrClass}' but 'new ${newClass}' was assigned`
+          );
+        }
+      }
+      matchAndMove(newLines, tokenStream);
       return new ArrayAssignNode(arraySymbol, [dims, expr], loc);
     }
     const varSymbol = symbolTable.get(name, symbolTypes.Variable);
@@ -114,6 +142,11 @@ class VariableRule implements IParserRule {
       symbolTable,
       undefined
     );
+    if (expr.type === nodeTypes.NewObject) {
+      throw new CompilationError(
+        `Cannot assign object to variant variable '${name}'. Declare it as 'dim ${name} as ${expr.data.classSymbol.name}'.`
+      );
+    }
     matchAndMove(newLines, tokenStream);
     return new AssignNode(varSymbol, expr, loc);
   }
