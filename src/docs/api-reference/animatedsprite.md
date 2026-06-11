@@ -64,7 +64,7 @@ Checks whether a specific animation is currently playing.
 **Returns:** `true` if the named animation is playing, `false` if not.
 
 ```bas
-if not isPlaying("jump") then
+if not self.isPlaying("jump") then
   self.play("walk")
 endif
 ```

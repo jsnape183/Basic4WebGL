@@ -25,8 +25,8 @@ Draws a filled rectangle.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
-| x         | number | Horizontal position of the top-left corner |
-| y         | number | Vertical position of the top-left corner |
+| x         | number | Horizontal position of the centre of the rectangle |
+| y         | number | Vertical position of the centre of the rectangle |
 | width     | number | Width of the rectangle in pixels |
 | height    | number | Height of the rectangle in pixels |
 
