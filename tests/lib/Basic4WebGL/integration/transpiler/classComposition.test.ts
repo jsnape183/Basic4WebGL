@@ -8,16 +8,16 @@ const carFile = { name: 'Car', source: loadSampleFile('Car', folder) };
 const mainFile = { name: 'Main', source: loadSampleFile('Main', folder) };
 
 // ---------------------------------------------------------------------------
-// Level 1: dim x as Type  →  x = null  (no-arg form: null-initialised, assign with new later)
+// Level 1: dim x as Type  →  x = new Type()  (no-arg form: auto-constructs)
 // ---------------------------------------------------------------------------
 describe('typed dim (dim x as Type)', () => {
-  test('dim x as Type produces null initialisation', () => {
+  test('dim x as Type auto-constructs with new car()', () => {
     const src = `function onenter()\n    dim myCar as Car\nendfunction`;
     const result = compileOk({
       lib: [],
       files: [keyFile, carFile, { name: 'Main', source: src }],
     });
-    expect(result).toContain('onenter_mycar=null');
+    expect(result).toContain('onenter_mycar=newcar()');
   });
 });
 

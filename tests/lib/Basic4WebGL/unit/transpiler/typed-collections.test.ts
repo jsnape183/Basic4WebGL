@@ -63,14 +63,13 @@ describe('new keyword — expression', () => {
   });
 });
 
-// ─── dim a as ClassName — null initialisation ──────────────────────────────
+// ─── dim a as ClassName — auto-construction ────────────────────────────────
 
-describe('dim a as ClassName — untyped construction now null', () => {
-  test('dim e as Enemy (no args) emits = null, not = new Enemy()', () => {
+describe('dim a as ClassName — auto-construction', () => {
+  test('dim e as Enemy (no args) auto-constructs with new enemy()', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.e = null');
-    expect(result.code).not.toContain('new Enemy()');
+    expect(result.code).toContain('new enemy()');
   });
 
   test('dim e as Enemy("img") (with args) still emits new Enemy("img")', () => {
