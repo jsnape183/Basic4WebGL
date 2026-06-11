@@ -22,6 +22,15 @@ import DictionaryDimNode from '../../nodes/DictionaryDimNode';
 import nodeTypes from '../../nodeTypes';
 import { newLines } from '../../parserConfig';
 
+function checkCtorArgs(classSymbol: any, got: number, displayName: string): void {
+  const expected = classSymbol.constructorArgCount;
+  if (expected !== undefined && got !== expected) {
+    throw new CompilationError(
+      `'${displayName}' constructor expects ${expected} argument${expected === 1 ? '' : 's'} but got ${got}`
+    );
+  }
+}
+
 @RegisterParserRule('Dim')
 class DimRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
@@ -90,8 +99,10 @@ class DimRule implements IParserRule {
         let newNode: Tree;
         if (check(tokens.OpenParen, tokenStream.current())) {
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          checkCtorArgs(classSymbol, args.children.length, className);
           newNode = new NewObjectNode({ classSymbol, className }, [args], loc);
         } else {
+          checkCtorArgs(classSymbol, 0, className);
           newNode = new NewObjectNode({ classSymbol, className }, [], loc);
         }
 
@@ -128,7 +139,29 @@ class DimRule implements IParserRule {
         ancestor = parentClass;
       }
 
-      if (check(tokens.OpenParen, tokenStream.current())) {
+      if (check(tokens.Equals, tokenStream.current())) {
+        // dim name as ClassName = new ClassName(args)
+        matchAndMove(tokens.Equals, tokenStream);
+        matchAndMove(tokens.New, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const ctorName = tokenStream.prev().text;
+        const ctorClassSymbol = symbolTable.get(ctorName, symbolTypes.Class);
+        if (ctorClassSymbol.name !== classSymbol.name) {
+          throw new CompilationError(
+            `Type mismatch: '${name}' is declared as '${classSymbol.name}' but 'new ${ctorClassSymbol.name}' was assigned`
+          );
+        }
+        let newNode: Tree;
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          checkCtorArgs(ctorClassSymbol, args.children.length, ctorName);
+          newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [args], loc);
+        } else {
+          checkCtorArgs(ctorClassSymbol, 0, ctorName);
+          newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [], loc);
+        }
+        return new AssignNode(object, newNode, loc);
+      } else if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(
           tokenStream,
           symbolTable,

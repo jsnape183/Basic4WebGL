@@ -60,6 +60,11 @@ class ConstructorRule implements IParserRule {
       )
     );
 
+    // Store param count on the class symbol so new ClassName(...) call sites can
+    // verify arg count at compile time.
+    const classSymbol = symbolTable.get(symbolTable.getScopeName(), symbolTypes.Class);
+    classSymbol.constructorArgCount = variables.children.length;
+
     return new ConstructorDeclNode(
       { className: symbolTable.getScopeName() },
       [variables, new BlockNode(null, children, loc)],

@@ -7,6 +7,16 @@ import { Tree } from '@CompilerLib/tree';
 import { symbolTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import NewObjectNode from '@Basic4WebGL/nodes/NewObjectNode';
+import { CompilationError } from '@CompilerLib/errors';
+
+function checkCtorArgs(classSymbol: any, got: number, displayName: string): void {
+  const expected = classSymbol.constructorArgCount;
+  if (expected !== undefined && got !== expected) {
+    throw new CompilationError(
+      `'${displayName}' constructor expects ${expected} argument${expected === 1 ? '' : 's'} but got ${got}`
+    );
+  }
+}
 
 @RegisterParserRule('NewObjectFactor')
 class NewObjectFactorRule implements IParserRule {
@@ -19,8 +29,10 @@ class NewObjectFactorRule implements IParserRule {
 
     if (check(tokens.OpenParen, tokenStream.current())) {
       const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+      checkCtorArgs(classSymbol, args.children.length, className);
       return new NewObjectNode({ classSymbol, className }, [args], loc);
     }
+    checkCtorArgs(classSymbol, 0, className);
     return new NewObjectNode({ classSymbol, className }, [], loc);
   }
 }

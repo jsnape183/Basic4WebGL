@@ -26,6 +26,19 @@ const spriteFile = {
   ].join('\n'),
 };
 
+// Class with a 1-arg constructor
+const pointFile = {
+  name: 'Point',
+  source: [
+    'Class',
+    'dim x',
+    'Constructor(startX)',
+    '  self.x = startX',
+    'EndConstructor',
+    'endclass',
+  ].join('\n'),
+};
+
 const transpile = (source: string) =>
   compiler.transpile({ lib: [], files: [{ name: 'Main', source }] });
 
@@ -385,5 +398,46 @@ describe('call-site type checking', () => {
     );
     expect(result.diagnostics.length).toBeGreaterThan(0);
     expect(errMessages(result)).toMatch(/type mismatch/i);
+  });
+});
+
+// ─── constructor arg-count checking ────────────────────────────────────────
+
+describe('constructor arg-count checking', () => {
+  test('new Point() with no args when constructor needs 1 is a compile error', () => {
+    const result = transpileWith([pointFile], 'dim p as Point = new Point()');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/expects 1 argument/i);
+  });
+
+  test('new Point(10) with correct arg count compiles', () => {
+    const result = transpileWith([pointFile], 'dim p as Point = new Point(10)');
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('new Point(10, 20) with too many args is a compile error', () => {
+    const result = transpileWith([pointFile], 'dim p as Point = new Point(10, 20)');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/expects 1 argument/i);
+  });
+
+  test('type-inferring dim p = new Point() with wrong arg count is a compile error', () => {
+    const result = transpileWith([pointFile], 'dim p = new Point()');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/expects 1 argument/i);
+  });
+
+  test('expression-context new Point() with wrong arg count is a compile error', () => {
+    const result = transpileWith(
+      [pointFile],
+      ['dim p as Point', 'p = new Point()'].join('\n')
+    );
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/expects 1 argument/i);
+  });
+
+  test('new Enemy() with no constructor and no args compiles', () => {
+    const result = transpileWith([enemyFile], 'dim e as Enemy = new Enemy()');
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
