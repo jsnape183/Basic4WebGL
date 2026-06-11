@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { docsManifest, getSectionTopics } from '../../docs/manifest';
+import { docsManifest, getSectionTopics, type DocTopic } from '../../docs/manifest';
 
 interface DocsSidebarProps {
   sectionId: string;
@@ -10,7 +10,7 @@ interface DocsSidebarProps {
 const DocsSidebar: React.FC<DocsSidebarProps> = ({ sectionId, slug }) => {
   const section = docsManifest.find(s => s.id === sectionId);
 
-  const renderTopic = (topic: { slug: string; title: string }) => (
+  const renderTopic = (topic: DocTopic) => (
     <Link
       key={topic.slug}
       to={`/docs/${sectionId}/${topic.slug}`}
@@ -25,14 +25,20 @@ const DocsSidebar: React.FC<DocsSidebarProps> = ({ sectionId, slug }) => {
     </Link>
   );
 
-  const hasTopics = section && getSectionTopics(section).length > 0;
+  if (!section || getSectionTopics(section).length === 0) {
+    return (
+      <aside className="w-52 flex-shrink-0 border-r border-ds-border bg-ds-surface overflow-y-auto">
+        <div className="py-4">
+          <p className="px-4 py-2 text-xs text-ds-text-dim">Coming soon.</p>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="w-52 flex-shrink-0 border-r border-ds-border bg-ds-surface overflow-y-auto">
       <div className="py-4">
-        {!hasTopics ? (
-          <p className="px-4 py-2 text-xs text-ds-text-dim">Coming soon.</p>
-        ) : section.groups ? (
+        {section.groups ? (
           section.groups.map(group => (
             <div key={group.label}>
               <p className="text-xs text-ds-text-dim uppercase tracking-wider px-4 pt-4 pb-1">
