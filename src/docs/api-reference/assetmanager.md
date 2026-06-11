@@ -10,9 +10,9 @@ Retrieves a loaded image from your project assets by its filename.
 |-----------|--------|-------------|
 | name      | string | The filename of the image, as it appears in your project's Assets panel, e.g. `"player.png"` |
 
-**Returns:** object — the image asset, ready to use.
+**Returns:** object — the loaded image. Sprites and tilemaps accept a filename string directly in their constructors, so you usually do not need to use this return value.
 
-> **Note:** If the filename doesn't match an image in your Assets panel exactly, this will throw an error. Sprites and tilemaps find their images automatically from the filename you pass to their constructor — you usually don't need to call `loadImage` directly.
+> **Note:** If the filename doesn't match an image in your Assets panel exactly, this will throw an error.
 
 ```bas
 dim playerImage

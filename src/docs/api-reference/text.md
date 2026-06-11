@@ -2,6 +2,8 @@
 
 The `text` class renders a string of text on the canvas. Extend it using `Extends text` in your class file.
 
+Unlike [sprite](sprite) and [tilemap](tilemap), `text` does not have a `.transform` property. Use `setPosition(x, y)` directly to move it.
+
 ## Constructor
 
 ```bas
