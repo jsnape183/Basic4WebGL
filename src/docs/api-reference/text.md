@@ -1,0 +1,73 @@
+# text
+
+The `text` class renders a string of text on the canvas. Extend it using `Extends text` in your class file.
+
+## Constructor
+
+```bas
+Class
+Extends text
+
+Constructor()
+  super("Score: 0", 20, 20)
+  stage.add(self)
+EndConstructor
+```
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| content   | string | The text to display |
+| x         | number | Horizontal position in pixels |
+| y         | number | Vertical position in pixels |
+
+## setText(content)
+
+Changes the displayed text.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| content   | string | The new text to show |
+
+```bas
+self.setText("Score: " + str(score))
+```
+
+## setPosition(x, y)
+
+Moves the text to a new position.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | Horizontal position in pixels |
+| y         | number | Vertical position in pixels |
+
+```bas
+self.setPosition(stage.width() - 100, 20)
+```
+
+## setAlpha(a)
+
+Sets the transparency of the text.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| a         | number | Opacity from 0 (invisible) to 1 (fully visible) |
+
+```bas
+self.setAlpha(0.5)
+```
+
+## setStyle(size, r, g, b)
+
+Sets the font size and colour.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| size      | number | Font size in points |
+| r         | number | Red component of the colour, 0–255 |
+| g         | number | Green component, 0–255 |
+| b         | number | Blue component, 0–255 |
+
+```bas
+self.setStyle(24, 255, 255, 0)
+```
