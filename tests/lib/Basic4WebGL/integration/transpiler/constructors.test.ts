@@ -65,14 +65,14 @@ describe('dim x as Type(args) — constructor call site', () => {
     expect(result).toContain('onenter_p=newpoint(10,20)');
   });
 
-  test('dim without args still emits new Type()', () => {
+  test('dim without args emits null (no-arg form is null-initialised)', () => {
     const src = ['Class', 'dim x'].join('\n');
     const main = 'function onenter()\n    dim b as Box\nendfunction';
     const result = compileOk({
       lib: [],
       files: [{ name: 'Box', source: src }, { name: 'Main', source: main }],
     });
-    expect(result).toContain('onenter_b=newbox()');
+    expect(result).toContain('onenter_b=null');
   });
 });
 

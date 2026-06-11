@@ -133,25 +133,14 @@ describe('Array — arrLength and join compile with module-level array', () => {
 });
 
 describe('TypedArrayDimRule', () => {
-  test('module-scope typed array without constructor args', () => {
+  test('module-scope typed array emits null factory', () => {
     const dims = node(nodeTypes.ExpressionList, null, [term('10')]);
     const n = node(nodeTypes.TypedArrayDim, {
       arraySymbol: arrSym('enemies'),
       classSymbol: classSym('Enemy'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('main.enemies = _createTypedArray([10], () => new Enemy());');
-  });
-
-  test('module-scope typed array with constructor args', () => {
-    const dims = node(nodeTypes.ExpressionList, null, [term('5')]);
-    const args = node(nodeTypes.ExpressionList, null, [term('"bunny.png"')]);
-    const n = node(nodeTypes.TypedArrayDim, {
-      arraySymbol: arrSym('sprites'),
-      classSymbol: classSym('Sprite'),
-    }, [dims, args]);
-    expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('main.sprites = _createTypedArray([5], () => new Sprite("bunny.png"));');
+      .toBe('main.enemies = _createTypedArray([10], () => null);');
   });
 
   test('function-scope typed array retains let', () => {
@@ -161,7 +150,7 @@ describe('TypedArrayDimRule', () => {
       classSymbol: classSym('Bullet'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('let onenter_bullets = _createTypedArray([20], () => new Bullet());');
+      .toBe('let onenter_bullets = _createTypedArray([20], () => null);');
   });
 
   test('class-scope typed array emits prototype form', () => {
@@ -171,7 +160,7 @@ describe('TypedArrayDimRule', () => {
       classSymbol: classSym('Tile'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('Level.prototype.tiles = _createTypedArray([3], () => new Tile());');
+      .toBe('Level.prototype.tiles = _createTypedArray([3], () => null);');
   });
 
   test('multi-dimensional typed array', () => {
@@ -181,7 +170,7 @@ describe('TypedArrayDimRule', () => {
       classSymbol: classSym('Tile'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('main.grid = _createTypedArray([5,3], () => new Tile());');
+      .toBe('main.grid = _createTypedArray([5,3], () => null);');
   });
 });
 
@@ -221,7 +210,7 @@ describe('Array utility functions — compile without error', () => {
 });
 
 describe('Typed array declaration — integration', () => {
-  test('dim arr(10) as Enemy compiles to _createTypedArray', () => {
+  test('dim arr(10) as Enemy compiles to _createTypedArray with null factory', () => {
     const result = compiler.transpile({
       lib: [],
       files: [
@@ -230,10 +219,10 @@ describe('Typed array declaration — integration', () => {
       ],
     });
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_createTypedArray([10], () => new enemy())');
+    expect(result.code).toContain('_createTypedArray([10], () => null)');
   });
 
-  test('dim arr(5) as Sprite("bunny.png") compiles with constructor args', () => {
+  test('dim arr(5) as Sprite("bunny.png") is a compile error (constructor args blocked)', () => {
     const result = compiler.transpile({
       lib: [],
       files: [
@@ -241,11 +230,11 @@ describe('Typed array declaration — integration', () => {
         { name: 'Main.bas', source: 'dim sprites(5) as Sprite("bunny.png")' },
       ],
     });
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_createTypedArray([5], () => new sprite("bunny.png"))');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message).toMatch(/constructor/i);
   });
 
-  test('dim arr(5, 3) as Tile() multi-dimensional', () => {
+  test('dim arr(5, 3) as Tile() is a compile error (constructor args blocked)', () => {
     const result = compiler.transpile({
       lib: [],
       files: [
@@ -253,7 +242,7 @@ describe('Typed array declaration — integration', () => {
         { name: 'Main.bas', source: 'dim grid(5, 3) as Tile()' },
       ],
     });
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_createTypedArray([5,3], () => new tile())');
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message).toMatch(/constructor/i);
   });
 });

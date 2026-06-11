@@ -11,15 +11,10 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.TypedArrayDim)
 class TypedArrayDimRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
-    const { arraySymbol, classSymbol } = node.data;
+    const { arraySymbol } = node.data;
     const sizes = doChild(node, 0, table);
 
-    const factory =
-      node.children.length > 1
-        ? `() => new ${classSymbol.name}(${doChild(node, 1, table)})`
-        : `() => new ${classSymbol.name}()`;
-
-    const rhs = `_createTypedArray([${sizes}], ${factory})`;
+    const rhs = `_createTypedArray([${sizes}], () => null)`;
 
     if (arraySymbol.scope.type === scopeTypes.Class) {
       return `${arraySymbol.scope.name}.prototype.${arraySymbol.name} = ${rhs};`;

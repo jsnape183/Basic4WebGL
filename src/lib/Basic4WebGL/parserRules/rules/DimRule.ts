@@ -11,6 +11,8 @@ import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import { CompilationError } from '@CompilerLib/errors';
 import CloneNode from '../../nodes/CloneNode';
+import NewObjectNode from '../../nodes/NewObjectNode';
+import AssignNode from '../../nodes/AssignNode';
 import VariableDimNode from '../../nodes/VariableDimNode';
 import VariableDimAssignNode from '../../nodes/VariableDimAssignNode';
 import DimNode from '../../nodes/DimNode';
@@ -65,6 +67,38 @@ class DimRule implements IParserRule {
     if (check(tokens.Equals, tokenStream.current())) {
       // ── dim name = expr ──────────────────────────────────────────────────
       matchAndMove(tokens.Equals, tokenStream);
+
+      if (check(tokens.New, tokenStream.current())) {
+        // Type-inferring: dim a = new ClassName(args)
+        matchAndMove(tokens.New, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const className = tokenStream.prev().text;
+        const classSymbol = symbolTable.get(className, symbolTypes.Class);
+
+        const object = symbolTable.clone(name, classSymbol, symbolTypes.Object);
+        (object as any).classSymbol = classSymbol;
+
+        // Pull inherited members (same as 'dim a as ClassName' path)
+        let ancestor = classSymbol;
+        while (ancestor.parentClassName) {
+          const parentClass = symbolTable.get(ancestor.parentClassName, symbolTypes.Class);
+          symbolTable.mergeSymbolsIntoScope(name, ancestor.parentClassName);
+          ancestor = parentClass;
+        }
+
+        // Parse optional constructor args
+        let newNode: Tree;
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          newNode = new NewObjectNode({ classSymbol, className }, [args], loc);
+        } else {
+          newNode = new NewObjectNode({ classSymbol, className }, [], loc);
+        }
+
+        return new AssignNode(object, newNode, loc);
+      }
+
+      // Original variant form: dim a = expr
       const varSymbol = symbolTable.add(name, symbolTypes.Variable);
       const expr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -132,23 +166,16 @@ class DimRule implements IParserRule {
           symbolTypes.Class
         );
         if (check(tokens.OpenParen, tokenStream.current())) {
-          const args = getParserRule('ExpressionList').parse(
-            tokenStream,
-            symbolTable,
-            undefined
-          );
-          arrayNode = new TypedArrayDimNode(
-            { arraySymbol, classSymbol },
-            [dims, args],
-            loc
-          );
-        } else {
-          arrayNode = new TypedArrayDimNode(
-            { arraySymbol, classSymbol },
-            [dims],
-            loc
+          throw new CompilationError(
+            `Array declaration cannot include a constructor — declare 'dim ${name}(N) as ${classSymbol.name}' and assign each element with '${name}(i) = new ${classSymbol.name}(...)'`
           );
         }
+        (arraySymbol as any).classSymbol = classSymbol;
+        arrayNode = new TypedArrayDimNode(
+          { arraySymbol, classSymbol },
+          [dims],
+          loc
+        );
       } else {
         arrayNode = new DimNode(arraySymbol, dims, loc);
       }
@@ -191,6 +218,13 @@ class DimRule implements IParserRule {
           symbolTable.getFullScopeName()
         )
       );
+
+      if (check(tokens.As, tokenStream.current())) {
+        matchAndMove(tokens.As, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const classSymbol = symbolTable.get(tokenStream.prev().text, symbolTypes.Class);
+        dictSymbol.classSymbol = classSymbol;
+      }
 
       if (
         nodesSoFar.length > 0 ||
