@@ -8,6 +8,7 @@ import Symbols from '@CompilerLib/symbols';
 import { Symbol } from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
+import DictionaryLookupNode from '@Basic4WebGL/nodes/DictionaryLookupNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
@@ -88,11 +89,24 @@ class VariableFactorRule implements IParserRule {
         name,
       });
     }
+    // Dictionary lookup in expression context: dict["key"]
+    if (check(tokens.OpenBracket, tokenStream.current())) {
+      const dictSymbol = symbolTable.get(name, symbolTypes.Dictionary);
+      matchAndMove(tokens.OpenBracket, tokenStream);
+      const keyExpr = getParserRule('BoolExpression').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      matchAndMove(tokens.CloseBracket, tokenStream);
+      return new DictionaryLookupNode(dictSymbol, keyExpr, loc);
+    }
     if (!check(tokens.OpenParen, tokenStream.current())) {
-      // Prefer Array lookup for bare array references; fall back to Variable
       let varSymbol: Symbol;
       if (symbolTable.check(name, symbolTypes.Array)) {
         varSymbol = symbolTable.get(name, symbolTypes.Array);
+      } else if (symbolTable.check(name, symbolTypes.Dictionary)) {
+        varSymbol = symbolTable.get(name, symbolTypes.Dictionary);
       } else {
         varSymbol = symbolTable.get(name);
       }

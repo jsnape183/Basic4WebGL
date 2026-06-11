@@ -11,6 +11,7 @@ import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import ArrayAssignNode from '../../nodes/ArrayAssignNode';
 import AssignNode from '../../nodes/AssignNode';
+import DictionaryAssignNode from '../../nodes/DictionaryAssignNode';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import { newLines } from '../../parserConfig';
 import { CompilationError } from '@CompilerLib/errors';
@@ -60,6 +61,26 @@ class VariableRule implements IParserRule {
         functionSymbol
       );
     }
+    // Handle dictionary assignment: dict["key"] = value
+    if (symbolTable.check(name, symbolTypes.Dictionary)) {
+      const dictSymbol = symbolTable.get(name, symbolTypes.Dictionary);
+      matchAndMove(tokens.OpenBracket, tokenStream);
+      const keyExpr = getParserRule('BoolExpression').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      matchAndMove(tokens.CloseBracket, tokenStream);
+      matchAndMove(tokens.Equals, tokenStream);
+      const valExpr = getParserRule('BoolExpression').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      matchAndMove(newLines, tokenStream);
+      return new DictionaryAssignNode(dictSymbol, [keyExpr, valExpr], loc);
+    }
+
     // Handle array indexing: arr(i) = v for both Array and Variable (pass-by-ref array param)
     const isArrayLike =
       symbolTable.check(name, symbolTypes.Array) ||
