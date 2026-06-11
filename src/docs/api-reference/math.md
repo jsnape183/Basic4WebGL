@@ -298,6 +298,11 @@ Returns the tangent of an angle in radians.
 
 **Returns:** number
 
+```bas
+dim slope
+slope = tan(angle)
+```
+
 ### asin(n)
 
 Returns the arcsine (inverse sine) of `n` in radians.
@@ -307,6 +312,11 @@ Returns the arcsine (inverse sine) of `n` in radians.
 | n         | number | A value between -1 and 1 |
 
 **Returns:** number
+
+```bas
+dim angle
+angle = asin(0.5)   ' approximately 0.524 radians
+```
 
 ### acos(n)
 
@@ -318,6 +328,11 @@ Returns the arccosine (inverse cosine) of `n` in radians.
 
 **Returns:** number
 
+```bas
+dim angle
+angle = acos(0.5)   ' approximately 1.047 radians
+```
+
 ### atan(n)
 
 Returns the arctangent (inverse tangent) of `n` in radians.
@@ -327,6 +342,11 @@ Returns the arctangent (inverse tangent) of `n` in radians.
 | n         | number | Any number |
 
 **Returns:** number
+
+```bas
+dim angle
+angle = atan(1)   ' approximately 0.785 radians (45 degrees)
+```
 
 ### atan2(y, x)
 
@@ -354,6 +374,11 @@ Returns the hyperbolic sine of `n`.
 
 **Returns:** number
 
+```bas
+dim result
+result = sinh(1)   ' approximately 1.175
+```
+
 ### cosh(n)
 
 Returns the hyperbolic cosine of `n`.
@@ -363,6 +388,11 @@ Returns the hyperbolic cosine of `n`.
 | n         | number | Any number |
 
 **Returns:** number
+
+```bas
+dim result
+result = cosh(1)   ' approximately 1.543
+```
 
 ### tanh(n)
 
@@ -374,6 +404,11 @@ Returns the hyperbolic tangent of `n`.
 
 **Returns:** number
 
+```bas
+dim result
+result = tanh(1)   ' approximately 0.762
+```
+
 ### asinh(n)
 
 Returns the inverse hyperbolic sine of `n`.
@@ -383,6 +418,11 @@ Returns the inverse hyperbolic sine of `n`.
 | n         | number | Any number |
 
 **Returns:** number
+
+```bas
+dim result
+result = asinh(1)   ' approximately 0.881
+```
 
 ### acosh(n)
 
@@ -394,6 +434,11 @@ Returns the inverse hyperbolic cosine of `n`.
 
 **Returns:** number
 
+```bas
+dim result
+result = acosh(2)   ' approximately 1.317
+```
+
 ### atanh(n)
 
 Returns the inverse hyperbolic tangent of `n`.
@@ -403,6 +448,11 @@ Returns the inverse hyperbolic tangent of `n`.
 | n         | number | A value between -1 and 1 |
 
 **Returns:** number
+
+```bas
+dim result
+result = atanh(0.5)   ' approximately 0.549
+```
 
 ## Logarithms and Exponents
 
@@ -431,6 +481,11 @@ Returns the natural logarithm of `n`.
 
 **Returns:** number
 
+```bas
+dim result
+result = log(euler())   ' result is 1
+```
+
 ### log2(n)
 
 Returns the base-2 logarithm of `n`.
@@ -441,6 +496,11 @@ Returns the base-2 logarithm of `n`.
 
 **Returns:** number
 
+```bas
+dim result
+result = log2(8)   ' result is 3
+```
+
 ### log10(n)
 
 Returns the base-10 logarithm of `n`.
@@ -450,6 +510,11 @@ Returns the base-10 logarithm of `n`.
 | n         | number | A positive number |
 
 **Returns:** number
+
+```bas
+dim result
+result = log10(1000)   ' result is 3
+```
 
 ## Constants
 
