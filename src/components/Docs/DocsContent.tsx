@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { docsManifest, type DocTopic } from '../../docs/manifest';
+import { docsManifest, getSectionTopics, type DocTopic } from '../../docs/manifest';
 import MarkdownContent from './MarkdownContent';
 
 const allFiles = import.meta.glob<string>('../../docs/**/*.md', {
@@ -25,7 +25,7 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
     );
   }
 
-  if (section.topics.length === 0) {
+  if (getSectionTopics(section).length === 0) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center">
         <p className="text-ds-text-dim text-sm">Coming soon.</p>
@@ -33,8 +33,9 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
     );
   }
 
-  const topicIndex = section.topics.findIndex(t => t.slug === slug);
-  const topic: DocTopic | undefined = section.topics[topicIndex];
+  const topics = getSectionTopics(section);
+  const topicIndex = topics.findIndex(t => t.slug === slug);
+  const topic: DocTopic | undefined = topics[topicIndex];
 
   if (!topic) {
     return (
@@ -47,8 +48,8 @@ const DocsContent: React.FC<DocsContentProps> = ({ sectionId, slug }) => {
   const fileKey = `../../docs/${topic.file}`;
   const content = allFiles[fileKey];
 
-  const prevTopic = topicIndex > 0 ? section.topics[topicIndex - 1] : undefined;
-  const nextTopic = topicIndex < section.topics.length - 1 ? section.topics[topicIndex + 1] : undefined;
+  const prevTopic = topicIndex > 0 ? topics[topicIndex - 1] : undefined;
+  const nextTopic = topicIndex < topics.length - 1 ? topics[topicIndex + 1] : undefined;
 
   return (
     <div className="flex-1 overflow-y-auto">
