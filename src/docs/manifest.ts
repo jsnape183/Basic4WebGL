@@ -4,10 +4,23 @@ export interface DocTopic {
   file: string;
 }
 
+export interface DocGroup {
+  label: string;
+  topics: DocTopic[];
+}
+
 export interface DocSection {
   id: string;
   label: string;
   topics: DocTopic[];
+  groups?: DocGroup[];
+}
+
+export function getSectionTopics(section: DocSection): DocTopic[] {
+  if (section.groups) {
+    return section.groups.flatMap(g => g.topics);
+  }
+  return section.topics;
 }
 
 export const docsManifest: DocSection[] = [
@@ -35,6 +48,31 @@ export const docsManifest: DocSection[] = [
     id: 'api-reference',
     label: 'API Reference',
     topics: [],
+    groups: [
+      {
+        label: 'softGfx',
+        topics: [
+          { slug: 'gfx',             title: 'gfx',             file: 'api-reference/gfx.md' },
+          { slug: 'drawing',         title: 'drawing',         file: 'api-reference/drawing.md' },
+          { slug: 'stage',           title: 'stage',           file: 'api-reference/stage.md' },
+          { slug: 'pen',             title: 'pen',             file: 'api-reference/pen.md' },
+          { slug: 'assetmanager',    title: 'assetmanager',    file: 'api-reference/assetmanager.md' },
+          { slug: 'objecttransform', title: 'ObjectTransform', file: 'api-reference/objecttransform.md' },
+          { slug: 'sprite',          title: 'sprite',          file: 'api-reference/sprite.md' },
+          { slug: 'animatedsprite',  title: 'animatedsprite',  file: 'api-reference/animatedsprite.md' },
+          { slug: 'text',            title: 'text',            file: 'api-reference/text.md' },
+          { slug: 'tilemap',         title: 'tilemap',         file: 'api-reference/tilemap.md' },
+        ],
+      },
+      {
+        label: 'softCore',
+        topics: [
+          { slug: 'math',   title: 'math',   file: 'api-reference/math.md' },
+          { slug: 'string', title: 'string', file: 'api-reference/string.md' },
+          { slug: 'array',  title: 'array',  file: 'api-reference/array.md' },
+        ],
+      },
+    ],
   },
   {
     id: 'tutorials',
