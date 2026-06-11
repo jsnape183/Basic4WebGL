@@ -46,8 +46,11 @@ Removes and returns the last item in an array.
 **Returns:** the removed item.
 
 ```bas
+dim scores(0)
+push(scores, 100)
+push(scores, 200)
 dim last
-last = pop(scores)
+last = pop(scores)   ' last is 200, scores now has one item
 ```
 
 ## contains(arr, item)
