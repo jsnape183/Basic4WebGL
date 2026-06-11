@@ -76,7 +76,7 @@ describe('dim a as ClassName — untyped construction now null', () => {
   test('dim e as Enemy("img") (with args) still emits new Enemy("img")', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy("img")');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new Enemy("img")');
+    expect(result.code).toContain('new enemy("img")');
   });
 });
 
