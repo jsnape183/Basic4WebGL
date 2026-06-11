@@ -12,6 +12,7 @@ export interface DocGroup {
 export interface DocSection {
   id: string;
   label: string;
+  /** Flat topic list. Ignored when `groups` is present; use getSectionTopics(). */
   topics: DocTopic[];
   groups?: DocGroup[];
 }
