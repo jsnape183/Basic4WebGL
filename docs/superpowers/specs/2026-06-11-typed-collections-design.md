@@ -120,10 +120,31 @@ spawn(new Enemy("img.png"))      ' OK
 
 ---
 
+### 6. Type inference from `new` initialisers
+
+`dim a = new ClassName(args)` is equivalent to `dim a as ClassName` followed by
+`a = new ClassName(args)`. The type is inferred from the `new` expression and the
+variable behaves identically to an explicitly typed variable.
+
+```bas
+dim a = new Sprite("img.png")  ' a inferred as Sprite
+a.setPosition(0, 0)            ' compiles — type known
+a = new Sprite("other.png")    ' OK — same type
+a = new Enemy("img.png")       ' compile error — type mismatch
+```
+
+This inference applies **only** when the initialiser is a `new` expression.
+`dim a = 5` remains a variant — primitive initialisers do not trigger type inference.
+
+The parser handles this in `DimRule`: when the `= expression` form is parsed and the
+expression is a `NewObjectNode`, register the variable as a typed object symbol
+(equivalent to the `as ClassName` path) rather than a plain variant.
+
+---
+
 ## Out of scope
 
 - Full mandatory explicit typing for all variables (deferred — major language redesign)
-- Type inference from initialisers (`dim a = new Sprite(...)`)
 - Return type declarations on functions
 - Generic / parameterised types
 
