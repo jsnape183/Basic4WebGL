@@ -109,3 +109,17 @@ for i = 0 to array.length(k) - 1
   print scores[k(i)]
 next i
 ```
+
+## Typed dictionaries
+
+A typed dictionary holds values of a specific class. Declare it with `dim d[] as ClassName` and assign each key with `new`:
+
+```bas
+dim players[] as Sprite
+players["Alice"] = new Sprite("hero.png")
+players["Bob"] = new Sprite("hero2.png")
+
+players["Alice"].setPosition(100, 200)
+```
+
+Values not yet assigned give a runtime error if accessed. See [The new Keyword](new-keyword) for the full reference.

@@ -43,6 +43,7 @@ export const docsManifest: DocSection[] = [
       { slug: 'operators',         title: 'Operators',           file: 'language-guide/operators.md' },
       { slug: 'arrays',            title: 'Arrays',              file: 'language-guide/arrays.md' },
       { slug: 'dictionaries',      title: 'Dictionaries',        file: 'language-guide/dictionaries.md' },
+      { slug: 'new-keyword',       title: 'The new Keyword',      file: 'language-guide/new-keyword.md' },
       { slug: 'packages',          title: 'Packages',            file: 'language-guide/packages.md' },
     ],
   },
