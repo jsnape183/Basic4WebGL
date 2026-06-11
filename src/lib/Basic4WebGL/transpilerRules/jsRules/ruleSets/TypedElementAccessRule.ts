@@ -7,7 +7,7 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.TypedElementAccess)
 class TypedElementAccessRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
-    const { collectionSymbol, memberName, kind, isMethod } = node.data;
+    const { collectionSymbol, memberName, kind, isStatement } = node.data;
     const name = collectionSymbol.name;
     const formatted = formatSymbol(collectionSymbol);
     const idx = doChild(node, 0, table);
@@ -26,7 +26,7 @@ class TypedElementAccessRule implements IGeneratable {
 
     const wrapped = `_sbRequireInit(${ref},"${label}")`;
 
-    if (isMethod) {
+    if (isStatement) {
       const args = node.children.length > 1 ? doChild(node, 1, table) : '';
       return `${wrapped}.${memberName}(${args});`;
     }

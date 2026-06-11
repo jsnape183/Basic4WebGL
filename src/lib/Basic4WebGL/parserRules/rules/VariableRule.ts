@@ -91,14 +91,14 @@ class VariableRule implements IParserRule {
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
           matchAndMove(newLines, tokenStream);
           return new TypedElementAccessNode(
-            { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: true },
+            { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: true },
             [keyExpr, args],
             loc
           );
         }
         matchAndMove(newLines, tokenStream);
         return new TypedElementAccessNode(
-          { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+          { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: false },
           [keyExpr],
           loc
         );
@@ -128,6 +128,10 @@ class VariableRule implements IParserRule {
     if (symbolTable.check(name, symbolTypes.Array)) {
       const arraySym = symbolTable.get(name, symbolTypes.Array) as any;
       if (arraySym.classSymbol) {
+        // Note: ExpressionList is used here (not ArrayList) because ArrayAssignNode expects
+        // that format. TypedElementAccessRule puts dims directly in [idx], which means
+        // multi-dimensional typed arrays would generate incorrect JS (arr[0,1] not arr[0][1]).
+        // In practice, typed object arrays are always 1D, so this is not a current concern.
         const dims = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
         if (check(tokens.Dot, tokenStream.current())) {
           matchAndMove(tokens.Dot, tokenStream);
@@ -137,14 +141,14 @@ class VariableRule implements IParserRule {
             const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
             matchAndMove(newLines, tokenStream);
             return new TypedElementAccessNode(
-              { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: true },
+              { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: true },
               [dims, args],
               loc
             );
           }
           matchAndMove(newLines, tokenStream);
           return new TypedElementAccessNode(
-            { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+            { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false },
             [dims],
             loc
           );

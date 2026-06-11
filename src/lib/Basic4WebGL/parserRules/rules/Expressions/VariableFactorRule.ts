@@ -108,13 +108,13 @@ class VariableFactorRule implements IParserRule {
         if (check(tokens.OpenParen, tokenStream.current())) {
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
           return new TypedElementAccessNode(
-            { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+            { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: false },
             [keyExpr, args],
             loc
           );
         }
         return new TypedElementAccessNode(
-          { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+          { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: false },
           [keyExpr],
           loc
         );
@@ -153,13 +153,13 @@ class VariableFactorRule implements IParserRule {
       if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
         return new TypedElementAccessNode(
-          { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+          { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false },
           [elems, args],
           loc
         );
       }
       return new TypedElementAccessNode(
-        { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+        { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false },
         [elems],
         loc
       );
