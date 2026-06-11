@@ -70,7 +70,7 @@ inventory["shield"] = 1
 
 dim k
 k = dict.keys(inventory)
-print array.arrLength(k)   ' 3
+print array.length(k)   ' 3
 print array.join(k, ", ")  ' sword, potion, shield
 
 dim v
@@ -104,7 +104,7 @@ dim k
 k = dict.keys(scores)
 
 dim i
-for i = 0 to array.arrLength(k) - 1
+for i = 0 to array.length(k) - 1
   print k(i)
   print scores[k(i)]
 next i

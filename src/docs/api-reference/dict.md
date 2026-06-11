@@ -23,7 +23,7 @@ scores["Bob"] = 80
 
 dim k
 k = dict.keys(scores)
-print array.arrLength(k)   ' 2
+print array.length(k)   ' 2
 ```
 
 ---
