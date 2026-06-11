@@ -16,6 +16,7 @@ import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import { newLines } from '../../parserConfig';
 import { CompilationError } from '@CompilerLib/errors';
 import nodeTypes from '../../nodeTypes';
+import TypedElementAccessNode from '../../nodes/TypedElementAccessNode';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -71,9 +72,9 @@ class VariableRule implements IParserRule {
         functionSymbol
       );
     }
-    // Handle dictionary assignment: dict["key"] = value
+    // Handle dictionary access/assignment: dict["key"].method() or dict["key"] = value
     if (symbolTable.check(name, symbolTypes.Dictionary)) {
-      const dictSymbol = symbolTable.get(name, symbolTypes.Dictionary);
+      const dictSym = symbolTable.get(name, symbolTypes.Dictionary) as any;
       matchAndMove(tokens.OpenBracket, tokenStream);
       const keyExpr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -81,6 +82,29 @@ class VariableRule implements IParserRule {
         undefined
       );
       matchAndMove(tokens.CloseBracket, tokenStream);
+
+      if (dictSym.classSymbol && check(tokens.Dot, tokenStream.current())) {
+        matchAndMove(tokens.Dot, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const memberName = tokenStream.prev().text;
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          matchAndMove(newLines, tokenStream);
+          return new TypedElementAccessNode(
+            { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: true },
+            [keyExpr, args],
+            loc
+          );
+        }
+        matchAndMove(newLines, tokenStream);
+        return new TypedElementAccessNode(
+          { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+          [keyExpr],
+          loc
+        );
+      }
+
+      // Regular dict assignment
       matchAndMove(tokens.Equals, tokenStream);
       const valExpr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -88,7 +112,7 @@ class VariableRule implements IParserRule {
         undefined
       );
       if (valExpr.type === nodeTypes.NewObject) {
-        const dictClass = (dictSymbol as any).classSymbol?.name;
+        const dictClass = dictSym.classSymbol?.name;
         const newClass = valExpr.data.classSymbol.name;
         if (dictClass && dictClass !== newClass) {
           throw new CompilationError(
@@ -97,7 +121,49 @@ class VariableRule implements IParserRule {
         }
       }
       matchAndMove(newLines, tokenStream);
-      return new DictionaryAssignNode(dictSymbol, [keyExpr, valExpr], loc);
+      return new DictionaryAssignNode(dictSym, [keyExpr, valExpr], loc);
+    }
+
+    // ── Typed array element: enemies(0).method() or enemies(0) = new Enemy() ──
+    if (symbolTable.check(name, symbolTypes.Array)) {
+      const arraySym = symbolTable.get(name, symbolTypes.Array) as any;
+      if (arraySym.classSymbol) {
+        const dims = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+        if (check(tokens.Dot, tokenStream.current())) {
+          matchAndMove(tokens.Dot, tokenStream);
+          matchAndMove(tokens.Variable, tokenStream);
+          const memberName = tokenStream.prev().text;
+          if (check(tokens.OpenParen, tokenStream.current())) {
+            const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+            matchAndMove(newLines, tokenStream);
+            return new TypedElementAccessNode(
+              { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: true },
+              [dims, args],
+              loc
+            );
+          }
+          matchAndMove(newLines, tokenStream);
+          return new TypedElementAccessNode(
+            { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+            [dims],
+            loc
+          );
+        }
+        // No dot → typed array element assignment: enemies(0) = new Enemy()
+        matchAndMove(tokens.Equals, tokenStream);
+        const valExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+        if (valExpr.type === nodeTypes.NewObject) {
+          const arrClass = arraySym.classSymbol?.name;
+          const newClass = valExpr.data.classSymbol.name;
+          if (arrClass && arrClass !== newClass) {
+            throw new CompilationError(
+              `Type mismatch: '${name}' holds elements of type '${arrClass}' but 'new ${newClass}' was assigned`
+            );
+          }
+        }
+        matchAndMove(newLines, tokenStream);
+        return new ArrayAssignNode(arraySym, [dims, valExpr], loc);
+      }
     }
 
     // Handle array indexing: arr(i) = v for both Array and Variable (pass-by-ref array param)

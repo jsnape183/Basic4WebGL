@@ -8,6 +8,7 @@ import Symbols from '@CompilerLib/symbols';
 import { Symbol } from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
+import TypedElementAccessNode from '@Basic4WebGL/nodes/TypedElementAccessNode';
 import DictionaryLookupNode from '@Basic4WebGL/nodes/DictionaryLookupNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
@@ -89,9 +90,9 @@ class VariableFactorRule implements IParserRule {
         name,
       });
     }
-    // Dictionary lookup in expression context: dict["key"]
+    // Dictionary lookup in expression context: dict["key"] or dict["key"].member
     if (check(tokens.OpenBracket, tokenStream.current())) {
-      const dictSymbol = symbolTable.get(name, symbolTypes.Dictionary);
+      const dictSym = symbolTable.get(name, symbolTypes.Dictionary) as any;
       matchAndMove(tokens.OpenBracket, tokenStream);
       const keyExpr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -99,7 +100,27 @@ class VariableFactorRule implements IParserRule {
         undefined
       );
       matchAndMove(tokens.CloseBracket, tokenStream);
-      return new DictionaryLookupNode(dictSymbol, keyExpr, loc);
+
+      if (dictSym.classSymbol && check(tokens.Dot, tokenStream.current())) {
+        matchAndMove(tokens.Dot, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const memberName = tokenStream.prev().text;
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          return new TypedElementAccessNode(
+            { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+            [keyExpr, args],
+            loc
+          );
+        }
+        return new TypedElementAccessNode(
+          { collectionSymbol: dictSym, memberName, kind: 'dict', isMethod: false },
+          [keyExpr],
+          loc
+        );
+      }
+
+      return new DictionaryLookupNode(dictSym, keyExpr, loc);
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
       let varSymbol: Symbol;
@@ -123,7 +144,28 @@ class VariableFactorRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
 
-    return new ArrayLookupNode(symbolTable.get(name, symbolTypes.Array), elems, loc);
+    const arraySym = symbolTable.get(name, symbolTypes.Array) as any;
+
+    if (arraySym.classSymbol && check(tokens.Dot, tokenStream.current())) {
+      matchAndMove(tokens.Dot, tokenStream);
+      matchAndMove(tokens.Variable, tokenStream);
+      const memberName = tokenStream.prev().text;
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+        return new TypedElementAccessNode(
+          { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+          [elems, args],
+          loc
+        );
+      }
+      return new TypedElementAccessNode(
+        { collectionSymbol: arraySym, memberName, kind: 'array', isMethod: false },
+        [elems],
+        loc
+      );
+    }
+
+    return new ArrayLookupNode(arraySym, elems, loc);
   }
 }
 

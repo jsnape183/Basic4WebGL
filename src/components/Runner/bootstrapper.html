@@ -30,6 +30,11 @@
         if (!map.has(key)) throw new Error(`Dictionary key not found: ${JSON.stringify(key)}`);
         return map.get(key);
       };
+      const _sbRequireInit = (val, label) => {
+        if (val == null)
+          throw new Error(`Null reference: '${label}' has not been initialised. Assign a value with 'new' before accessing members.`);
+        return val;
+      };
       const _sbLength   = x          => x instanceof Map ? x.size : x.length;
       const _sbRemove   = (col, k)   => col instanceof Map ? col.delete(k) : col.splice(k, 1);
       const _sbContains = (col, item)=> col instanceof Map ? col.has(item) : col.includes(item);
