@@ -44,32 +44,48 @@ const errMessages = (result: ReturnType<typeof transpile>) =>
 // ─── new keyword — expression ──────────────────────────────────────────────
 
 describe('new keyword — expression', () => {
-  test('new Enemy() emits new Enemy() in assignment', () => {
+  test('new Enemy() emits new enemy() in assignment', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim e as Enemy', 'e = new Enemy()'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new Enemy()');
+    expect(result.code).toContain('new enemy()');
   });
 
-  test('new Enemy("goblin") emits new Enemy("goblin")', () => {
+  test('new Enemy("goblin") emits new enemy("goblin")', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim e as Enemy', 'e = new Enemy("goblin")'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new Enemy("goblin")');
+    expect(result.code).toContain('new enemy("goblin")');
   });
 });
 
-// ─── dim a as ClassName — auto-construction ────────────────────────────────
+// ─── dim a as ClassName — null init / explicit construction ───────────────
 
-describe('dim a as ClassName — auto-construction', () => {
-  test('dim e as Enemy (no args) auto-constructs with new enemy()', () => {
+describe('dim a as ClassName — null init and explicit construction', () => {
+  test('dim e as Enemy (no args) emits = null', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy');
     expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.e = null');
+    expect(result.code).not.toContain('new enemy()');
+  });
+
+  test('dim e as Enemy = new Enemy() emits new enemy()', () => {
+    const result = transpileWith([enemyFile], 'dim e as Enemy = new Enemy()');
+    expect(result.diagnostics).toHaveLength(0);
     expect(result.code).toContain('new enemy()');
+  });
+
+  test('dim e as Enemy = new Sprite() is a type error', () => {
+    const result = transpileWith(
+      [enemyFile, spriteFile],
+      'dim e as Enemy = new Sprite()'
+    );
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/type mismatch/i);
   });
 
   test('dim e as Enemy("img") (with args) still emits new Enemy("img")', () => {
@@ -82,10 +98,10 @@ describe('dim a as ClassName — auto-construction', () => {
 // ─── dim a = new ClassName(args) — type inference ─────────────────────────
 
 describe('dim a = new ClassName(args) — type inference', () => {
-  test('dim e = new Enemy() emits main.e = new Enemy()', () => {
+  test('dim e = new Enemy() emits main.e = new enemy()', () => {
     const result = transpileWith([enemyFile], 'dim e = new Enemy()');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.e = new Enemy()');
+    expect(result.code).toContain('main.e = new enemy()');
   });
 
   test('dim e = new Enemy() — subsequent method call compiles', () => {
@@ -156,13 +172,13 @@ describe('typed array — declaration', () => {
 // ─── typed array — element assignment ──────────────────────────────────────
 
 describe('typed array — element assignment', () => {
-  test('enemies(0) = new Enemy() emits array[0]=new Enemy()', () => {
+  test('enemies(0) = new Enemy() emits array[0]=new enemy()', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim enemies(10) as Enemy', 'enemies(0) = new Enemy()'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.enemies[0]=new Enemy()');
+    expect(result.code).toContain('main.enemies[0]=new enemy()');
   });
 
   test('enemies(0) = new Sprite() is a type error (wrong class)', () => {
@@ -218,7 +234,7 @@ describe('typed dict — declaration', () => {
 // ─── typed dict — element assignment ───────────────────────────────────────
 
 describe('typed dict — element assignment', () => {
-  test('players["Alice"] = new Sprite() emits .set("Alice",new Sprite())', () => {
+  test('players["Alice"] = new Sprite() emits .set("Alice",new sprite())', () => {
     const result = transpileWith(
       [spriteFile],
       [
@@ -227,7 +243,7 @@ describe('typed dict — element assignment', () => {
       ].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.players.set("Alice",new Sprite())');
+    expect(result.code).toContain('main.players.set("Alice",new sprite())');
   });
 
   test('players["Alice"] = new Enemy() is a type error (wrong class)', () => {
