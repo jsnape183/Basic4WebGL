@@ -4,7 +4,7 @@ The `new` keyword creates an object instance from a class. Use it to assign obje
 
 ## Typed variables
 
-Declare a typed variable with `dim name as ClassName`, then assign with `new`:
+Declare a typed variable with `dim name as ClassName`. The variable starts as null — you must assign it before using it:
 
 ```bas
 dim player as Sprite
@@ -13,12 +13,20 @@ player = new Sprite("hero.png")
 player.setPosition(100, 200)
 ```
 
-You can also declare and initialise in one line using type inference:
+You can also declare and construct in one line:
+
+```bas
+dim player as Sprite = new Sprite("hero.png")
+
+player.setPosition(100, 200)
+```
+
+Or use type inference when the class is obvious from context:
 
 ```bas
 dim player = new Sprite("hero.png")
 
-player.setPosition(100, 200)   ' type is inferred — member access compiles
+player.setPosition(100, 200)   ' type is inferred from new
 ```
 
 ## Reassignment
@@ -67,7 +75,9 @@ players["Alice"].setPosition(100, 200)
 
 ## Typed parameters
 
-Functions can accept typed parameters. Member access on typed parameters compiles:
+### Scalar typed parameters
+
+A single object parameter can be typed with `as ClassName`. Member access on it compiles:
 
 ```bas
 function spawn(e as Enemy)
@@ -80,8 +90,40 @@ spawn(new Enemy("goblin.png"))
 Passing the wrong class is a compile error:
 
 ```bas
-dim s as Sprite("hero.png")
+dim s as Sprite = new Sprite("hero.png")
 spawn(s)   ' compile error — Sprite is not Enemy
+```
+
+### Typed array parameters
+
+Declare an array parameter with `arr() as ClassName`. You can call methods on elements inside the function:
+
+```bas
+function updateAll(enemies() as Enemy)
+  enemies(0).update()
+  enemies(1).update()
+endfunction
+
+dim wave(5) as Enemy
+wave(0) = new Enemy("goblin.png")
+wave(1) = new Enemy("orc.png")
+updateAll(wave)
+```
+
+### Typed dictionary parameters
+
+Declare a dictionary parameter with `d[] as ClassName`. You can call methods on values inside the function:
+
+```bas
+function repositionAll(players[] as Sprite, x, y)
+  players["Alice"].setPosition(x, y)
+  players["Bob"].setPosition(x + 50, y)
+endfunction
+
+dim team[] as Sprite
+team["Alice"] = new Sprite("hero.png")
+team["Bob"] = new Sprite("hero2.png")
+repositionAll(team, 100, 200)
 ```
 
 ## Null reference errors
