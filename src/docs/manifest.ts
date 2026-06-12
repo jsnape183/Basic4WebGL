@@ -81,6 +81,10 @@ export const docsManifest: DocSection[] = [
   {
     id: 'tutorials',
     label: 'Tutorials',
-    topics: [],
+    topics: [
+      { slug: 'tutorial-01-hello-world', title: '1. Hello World',       file: 'tutorials/01-hello-world.md' },
+      { slug: 'tutorial-02-drawing',     title: '2. Drawing on Screen', file: 'tutorials/02-drawing.md' },
+      { slug: 'tutorial-03-sprite',      title: '3. Your First Sprite', file: 'tutorials/03-sprite.md' },
+    ],
   },
 ];
