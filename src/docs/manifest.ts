@@ -89,6 +89,11 @@ export const docsManifest: DocSection[] = [
       { slug: 'tutorial-04-motion',      title: '4. Making Things Move', file: 'tutorials/04-motion.md' },
       { slug: 'tutorial-05-keyboard',    title: '5. Keyboard Control',   file: 'tutorials/05-keyboard.md' },
       { slug: 'tutorial-06-bounds',      title: '6. Staying on Screen',  file: 'tutorials/06-bounds.md' },
+      { slug: 'tutorial-07-score',       title: '7. Score and Text',      file: 'tutorials/07-score.md' },
+      { slug: 'tutorial-08-functions',   title: '8. Functions',           file: 'tutorials/08-functions.md' },
+      { slug: 'tutorial-09-enemies',     title: '9. Multiple Enemies',    file: 'tutorials/09-enemies.md' },
+      { slug: 'tutorial-10-classes',     title: '10. How Classes Work',   file: 'tutorials/10-classes.md' },
+      { slug: 'tutorial-11-dodge',       title: '11. Dodge!',             file: 'tutorials/11-dodge.md' },
     ],
   },
 ];

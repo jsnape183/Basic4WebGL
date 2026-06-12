@@ -16,7 +16,7 @@ In the editor, click the **Assets** tab in the file panel and upload your image.
 
 ## Step 2: Understand how sprites work
 
-Unlike shapes from the drawing module, sprites are game objects. Every sprite in softBASIC needs its own **class file**. Don't worry about what that means yet — we'll explain classes properly in Tutorial 8. For now, just follow the pattern.
+Unlike shapes from the drawing module, sprites are game objects. Every sprite in softBASIC needs its own **class file**. Don't worry about what that means yet — we'll explain classes properly in Tutorial 10. For now, just follow the pattern.
 
 ## Step 3: Create the Player class file
 
