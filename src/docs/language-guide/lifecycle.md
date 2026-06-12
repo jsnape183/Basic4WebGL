@@ -25,11 +25,11 @@ endfunction
 
 ## onkeydown(key) — optional
 
-Called when a key is pressed. `key` is the key identifier string (e.g. `"ArrowLeft"`, `"Space"`). If this function is not defined, the engine skips it for that module/class.
+Called when a key is pressed. `key` is the numeric key code (e.g. `32` for Space, `39` for right arrow). If this function is not defined, the engine skips it for that module/class.
 
 ```bas
 function onkeydown(key)
-  if key = "Space" then
+  if key = 32 then
     fireProjectile()
   endif
 endfunction
@@ -41,7 +41,7 @@ Called when a key is released. Same `key` values as `onkeydown`. Optional.
 
 ```bas
 function onkeyup(key)
-  if key = "ArrowLeft" then
+  if key = 37 then
     stopMoving()
   endif
 endfunction

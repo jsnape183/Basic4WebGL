@@ -56,6 +56,7 @@ export const docsManifest: DocSection[] = [
         label: 'softGfx',
         topics: [
           { slug: 'gfx',             title: 'gfx',             file: 'api-reference/gfx.md' },
+          { slug: 'input',           title: 'input',           file: 'api-reference/input.md' },
           { slug: 'drawing',         title: 'drawing',         file: 'api-reference/drawing.md' },
           { slug: 'stage',           title: 'stage',           file: 'api-reference/stage.md' },
           { slug: 'pen',             title: 'pen',             file: 'api-reference/pen.md' },

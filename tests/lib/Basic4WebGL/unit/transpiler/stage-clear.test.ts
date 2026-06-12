@@ -7,6 +7,7 @@ const stageSource   = readFileSync('src/lib/Basic4WebGL/defs/stage.bas',   'utf-
 const penSource     = readFileSync('src/lib/Basic4WebGL/defs/pen.bas',     'utf-8');
 const drawingSource = readFileSync('src/lib/Basic4WebGL/defs/drawing.bas', 'utf-8');
 const gfxSource     = readFileSync('src/lib/Basic4WebGL/defs/gfx.bas',     'utf-8');
+const inputSource   = readFileSync('src/lib/Basic4WebGL/defs/input.bas',   'utf-8');
 const mathSource    = readFileSync('src/lib/Basic4WebGL/defs/math.bas',    'utf-8');
 const arraySource   = readFileSync('src/lib/Basic4WebGL/defs/array.bas',   'utf-8');
 
@@ -19,6 +20,7 @@ const transpileGame = (source: string) =>
       { name: 'pen',     source: penSource     },
       { name: 'drawing', source: drawingSource },
       { name: 'gfx',     source: gfxSource     },
+      { name: 'input',   source: inputSource   },
     ],
     files: [{ name: 'Main.bas', source }],
   });
@@ -128,10 +130,10 @@ function onupdate()
         return
     endif
 
-    if gfx.getKeyDown(37)
+    if input.getKeyDown(37)
         paddleX = paddleX - 7
     endif
-    if gfx.getKeyDown(39)
+    if input.getKeyDown(39)
         paddleX = paddleX + 7
     endif
     if paddleX < paddleW / 2

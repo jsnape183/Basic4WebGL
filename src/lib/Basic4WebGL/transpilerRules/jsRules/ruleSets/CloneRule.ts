@@ -17,7 +17,7 @@ class CloneRule implements IGeneratable {
       const args = doChild(node, 0, table);
       return `${lhs} = new ${className}(${args});`;
     }
-    return `${lhs} = new ${className}();`;
+    return `${lhs} = null;`;
   }
 }
 

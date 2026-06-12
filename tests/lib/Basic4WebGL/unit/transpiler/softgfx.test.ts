@@ -8,6 +8,7 @@ import '@Basic4WebGL/transpilerRules';
 const transformSource = readFileSync('src/lib/Basic4WebGL/defs/transform.bas', 'utf-8');
 const spriteSource = readFileSync('src/lib/Basic4WebGL/defs/sprite.bas', 'utf-8');
 const gfxSource = readFileSync('src/lib/Basic4WebGL/defs/gfx.bas', 'utf-8');
+const inputSource = readFileSync('src/lib/Basic4WebGL/defs/input.bas', 'utf-8');
 const stageSource = readFileSync('src/lib/Basic4WebGL/defs/stage.bas', 'utf-8');
 const textSource = readFileSync('src/lib/Basic4WebGL/defs/text.bas', 'utf-8');
 const penSource = readFileSync('src/lib/Basic4WebGL/defs/pen.bas', 'utf-8');
@@ -25,6 +26,12 @@ const transpileWithSprite = (source: string) =>
 const transpileWithGfx = (source: string) =>
   compiler.transpile({
     lib: [{ name: 'gfx', source: gfxSource }],
+    files: [{ name: 'Main.bas', source }],
+  });
+
+const transpileWithInput = (source: string) =>
+  compiler.transpile({
+    lib: [{ name: 'input', source: inputSource }],
     files: [{ name: 'Main.bas', source }],
   });
 
@@ -207,48 +214,48 @@ describe('ExpressionList — numeric arguments still parse correctly', () => {
   });
 });
 
-// ─── gfx — mouse input ────────────────────────────────────────────────────────
+// ─── input — mouse input ──────────────────────────────────────────────────────
 
-describe('gfx — mouseX', () => {
+describe('input — mouseX', () => {
   test('compiles without error', () => {
-    const result = transpileWithGfx(
-      'function test()\n  dim x\n  x = gfx.mouseX()\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  dim x\n  x = input.mouseX()\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
   });
   test('emits _sb.getMouseX()', () => {
-    const result = transpileWithGfx(
-      'function test()\n  dim x\n  x = gfx.mouseX()\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  dim x\n  x = input.mouseX()\nendfunction'
     );
     expect(result.code).toContain('_sb.getMouseX()');
   });
 });
 
-describe('gfx — mouseY', () => {
+describe('input — mouseY', () => {
   test('compiles without error', () => {
-    const result = transpileWithGfx(
-      'function test()\n  dim y\n  y = gfx.mouseY()\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  dim y\n  y = input.mouseY()\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
   });
   test('emits _sb.getMouseY()', () => {
-    const result = transpileWithGfx(
-      'function test()\n  dim y\n  y = gfx.mouseY()\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  dim y\n  y = input.mouseY()\nendfunction'
     );
     expect(result.code).toContain('_sb.getMouseY()');
   });
 });
 
-describe('gfx — mouseDown', () => {
+describe('input — mouseDown', () => {
   test('compiles without error', () => {
-    const result = transpileWithGfx(
-      'function test()\n  if gfx.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  if input.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
   });
   test('emits _sb.getMouseDown()', () => {
-    const result = transpileWithGfx(
-      'function test()\n  if gfx.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
+    const result = transpileWithInput(
+      'function test()\n  if input.mouseDown()\n    dim x\n    x = 1\n  endif\nendfunction'
     );
     expect(result.code).toContain('_sb.getMouseDown()');
   });

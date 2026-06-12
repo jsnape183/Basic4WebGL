@@ -10,15 +10,15 @@ A spaceship that moves left, right, up, and down in response to the arrow keys.
 
 Continue with `Player.bas` and `Main.bas` from Tutorial 4.
 
-## Step 2: Check a key with getKeyDown
+## Step 2: Check a key with input.getKeyDown
 
-`getKeyDown("key")` returns `true` while a key is held down. The most common key names are `"ArrowLeft"`, `"ArrowRight"`, `"ArrowUp"`, `"ArrowDown"`, and `"Space"`.
+`input.getKeyDown(keycode)` returns `true` while a key is held down. Keys are identified by a numeric key code — the arrow keys are 37 (left), 38 (up), 39 (right), 40 (down).
 
 Replace the auto-movement in `onupdate` with a keyboard check:
 
 ```bas
 function onupdate(delta)
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     dim x
     x = self.transform.x() + self.speed * delta / 1000
     self.transform.setPosition(x, self.transform.y())
@@ -30,18 +30,18 @@ Run it. The ship only moves right when you hold the right arrow key.
 
 ## Step 3: Add left movement
 
-Add a second check for the left arrow:
+Add a second check for the left arrow (key code 37):
 
 ```bas
 function onupdate(delta)
   dim x
   x = self.transform.x()
 
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     x = x + self.speed * delta / 1000
   endif
 
-  if getKeyDown("ArrowLeft") then
+  if input.getKeyDown(37) then
     x = x - self.speed * delta / 1000
   endif
 
@@ -53,7 +53,7 @@ Notice `dim x` is now declared once before the checks, not inside each `if`. Thi
 
 ## Step 4: Add up and down movement
 
-Add Y movement the same way:
+Add Y movement using key codes 38 (up) and 40 (down):
 
 ```bas
 function onupdate(delta)
@@ -64,16 +64,16 @@ function onupdate(delta)
   y = self.transform.y()
   move = self.speed * delta / 1000
 
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     x = x + move
   endif
-  if getKeyDown("ArrowLeft") then
+  if input.getKeyDown(37) then
     x = x - move
   endif
-  if getKeyDown("ArrowDown") then
+  if input.getKeyDown(40) then
     y = y + move
   endif
-  if getKeyDown("ArrowUp") then
+  if input.getKeyDown(38) then
     y = y - move
   endif
 
@@ -118,16 +118,16 @@ function onupdate(delta)
   y = self.transform.y()
   move = self.speed * delta / 1000
 
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     x = x + move
   endif
-  if getKeyDown("ArrowLeft") then
+  if input.getKeyDown(37) then
     x = x - move
   endif
-  if getKeyDown("ArrowDown") then
+  if input.getKeyDown(40) then
     y = y + move
   endif
-  if getKeyDown("ArrowUp") then
+  if input.getKeyDown(38) then
     y = y - move
   endif
 
@@ -144,10 +144,24 @@ function onenter()
 endfunction
 ```
 
+## Key code reference
+
+| Key | Code |
+|-----|------|
+| Left arrow | 37 |
+| Up arrow | 38 |
+| Right arrow | 39 |
+| Down arrow | 40 |
+| Space | 32 |
+| Enter | 13 |
+| Escape | 27 |
+
+For a full list, see the [input](../api-reference/input) API reference.
+
 ## What you've learned
 
-- `getKeyDown("key")` returns `true` while the key is held
-- Common key names: `"ArrowLeft"`, `"ArrowRight"`, `"ArrowUp"`, `"ArrowDown"`, `"Space"`
+- `input.getKeyDown(keycode)` returns `true` while the key is held
+- Keys are identified by numeric key codes, not names
 - Multiple `if` checks can each adjust the same variable before acting on it
 - Storing a computed value in a local variable avoids repeating the formula
 

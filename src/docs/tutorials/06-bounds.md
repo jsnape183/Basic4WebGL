@@ -75,16 +75,16 @@ function onupdate(delta)
   y = self.transform.y()
   move = self.speed * delta / 1000
 
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     x = x + move
   endif
-  if getKeyDown("ArrowLeft") then
+  if input.getKeyDown(37) then
     x = x - move
   endif
-  if getKeyDown("ArrowDown") then
+  if input.getKeyDown(40) then
     y = y + move
   endif
-  if getKeyDown("ArrowUp") then
+  if input.getKeyDown(38) then
     y = y - move
   endif
 
@@ -135,16 +135,16 @@ function onupdate(delta)
   y = self.transform.y()
   move = self.speed * delta / 1000
 
-  if getKeyDown("ArrowRight") then
+  if input.getKeyDown(39) then
     x = x + move
   endif
-  if getKeyDown("ArrowLeft") then
+  if input.getKeyDown(37) then
     x = x - move
   endif
-  if getKeyDown("ArrowDown") then
+  if input.getKeyDown(40) then
     y = y + move
   endif
-  if getKeyDown("ArrowUp") then
+  if input.getKeyDown(38) then
     y = y - move
   endif
 
