@@ -44,6 +44,7 @@ export const tokens = createKeyValueEnum<TokenMatch>([
   'Or',
   'Not',
   'If',
+  'Then',
   'Else',
   'ElseIf',
   'EndIf',

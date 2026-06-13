@@ -112,6 +112,12 @@ class Symbols {
   getScopeDepth(): number {
     return this.scopes.length;
   }
+  /** Returns true if any scope in the current stack has the given type. Used by
+   *  assertInsideClass to find an enclosing Function/Constructor scope even when
+   *  a module-dispatch scope (e.g. from ModuleRule) sits on top of it. */
+  hasScopeOfType(type: string): boolean {
+    return this.scopes.some((s) => s.type === type);
+  }
   clearScope(): void {
     this.scopes.pop();
     if (this.scopes.length === 0) {

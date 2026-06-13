@@ -1,4 +1,4 @@
-import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
 import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
 import IParserRule, {
   RegisterParserRule,
@@ -25,6 +25,10 @@ class ForRule implements IParserRule {
       endTokens: tokens.Next,
     });
     matchAndMove(tokens.Next, tokenStream);
+    // Optional loop variable after `next` (e.g. `next i`) — consume and discard it
+    if (check(tokens.Variable, tokenStream.current())) {
+      matchAndMove(tokens.Variable, tokenStream);
+    }
     matchAndMove(newLines, tokenStream);
 
     return new ForNode(null, [expr, block], loc);

@@ -23,6 +23,12 @@ class ClassRule implements IParserRule {
 
     matchAndMove(tokens.Class, tokenStream);
 
+    // Skip optional newline between "Class" and "Extends" so both
+    // "Class extends Foo" (same line) and "Class\nExtends Foo" (next line) work.
+    if (check(newLines, tokenStream.current())) {
+      matchAndMove(newLines, tokenStream);
+    }
+
     // Upgrade current module symbol → class
     const moduleName = symbolTable.getScopeName();
     const module = symbolTable.get(moduleName, symbolTypes.Module);

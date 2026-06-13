@@ -45,8 +45,8 @@ Open `Main.bas`. Add a `running` variable and the `GameOverDisplay` object. When
 ```bas
 dim score
 dim timer
-dim scoreDisplay
-dim gameOverDisplay
+dim scoreDisplay as ScoreDisplay
+dim gameOverDisplay as GameOverDisplay
 dim enemies(0)
 dim running
 
@@ -72,7 +72,7 @@ function onenter()
 endfunction
 
 function onupdate(delta)
-  if running == 0 then
+  if running = 0 then
     return
   endif
 
@@ -114,11 +114,11 @@ However, for a small game like this, the cleanest solution is to do the collisio
 ```bas
 dim score
 dim timer
-dim scoreDisplay
-dim gameOverDisplay
+dim scoreDisplay as ScoreDisplay
+dim gameOverDisplay as GameOverDisplay
 dim enemies(0)
 dim running
-dim player
+dim player as Player
 ```
 
 Remove the `dim` from the player creation line so it uses the module-level variable:
@@ -131,7 +131,7 @@ Then update `onupdate` to call `checkCollisions`:
 
 ```bas
 function onupdate(delta)
-  if running == 0 then
+  if running = 0 then
     return
   endif
 
@@ -175,11 +175,11 @@ endfunction
 ```bas
 dim score
 dim timer
-dim scoreDisplay
-dim gameOverDisplay
+dim scoreDisplay as ScoreDisplay
+dim gameOverDisplay as GameOverDisplay
 dim enemies(0)
 dim running
-dim player
+dim player as Player
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -213,7 +213,7 @@ function checkCollisions(p)
 endfunction
 
 function onupdate(delta)
-  if running == 0 then
+  if running = 0 then
     return
   endif
 

@@ -31,6 +31,9 @@ class IfRule implements IParserRule {
       symbolTable,
       undefined
     );
+    if (check(tokens.Then, tokenStream.current())) {
+      matchAndMove(tokens.Then, tokenStream);
+    }
     matchAndMove(newLines, tokenStream);
 
     const block = getParserRule('Block').parse(tokenStream, symbolTable, {

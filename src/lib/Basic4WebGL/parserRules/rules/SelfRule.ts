@@ -22,19 +22,33 @@ class SelfRule implements IParserRule {
     matchAndMove(tokens.Dot, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
     const memberName = tokenStream.prev().text.toLowerCase();
+    let chain = `this.${memberName}`;
 
     if (check(tokens.OpenParen, tokenStream.current())) {
       // self.method(args)
       const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
       matchAndMove(newLines, tokenStream);
-      return new PropertyMethodCallNode(`this.${memberName}`, args, loc);
+      return new PropertyMethodCallNode(chain, args, loc);
+    }
+
+    // self.prop.sub.method(args) — chained call through a sub-object
+    while (check(tokens.Dot, tokenStream.current())) {
+      matchAndMove(tokens.Dot, tokenStream);
+      matchAndMove(tokens.Variable, tokenStream);
+      chain += `.${tokenStream.prev().text.toLowerCase()}`;
+
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+        matchAndMove(newLines, tokenStream);
+        return new PropertyMethodCallNode(chain, args, loc);
+      }
     }
 
     // self.property = expr
     matchAndMove(tokens.Equals, tokenStream);
     const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
     matchAndMove(newLines, tokenStream);
-    return new PropertyAssignNode({ chain: `this.${memberName}` }, expr, loc);
+    return new PropertyAssignNode({ chain }, expr, loc);
   }
 }
 

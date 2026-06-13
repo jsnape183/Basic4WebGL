@@ -19,14 +19,33 @@ class SelfFactorRule implements IParserRule {
     assertInsideClass(symbolTable);
 
     matchAndMove(tokens.Self, tokenStream);
+
+    // Bare `self` — object reference passed as a value, e.g. stage.add(self)
+    if (!check(tokens.Dot, tokenStream.current())) {
+      return new PropertyTermNode('this', loc);
+    }
+
     matchAndMove(tokens.Dot, tokenStream);
     matchAndMove(tokens.Variable, tokenStream);
     const memberName = tokenStream.prev().text.toLowerCase();
+    let chain = `this.${memberName}`;
 
     if (check(tokens.OpenParen, tokenStream.current())) {
       // self.method(args) in expression context
       const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
-      return new PropertyMethodTermNode(`this.${memberName}`, args, loc);
+      return new PropertyMethodTermNode(chain, args, loc);
+    }
+
+    // self.prop.sub.method(args) — chained call through a sub-object in expression context
+    while (check(tokens.Dot, tokenStream.current())) {
+      matchAndMove(tokens.Dot, tokenStream);
+      matchAndMove(tokens.Variable, tokenStream);
+      chain += `.${tokenStream.prev().text.toLowerCase()}`;
+
+      if (check(tokens.OpenParen, tokenStream.current())) {
+        const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+        return new PropertyMethodTermNode(chain, args, loc);
+      }
     }
 
     // self.property in expression context — look up symbol type from class scope so arithmetic
@@ -46,7 +65,7 @@ class SelfFactorRule implements IParserRule {
         }
       }
     }
-    return new PropertyTermNode(`this.${memberName}`, loc, dataType);
+    return new PropertyTermNode(chain, loc, dataType);
   }
 }
 

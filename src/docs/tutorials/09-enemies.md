@@ -50,7 +50,7 @@ Open `Main.bas`. Create an array and fill it with Enemy objects spread across th
 ```bas
 dim score
 dim timer
-dim scoreDisplay
+dim scoreDisplay as ScoreDisplay
 dim enemies(0)
 
 function onenter()
@@ -136,7 +136,7 @@ endfunction
 ```bas
 dim score
 dim timer
-dim scoreDisplay
+dim scoreDisplay as ScoreDisplay
 dim enemies(0)
 
 function onenter()

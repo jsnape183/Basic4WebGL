@@ -50,7 +50,7 @@ Open `Main.bas`. You need three things: a score counter, a timer accumulator, an
 ```bas
 dim score
 dim timer
-dim scoreDisplay
+dim scoreDisplay as ScoreDisplay
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -106,7 +106,7 @@ endfunction
 ```bas
 dim score
 dim timer
-dim scoreDisplay
+dim scoreDisplay as ScoreDisplay
 
 function onenter()
   stage.setBackground(10, 10, 30)
