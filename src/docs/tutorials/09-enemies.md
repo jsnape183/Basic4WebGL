@@ -137,7 +137,7 @@ endfunction
 dim score
 dim timer
 dim scoreDisplay
-dim enemies
+dim enemies(0)
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -146,7 +146,6 @@ function onenter()
   scoreDisplay = new ScoreDisplay()
   dim player = new Player()
 
-  enemies = []
   dim e1 = new Enemy(80,  0)
   dim e2 = new Enemy(220, -72)
   dim e3 = new Enemy(360, -144)
