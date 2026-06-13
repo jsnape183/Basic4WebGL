@@ -70,12 +70,16 @@
       window.addEventListener('unhandledrejection', (e) => {
         const reason = e.reason;
         // PIXI v8 fires internal cancelation rejections from its asset-loader promise
-        // cache when operations are deduped or reset. These are benign signals that
-        // do not prevent assets from loading — suppress them as user-visible errors.
+        // cache when operations are deduped or reset. These are benign — assets still
+        // load successfully. e.preventDefault() marks the rejection as handled so the
+        // browser does not propagate it further (returning early alone is not enough).
         if (
           (reason && typeof reason.type === 'string' && reason.type === 'cancelation') ||
           (reason && typeof reason.message === 'string' && reason.message.includes('"type":"cancelation"'))
-        ) return;
+        ) {
+          e.preventDefault();
+          return;
+        }
         _throwError({ message: reason?.message ?? String(reason) });
       });
 
