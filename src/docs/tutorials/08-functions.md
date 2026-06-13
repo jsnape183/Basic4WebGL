@@ -60,6 +60,8 @@ y = clamp(y, halfH, stage.height() - halfH)
 
 The same logic, but now each check is a single readable line. If you ever need to change how clamping works, you change it in one place.
 
+> **Did you know?** The `math` module already provides `math.clamp(value, min, max)` that does exactly this. Writing your own version here is the teaching point — in real projects you'd use `math.clamp` directly and skip this function.
+
 ## Step 5: Run it
 
 Click **Run**. The ship should behave exactly as before — still stops at the edges — but the code is shorter and cleaner.

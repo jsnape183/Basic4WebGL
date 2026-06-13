@@ -16,7 +16,7 @@ Returns the absolute (positive) value of a number.
 
 ```bas
 dim result
-result = abs(-5)   ' result is 5
+result = math.abs(-5)   ' result is 5
 ```
 
 ### pow(base, exponent)
@@ -32,7 +32,7 @@ Raises a number to a power.
 
 ```bas
 dim result
-result = pow(2, 8)   ' result is 256
+result = math.pow(2, 8)   ' result is 256
 ```
 
 ### sqrt(n)
@@ -47,7 +47,7 @@ Returns the square root of a number.
 
 ```bas
 dim result
-result = sqrt(16)   ' result is 4
+result = math.sqrt(16)   ' result is 4
 ```
 
 ### cbrt(n)
@@ -62,7 +62,7 @@ Returns the cube root of a number.
 
 ```bas
 dim result
-result = cbrt(27)   ' result is 3
+result = math.cbrt(27)   ' result is 3
 ```
 
 ### sign(n)
@@ -77,7 +77,7 @@ Returns -1 if `n` is negative, 0 if `n` is zero, or 1 if `n` is positive.
 
 ```bas
 dim s
-s = sign(-5)   ' s is -1
+s = math.sign(-5)   ' s is -1
 ```
 
 ## Rounding
@@ -94,7 +94,7 @@ Rounds a number down to the nearest whole number.
 
 ```bas
 dim result
-result = floor(3.9)   ' result is 3
+result = math.floor(3.9)   ' result is 3
 ```
 
 ### ceil(n)
@@ -109,7 +109,7 @@ Rounds a number up to the nearest whole number.
 
 ```bas
 dim result
-result = ceil(3.1)   ' result is 4
+result = math.ceil(3.1)   ' result is 4
 ```
 
 ### round(n)
@@ -124,7 +124,7 @@ Rounds a number to the nearest whole number.
 
 ```bas
 dim result
-result = round(3.5)   ' result is 4
+result = math.round(3.5)   ' result is 4
 ```
 
 ### trunc(n)
@@ -139,7 +139,7 @@ Removes the decimal part of a number without rounding.
 
 ```bas
 dim result
-result = trunc(3.9)   ' result is 3
+result = math.trunc(3.9)   ' result is 3
 ```
 
 ## Random Numbers
@@ -156,7 +156,7 @@ Returns a random decimal number from 0 up to (but not including) `max`.
 
 ```bas
 dim roll
-roll = random(1.0)   ' a random float between 0 and 1
+roll = math.random(1.0)   ' a random float between 0 and 1
 ```
 
 ### randomint(max)
@@ -171,7 +171,7 @@ Returns a random whole number from 0 up to (but not including) `max`.
 
 ```bas
 dim side
-side = randomint(4)   ' gives 0, 1, 2, or 3
+side = math.randomint(4)   ' gives 0, 1, 2, or 3
 ```
 
 ## Comparison
@@ -188,7 +188,7 @@ Returns the smaller of two numbers.
 **Returns:** number
 
 ```bas
-health = min(health, 100)   ' caps health at 100
+health = math.min(health, 100)   ' caps health at 100
 ```
 
 ### max(a, b)
@@ -203,7 +203,7 @@ Returns the larger of two numbers.
 **Returns:** number
 
 ```bas
-health = max(health, 0)   ' prevents health going below 0
+health = math.max(health, 0)   ' prevents health going below 0
 ```
 
 ### clamp(value, min, max)
@@ -219,7 +219,7 @@ Keeps a number within a range. If `value` is less than `min`, returns `min`. If 
 **Returns:** number
 
 ```bas
-speed = clamp(speed, 0, 10)
+speed = math.clamp(speed, 0, 10)
 ```
 
 ## Distance and Interpolation
@@ -239,7 +239,7 @@ Returns the straight-line distance between two points.
 
 ```bas
 dim dist
-dist = distance(player.transform.x(), player.transform.y(), enemy.transform.x(), enemy.transform.y())
+dist = math.distance(player.transform.x(), player.transform.y(), enemy.transform.x(), enemy.transform.y())
 ```
 
 ### lerp(a, b, t)
@@ -256,7 +256,7 @@ Smoothly blends between two values. When `t` is 0 the result is `a`; when `t` is
 
 ```bas
 dim smoothX
-smoothX = lerp(currentX, targetX, 0.1)   ' moves 10% closer each frame
+smoothX = math.lerp(currentX, targetX, 0.1)   ' moves 10% closer each frame
 ```
 
 ## Trigonometry
@@ -273,7 +273,7 @@ Returns the sine of an angle in radians.
 
 ```bas
 dim y
-y = sin(angle) * radius
+y = math.sin(angle) * radius
 ```
 
 ### cos(angle)
@@ -288,7 +288,7 @@ Returns the cosine of an angle in radians.
 
 ```bas
 dim x
-x = cos(angle) * radius
+x = math.cos(angle) * radius
 ```
 
 ### tan(angle)
@@ -303,7 +303,7 @@ Returns the tangent of an angle in radians.
 
 ```bas
 dim slope
-slope = tan(angle)
+slope = math.tan(angle)
 ```
 
 ### asin(n)
@@ -318,7 +318,7 @@ Returns the arcsine (inverse sine) of `n` in radians.
 
 ```bas
 dim angle
-angle = asin(0.5)   ' approximately 0.524 radians
+angle = math.asin(0.5)   ' approximately 0.524 radians
 ```
 
 ### acos(n)
@@ -333,7 +333,7 @@ Returns the arccosine (inverse cosine) of `n` in radians.
 
 ```bas
 dim angle
-angle = acos(0.5)   ' approximately 1.047 radians
+angle = math.acos(0.5)   ' approximately 1.047 radians
 ```
 
 ### atan(n)
@@ -348,7 +348,7 @@ Returns the arctangent (inverse tangent) of `n` in radians.
 
 ```bas
 dim angle
-angle = atan(1)   ' approximately 0.785 radians (45 degrees)
+angle = math.atan(1)   ' approximately 0.785 radians (45 degrees)
 ```
 
 ### atan2(y, x)
@@ -364,7 +364,7 @@ Returns the angle in radians between the positive x-axis and the point `(x, y)`.
 
 ```bas
 dim angle
-angle = atan2(targetY - selfY, targetX - selfX)
+angle = math.atan2(targetY - selfY, targetX - selfX)
 ```
 
 ### sinh(n)
@@ -379,7 +379,7 @@ Returns the hyperbolic sine of `n`.
 
 ```bas
 dim result
-result = sinh(1)   ' approximately 1.175
+result = math.sinh(1)   ' approximately 1.175
 ```
 
 ### cosh(n)
@@ -394,7 +394,7 @@ Returns the hyperbolic cosine of `n`.
 
 ```bas
 dim result
-result = cosh(1)   ' approximately 1.543
+result = math.cosh(1)   ' approximately 1.543
 ```
 
 ### tanh(n)
@@ -409,7 +409,7 @@ Returns the hyperbolic tangent of `n`.
 
 ```bas
 dim result
-result = tanh(1)   ' approximately 0.762
+result = math.tanh(1)   ' approximately 0.762
 ```
 
 ### asinh(n)
@@ -424,7 +424,7 @@ Returns the inverse hyperbolic sine of `n`.
 
 ```bas
 dim result
-result = asinh(1)   ' approximately 0.881
+result = math.asinh(1)   ' approximately 0.881
 ```
 
 ### acosh(n)
@@ -439,7 +439,7 @@ Returns the inverse hyperbolic cosine of `n`.
 
 ```bas
 dim result
-result = acosh(2)   ' approximately 1.317
+result = math.acosh(2)   ' approximately 1.317
 ```
 
 ### atanh(n)
@@ -454,7 +454,7 @@ Returns the inverse hyperbolic tangent of `n`.
 
 ```bas
 dim result
-result = atanh(0.5)   ' approximately 0.549
+result = math.atanh(0.5)   ' approximately 0.549
 ```
 
 ## Logarithms and Exponents
@@ -471,7 +471,7 @@ Returns e raised to the power `n`.
 
 ```bas
 dim result
-result = exp(1)   ' result is approximately 2.718
+result = math.exp(1)   ' result is approximately 2.718
 ```
 
 ### log(n)
@@ -486,7 +486,7 @@ Returns the natural logarithm of `n`.
 
 ```bas
 dim result
-result = log(euler())   ' result is 1
+result = math.log(math.euler())   ' result is 1
 ```
 
 ### log2(n)
@@ -501,7 +501,7 @@ Returns the base-2 logarithm of `n`.
 
 ```bas
 dim result
-result = log2(8)   ' result is 3
+result = math.log2(8)   ' result is 3
 ```
 
 ### log10(n)
@@ -516,7 +516,7 @@ Returns the base-10 logarithm of `n`.
 
 ```bas
 dim result
-result = log10(1000)   ' result is 3
+result = math.log10(1000)   ' result is 3
 ```
 
 ## Constants
@@ -529,7 +529,7 @@ Returns the mathematical constant π (approximately 3.14159).
 
 ```bas
 dim circumference
-circumference = 2 * pi() * radius
+circumference = 2 * math.pi() * radius
 ```
 
 ### euler()
@@ -540,7 +540,7 @@ Returns Euler's number e (approximately 2.71828).
 
 ```bas
 dim result
-result = euler()   ' result is approximately 2.718
+result = math.euler()   ' result is approximately 2.718
 ```
 
 ## Conversion
@@ -557,5 +557,5 @@ Converts a string to a number.
 
 ```bas
 dim n
-n = val("42")   ' n is 42
+n = math.val("42")   ' n is 42
 ```

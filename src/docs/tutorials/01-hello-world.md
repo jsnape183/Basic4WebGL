@@ -66,12 +66,12 @@ print score
 
 ## Step 6: Combine text and numbers
 
-Use `str()` to convert a number to text so you can join it with a string:
+Use `string.str()` to convert a number to text so you can join it with a string:
 
 ```bas
 dim lives
 lives = 3
-print "Lives remaining: " + str(lives)
+print "Lives remaining: " + string.str(lives)
 ```
 
 This prints `Lives remaining: 3`.
@@ -84,11 +84,11 @@ print "Hello, world!"
 dim score
 score = 0
 score = score + 10
-print "Score: " + str(score)
+print "Score: " + string.str(score)
 
 dim lives
 lives = 3
-print "Lives remaining: " + str(lives)
+print "Lives remaining: " + string.str(lives)
 ```
 
 ## What you've learned
@@ -96,7 +96,7 @@ print "Lives remaining: " + str(lives)
 - How to create a project and run code
 - `print` outputs values to the console
 - `dim` declares a variable
-- `str()` converts a number to text for joining with strings
+- `string.str()` converts a number to text for joining with strings
 
 ## Next up
 

@@ -47,7 +47,7 @@ dim score
 dim timer
 dim scoreDisplay
 dim gameOverDisplay
-dim enemies
+dim enemies(0)
 dim running
 
 function onenter()
@@ -59,7 +59,6 @@ function onenter()
   gameOverDisplay = new GameOverDisplay()
   dim player = new Player()
 
-  enemies = []
   dim e1 = new Enemy(80,  0)
   dim e2 = new Enemy(220, -72)
   dim e3 = new Enemy(360, -144)
@@ -95,8 +94,8 @@ Add a `checkCollisions` function to `Main.bas` that loops over the enemies array
 ```bas
 function checkCollisions(player)
   dim i
-  for i = 0 to array.length(enemies) - 1
-    if gfx.boxCollide(player, enemies[i]) then
+  for i = 0 to array.arrLength(enemies) - 1
+    if gfx.boxCollide(player, enemies(i)) then
       running = 0
       gameOverDisplay.show()
     endif
@@ -117,7 +116,7 @@ dim score
 dim timer
 dim scoreDisplay
 dim gameOverDisplay
-dim enemies
+dim enemies(0)
 dim running
 dim player
 ```
@@ -178,7 +177,7 @@ dim score
 dim timer
 dim scoreDisplay
 dim gameOverDisplay
-dim enemies
+dim enemies(0)
 dim running
 dim player
 
@@ -191,7 +190,6 @@ function onenter()
   gameOverDisplay = new GameOverDisplay()
   player = new Player()
 
-  enemies = []
   dim e1 = new Enemy(80,  0)
   dim e2 = new Enemy(220, -72)
   dim e3 = new Enemy(360, -144)
@@ -206,8 +204,8 @@ endfunction
 
 function checkCollisions(p)
   dim i
-  for i = 0 to array.length(enemies) - 1
-    if gfx.boxCollide(p, enemies[i]) then
+  for i = 0 to array.arrLength(enemies) - 1
+    if gfx.boxCollide(p, enemies(i)) then
       running = 0
       gameOverDisplay.show()
     endif

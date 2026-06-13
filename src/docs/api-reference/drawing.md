@@ -14,9 +14,9 @@ Draws a straight line between two points.
 | y2        | number | Vertical end position in pixels |
 
 ```bas
-setLineColor(255, 0, 0)
-setLineWidth(2)
-drawLine(0, 0, 100, 100)
+pen.setLineColor(255, 0, 0)
+pen.setLineWidth(2)
+drawing.drawLine(0, 0, 100, 100)
 ```
 
 ## drawRect(x, y, width, height)
@@ -31,8 +31,8 @@ Draws a filled rectangle.
 | height    | number | Height of the rectangle in pixels |
 
 ```bas
-setFillColor(0, 128, 255)
-drawRect(50, 50, 200, 100)
+pen.setFillColor(0, 128, 255)
+drawing.drawRect(50, 50, 200, 100)
 ```
 
 ## drawCircle(x, y, radius)
@@ -46,6 +46,6 @@ Draws a filled circle.
 | radius    | number | Radius of the circle in pixels |
 
 ```bas
-setFillColor(255, 200, 0)
-drawCircle(stage.width() / 2, stage.height() / 2, 40)
+pen.setFillColor(255, 200, 0)
+drawing.drawCircle(stage.width() / 2, stage.height() / 2, 40)
 ```

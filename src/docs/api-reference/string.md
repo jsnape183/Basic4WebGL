@@ -14,7 +14,7 @@ Returns the number of characters in a string.
 
 ```bas
 dim n
-n = len("hello")   ' n is 5
+n = string.len("hello")   ' n is 5
 ```
 
 ## lcase(s)
@@ -29,7 +29,7 @@ Converts all letters in a string to lowercase.
 
 ```bas
 dim result
-result = lcase("HELLO")   ' result is "hello"
+result = string.lcase("HELLO")   ' result is "hello"
 ```
 
 ## ucase(s)
@@ -44,7 +44,7 @@ Converts all letters in a string to uppercase.
 
 ```bas
 dim result
-result = ucase("hello")   ' result is "HELLO"
+result = string.ucase("hello")   ' result is "HELLO"
 ```
 
 ## trim(s)
@@ -59,7 +59,7 @@ Removes spaces from the start and end of a string.
 
 ```bas
 dim result
-result = trim("  hello  ")   ' result is "hello"
+result = string.trim("  hello  ")   ' result is "hello"
 ```
 
 ## str(n)
@@ -74,7 +74,7 @@ Converts a number to a string. Useful for displaying scores or other values in t
 
 ```bas
 dim display
-display = "Score: " + str(score)
+display = "Score: " + string.str(score)
 ```
 
 ## substr(s, start, end)
@@ -91,7 +91,7 @@ Returns a section of a string, from position `start` up to (but not including) p
 
 ```bas
 dim result
-result = substr("hello world", 0, 5)   ' result is "hello"
+result = string.substr("hello world", 0, 5)   ' result is "hello"
 ```
 
 ## replace(s, a, b)
@@ -108,7 +108,7 @@ Replaces every occurrence of `a` in `s` with `b`.
 
 ```bas
 dim result
-result = replace("hello world", "world", "there")   ' result is "hello there"
+result = string.replace("hello world", "world", "there")   ' result is "hello there"
 ```
 
 ## split(s, c)
@@ -124,7 +124,7 @@ Splits a string into an array using a separator character.
 
 ```bas
 dim parts
-parts = split("a,b,c", ",")   ' parts is ["a", "b", "c"]
+parts = string.split("a,b,c", ",")   ' parts is ["a", "b", "c"]
 ```
 
 ## contains(s, sub)
@@ -139,7 +139,7 @@ Checks whether a string contains a given piece of text.
 **Returns:** `true` if found, `false` if not.
 
 ```bas
-if contains(name, "boss") then
+if string.contains(name, "boss") then
   print "it's a boss!"
 endif
 ```
@@ -157,7 +157,7 @@ Returns the position of the first occurrence of `sub` in `s`. Returns -1 if not 
 
 ```bas
 dim pos
-pos = indexof("hello", "ll")   ' pos is 2
+pos = string.indexof("hello", "ll")   ' pos is 2
 ```
 
 ## padstart(s, n, p)
@@ -174,7 +174,7 @@ Pads the start of a string with a character until it reaches the desired length.
 
 ```bas
 dim result
-result = padstart("7", 3, "0")   ' result is "007"
+result = string.padstart("7", 3, "0")   ' result is "007"
 ```
 
 ## padend(s, n, p)
@@ -191,7 +191,7 @@ Pads the end of a string with a character until it reaches the desired length.
 
 ```bas
 dim result
-result = padend("hi", 5, ".")   ' result is "hi..."
+result = string.padend("hi", 5, ".")   ' result is "hi..."
 ```
 
 ## char(n)
@@ -206,7 +206,7 @@ Returns the character for a given character code.
 
 ```bas
 dim result
-result = char(65)   ' result is "A"
+result = string.char(65)   ' result is "A"
 ```
 
 ## asc(s)
@@ -221,5 +221,5 @@ Returns the character code of the first character in a string.
 
 ```bas
 dim code
-code = asc("A")   ' code is 65
+code = string.asc("A")   ' code is 65
 ```

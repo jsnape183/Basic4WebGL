@@ -35,7 +35,7 @@ Constructor()
 EndConstructor
 
 function setScore(s)
-  self.setText("Score: " + str(s))
+  self.setText("Score: " + string.str(s))
 endfunction
 ```
 
@@ -97,7 +97,7 @@ Constructor()
 EndConstructor
 
 function setScore(s)
-  self.setText("Score: " + str(s))
+  self.setText("Score: " + string.str(s))
 endfunction
 ```
 
@@ -133,7 +133,7 @@ endfunction
 - A `text` class file works like a sprite — `Extends text` and a `Constructor()`
 - `super("text", x, y)` sets the initial content and position
 - `self.setText(str)` updates what is displayed
-- `str(number)` converts a number to a string so you can join it with other text
+- `string.str(number)` converts a number to a string so you can join it with other text
 - A delta timer accumulator is the standard way to trigger something once per second
 
 ## Next up

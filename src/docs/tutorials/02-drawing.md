@@ -35,7 +35,7 @@ The canvas is 640 pixels wide and 360 pixels tall. The top-left corner is `(0, 0
 
 ## Step 3: Draw a planet
 
-`setFillColor(r, g, b)` sets the colour for filled shapes. `drawCircle(x, y, radius)` draws a filled circle — `x` and `y` are the centre point.
+`pen.setFillColor(r, g, b)` sets the colour for filled shapes. `drawing.drawCircle(x, y, radius)` draws a filled circle — `x` and `y` are the centre point.
 
 Add these lines inside `onenter`:
 
@@ -43,8 +43,8 @@ Add these lines inside `onenter`:
 function onenter()
   stage.setBackground(10, 10, 30)
 
-  setFillColor(80, 140, 200)
-  drawCircle(480, 200, 80)
+  pen.setFillColor(80, 140, 200)
+  drawing.drawCircle(480, 200, 80)
 endfunction
 ```
 
@@ -58,25 +58,25 @@ Draw a slightly larger, slightly transparent circle behind the planet to suggest
 function onenter()
   stage.setBackground(10, 10, 30)
 
-  setFillColor(100, 160, 220)
-  drawCircle(480, 200, 95)
+  pen.setFillColor(100, 160, 220)
+  drawing.drawCircle(480, 200, 95)
 
-  setFillColor(80, 140, 200)
-  drawCircle(480, 200, 80)
+  pen.setFillColor(80, 140, 200)
+  drawing.drawCircle(480, 200, 80)
 endfunction
 ```
 
 ## Step 5: Draw some stars
 
-`drawRect(x, y, width, height)` draws a filled rectangle — `x` and `y` are its centre point. Tiny white squares make convincing stars:
+`drawing.drawRect(x, y, width, height)` draws a filled rectangle — `x` and `y` are its centre point. Tiny white squares make convincing stars:
 
 ```bas
-setFillColor(255, 255, 255)
-drawRect(50, 60, 3, 3)
-drawRect(120, 30, 2, 2)
-drawRect(200, 140, 3, 3)
-drawRect(300, 80, 2, 2)
-drawRect(380, 50, 3, 3)
+pen.setFillColor(255, 255, 255)
+drawing.drawRect(50, 60, 3, 3)
+drawing.drawRect(120, 30, 2, 2)
+drawing.drawRect(200, 140, 3, 3)
+drawing.drawRect(300, 80, 2, 2)
+drawing.drawRect(380, 50, 3, 3)
 ```
 
 Add these before the planet code (stars should appear behind it).
@@ -86,9 +86,9 @@ Add these before the planet code (stars should appear behind it).
 Two rectangles and a triangle shape built from a narrower rectangle make a quick spaceship:
 
 ```bas
-setFillColor(180, 180, 200)
-drawRect(100, 180, 60, 20)
-drawRect(100, 170, 20, 10)
+pen.setFillColor(180, 180, 200)
+drawing.drawRect(100, 180, 60, 20)
+drawing.drawRect(100, 170, 20, 10)
 ```
 
 ## Complete code
@@ -98,25 +98,25 @@ function onenter()
   stage.setBackground(10, 10, 30)
 
   ' Stars
-  setFillColor(255, 255, 255)
-  drawRect(50, 60, 3, 3)
-  drawRect(120, 30, 2, 2)
-  drawRect(200, 140, 3, 3)
-  drawRect(300, 80, 2, 2)
-  drawRect(380, 50, 3, 3)
+  pen.setFillColor(255, 255, 255)
+  drawing.drawRect(50, 60, 3, 3)
+  drawing.drawRect(120, 30, 2, 2)
+  drawing.drawRect(200, 140, 3, 3)
+  drawing.drawRect(300, 80, 2, 2)
+  drawing.drawRect(380, 50, 3, 3)
 
   ' Planet atmosphere
-  setFillColor(100, 160, 220)
-  drawCircle(480, 200, 95)
+  pen.setFillColor(100, 160, 220)
+  drawing.drawCircle(480, 200, 95)
 
   ' Planet
-  setFillColor(80, 140, 200)
-  drawCircle(480, 200, 80)
+  pen.setFillColor(80, 140, 200)
+  drawing.drawCircle(480, 200, 80)
 
   ' Spaceship
-  setFillColor(180, 180, 200)
-  drawRect(100, 180, 60, 20)
-  drawRect(100, 170, 20, 10)
+  pen.setFillColor(180, 180, 200)
+  drawing.drawRect(100, 180, 60, 20)
+  drawing.drawRect(100, 170, 20, 10)
 endfunction
 ```
 
@@ -124,8 +124,8 @@ endfunction
 
 - `onenter()` runs once when the program starts
 - `stage.setBackground(r, g, b)` sets the canvas background
-- `setFillColor(r, g, b)` sets the colour for the next shape
-- `drawRect(x, y, w, h)` and `drawCircle(x, y, r)` draw shapes — `x, y` is the centre
+- `pen.setFillColor(r, g, b)` sets the colour for the next shape
+- `drawing.drawRect(x, y, w, h)` and `drawing.drawCircle(x, y, r)` draw shapes — `x, y` is the centre
 - Shapes drawn later appear on top of shapes drawn earlier
 - Comments start with `'`
 

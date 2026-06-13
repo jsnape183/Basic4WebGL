@@ -17,7 +17,7 @@ Returns the number of elements in an array.
 ```bas
 dim items(5)
 dim n
-n = arrLength(items)   ' n is 5
+n = array.arrLength(items)   ' n is 5
 ```
 
 ## push(arr, item)
@@ -31,8 +31,8 @@ Adds an item to the end of an array.
 
 ```bas
 dim scores(0)
-push(scores, 100)
-push(scores, 200)
+array.push(scores, 100)
+array.push(scores, 200)
 ```
 
 ## pop(arr)
@@ -47,10 +47,10 @@ Removes and returns the last item in an array.
 
 ```bas
 dim scores(0)
-push(scores, 100)
-push(scores, 200)
+array.push(scores, 100)
+array.push(scores, 200)
 dim last
-last = pop(scores)   ' last is 200, scores now has one item
+last = array.pop(scores)   ' last is 200, scores now has one item
 ```
 
 ## contains(arr, item)
@@ -65,7 +65,7 @@ Checks whether an array contains a specific value.
 **Returns:** `true` if found, `false` if not.
 
 ```bas
-if contains(inventory, "sword") then
+if array.contains(inventory, "sword") then
   print "You have a sword"
 endif
 ```
@@ -83,7 +83,7 @@ Returns the position of a value in an array. Returns -1 if not found. Positions 
 
 ```bas
 dim pos
-pos = indexOf(inventory, "potion")
+pos = array.indexOf(inventory, "potion")
 ```
 
 ## remove(arr, index)
@@ -96,7 +96,7 @@ Removes the item at a specific position and shifts the remaining items down.
 | index     | number | Position to remove (0 = first item) |
 
 ```bas
-remove(inventory, 0)   ' removes the first item
+array.remove(inventory, 0)   ' removes the first item
 ```
 
 ## join(a, s)
@@ -116,7 +116,7 @@ items(0) = "sword"
 items(1) = "shield"
 items(2) = "potion"
 dim result
-result = join(items, ", ")   ' result is "sword, shield, potion"
+result = array.join(items, ", ")   ' result is "sword, shield, potion"
 ```
 
 ## clear(arr)
@@ -128,5 +128,5 @@ Removes all items from an array.
 | arr       | array | The array to clear |
 
 ```bas
-clear(inventory)
+array.clear(inventory)
 ```

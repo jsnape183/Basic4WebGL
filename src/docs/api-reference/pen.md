@@ -13,8 +13,8 @@ Sets the colour used to fill shapes drawn after this call.
 | b         | number | Blue component, 0–255 |
 
 ```bas
-setFillColor(255, 0, 0)
-drawCircle(100, 100, 30)
+pen.setFillColor(255, 0, 0)
+drawing.drawCircle(100, 100, 30)
 ```
 
 ## setLineColor(r, g, b)
@@ -28,8 +28,8 @@ Sets the colour of lines and shape outlines drawn after this call.
 | b         | number | Blue component, 0–255 |
 
 ```bas
-setLineColor(255, 255, 255)
-drawLine(0, 0, 200, 200)
+pen.setLineColor(255, 255, 255)
+drawing.drawLine(0, 0, 200, 200)
 ```
 
 ## setLineWidth(n)
@@ -41,6 +41,6 @@ Sets the thickness of lines drawn after this call.
 | n         | number | Line thickness in pixels |
 
 ```bas
-setLineWidth(3)
-drawRect(10, 10, 80, 40)
+pen.setLineWidth(3)
+drawing.drawRect(10, 10, 80, 40)
 ```

@@ -51,7 +51,7 @@ Open `Main.bas`. Create an array and fill it with Enemy objects spread across th
 dim score
 dim timer
 dim scoreDisplay
-dim enemies
+dim enemies(0)
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -60,7 +60,6 @@ function onenter()
   scoreDisplay = new ScoreDisplay()
   dim player = new Player()
 
-  enemies = []
   dim e1 = new Enemy(80)
   dim e2 = new Enemy(220)
   dim e3 = new Enemy(360)
@@ -173,7 +172,7 @@ endfunction
 ## What you've learned
 
 - Classes can take constructor parameters to customise each instance
-- `enemies = []` creates an empty array; `array.push(arr, item)` adds to it
+- `dim enemies(0)` creates an empty array; `array.push(arr, item)` adds to it
 - Each object's `onupdate` runs automatically — the engine calls it on every active instance
 - Staggering start positions with negative y values spaces enemies out naturally
 
