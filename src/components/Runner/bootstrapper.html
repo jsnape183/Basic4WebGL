@@ -68,7 +68,15 @@
       }
 
       window.addEventListener('unhandledrejection', (e) => {
-        _throwError({ message: e.reason?.message ?? String(e.reason) });
+        const reason = e.reason;
+        // PIXI v8 fires internal cancelation rejections from its asset-loader promise
+        // cache when operations are deduped or reset. These are benign signals that
+        // do not prevent assets from loading — suppress them as user-visible errors.
+        if (
+          (reason && typeof reason.type === 'string' && reason.type === 'cancelation') ||
+          (reason && typeof reason.message === 'string' && reason.message.includes('"type":"cancelation"'))
+        ) return;
+        _throwError({ message: reason?.message ?? String(reason) });
       });
 
       // Catch synchronous script errors that occur outside the async IIFE
