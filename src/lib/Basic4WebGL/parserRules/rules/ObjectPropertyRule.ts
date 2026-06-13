@@ -39,21 +39,18 @@ class ObjectPropertyRule implements IParserRule {
     matchAndMove(tokens.Variable, tokenStream);
     const memberName = tokenStream.prev().text.toLowerCase();
 
-    // If the next token is '(' this is a direct method call — delegate to FunctionCall
+    // If the next token is '(' this is a direct method call.
+    // Build the chain from ownerFormatted (e.g. main.scoredisplay) so the call
+    // goes through the instance, not the class constructor.
     if (check(tokens.OpenParen, tokenStream.current())) {
-      symbolTable.setScope(ownerName);
-      let node: Tree;
-      try {
-        const functionSymbol = symbolTable.get(memberName, symbolTypes.Function);
-        node = getParserRule('FunctionCall').parse(
-          tokenStream,
-          symbolTable,
-          functionSymbol
-        );
-      } finally {
-        symbolTable.clearScope();
-      }
-      return node;
+      const chain = `${ownerFormatted}.${memberName}`;
+      const args = getParserRule('ExpressionList').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+      matchAndMove(newLines, tokenStream);
+      return new PropertyMethodCallNode(chain, args, loc);
     }
 
     // Otherwise: property chain — may be an assignment or a chained method call

@@ -228,11 +228,104 @@ function onupdate(delta)
 endfunction
 ```
 
-**Player.bas** (unchanged from Tutorial 8)
+**Player.bas** (from Tutorial 8)
 
-**Enemy.bas** (unchanged from Tutorial 9)
+```bas
+Class
+Extends sprite
 
-**ScoreDisplay.bas** (unchanged from Tutorial 7)
+dim speed
+
+Constructor()
+  super("ship.png")
+  self.speed = 250
+  self.transform.setPosition(320, 180)
+  stage.add(self)
+EndConstructor
+
+function clamp(value, minVal, maxVal)
+  if value < minVal then
+    value = minVal
+  endif
+  if value > maxVal then
+    value = maxVal
+  endif
+  return value
+endfunction
+
+function onupdate(delta)
+  dim x
+  dim y
+  dim move
+  dim halfW
+  dim halfH
+  x = self.transform.x()
+  y = self.transform.y()
+  move = self.speed * delta / 1000
+  halfW = self.width() / 2
+  halfH = self.height() / 2
+
+  if input.getKeyDown(39) then
+    x = x + move
+  endif
+  if input.getKeyDown(37) then
+    x = x - move
+  endif
+  if input.getKeyDown(40) then
+    y = y + move
+  endif
+  if input.getKeyDown(38) then
+    y = y - move
+  endif
+
+  x = self.clamp(x, halfW, stage.width() - halfW)
+  y = self.clamp(y, halfH, stage.height() - halfH)
+
+  self.transform.setPosition(x, y)
+endfunction
+```
+
+**Enemy.bas** (from Tutorial 9)
+
+```bas
+Class
+Extends sprite
+
+dim speed
+
+Constructor(startX, startY)
+  super("enemy.png")
+  self.speed = 120
+  self.transform.setPosition(startX, startY)
+  stage.add(self)
+EndConstructor
+
+function onupdate(delta)
+  dim y
+  y = self.transform.y() + self.speed * delta / 1000
+  if y > stage.height() then
+    y = 0
+  endif
+  self.transform.setPosition(self.transform.x(), y)
+endfunction
+```
+
+**ScoreDisplay.bas** (from Tutorial 7)
+
+```bas
+Class
+Extends text
+
+Constructor()
+  super("Score: 0", 10, 10)
+  self.setStyle(24, 255, 255, 100)
+  stage.add(self)
+EndConstructor
+
+function setScore(s)
+  self.setText("Score: " + string.str(s))
+endfunction
+```
 
 ## Ideas for taking it further
 

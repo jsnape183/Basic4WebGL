@@ -64,8 +64,8 @@ const _sbSprites = {
     obj.text = text;
   },
   boxCollide(a, b) {
-    const ab = a.getBounds();
-    const bb = b.getBounds();
+    const ab = a._handle.getBounds();
+    const bb = b._handle.getBounds();
     return (
       ab.x + ab.width > bb.x &&
       ab.x < bb.x + bb.width &&

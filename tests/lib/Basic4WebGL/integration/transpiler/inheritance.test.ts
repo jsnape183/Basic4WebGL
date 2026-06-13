@@ -99,6 +99,72 @@ describe('self. keyword — transpiler output', () => {
     const result = compileOk({ lib: [], files: [{ name: 'Player', source: src }] });
     expect(result).toContain('this.init(');
   });
+
+  test('self.sub.method(args) in statement emits this.sub.method(args) — 2-level chain', () => {
+    const src = [
+      'Class',
+      'Constructor(x, y)',
+      '  self.transform.setPosition(x, y)',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Sprite', source: src }] });
+    expect(result).toContain('this.transform.setposition(');
+  });
+
+  test('self.sub.method(args) in expression emits this.sub.method(args) — 2-level chain', () => {
+    const src = [
+      'Class',
+      'function getX()',
+      '  return self.transform.x()',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Sprite', source: src }] });
+    expect(result).toContain('this.transform.x(');
+  });
+
+  test('self.a.b = expr in statement emits this.a.b = rhs — 2-level chain assignment', () => {
+    const src = [
+      'Class',
+      'Constructor()',
+      '  self.config.speed = 100',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Ship', source: src }] });
+    expect(result).toContain('this.config.speed=');
+  });
+
+  test('self.a.b in expression emits this.a.b — 2-level chain property read', () => {
+    const src = [
+      'Class',
+      'function getSpeed()',
+      '  return self.config.speed',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Ship', source: src }] });
+    expect(result).toContain('this.config.speed');
+  });
+
+  test('self.a.b.method(args) in statement — 3-level chain', () => {
+    const src = [
+      'Class',
+      'Constructor()',
+      '  self.body.transform.setPosition(0, 0)',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Enemy', source: src }] });
+    expect(result).toContain('this.body.transform.setposition(');
+  });
+
+  test('self.a.b.c.method(args) in statement — 4-level chain', () => {
+    const src = [
+      'Class',
+      'Constructor()',
+      '  self.a.b.c.doThing(1)',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Deep', source: src }] });
+    expect(result).toContain('this.a.b.c.dothing(');
+  });
 });
 
 // ── self. enforcement ────────────────────────────────────────────────────────

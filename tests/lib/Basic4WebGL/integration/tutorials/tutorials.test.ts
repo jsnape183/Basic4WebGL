@@ -196,8 +196,8 @@ function onupdate(delta)
     y = y - move
   endif
 
-  x = clamp(x, halfW, stage.width() - halfW)
-  y = clamp(y, halfH, stage.height() - halfH)
+  x = self.clamp(x, halfW, stage.width() - halfW)
+  y = self.clamp(y, halfH, stage.height() - halfH)
 
   self.transform.setPosition(x, y)
 endfunction

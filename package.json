@@ -11,7 +11,9 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ci": "vitest run --coverage",
-    "generate:library": "vite-node scripts/generateLibrary.ts"
+    "generate:library": "vite-node scripts/generateLibrary.ts",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
   },
   "imports": {
     "#CompilerLib/*": "./src/CompilerLib/*",
@@ -49,6 +51,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "10.4.20",
+    "cypress": "^15.17.0",
     "eslint": "^9.16.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",

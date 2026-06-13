@@ -54,8 +54,8 @@ endfunction
 Replace all four bounds checks in `onupdate` with two `clamp` calls:
 
 ```bas
-x = clamp(x, halfW, stage.width() - halfW)
-y = clamp(y, halfH, stage.height() - halfH)
+x = self.clamp(x, halfW, stage.width() - halfW)
+y = self.clamp(y, halfH, stage.height() - halfH)
 ```
 
 The same logic, but now each check is a single readable line. If you ever need to change how clamping works, you change it in one place.
@@ -135,8 +135,8 @@ function onupdate(delta)
     y = y - move
   endif
 
-  x = clamp(x, halfW, stage.width() - halfW)
-  y = clamp(y, halfH, stage.height() - halfH)
+  x = self.clamp(x, halfW, stage.width() - halfW)
+  y = self.clamp(y, halfH, stage.height() - halfH)
 
   self.transform.setPosition(x, y)
 endfunction
