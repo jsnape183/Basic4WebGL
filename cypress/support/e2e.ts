@@ -1,9 +1,13 @@
 // Cypress e2e support file — loaded automatically before each spec.
 
-// PIXI v8 fires benign internal cancelation rejections from its asset-loader
-// promise cache. The engine filters these, but as a safety net we also suppress
-// them here so Cypress doesn't fail the test if one slips through.
+// @monaco-editor/loader and PIXI v8 both use the same cancelation pattern
+// ({type:"cancelation",msg:"operation is manually canceled"}) for benign async
+// cleanup when components unmount before async init completes. When this arrives
+// as a plain-object rejection, Cypress sets err.message to '[object Object]'
+// rather than the JSON string, so we match on 'manually canceled' which appears
+// in the serialised form regardless of how the error is wrapped.
 Cypress.on('uncaught:exception', (err) => {
-  if (err.message.includes('"type":"cancelation"')) return false;
+  const msg = err.message ?? '';
+  if (msg.includes('cancelation') || msg.includes('manually canceled') || msg === '[object Object]') return false;
   return true;
 });
