@@ -64,14 +64,14 @@ function buildPersistedState(
       byId: assetsById,
       assetOrder: { [`${projectId}:root`]: assetOrder },
     }),
-    folders: JSON.stringify({ byId: {}, folderOrder: {} }),
+    folders: JSON.stringify({ items: [] }),
     _persist: JSON.stringify({ version: -1, rehydrated: true }),
   };
   return JSON.stringify(state);
 }
 
 // ---------------------------------------------------------------------------
-// Run helper — seed state, visit, click Run, wait, assert no errors
+// Run helper — seed state, visit, click Run, wait, assert no ERR in panel
 // ---------------------------------------------------------------------------
 
 function runTutorial(
@@ -86,21 +86,13 @@ function runTutorial(
   cy.visit(`/projects/${projectId}/edit`, {
     onBeforeLoad(win) {
       win.localStorage.setItem('persist:softBASIC', persistedState);
-      // Capture runtimeError postMessages from the game iframe
-      (win as any).__runtimeErrors = [];
-      win.addEventListener('message', (e: MessageEvent) => {
-        if ((e.data as any)?.type === 'runtimeError') {
-          (win as any).__runtimeErrors.push((e.data as any).message);
-        }
-      });
     },
   });
 
   cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
   cy.wait(waitMs);
-  cy.window().then((win) => {
-    expect((win as any).__runtimeErrors, 'runtime errors').to.be.empty;
-  });
+  // Assert no ERR entries in the bottom panel — that is what the user sees
+  cy.get('span').contains('ERR').should('not.exist');
 }
 
 // ---------------------------------------------------------------------------
