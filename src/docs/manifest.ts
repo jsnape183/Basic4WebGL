@@ -41,6 +41,7 @@ export const docsManifest: DocSection[] = [
       { slug: 'class-composition', title: 'Class Composition',   file: 'language-guide/class-composition.md' },
       { slug: 'control-flow',      title: 'Control Flow',        file: 'language-guide/control-flow.md' },
       { slug: 'operators',         title: 'Operators',           file: 'language-guide/operators.md' },
+      { slug: 'datatypes',         title: 'Data Types',          file: 'language-guide/datatypes.md' },
       { slug: 'arrays',            title: 'Arrays',              file: 'language-guide/arrays.md' },
       { slug: 'dictionaries',      title: 'Dictionaries',        file: 'language-guide/dictionaries.md' },
       { slug: 'new-keyword',       title: 'The new Keyword',      file: 'language-guide/new-keyword.md' },
@@ -66,6 +67,7 @@ export const docsManifest: DocSection[] = [
           { slug: 'animatedsprite',  title: 'animatedsprite',  file: 'api-reference/animatedsprite.md' },
           { slug: 'text',            title: 'text',            file: 'api-reference/text.md' },
           { slug: 'tilemap',         title: 'tilemap',         file: 'api-reference/tilemap.md' },
+          { slug: 'audio',           title: 'audio',           file: 'api-reference/audio.md' },
         ],
       },
       {
