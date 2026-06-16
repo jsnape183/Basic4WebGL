@@ -12,6 +12,7 @@ import ObjectTransform from '../lib/Basic4WebGL/defs/transform.bas?raw';
 import sprite from '../lib/Basic4WebGL/defs/sprite.bas?raw';
 import animatedsprite from '../lib/Basic4WebGL/defs/animatedsprite.bas?raw';
 import tilemap from '../lib/Basic4WebGL/defs/tilemap.bas?raw';
+import audio from '../lib/Basic4WebGL/defs/audio.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -28,4 +29,5 @@ export const packageModules: Record<string, string> = {
   sprite,
   animatedsprite,
   tilemap,
+  audio,
 };

@@ -91,6 +91,7 @@
       };
       </script>
       <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.x/dist/pixi.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@pixi/sound@6/dist/pixi-sound.js"></script>
       <script type="text/javascript">
       var app;
       //${projectId}
@@ -112,6 +113,7 @@
           _sb._initMouse(app.canvas);
 
           await _sb.preloadFromLocalStorage(_sbProjectId);
+          await _sb.preloadAudioFromLocalStorage(_sbProjectId);
 
           //${transpiled};
 
