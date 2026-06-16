@@ -1,6 +1,8 @@
 # assetmanager
 
-The `assetmanager` module lets you retrieve images from your project's asset library by name. Images are loaded automatically when your project starts — you only need this module when you want to pass an image reference to your own code rather than a filename string.
+The `assetmanager` module lets you retrieve images from your project's asset library by name. Images and audio files are loaded automatically when your project starts — you only need this module when you want to pass an image reference to your own code rather than a filename string.
+
+Audio files (`.mp3`, `.wav`, `.ogg`) are also auto-loaded, but are accessed through the `audio` class, not through `assetmanager`.
 
 ## loadImage(name)
 

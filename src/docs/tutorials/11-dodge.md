@@ -146,7 +146,45 @@ function onupdate(delta)
 endfunction
 ```
 
-## Step 6: Run it
+## Step 6: Add background music
+
+Upload a music file (`.mp3` or `.wav`) to your project's Assets panel. Then declare it in `Main.bas` alongside the other module-level variables:
+
+```bas
+dim music as audio("music.mp3")
+```
+
+In `onenter`, start it looping after the other setup:
+
+```bas
+music.setVolume(0.4)
+music.playLoop()
+```
+
+## Step 7: Add a hit sound
+
+Upload a short impact sound (e.g. `hit.wav`) to your Assets panel. Declare it in `Main.bas`:
+
+```bas
+dim hitSound as audio("hit.wav")
+```
+
+In `checkCollisions`, play it when a collision is detected:
+
+```bas
+function checkCollisions(p)
+  dim i
+  for i = 0 to array.arrLength(enemies) - 1
+    if gfx.boxCollide(p, enemies(i)) then
+      running = 0
+      hitSound.play()
+      gameOverDisplay.show()
+    endif
+  next i
+endfunction
+```
+
+## Step 8: Run it
 
 Click **Run**. Dodge the falling enemy ships with the arrow keys. When one hits you, the GAME OVER message appears and the score freezes. How long can you survive?
 
@@ -180,6 +218,8 @@ dim gameOverDisplay as GameOverDisplay
 dim enemies(0)
 dim running
 dim player as Player
+dim music as audio("music.mp3")
+dim hitSound as audio("hit.wav")
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -189,6 +229,8 @@ function onenter()
   scoreDisplay = new ScoreDisplay()
   gameOverDisplay = new GameOverDisplay()
   player = new Player()
+  music.setVolume(0.4)
+  music.playLoop()
 
   dim e1 = new Enemy(80,  0)
   dim e2 = new Enemy(220, -72)
@@ -207,6 +249,7 @@ function checkCollisions(p)
   for i = 0 to array.arrLength(enemies) - 1
     if gfx.boxCollide(p, enemies(i)) then
       running = 0
+      hitSound.play()
       gameOverDisplay.show()
     endif
   next i
@@ -333,6 +376,7 @@ endfunction
 - Add more enemies as the score increases: push new Enemy objects into the `enemies` array from `onupdate`
 - Display a "Press Space to restart" message and restart on `onkeydown` key code 32
 - Add a high score that persists across runs using a module-level variable
+- Stop the music on game over: call `music.stop()` in `checkCollisions` after `running = 0`
 
 ## What you've learned
 
@@ -341,6 +385,8 @@ endfunction
 - A `running` flag is a simple and reliable way to pause or stop a game
 - `setAlpha(0)` hides an object; `setAlpha(1)` reveals it
 - Module-level `dim` variables in `Main.bas` act as shared game state
+- `dim music as audio("file")` declares an audio object at module level
+- `playLoop()` starts background music; `play()` fires a one-shot sound effect
 
 ## You've completed the tutorial series!
 

@@ -96,6 +96,7 @@ export const docsManifest: DocSection[] = [
       { slug: 'tutorial-09-enemies',     title: '9. Multiple Enemies',    file: 'tutorials/09-enemies.md' },
       { slug: 'tutorial-10-classes',     title: '10. How Classes Work',   file: 'tutorials/10-classes.md' },
       { slug: 'tutorial-11-dodge',       title: '11. Dodge!',             file: 'tutorials/11-dodge.md' },
+      { slug: 'tutorial-12-sound',       title: '12. Sound Effects and Music', file: 'tutorials/12-sound.md' },
     ],
   },
 ];

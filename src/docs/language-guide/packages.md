@@ -24,6 +24,7 @@ The main first-party package. Provides graphics, animation, and asset management
 | `animatedsprite` | Frame-animated sprites |
 | `text` | Text rendering |
 | `tilemap` | Tile-based map rendering |
+| `audio` | Sound effects and background music |
 
 ## Sprite
 
@@ -81,6 +82,26 @@ Extends tilemap
 Constructor()
   super("tileset.png", tileWidth, tileHeight)
 EndConstructor
+```
+
+## Audio
+
+Plays sound effects and background music from assets in your project.
+
+```bas
+dim shoot as audio("shoot.wav")
+dim music  as audio("music.mp3")
+
+function onenter()
+  music.setVolume(0.4)
+  music.playLoop()
+endfunction
+
+function onupdate(delta)
+  if input.getKeyDown(32) then
+    shoot.play()
+  endif
+endfunction
 ```
 
 ## assetmanager
