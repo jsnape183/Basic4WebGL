@@ -102,11 +102,15 @@ endfunction
 
 ## Ideas for taking it further
 
-- Play a hit sound when a collision is detected
-- Lower the music volume during a game-over screen
-- Check `isPlaying()` to avoid restarting music that's already running
-- Use different volumes for SFX versus music (loud effects, quiet background)
+- Increase enemy speed over time: update `self.speed` in each enemy's `onupdate` based on score
+- Add more enemies as the score increases: push new Enemy objects into the `enemies` array from `onupdate`
+- Display a "Press Space to restart" message and restart on `onkeydown` key code 32
+- Add a high score that persists across runs using a module-level variable
+- Stop the music on game over: call `music.stop()` in `checkCollisions` after `running = 0`
+- Lower the music volume during a game-over screen instead of stopping it: `music.setVolume(0.1)`
+- Use `isPlaying()` to avoid restarting music that is already running
+- Give SFX and music different volumes — loud effects, quiet background
 
-## Next steps
+## You've completed the tutorial series!
 
-Try adding sounds to your Dodge! project from [Tutorial 11](tutorial-11-dodge). Add a hit sound to the collision check and background music that plays from `onenter`.
+You now know how to build a complete softBASIC game with graphics, collision, score, classes, and sound. Explore the [API Reference](../api-reference/gfx) to discover more of what softGfx can do.

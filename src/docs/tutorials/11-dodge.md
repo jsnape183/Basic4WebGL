@@ -370,14 +370,6 @@ function setScore(s)
 endfunction
 ```
 
-## Ideas for taking it further
-
-- Increase enemy speed over time: update `self.speed` in each enemy's `onupdate` based on score
-- Add more enemies as the score increases: push new Enemy objects into the `enemies` array from `onupdate`
-- Display a "Press Space to restart" message and restart on `onkeydown` key code 32
-- Add a high score that persists across runs using a module-level variable
-- Stop the music on game over: call `music.stop()` in `checkCollisions` after `running = 0`
-
 ## What you've learned
 
 - `gfx.boxCollide(a, b)` checks whether two sprites overlap
@@ -388,6 +380,6 @@ endfunction
 - `dim music as audio("file")` declares an audio object at module level
 - `playLoop()` starts background music; `play()` fires a one-shot sound effect
 
-## You've completed the tutorial series!
+## Next steps
 
-You now know how to build a real softBASIC game from scratch. Explore the [API Reference](../api-reference/gfx) to discover more of what softGfx can do.
+Continue to [Tutorial 12: Sound Effects and Music](tutorial-12-sound) to learn how audio works in more detail and get ideas for taking your Dodge! game further.
