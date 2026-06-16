@@ -1,3 +1,4 @@
+import React from 'react';
 import sbLifecycle from './engine/lifecycle.js?raw';
 import sbInput from './engine/input.js?raw';
 import sbAssets from './engine/assets.js?raw';
