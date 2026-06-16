@@ -16,4 +16,13 @@ describe('getAssetType', () => {
 
   test('unknown extension → text', () => expect(getAssetType('file.unknown')).toBe('text'));
   test('no extension → text', () => expect(getAssetType('nodotfile')).toBe('text'));
+
+  test.each(['.mp3', '.wav', '.ogg'])(
+    'extension %s → audio',
+    (ext) => expect(getAssetType(`sound${ext}`)).toBe('audio')
+  );
+
+  test('uppercase audio extension → audio', () => {
+    expect(getAssetType('sound.MP3')).toBe('audio');
+  });
 });

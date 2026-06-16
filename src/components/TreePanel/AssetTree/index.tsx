@@ -533,7 +533,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
             ref={inputRef}
             type="file"
             multiple
-            accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.mp3,.wav,.ogg"
+
             className="hidden"
             data-testid="uploader"
             aria-label="Upload asset"
