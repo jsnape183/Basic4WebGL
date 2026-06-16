@@ -2,6 +2,7 @@ import React from 'react';
 import { IAsset } from '../../features/assets/assetsSlice';
 import { getAssetType } from './getAssetType';
 import ImagePreview from './ImagePreview';
+import AudioPreview from './AudioPreview';
 import TextEditor from './TextEditor';
 
 type Props = {
@@ -10,9 +11,9 @@ type Props = {
 };
 
 const AssetPreview: React.FC<Props> = ({ asset, onDirtyChange }) => {
-  if (getAssetType(asset.name) === 'image') {
-    return <ImagePreview asset={asset} />;
-  }
+  const type = getAssetType(asset.name);
+  if (type === 'image') return <ImagePreview asset={asset} />;
+  if (type === 'audio') return <AudioPreview asset={asset} />;
   return <TextEditor asset={asset} onDirtyChange={onDirtyChange} />;
 };
 
