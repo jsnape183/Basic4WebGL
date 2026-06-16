@@ -21,11 +21,12 @@ const _sbAudio = (() => {
         (a) => a.projectId === projectId && _isAudio(a.name)
       );
 
-      await Promise.all(audioAssets.map((a) => new Promise((resolve) => {
+      await Promise.all(audioAssets.map((a) => new Promise((resolve, reject) => {
         const sound = PIXI.sound.Sound.from({
           url: a.content,
           preload: true,
           loaded: () => resolve(),
+          error: (err) => reject(err),
         });
         _cache.set(a.fullName ?? a.name, sound);
       })));
