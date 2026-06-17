@@ -5,10 +5,11 @@ import '@Basic4WebGL/transpilerRules';
 
 const collisionSource = readFileSync('src/lib/Basic4WebGL/defs/collision.bas', 'utf-8');
 const gfxSource = readFileSync('src/lib/Basic4WebGL/defs/gfx.bas', 'utf-8');
+const rayhitSource = readFileSync('src/lib/Basic4WebGL/defs/rayhit.bas', 'utf-8');
 
 const transpileWithCollision = (source: string) =>
   compiler.transpile({
-    lib: [{ name: 'collision', source: collisionSource }],
+    lib: [{ name: 'collision', source: collisionSource }, { name: 'rayhit', source: rayhitSource }],
     files: [{ name: 'Main.bas', source }],
   });
 
@@ -182,9 +183,7 @@ describe('collision — RayHit property access', () => {
   test('h.distance property access compiles without error', () => {
     const result = transpileWithCollision([
       'function test()',
-      '  dim hits',
-      '  dim h',
-      '  h = hits(0)',
+      '  dim h as rayhit',
       '  dim d',
       '  d = h.distance',
       'endfunction',
@@ -195,9 +194,7 @@ describe('collision — RayHit property access', () => {
   test('h.sprite property access compiles without error', () => {
     const result = transpileWithCollision([
       'function test()',
-      '  dim hits',
-      '  dim h',
-      '  h = hits(0)',
+      '  dim h as rayhit',
       '  dim s',
       '  s = h.sprite',
       'endfunction',

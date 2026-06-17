@@ -13,6 +13,8 @@ import sprite from '../lib/Basic4WebGL/defs/sprite.bas?raw';
 import animatedsprite from '../lib/Basic4WebGL/defs/animatedsprite.bas?raw';
 import tilemap from '../lib/Basic4WebGL/defs/tilemap.bas?raw';
 import audio from '../lib/Basic4WebGL/defs/audio.bas?raw';
+import collision from '../lib/Basic4WebGL/defs/collision.bas?raw';
+import rayhit from '../lib/Basic4WebGL/defs/rayhit.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -30,4 +32,6 @@ export const packageModules: Record<string, string> = {
   animatedsprite,
   tilemap,
   audio,
+  collision,
+  rayhit,
 };
