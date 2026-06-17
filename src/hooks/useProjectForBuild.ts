@@ -3,10 +3,12 @@ import { RootState } from '../store';
 import { ProjectFile } from '../lib/CompilerLib/compiler/types';
 import { packageModules } from '../constants/packageModules';
 import { useAllFilesForProject } from './useAllFilesForProject';
+import { sortByDependencies } from '../lib/Basic4WebGL/sortByDependencies';
 
 type BuildProject = {
   lib: Array<ProjectFile>;
   files: Array<ProjectFile>;
+  dependencyError?: string;
 };
 
 const DEFAULT_PACKAGE_IDS = ['softcore', 'softgfx'];
@@ -37,5 +39,7 @@ export const useProjectForBuild = (projectId: string): BuildProject => {
     source: f.source,
   }));
 
-  return { lib, files: projectFiles };
+  const { files: sortedFiles, error: dependencyError } = sortByDependencies(projectFiles);
+
+  return { lib, files: sortedFiles, dependencyError };
 };

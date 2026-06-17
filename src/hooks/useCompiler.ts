@@ -19,6 +19,13 @@ export const useCompiler = (projectId: string) => {
     dispatch(clearLogs());
     dispatch(addLog({ type: LogItemType.Notice, text: 'Compiling project...' }));
 
+    if (buildProject.dependencyError) {
+      dispatch(addLog({ type: LogItemType.Error, text: buildProject.dependencyError }));
+      dispatch(setIsRunning(false));
+      dispatch(setTranspiled(''));
+      return;
+    }
+
     const result = Basic4WebGL.transpile(buildProject);
 
     if (result.diagnostics.length > 0) {
