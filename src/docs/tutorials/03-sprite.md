@@ -10,6 +10,10 @@ A spaceship image placed in the centre of the canvas, ready to be moved in the n
 
 A small image for your spaceship — anything works, even a 32×32 pixel PNG you draw yourself. Name it `ship.png`.
 
+You can use this one:
+
+![ship.png](/ship.png)
+
 ## Step 1: Upload your image
 
 In the editor, click the **Assets** tab in the file panel and upload your image. Give it the name `ship.png`.

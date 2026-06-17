@@ -10,6 +10,10 @@ A wave of enemy ships that drift down from the top and loop back when they reach
 
 An image for the enemy ship — call it `enemy.png`. Any small image will do; you can even reuse `ship.png` for now.
 
+You can use this one:
+
+![enemy.png](/alien.png)
+
 ## Step 1: Open your Tutorial 8 project
 
 Continue with `Player.bas`, `ScoreDisplay.bas`, and `Main.bas` from Tutorial 8.
