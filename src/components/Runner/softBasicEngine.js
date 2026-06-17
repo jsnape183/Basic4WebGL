@@ -8,4 +8,5 @@ const _sb = {
   ..._sbSprites,
   ..._sbAnimatedSprites,
   ..._sbTilemaps,
+  ..._sbCollision,
 };
