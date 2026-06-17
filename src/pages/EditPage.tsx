@@ -42,7 +42,7 @@ const EditPage: React.FC = () => {
   const [dirtyAssetIds, setDirtyAssetIds] = useState<string[]>([]);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
-  useRunnerMessages();
+  useRunnerMessages(id);
   useAutoSave();
 
   // Hooks must be called unconditionally — above early return
