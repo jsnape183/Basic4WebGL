@@ -7,8 +7,13 @@ Every great game has sound. In this tutorial you'll add sound effects and backgr
 Before you write any code, you need audio files in your project's **Assets panel**. softBASIC supports `.mp3`, `.wav`, and `.ogg` files.
 
 For this tutorial, upload two files:
-- `shoot.wav` — a short laser or zap sound (find free ones at freesound.org)
+- `shoot.wav` — a short laser or zap sound
 - `music.mp3` — a short music loop (anything loops smoothly)
+
+You can use these sample files — right-click and save:
+
+- [shoot.wav](/shoot.wav)
+- [music.mp3](/music.mp3)
 
 To upload: open the Assets panel, click **+**, and choose your files.
 
