@@ -12,6 +12,7 @@ Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,
   enabled: !!import.meta.env.VITE_SENTRY_DSN,
+  normalizeDepth: 6,
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
