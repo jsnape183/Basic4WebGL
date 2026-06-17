@@ -31,6 +31,7 @@ const _sbCollision = (() => {
 
   return {
     spriteCollide(a, b) {
+      if (!a || !a._handle || !b || !b._handle) return false;
       const ab = a._handle.getBounds();
       const bb = b._handle.getBounds();
       return (
@@ -54,6 +55,7 @@ const _sbCollision = (() => {
     },
 
     circleCollide(a, rA, b, rB) {
+      if (!a || !a._handle || !b || !b._handle) return false;
       const ax = a._handle.position.x;
       const ay = a._handle.position.y;
       const bx = b._handle.position.x;
@@ -64,6 +66,7 @@ const _sbCollision = (() => {
     },
 
     pointInBox(x, y, sprite) {
+      if (!sprite || !sprite._handle) return false;
       const b = sprite._handle.getBounds();
       return (
         Number(x) >= b.x &&
