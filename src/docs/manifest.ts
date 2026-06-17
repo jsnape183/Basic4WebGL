@@ -26,6 +26,13 @@ export function getSectionTopics(section: DocSection): DocTopic[] {
 
 export const docsManifest: DocSection[] = [
   {
+    id: 'release-notes',
+    label: 'Release Notes',
+    topics: [
+      { slug: 'release-notes', title: 'Release Notes', file: 'release-notes.md' },
+    ],
+  },
+  {
     id: 'language-guide',
     label: 'Language Guide',
     topics: [
