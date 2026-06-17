@@ -63,16 +63,6 @@ const _sbSprites = {
   setText(obj, text) {
     obj.text = text;
   },
-  boxCollide(a, b) {
-    const ab = a._handle.getBounds();
-    const bb = b._handle.getBounds();
-    return (
-      ab.x + ab.width > bb.x &&
-      ab.x < bb.x + bb.width &&
-      ab.y + ab.height > bb.y &&
-      ab.y < bb.y + bb.height
-    );
-  },
   setTextStyle(obj, size, r, g, b) {
     obj.style.fontSize = size;
     obj.style.fill = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
