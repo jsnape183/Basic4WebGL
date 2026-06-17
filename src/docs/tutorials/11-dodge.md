@@ -95,7 +95,7 @@ Add a `checkCollisions` function to `Main.bas` that loops over the enemies array
 function checkCollisions(player)
   dim i
   for i = 0 to array.arrLength(enemies) - 1
-    if gfx.boxCollide(player, enemies(i)) then
+    if collision.spriteCollide(player, enemies(i)) then
       running = 0
       gameOverDisplay.show()
     endif
@@ -103,7 +103,7 @@ function checkCollisions(player)
 endfunction
 ```
 
-`gfx.boxCollide(a, b)` returns `true` if the two sprites overlap. The `for` loop checks every enemy in one pass.
+`collision.spriteCollide(a, b)` returns `true` if the two sprites overlap. The `for` loop checks every enemy in one pass.
 
 ## Step 5: Call checkCollisions from Player.bas
 
@@ -175,7 +175,7 @@ In `checkCollisions`, play it when a collision is detected:
 function checkCollisions(p)
   dim i
   for i = 0 to array.arrLength(enemies) - 1
-    if gfx.boxCollide(p, enemies(i)) then
+    if collision.spriteCollide(p, enemies(i)) then
       running = 0
       hitSound.play()
       gameOverDisplay.show()
@@ -247,7 +247,7 @@ endfunction
 function checkCollisions(p)
   dim i
   for i = 0 to array.arrLength(enemies) - 1
-    if gfx.boxCollide(p, enemies(i)) then
+    if collision.spriteCollide(p, enemies(i)) then
       running = 0
       hitSound.play()
       gameOverDisplay.show()
@@ -372,7 +372,7 @@ endfunction
 
 ## What you've learned
 
-- `gfx.boxCollide(a, b)` checks whether two sprites overlap
+- `collision.spriteCollide(a, b)` checks whether two sprites overlap
 - A `for` loop over an array checks every element in one pass
 - A `running` flag is a simple and reliable way to pause or stop a game
 - `setAlpha(0)` hides an object; `setAlpha(1)` reveals it

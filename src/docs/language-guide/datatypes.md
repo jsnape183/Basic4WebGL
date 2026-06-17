@@ -42,7 +42,7 @@ if input.getKeyDown(32) then
   shoot.play()
 endif
 
-if gfx.boxCollide(player, enemy) then
+if collision.spriteCollide(player, enemy) then
   gameOver()
 endif
 ```
@@ -51,7 +51,7 @@ You can also store them in variables and compare explicitly:
 
 ```bas
 dim colliding
-colliding = gfx.boxCollide(player, enemy)
+colliding = collision.spriteCollide(player, enemy)
 
 if colliding = true then
   gameOver()

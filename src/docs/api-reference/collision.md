@@ -139,6 +139,6 @@ for i = 0 to array.arrLength(hits) - 1
 next i
 ```
 
-## Note: gfx.boxCollide
+## Note: gfx.boxCollide (deprecated)
 
-`gfx.boxCollide(a, b)` is a permanent alias for `collision.spriteCollide(a, b)`. Existing code that uses `gfx.boxCollide` continues to work without changes.
+`gfx.boxCollide(a, b)` is a deprecated alias for `collision.spriteCollide(a, b)`. It will not be removed, so existing code continues to work — but new code should use `collision.spriteCollide` directly.

@@ -1,12 +1,16 @@
 # gfx
 
-The `gfx` module provides collision detection. Include the **softGfx** package in your project to use it.
+The `gfx` module provides legacy collision detection. Include the **softGfx** package in your project to use it.
 
 For keyboard and mouse input, see [input](input).
 
+For collision detection, use the [collision](collision) module — it provides `spriteCollide`, `circleCollide`, `raycast`, and more.
+
 ## boxCollide(a, b)
 
-Checks whether two sprites overlap. Uses a simple bounding-box test — if the rectangular areas of the two sprites touch or overlap, this returns `true`.
+> **Deprecated.** Use [`collision.spriteCollide(a, b)`](collision) instead. `gfx.boxCollide` is kept for backward compatibility and will not be removed, but new code should use the `collision` module.
+
+Checks whether two sprites overlap using their bounding boxes.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
@@ -16,6 +20,12 @@ Checks whether two sprites overlap. Uses a simple bounding-box test — if the r
 **Returns:** `true` if the sprites overlap, `false` if they do not.
 
 ```bas
+' Preferred
+if collision.spriteCollide(player, enemy) then
+  player.takeDamage(10)
+endif
+
+' Also works (deprecated)
 if gfx.boxCollide(player, enemy) then
   player.takeDamage(10)
 endif
