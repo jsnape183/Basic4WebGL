@@ -26,13 +26,6 @@ export function getSectionTopics(section: DocSection): DocTopic[] {
 
 export const docsManifest: DocSection[] = [
   {
-    id: 'release-notes',
-    label: 'Release Notes',
-    topics: [
-      { slug: 'release-notes', title: 'Release Notes', file: 'release-notes.md' },
-    ],
-  },
-  {
     id: 'language-guide',
     label: 'Language Guide',
     topics: [
@@ -105,6 +98,13 @@ export const docsManifest: DocSection[] = [
       { slug: 'tutorial-10-classes',     title: '10. How Classes Work',   file: 'tutorials/10-classes.md' },
       { slug: 'tutorial-11-dodge',       title: '11. Dodge!',             file: 'tutorials/11-dodge.md' },
       { slug: 'tutorial-12-sound',       title: '12. Sound Effects and Music', file: 'tutorials/12-sound.md' },
+    ],
+  },
+  {
+    id: 'release-notes',
+    label: 'Release Notes',
+    topics: [
+      { slug: 'release-notes', title: 'Release Notes', file: 'release-notes.md' },
     ],
   },
 ];
