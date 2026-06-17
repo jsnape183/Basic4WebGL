@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.1.1 — 2026-06-17
+
+### Error tracking
+
+- Integrated Sentry for production error visibility
+- React component crashes are captured automatically via the error boundary
+- Runtime errors from user games are forwarded to Sentry with the full project source attached, making bugs reproducible from the dashboard
+
+---
+
 ## v0.1.0 — 2026-06-17
 
 First stable release of the softBASIC language.
