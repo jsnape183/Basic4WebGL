@@ -1,0 +1,144 @@
+# collision
+
+The `collision` module provides six functions for detecting overlaps, proximity, and line-of-sight between sprites. Include the **softGfx** package to use it.
+
+## spriteCollide(a, b)
+
+Tests whether two sprites overlap using their bounding boxes. The simplest way to detect two sprites touching.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| a         | object | First sprite |
+| b         | object | Second sprite |
+
+**Returns:** `true` if the sprites overlap, `false` if not.
+
+```bas
+if collision.spriteCollide(player, enemy) then
+  gameOver()
+endif
+```
+
+## boxCollide(x1, y1, w1, h1, x2, y2, w2, h2)
+
+Tests whether two axis-aligned rectangles overlap. Use this when you want to specify the exact collision size instead of relying on the sprite bounds.
+
+`x` and `y` are the **centre** of each rectangle (consistent with `drawing.drawRect`).
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x1        | number | Centre x of the first box |
+| y1        | number | Centre y of the first box |
+| w1        | number | Width of the first box |
+| h1        | number | Height of the first box |
+| x2        | number | Centre x of the second box |
+| y2        | number | Centre y of the second box |
+| w2        | number | Width of the second box |
+| h2        | number | Height of the second box |
+
+**Returns:** `true` if the boxes overlap, `false` if not.
+
+```bas
+dim px = player.transform.x()
+dim py = player.transform.y()
+if collision.boxCollide(px, py, 32, 48, ex, ey, 40, 40) then
+  gameOver()
+endif
+```
+
+## circleCollide(a, radiusA, b, radiusB)
+
+Tests whether two circles overlap. Uses the distance between sprite centres and the sum of their radii. Good for round sprites or when you want smooth corner behaviour.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| a         | object | First sprite |
+| radiusA   | number | Radius of the first circle in pixels |
+| b         | object | Second sprite |
+| radiusB   | number | Radius of the second circle in pixels |
+
+**Returns:** `true` if the circles overlap, `false` if not.
+
+```bas
+if collision.circleCollide(coin, 12, player, 20) then
+  collectCoin()
+endif
+```
+
+## pointInBox(x, y, sprite)
+
+Tests whether a point falls inside a sprite's bounding box. Most useful for detecting mouse clicks on sprite buttons.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | x coordinate of the point |
+| y         | number | y coordinate of the point |
+| sprite    | object | Sprite whose bounding box to test |
+
+**Returns:** `true` if the point is inside the sprite, `false` if not.
+
+```bas
+if collision.pointInBox(input.mouseX(), input.mouseY(), btn) then
+  onClick()
+endif
+```
+
+## raycast(x, y, angle, distance, sprites)
+
+Casts a ray from a point in a given direction and returns the **first** sprite it hits, or `false` if nothing is hit within range.
+
+Angle is in degrees: 0 = right, 90 = down, 180 = left, 270 = up.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | Ray origin x |
+| y         | number | Ray origin y |
+| angle     | number | Direction in degrees |
+| distance  | number | Maximum ray length in pixels |
+| sprites   | array  | Array of sprites to test against |
+
+**Returns:** The first sprite hit (nearest to origin), or `false` if nothing is hit.
+
+```bas
+dim hit = collision.raycast(player.transform.x(), player.transform.y(), 270, 300, enemies)
+if hit <> false then
+  hit.destroy()
+endif
+```
+
+## raycastAll(x, y, angle, distance, sprites)
+
+Same as `raycast` but returns **all** sprites hit, as an array of `rayhit` objects sorted nearest first. Returns an empty array (length 0) if nothing is hit.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | Ray origin x |
+| y         | number | Ray origin y |
+| angle     | number | Direction in degrees |
+| distance  | number | Maximum ray length in pixels |
+| sprites   | array  | Array of sprites to test against |
+
+**Returns:** Array of `rayhit` objects sorted nearest first.
+
+Each `rayhit` has two properties:
+
+| Property | Type   | Description |
+|----------|--------|-------------|
+| sprite   | object | The sprite that was hit |
+| distance | number | Distance in pixels from the ray origin to the hit point |
+
+```bas
+dim hits = collision.raycastAll(player.transform.x(), player.transform.y(), 45, 400, enemies)
+dim i
+for i = 0 to array.arrLength(hits) - 1
+  dim h as rayhit
+  h = hits(i)
+  if h.distance < 150 then
+    h.sprite.destroy()
+  endif
+next i
+```
+
+## Note: gfx.boxCollide
+
+`gfx.boxCollide(a, b)` is a permanent alias for `collision.spriteCollide(a, b)`. Existing code that uses `gfx.boxCollide` continues to work without changes.
