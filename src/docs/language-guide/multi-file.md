@@ -20,7 +20,11 @@ dim e as enemy(100, 50)
 
 ## Load Order
 
-All files in a project are compiled together. There is no explicit import — every file is available to every other file by its filename identifier.
+The compiler resolves file dependencies automatically. You do not need to arrange your files in any particular order — the compiler analyses what each file references and ensures dependencies are compiled first.
+
+For example, if `Main.bas` creates a `new Enemy()` and `Enemy.bas` is defined elsewhere in the project, `Enemy.bas` will always be compiled before `Main.bas` regardless of where it appears in the file panel.
+
+Circular dependencies — where file A depends on file B and file B depends on file A — are not allowed. If a circular dependency is detected, a clear error appears in the console panel when you run the project.
 
 ## Naming
 
