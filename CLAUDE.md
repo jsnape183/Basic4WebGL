@@ -17,9 +17,8 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 
 ### IMPORTANT: verification command
 
-**Use `npx vite build` to verify the project builds.** Do NOT use:
-- `tsc --noEmit` — has pre-existing TypeScript env issues unrelated to our code
-- `npm run build` — this runs `tsc && vite build` and will fail on the same env issues
+**Use `npx vite build` (or `npm run build`) to verify the project builds.** Do NOT use:
+- `tsc --noEmit` — has pre-existing TypeScript env issues unrelated to our code (`tsconfig.node.json` composite mode expects declaration files that don't exist)
 
 ---
 
