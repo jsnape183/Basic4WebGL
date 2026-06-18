@@ -145,7 +145,7 @@ const LandingHero: React.FC = () => {
       </div>
 
       {/* Right: demo */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{
           border: '1px solid rgba(240,147,251,0.2)',
           borderRadius: 8,
