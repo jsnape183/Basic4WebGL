@@ -133,6 +133,7 @@ const codeBodyStyle: React.CSSProperties = {
   color: 'rgba(255,255,255,0.55)',
   whiteSpace: 'pre',
   height: 180,
+  overflowX: 'auto',
   overflowY: 'auto',
   scrollbarWidth: 'thin',
   scrollbarColor: 'rgba(240,147,251,0.3) transparent',
