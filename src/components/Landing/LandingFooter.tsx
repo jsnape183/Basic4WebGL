@@ -1,4 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+
+const linkStyle = { color: 'rgba(255,255,255,0.3)', textDecoration: 'none' };
 
 const LandingFooter: React.FC = () => (
   <footer style={{
@@ -9,8 +12,8 @@ const LandingFooter: React.FC = () => (
   }}>
     <div>© 2026 softBASIC</div>
     <div style={{ display: 'flex', gap: 20 }}>
-      <a href="/docs" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Docs</a>
-      <a href="/docs/language-guide" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Tutorial</a>
+      <Link to="/docs" style={linkStyle}>Docs</Link>
+      <Link to="/docs/language-guide" style={linkStyle}>Tutorial</Link>
     </div>
   </footer>
 );
