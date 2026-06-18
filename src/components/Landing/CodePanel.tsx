@@ -18,13 +18,14 @@ const cm = (text: string) => <span style={{ color: 'rgba(255,255,255,0.25)', fon
 const TAB_CONTENT: Record<TabId, React.ReactNode> = {
   load: <>
 {cm("' module-level variable — persists across frames")}{'\n'}
-{kw('dim')} ship{'\n'}
+{kw('dim')} ship {kw('as')} sprite{'\n'}
 {'\n'}
 {kw('function')} {fn('onenter')}(){'\n'}
-{'  '}stage.{fn('setBackground')}({num('10')}, {num('10')}, {num('30')}){'\n'}
+{'  '}stage.{fn('setBackground')}({num('15')}, {num('10')}, {num('40')}){'\n'}
 {'  '}ship = {kw('new')} sprite({str('"ship.png"')}){'\n'}
+{'  '}ship.{fn('setScale')}({num('2')}, {num('2')}){'\n'}
 {'  '}stage.{fn('add')}(ship){'\n'}
-{'  '}ship.transform.{fn('setPosition')}({num('320')}, {num('300')}){'\n'}
+{'  '}ship.transform.{fn('setPosition')}(stage.{fn('width')}() / {num('2')}, stage.{fn('height')}() / {num('2')}){'\n'}
 {kw('endfunction')}
   </>,
 
@@ -54,58 +55,71 @@ const TAB_CONTENT: Record<TabId, React.ReactNode> = {
   </>,
 
   shoot: <>
-{cm("' called when a key is pressed (32 = space)")}{'\n'}
+{cm("' fires one bullet at a time, travels upward")}{'\n'}
+{kw('dim')} bullet {kw('as')} sprite{'\n'}
+{kw('dim')} bulletActive{'\n'}
+{'\n'}
 {kw('function')} {fn('onkeydown')}(key){'\n'}
 {'  '}{kw('if')} key = {num('32')} {kw('then')}{'\n'}
-{'    '}{kw('dim')} bullet = {kw('new')} sprite({str('"bullet.png"')}){'\n'}
-{'    '}stage.{fn('add')}(bullet){'\n'}
-{'    '}bullet.transform.{fn('setPosition')}({'\n'}
-{'      '}ship.transform.{fn('x')}(),{'\n'}
-{'      '}ship.transform.{fn('y')}() - {num('20')}){'\n'}
+{'    '}{kw('if')} bulletActive = {num('0')} {kw('then')}{'\n'}
+{'      '}bullet = {kw('new')} sprite({str('"bullet.png"')}){'\n'}
+{'      '}stage.{fn('add')}(bullet){'\n'}
+{'      '}bullet.transform.{fn('setPosition')}(ship.transform.{fn('x')}(), ship.transform.{fn('y')}() - {num('20')}){'\n'}
+{'      '}bulletActive = {num('1')}{'\n'}
+{'    '}{kw('endif')}{'\n'}
 {'  '}{kw('endif')}{'\n'}
-{kw('endfunction')}
+{kw('endfunction')}{'\n'}
+{'\n'}
+{cm("' move bullet in onupdate")}{'\n'}
+{'  '}{kw('if')} bulletActive = {num('1')} {kw('then')}{'\n'}
+{'    '}bullet.transform.{fn('setPosition')}(bullet.transform.{fn('x')}(), bullet.transform.{fn('y')}() - {num('8')}){'\n'}
+{'    '}{kw('if')} bullet.transform.{fn('y')}() {'<'} {num('0')} {kw('then')}{'\n'}
+{'      '}stage.{fn('remove')}(bullet){'\n'}
+{'      '}bulletActive = {num('0')}{'\n'}
+{'    '}{kw('endif')}{'\n'}
+{'  '}{kw('endif')}
   </>,
 
   full: <>
-{cm("' ── Main.bas — everything in one file ──")}{'\n'}
-{kw('dim')} ship{'\n'}
+{cm("' ── Main.bas ──")}{'\n'}
+{kw('dim')} ship {kw('as')} sprite{'\n'}
+{kw('dim')} bullet {kw('as')} sprite{'\n'}
+{kw('dim')} bulletActive{'\n'}
 {'\n'}
 {kw('function')} {fn('onenter')}(){'\n'}
-{'  '}stage.{fn('setBackground')}({num('10')}, {num('10')}, {num('30')}){'\n'}
+{'  '}stage.{fn('setBackground')}({num('15')}, {num('10')}, {num('40')}){'\n'}
 {'  '}ship = {kw('new')} sprite({str('"ship.png"')}){'\n'}
+{'  '}ship.{fn('setScale')}({num('2')}, {num('2')}){'\n'}
 {'  '}stage.{fn('add')}(ship){'\n'}
-{'  '}ship.transform.{fn('setPosition')}({num('320')}, {num('300')}){'\n'}
+{'  '}ship.transform.{fn('setPosition')}(stage.{fn('width')}() / {num('2')}, stage.{fn('height')}() / {num('2')}){'\n'}
+{'  '}bulletActive = {num('0')}{'\n'}
 {kw('endfunction')}{'\n'}
 {'\n'}
 {kw('function')} {fn('onupdate')}(delta){'\n'}
-{'  '}{kw('dim')} x{'\n'}
-{'  '}{kw('dim')} y{'\n'}
-{'  '}x = ship.transform.{fn('x')}(){'\n'}
-{'  '}y = ship.transform.{fn('y')}(){'\n'}
-{'\n'}
-{'  '}{kw('if')} {fn('input.getKeyDown')}({num('38')}) {kw('then')}{'\n'}
-{'    '}y = y - {num('5')}{'\n'}
-{'  '}{kw('endif')}{'\n'}
-{'  '}{kw('if')} {fn('input.getKeyDown')}({num('40')}) {kw('then')}{'\n'}
-{'    '}y = y + {num('5')}{'\n'}
-{'  '}{kw('endif')}{'\n'}
-{'  '}{kw('if')} {fn('input.getKeyDown')}({num('37')}) {kw('then')}{'\n'}
-{'    '}x = x - {num('5')}{'\n'}
-{'  '}{kw('endif')}{'\n'}
-{'  '}{kw('if')} {fn('input.getKeyDown')}({num('39')}) {kw('then')}{'\n'}
-{'    '}x = x + {num('5')}{'\n'}
-{'  '}{kw('endif')}{'\n'}
-{'\n'}
+{'  '}{kw('dim')} x = ship.transform.{fn('x')}(){'\n'}
+{'  '}{kw('dim')} y = ship.transform.{fn('y')}(){'\n'}
+{'  '}{kw('if')} {fn('input.getKeyDown')}({num('38')}) {kw('then')} y = y - {num('5')} {kw('endif')}{'\n'}
+{'  '}{kw('if')} {fn('input.getKeyDown')}({num('40')}) {kw('then')} y = y + {num('5')} {kw('endif')}{'\n'}
+{'  '}{kw('if')} {fn('input.getKeyDown')}({num('37')}) {kw('then')} x = x - {num('5')} {kw('endif')}{'\n'}
+{'  '}{kw('if')} {fn('input.getKeyDown')}({num('39')}) {kw('then')} x = x + {num('5')} {kw('endif')}{'\n'}
 {'  '}ship.transform.{fn('setPosition')}(x, y){'\n'}
+{'  '}{kw('if')} bulletActive = {num('1')} {kw('then')}{'\n'}
+{'    '}bullet.transform.{fn('setPosition')}(bullet.transform.{fn('x')}(), bullet.transform.{fn('y')}() - {num('8')}){'\n'}
+{'    '}{kw('if')} bullet.transform.{fn('y')}() {'<'} {num('0')} {kw('then')}{'\n'}
+{'      '}stage.{fn('remove')}(bullet){'\n'}
+{'      '}bulletActive = {num('0')}{'\n'}
+{'    '}{kw('endif')}{'\n'}
+{'  '}{kw('endif')}{'\n'}
 {kw('endfunction')}{'\n'}
 {'\n'}
 {kw('function')} {fn('onkeydown')}(key){'\n'}
 {'  '}{kw('if')} key = {num('32')} {kw('then')}{'\n'}
-{'    '}{kw('dim')} bullet = {kw('new')} sprite({str('"bullet.png"')}){'\n'}
-{'    '}stage.{fn('add')}(bullet){'\n'}
-{'    '}bullet.transform.{fn('setPosition')}({'\n'}
-{'      '}ship.transform.{fn('x')}(),{'\n'}
-{'      '}ship.transform.{fn('y')}() - {num('20')}){'\n'}
+{'    '}{kw('if')} bulletActive = {num('0')} {kw('then')}{'\n'}
+{'      '}bullet = {kw('new')} sprite({str('"bullet.png"')}){'\n'}
+{'      '}stage.{fn('add')}(bullet){'\n'}
+{'      '}bullet.transform.{fn('setPosition')}(ship.transform.{fn('x')}(), ship.transform.{fn('y')}() - {num('20')}){'\n'}
+{'      '}bulletActive = {num('1')}{'\n'}
+{'    '}{kw('endif')}{'\n'}
 {'  '}{kw('endif')}{'\n'}
 {kw('endfunction')}
   </>,
