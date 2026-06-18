@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.2.4 — 2026-06-18
+
+### Editor UI polish
+
+- Project card accent stripes now use the pink/magenta palette instead of blue
+
+---
+
 ## v0.2.3 — 2026-06-18
 
 ### Editor UI polish
