@@ -15,7 +15,7 @@ function onenter()
   ship = new sprite("ship.png")
   ship.setScale(2, 2)
   stage.add(ship)
-  ship.transform.setPosition(160, 100)
+  ship.transform.setPosition(stage.width() / 2, stage.height() / 2)
 endfunction
 
 function onupdate(delta)
