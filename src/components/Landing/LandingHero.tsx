@@ -65,7 +65,7 @@ endfunction
 
 const DEMO_ASSETS = [
   { name: 'ship.png', src: '/ship.png' },
-  { name: 'bullet.png', src: '/alien.png' },
+  { name: 'bullet.png', src: '/bullet.png' },
 ];
 
 const LandingHero: React.FC = () => {
