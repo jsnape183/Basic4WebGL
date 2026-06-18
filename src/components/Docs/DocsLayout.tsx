@@ -11,7 +11,7 @@ interface DocsLayoutProps {
 const DocsLayout: React.FC<DocsLayoutProps> = ({ sectionId, slug }) => (
   <div className="min-h-screen flex flex-col bg-ds-bg text-ds-text">
     <header className="h-11 flex-shrink-0 flex items-center px-6 bg-ds-surface border-b border-ds-border">
-      <span className="font-bold text-base tracking-wide text-ds-accent-btn-text">
+      <span className="font-bold text-base tracking-wide text-gradient-accent">
         softBASIC Docs
       </span>
     </header>

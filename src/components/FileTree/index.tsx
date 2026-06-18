@@ -349,7 +349,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
                   }
                   setRenamingFolder(null);
                 }}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition"
               >
                 Rename
               </button>

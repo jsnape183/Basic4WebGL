@@ -64,7 +64,7 @@ const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           type="button"
           disabled={!isDirty}
           onClick={handleSave}
-          className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-1.5 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-accent-gradient text-white text-sm px-4 py-1.5 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Save
         </button>

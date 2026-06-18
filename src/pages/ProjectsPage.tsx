@@ -5,7 +5,7 @@ import ProjectList from '../components/Projects';
 const ProjectsPage: React.FC = () => (
   <div className="min-h-screen bg-ds-bg text-ds-text">
     <header className="h-11 px-6 flex items-center justify-between border-b border-ds-border bg-ds-surface">
-      <span className="font-bold text-base tracking-wide text-ds-accent-btn-text">
+      <span className="font-bold text-base tracking-wide text-gradient-accent">
         softBASIC
       </span>
       <a

@@ -382,7 +382,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
                   }
                   setRenamingFolder(null);
                 }}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition"
               >
                 Rename
               </button>
@@ -434,7 +434,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
               <button
                 onClick={handleCreateNewFile}
                 disabled={!!newFileError || !newFileName.trim()}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Create
               </button>

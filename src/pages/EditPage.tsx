@@ -151,7 +151,7 @@ const EditPage: React.FC = () => {
           >
             ‹
           </Link>
-          <span className="font-bold text-sm text-ds-accent-btn-text tracking-wide mr-3">
+          <span className="font-bold text-sm text-gradient-accent tracking-wide mr-3">
             softBASIC
           </span>
           <span className="text-ds-text-dim text-sm">{project.name}</span>
@@ -173,7 +173,7 @@ const EditPage: React.FC = () => {
           {!isRunning ? (
             <button
               onClick={run}
-              className="bg-ds-accent-btn text-ds-accent-btn-text text-sm font-semibold px-4 py-1.5 rounded-md hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-ds-accent"
+              className="bg-accent-gradient text-white text-sm font-semibold px-4 py-1.5 rounded-md hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-ds-accent"
               aria-label="Run project"
             >
               ▶ Run

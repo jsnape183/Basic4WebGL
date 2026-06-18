@@ -82,7 +82,7 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
                 w-8 h-8 flex items-center justify-center rounded transition-colors
                 focus:outline-none focus:ring-2 focus:ring-ds-accent focus:ring-offset-1 focus:ring-offset-ds-surface
                 ${activeSectionId === section.id && !section.onAction
-                  ? 'text-ds-accent-btn-text bg-ds-accent-subtle'
+                  ? 'text-ds-accent bg-ds-accent-subtle'
                   : 'text-ds-text-dim hover:text-ds-text-muted'
                 }
               `}

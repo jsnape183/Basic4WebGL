@@ -113,7 +113,7 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
               <button
                 onClick={handleRename}
                 disabled={!newName.trim() || newName.trim() === project.name}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Rename
               </button>
@@ -206,7 +206,7 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-ds-border-subtle">
             <Link
               to={`/projects/${project.id}/edit`}
-              className="text-ds-accent-btn-text bg-ds-accent-btn text-xs font-semibold px-3 py-1.5 rounded hover:opacity-90 transition"
+              className="text-white bg-accent-gradient text-xs font-semibold px-3 py-1.5 rounded hover:opacity-90 transition"
             >
               Open →
             </Link>
@@ -358,7 +358,7 @@ const ProjectList: React.FC = () => {
               <button
                 onClick={handleConfirm}
                 disabled={!newName.trim()}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Create
               </button>
@@ -456,7 +456,7 @@ const ProjectList: React.FC = () => {
           <p className="text-ds-text-muted mb-4">No projects yet.</p>
           <button
             onClick={openModal}
-            className="bg-ds-accent-btn text-ds-accent-btn-text text-sm font-semibold px-5 py-2 rounded-lg hover:opacity-90 transition"
+            className="bg-accent-gradient text-white text-sm font-semibold px-5 py-2 rounded-lg hover:opacity-90 transition"
           >
             Create your first project
           </button>

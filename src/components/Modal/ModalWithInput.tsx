@@ -127,7 +127,7 @@ const ModalWithInput: React.FC<IModalWithInputProps> = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={submit}
-                className="bg-ds-accent-btn text-ds-accent-btn-text text-sm px-4 py-2 rounded hover:opacity-90 transition"
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition"
               >
                 {saveText}
               </button>
