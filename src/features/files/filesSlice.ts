@@ -1,6 +1,5 @@
 // src/features/files/filesSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { reorder } from '../../utils/reorder';
 
 export interface IFile {
   id: string;
@@ -67,15 +66,6 @@ const filesSlice = createSlice({
     clearAllDirty: (state) => {
       state.dirtyFileIds = [];
     },
-    reorderFiles: (
-      state,
-      action: PayloadAction<{ orderKey: string; fromIndex: number; toIndex: number }>
-    ) => {
-      const { orderKey: key, fromIndex, toIndex } = action.payload;
-      const order = state.fileOrder[key];
-      if (!order) return;
-      state.fileOrder[key] = reorder(order, fromIndex, toIndex);
-    },
     setFileFolder: (
       state,
       action: PayloadAction<{ fileId: string; folderId: string | null; fullName: string }>
@@ -132,7 +122,6 @@ export const {
   updateFile,
   removeFile,
   clearAllDirty,
-  reorderFiles,
   setFileFolder,
   batchSetFileFolder,
   batchSetFileFullNames,

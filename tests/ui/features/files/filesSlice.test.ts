@@ -7,7 +7,6 @@ import filesReducer, {
   updateFile,
   removeFile,
   clearAllDirty,
-  reorderFiles,
 } from '../../../../src/features/files/filesSlice';
 
 const sampleFile: IFile = {
@@ -88,18 +87,6 @@ describe('fileOrder', () => {
     expect(s.fileOrder['p1:root']).toEqual(['f2']);
   });
 
-  test('reorderFiles moves a file id from one index to another', () => {
-    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, addFile({ id: 'f3', name: 'c.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, reorderFiles({ orderKey: 'p1:root', fromIndex: 0, toIndex: 2 }));
-    expect(s.fileOrder['p1:root']).toEqual(['f2', 'f3', 'f1']);
-  });
-
-  test('reorderFiles does nothing when the project has no order entry', () => {
-    const s = filesReducer(clean, reorderFiles({ orderKey: 'no-such:root', fromIndex: 0, toIndex: 1 }));
-    expect(s.fileOrder['no-such:root']).toBeUndefined();
-  });
 });
 
 describe('fileOrder — folder-scoped keys', () => {
@@ -121,12 +108,6 @@ describe('fileOrder — folder-scoped keys', () => {
     expect(s.fileOrder['p1:folder1']).toEqual([]);
   });
 
-  test('reorderFiles accepts a scoped key', () => {
-    let s = filesReducer(clean, addFile({ id: 'f1', name: 'a.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, addFile({ id: 'f2', name: 'b.bas', source: '', projectId: 'p1' }));
-    s = filesReducer(s, reorderFiles({ orderKey: 'p1:root', fromIndex: 0, toIndex: 1 }));
-    expect(s.fileOrder['p1:root']).toEqual(['f2', 'f1']);
-  });
 });
 
 // --- folderId + fullName ---
