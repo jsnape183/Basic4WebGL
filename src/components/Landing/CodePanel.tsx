@@ -55,9 +55,18 @@ const TAB_CONTENT: Record<TabId, React.ReactNode> = {
   </>,
 
   shoot: <>
-{cm("' fires one bullet at a time, travels upward")}{'\n'}
 {kw('dim')} bullet {kw('as')} sprite{'\n'}
 {kw('dim')} bulletActive{'\n'}
+{'\n'}
+{kw('function')} {fn('onupdate')}(delta){'\n'}
+{'  '}{kw('if')} bulletActive = {num('1')} {kw('then')}{'\n'}
+{'    '}bullet.transform.{fn('setPosition')}(bullet.transform.{fn('x')}(), bullet.transform.{fn('y')}() - {num('8')}){'\n'}
+{'    '}{kw('if')} bullet.transform.{fn('y')}() {'<'} {num('0')} {kw('then')}{'\n'}
+{'      '}stage.{fn('remove')}(bullet){'\n'}
+{'      '}bulletActive = {num('0')}{'\n'}
+{'    '}{kw('endif')}{'\n'}
+{'  '}{kw('endif')}{'\n'}
+{kw('endfunction')}{'\n'}
 {'\n'}
 {kw('function')} {fn('onkeydown')}(key){'\n'}
 {'  '}{kw('if')} key = {num('32')} {kw('then')}{'\n'}
@@ -68,16 +77,7 @@ const TAB_CONTENT: Record<TabId, React.ReactNode> = {
 {'      '}bulletActive = {num('1')}{'\n'}
 {'    '}{kw('endif')}{'\n'}
 {'  '}{kw('endif')}{'\n'}
-{kw('endfunction')}{'\n'}
-{'\n'}
-{cm("' move bullet in onupdate")}{'\n'}
-{'  '}{kw('if')} bulletActive = {num('1')} {kw('then')}{'\n'}
-{'    '}bullet.transform.{fn('setPosition')}(bullet.transform.{fn('x')}(), bullet.transform.{fn('y')}() - {num('8')}){'\n'}
-{'    '}{kw('if')} bullet.transform.{fn('y')}() {'<'} {num('0')} {kw('then')}{'\n'}
-{'      '}stage.{fn('remove')}(bullet){'\n'}
-{'      '}bulletActive = {num('0')}{'\n'}
-{'    '}{kw('endif')}{'\n'}
-{'  '}{kw('endif')}
+{kw('endfunction')}
   </>,
 
   full: <>
