@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { v4 as uuidv4 } from 'uuid';
 import CodePanel from './CodePanel';
 import Runner from '../Runner';
 import Basic4WebGL from '../../lib/Basic4WebGL';
 import { packageModules } from '../../constants/packageModules';
+import { addProject } from '../../features/projects/projectsSlice';
+import { addFile } from '../../features/files/filesSlice';
+import { addAsset } from '../../features/assets/assetsSlice';
+import { AppDispatch } from '../../store';
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
@@ -68,8 +74,21 @@ const DEMO_ASSETS = [
   { name: 'bullet.png', src: '/bullet.png' },
 ];
 
+const fetchAsDataUrl = async (url: string): Promise<string> => {
+  const resp = await fetch(url);
+  const blob = await resp.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+};
+
 const LandingHero: React.FC = () => {
   const [transpiled, setTranspiled] = useState('');
+  const [launching, setLaunching] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const result = Basic4WebGL.transpile({
@@ -78,6 +97,26 @@ const LandingHero: React.FC = () => {
     });
     setTranspiled(result.code ?? '');
   }, []);
+
+  const handleLaunch = async () => {
+    setLaunching(true);
+    const projectId = uuidv4();
+    const fileId = uuidv4();
+
+    dispatch(addProject({ id: projectId, name: 'Space Shooter Demo', packageIds: ['softcore', 'softgfx'] }));
+    dispatch(addFile({ id: fileId, name: 'Main.bas', source: DEMO_SOURCE, projectId, folderId: null, fullName: 'Main.bas' }));
+
+    const assetDefs = [
+      { name: 'ship.png', src: '/ship.png' },
+      { name: 'bullet.png', src: '/bullet.png' },
+    ];
+    for (const { name, src } of assetDefs) {
+      const content = await fetchAsDataUrl(src);
+      dispatch(addAsset({ id: uuidv4(), name, content, projectId, folderId: null, fullName: name }));
+    }
+
+    navigate(`/projects/${projectId}/edit`);
+  };
 
   return (
   <section style={{
@@ -172,6 +211,28 @@ const LandingHero: React.FC = () => {
           )}
         </div>
         <CodePanel />
+        <button
+          onClick={handleLaunch}
+          disabled={launching}
+          style={{
+            width: '100%',
+            padding: '10px 0',
+            background: launching ? 'rgba(240,147,251,0.15)' : 'rgba(240,147,251,0.1)',
+            border: '1px solid rgba(240,147,251,0.3)',
+            borderRadius: 6,
+            color: launching ? 'rgba(240,147,251,0.4)' : 'rgba(240,147,251,0.85)',
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: 'system-ui, sans-serif',
+            cursor: launching ? 'default' : 'pointer',
+            letterSpacing: 0.3,
+            transition: 'background 0.15s, color 0.15s',
+          }}
+          onMouseEnter={e => { if (!launching) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,147,251,0.18)'; }}
+          onMouseLeave={e => { if (!launching) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,147,251,0.1)'; }}
+        >
+          {launching ? 'Opening editor…' : '▶ Launch in edit mode'}
+        </button>
       </div>
     </div>
   </section>
