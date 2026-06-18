@@ -215,7 +215,8 @@ const LandingHero: React.FC = () => {
           onClick={handleLaunch}
           disabled={launching}
           style={{
-            width: '100%',
+            width: '50%',
+            alignSelf: 'flex-end',
             padding: '10px 0',
             background: launching ? 'rgba(240,147,251,0.15)' : 'rgba(240,147,251,0.1)',
             border: '1px solid rgba(240,147,251,0.3)',
