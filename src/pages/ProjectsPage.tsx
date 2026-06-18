@@ -1,13 +1,14 @@
 // src/pages/ProjectsPage.tsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 import ProjectList from '../components/Projects';
 
 const ProjectsPage: React.FC = () => (
   <div className="min-h-screen bg-ds-bg text-ds-text">
     <header className="h-11 px-6 flex items-center justify-between border-b border-ds-border bg-ds-surface">
-      <span className="font-bold text-base tracking-wide text-gradient-accent">
+      <Link to="/" className="font-bold text-base tracking-wide text-gradient-accent hover:opacity-80 transition-opacity">
         softBASIC
-      </span>
+      </Link>
       <a
         href="/docs"
         target="_blank"

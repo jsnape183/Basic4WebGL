@@ -151,9 +151,9 @@ const EditPage: React.FC = () => {
           >
             ‹
           </Link>
-          <span className="font-bold text-sm text-gradient-accent tracking-wide mr-3">
+          <Link to="/" className="font-bold text-sm text-gradient-accent tracking-wide mr-3 hover:opacity-80 transition-opacity">
             softBASIC
-          </span>
+          </Link>
           <span className="text-ds-text-dim text-sm">{project.name}</span>
           {selectedFile && (
             <>
