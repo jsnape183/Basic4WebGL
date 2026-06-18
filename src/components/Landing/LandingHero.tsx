@@ -11,10 +11,11 @@ const DEMO_SOURCE = `
 dim ship as sprite
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  stage.setBackground(15, 10, 40)
   ship = new sprite("ship.png")
+  ship.setScale(3, 3)
   stage.add(ship)
-  ship.transform.setPosition(320, 300)
+  ship.transform.setPosition(160, 100)
 endfunction
 
 function onupdate(delta)
