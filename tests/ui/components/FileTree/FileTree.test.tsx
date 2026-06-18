@@ -85,3 +85,27 @@ test('does not render folders with section: assets', async () => {
 
   expect(queryByText('Sprites')).toBeNull();
 });
+
+test('renders files in alphabetical order regardless of insertion order', () => {
+  const store = configureStore({
+    reducer: { files: filesReducer, ui: uiReducer, projects: projectsReducer, packages: packagesReducer, folders: foldersReducer },
+  });
+  store.dispatch(seedPackages(firstPartyPackages));
+  store.dispatch(addProject({ id: 'p2', name: 'AlphaTest', packageIds: [] }));
+  // Insert in reverse alphabetical order
+  store.dispatch(addFile({ id: 'fx3', name: 'Zebra.bas', source: '', projectId: 'p2' }));
+  store.dispatch(addFile({ id: 'fx2', name: 'Main.bas', source: '', projectId: 'p2' }));
+  store.dispatch(addFile({ id: 'fx1', name: 'Ammo.bas', source: '', projectId: 'p2' }));
+
+  render(<FileTree projectId="p2" />, {
+    wrapper: ({ children }: { children: React.ReactNode }) => (
+      <Provider store={store}>{children}</Provider>
+    ),
+  });
+
+  const items = screen.getAllByRole('option');
+  const names = items.map((el) => el.textContent?.replace(/[^A-Za-z.]/g, '') ?? '');
+  expect(names[0]).toContain('Ammo');
+  expect(names[1]).toContain('Main');
+  expect(names[2]).toContain('Zebra');
+});

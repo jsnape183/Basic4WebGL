@@ -14,7 +14,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { RootState, AppDispatch } from '../../store';
 import { makeSelectFoldersBySection } from '../../selectors/folderSelectors';
 import { ModalWithInput } from '../Modal';
-import { IFile, addFile, removeFile, reorderFiles, setFileFolder } from '../../features/files/filesSlice';
+import { IFile, addFile, removeFile, setFileFolder } from '../../features/files/filesSlice';
 import { getFullName } from '../../selectors/getFullName';
 import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { validateFileName, normaliseFileName } from '../../utils/fileNameValidation';
@@ -194,16 +194,9 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
       return;
     }
 
-    // Case 2: same-level sort (over.id is a file id)
+    // Case 2: same-folder drag — no-op; file snaps back to alphabetical position
     const overFile = allFiles.find((f) => f.id === over.id);
     if (!overFile || overFile.folderId !== activeFile.folderId) return;
-    const levelOrderKey = `${projectId}:${activeFile.folderId ?? 'root'}`;
-    const levelFiles = allFiles.filter((f) => (f.folderId ?? null) === (activeFile.folderId ?? null));
-    const fromIndex = levelFiles.findIndex((f) => f.id === active.id);
-    const toIndex = levelFiles.findIndex((f) => f.id === over.id);
-    if (fromIndex !== -1 && toIndex !== -1) {
-      dispatch(reorderFiles({ orderKey: levelOrderKey, fromIndex, toIndex }));
-    }
   }, [allFiles, folders, dispatch, projectId]);
 
   // Counter object shared across recursive calls so file items get unique indices
@@ -236,7 +229,9 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
   itemRefs.current = [];
 
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
-    const levelFolders = folders.filter((f) => f.parentId === parentId);
+    const levelFolders = folders
+      .filter((f) => f.parentId === parentId)
+      .sort((a, b) => a.name.localeCompare(b.name));
     const levelFiles = allFiles.filter((f) => (f.folderId ?? null) === parentId);
     const fileIds = levelFiles.map((f) => f.id);
 
