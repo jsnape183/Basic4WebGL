@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.2.3 — 2026-06-18
+
+### Editor UI polish
+
+- Gradient accent colours from the landing page are now applied consistently throughout the editor, project list, docs, and asset panel
+
+---
+
 ## v0.2.2 — 2026-06-18
 
 ### Internal cleanup
