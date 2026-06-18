@@ -10,7 +10,7 @@ const LandingFooter: React.FC = () => (
     <div>© 2026 softBASIC</div>
     <div style={{ display: 'flex', gap: 20 }}>
       <a href="/docs" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Docs</a>
-      <a href="/docs" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Tutorial</a>
+      <a href="/docs/language-guide" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Tutorial</a>
     </div>
   </footer>
 );
