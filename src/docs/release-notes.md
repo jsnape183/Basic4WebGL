@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.2.2 — 2026-06-18
+
+### Internal cleanup
+
+- Removed the `reorderFiles` Redux action and the `useFilesForProject` hook — both were made obsolete by automatic alphabetical sorting
+
+---
+
 ## v0.2.1 — 2026-06-18
 
 ### File tree alphabetical sorting
