@@ -232,7 +232,7 @@ const LandingHero: React.FC = () => {
           onMouseEnter={e => { if (!launching) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,147,251,0.18)'; }}
           onMouseLeave={e => { if (!launching) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(240,147,251,0.1)'; }}
         >
-          {launching ? 'Opening editor…' : '▶ Launch in edit mode'}
+          {launching ? 'Opening editor…' : '▶ Edit code'}
         </button>
       </div>
     </div>
