@@ -9,6 +9,8 @@ const lib = Object.entries(packageModules).map(([name, source]) => ({ name, sour
 
 const DEMO_SOURCE = `
 dim ship as sprite
+dim bullet as sprite
+dim bulletActive
 
 function onenter()
   stage.setBackground(15, 10, 40)
@@ -16,6 +18,7 @@ function onenter()
   ship.setScale(2, 2)
   stage.add(ship)
   ship.transform.setPosition(stage.width() / 2, stage.height() / 2)
+  bulletActive = 0
 endfunction
 
 function onupdate(delta)
@@ -38,13 +41,24 @@ function onupdate(delta)
   endif
 
   ship.transform.setPosition(x, y)
+
+  if bulletActive = 1 then
+    bullet.transform.setPosition(bullet.transform.x(), bullet.transform.y() - 8)
+    if bullet.transform.y() < 0 then
+      stage.remove(bullet)
+      bulletActive = 0
+    endif
+  endif
 endfunction
 
 function onkeydown(key)
   if key = 32 then
-    dim bullet = new sprite("bullet.png")
-    stage.add(bullet)
-    bullet.transform.setPosition(ship.transform.x(), ship.transform.y() - 20)
+    if bulletActive = 0 then
+      bullet = new sprite("bullet.png")
+      stage.add(bullet)
+      bullet.transform.setPosition(ship.transform.x(), ship.transform.y() - 20)
+      bulletActive = 1
+    endif
   endif
 endfunction
 `;
