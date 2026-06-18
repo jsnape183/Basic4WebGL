@@ -13,7 +13,7 @@ dim ship as sprite
 function onenter()
   stage.setBackground(15, 10, 40)
   ship = new sprite("ship.png")
-  ship.setScale(3, 3)
+  ship.setScale(2, 2)
   stage.add(ship)
   ship.transform.setPosition(160, 100)
 endfunction

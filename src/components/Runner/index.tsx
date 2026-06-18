@@ -32,6 +32,7 @@ const Runner: React.FC<RunnerProps> = ({
       <iframe
         style={{ width: width, height: height }}
         sandbox="allow-scripts allow-same-origin"
+        scrolling="no"
         title="Preview"
         srcDoc={bootstrapper
           .replace(
