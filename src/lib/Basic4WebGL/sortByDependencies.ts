@@ -10,6 +10,13 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Derive the softBASIC class/module name from a ProjectFile.name value.
+// In production, name carries the filename with its .bas extension ("Enemy.bas");
+// the identifier used in source code is the bare name without extension ("enemy").
+function toClassName(filename: string): string {
+  return filename.replace(/\.bas$/i, '').toLowerCase();
+}
+
 // Strip softBASIC line comments (' to end of line) before scanning for
 // dependency names. Without this, a comment like "' enemy ammo" in Ammo.bas
 // would add a false Ammo→Enemy edge and produce a phantom circular dependency.
@@ -31,7 +38,7 @@ export function sortByDependencies(files: ProjectFile[]): SortResult {
   // tiebreaker when multiple files become eligible at the same sort step.
   const fileMap = new Map<string, ProjectFile>();
   for (const f of files) {
-    fileMap.set(f.name.toLowerCase(), f);
+    fileMap.set(toClassName(f.name), f);
   }
   const names = Array.from(fileMap.keys()); // original order
 
@@ -99,7 +106,7 @@ export function sortByDependencies(files: ProjectFile[]): SortResult {
 
   if (result.length < files.length) {
     const cycleNames = names
-      .filter((name) => !result.some((f) => f.name.toLowerCase() === name))
+      .filter((name) => !result.some((f) => toClassName(f.name) === name))
       .map((name) => fileMap.get(name)!.name);
     return {
       files,

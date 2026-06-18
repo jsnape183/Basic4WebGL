@@ -114,4 +114,15 @@ describe('sortByDependencies', () => {
     expect(error).toBeUndefined();
     expect(files.map((x) => x.name)).toEqual(['Ammo', 'Enemy']);
   });
+
+  test('.bas extension in filename — dependency still detected', () => {
+    // In production, ProjectFile.name carries the .bas extension ("Enemy.bas").
+    // The sort must strip it before pattern matching so "new Enemy()" still resolves.
+    const { files, error } = sortByDependencies([
+      { name: 'Main.bas', source: 'new Enemy()' },
+      { name: 'Enemy.bas', source: '' },
+    ]);
+    expect(error).toBeUndefined();
+    expect(files.map((x) => x.name)).toEqual(['Enemy.bas', 'Main.bas']);
+  });
 });
