@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.2.0 — 2026-06-18
+
+### Automatic file dependency ordering
+
+- The compiler now resolves file compile order automatically — you no longer need to arrange files manually in the file panel
+- Dependencies are detected by scanning for `new ClassName`, `as ClassName`, `ClassName.method()`, and `Extends ClassName` patterns
+- Transitive and diamond dependency chains are handled correctly
+- Circular dependencies (A depends on B, B depends on A) produce a clear error in the console panel
+
+---
+
 ## v0.1.1 — 2026-06-17
 
 ### Error tracking
