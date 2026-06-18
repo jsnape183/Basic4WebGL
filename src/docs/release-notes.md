@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.2.1 — 2026-06-18
+
+### File tree alphabetical sorting
+
+- Files within each folder are now sorted A→Z automatically — no manual ordering needed
+- Folders are also sorted A→Z within each nesting level
+- Drag-and-drop now only applies to moving files between folders; dragging within the same folder snaps back to alphabetical position
+
+---
+
 ## v0.2.0 — 2026-06-18
 
 ### Automatic file dependency ordering
