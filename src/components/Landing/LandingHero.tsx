@@ -177,7 +177,7 @@ const LandingHero: React.FC = () => {
         </Link>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
           New to coding?{' '}
-          <a href="/docs" style={{ color: 'rgba(240,147,251,0.7)', textDecoration: 'none' }}>
+          <a href="/docs" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(240,147,251,0.7)', textDecoration: 'none' }}>
             Start with the beginner tutorial →
           </a>
         </div>
