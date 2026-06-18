@@ -112,6 +112,7 @@
           // Mouse tracking must be attached after app.canvas exists.
           _sb._initMouse(app.canvas);
 
+          //${inlineAssets}
           await _sb.preloadFromLocalStorage(_sbProjectId);
           await _sb.preloadAudioFromLocalStorage(_sbProjectId);
 

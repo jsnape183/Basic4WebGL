@@ -1,6 +1,62 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import CodePanel from './CodePanel';
+import Runner from '../Runner';
+import Basic4WebGL from '../../lib/Basic4WebGL';
+import { packageModules } from '../../constants/packageModules';
+
+const DEMO_SOURCE = `
+dim ship
+
+function onenter()
+  stage.setBackground(10, 10, 30)
+  ship = new sprite("ship.png")
+  stage.add(ship)
+  ship.transform.setPosition(320, 300)
+endfunction
+
+function onupdate(delta)
+  dim x
+  dim y
+  x = ship.transform.x()
+  y = ship.transform.y()
+
+  if input.getKeyDown(38) then
+    y = y - 5
+  endif
+  if input.getKeyDown(40) then
+    y = y + 5
+  endif
+  if input.getKeyDown(37) then
+    x = x - 5
+  endif
+  if input.getKeyDown(39) then
+    x = x + 5
+  endif
+
+  ship.transform.setPosition(x, y)
+endfunction
+
+function onkeydown(key)
+  if key = 32 then
+    dim bullet = new sprite("bullet.png")
+    stage.add(bullet)
+    bullet.transform.setPosition(ship.transform.x(), ship.transform.y() - 20)
+  endif
+endfunction
+`;
+
+const DEMO_ASSETS = [
+  { name: 'ship.png', src: '/ship.png' },
+  { name: 'bullet.png', src: '/alien.png' },
+];
+
+const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
+const compileResult = Basic4WebGL.transpile({
+  lib,
+  files: [{ name: 'Main.bas', source: DEMO_SOURCE }],
+});
+const DEMO_TRANSPILED = compileResult.code ?? '';
 
 const LandingHero: React.FC = () => (
   <section style={{
@@ -70,22 +126,29 @@ const LandingHero: React.FC = () => (
       {/* Right: demo */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{
-          background: '#000',
           border: '1px solid rgba(240,147,251,0.2)',
           borderRadius: 8,
           height: 220,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(240,147,251,0.4)', fontSize: 12,
+          overflow: 'hidden',
           position: 'relative',
         }}>
           <span style={{
-            position: 'absolute', top: 8, left: 10,
-            fontSize: 9, color: 'rgba(255,255,255,0.25)',
+            position: 'absolute', top: 8, left: 10, zIndex: 2,
+            fontSize: 9, color: 'rgba(255,255,255,0.4)',
             letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'monospace',
+            pointerEvents: 'none',
           }}>
             ▶ live preview
           </span>
-          [ game running ]
+          {DEMO_TRANSPILED && (
+            <Runner
+              width="100%"
+              height="220px"
+              transpiled={DEMO_TRANSPILED}
+              projectId="landing-demo"
+              assets={DEMO_ASSETS}
+            />
+          )}
         </div>
         <CodePanel />
       </div>

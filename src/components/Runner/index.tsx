@@ -17,6 +17,7 @@ type RunnerProps = {
   height: string;
   transpiled: string;
   projectId: string;
+  assets?: Array<{ name: string; src: string }>;
 };
 
 const Runner: React.FC<RunnerProps> = ({
@@ -24,6 +25,7 @@ const Runner: React.FC<RunnerProps> = ({
   projectId,
   width = '100%',
   height = '100%',
+  assets,
 }) => {
   return (
     <div style={{ width: width, height: height }}>
@@ -37,7 +39,10 @@ const Runner: React.FC<RunnerProps> = ({
             [sbLifecycle, sbInput, sbAssets, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
-          .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)}
+          .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)
+          .replace('//${inlineAssets}', assets?.length
+            ? `await _sb.preload(${JSON.stringify(assets)});`
+            : '')}
       ></iframe>
     </div>
   );
