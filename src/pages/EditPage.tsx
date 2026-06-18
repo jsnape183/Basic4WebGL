@@ -65,7 +65,7 @@ const EditPage: React.FC = () => {
       if (location.key !== 'default') {
         navigate(-1);
       } else {
-        navigate('/');
+        navigate('/projects');
       }
     }
   }, [project, navigate, location]);
@@ -144,7 +144,7 @@ const EditPage: React.FC = () => {
       header={
         <>
           <Link
-            to="/"
+            to="/projects"
             className="mr-2 text-ds-text-dim hover:text-ds-text-muted transition-colors text-lg leading-none"
             aria-label="Back to projects"
             title="Back to projects"
