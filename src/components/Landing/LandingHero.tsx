@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CodePanel from './CodePanel';
 import Runner from '../Runner';
 import Basic4WebGL from '../../lib/Basic4WebGL';
 import { packageModules } from '../../constants/packageModules';
 
+const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
+
 const DEMO_SOURCE = `
-dim ship
+dim ship as sprite
 
 function onenter()
   stage.setBackground(10, 10, 30)
@@ -51,14 +53,18 @@ const DEMO_ASSETS = [
   { name: 'bullet.png', src: '/alien.png' },
 ];
 
-const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
-const compileResult = Basic4WebGL.transpile({
-  lib,
-  files: [{ name: 'Main.bas', source: DEMO_SOURCE }],
-});
-const DEMO_TRANSPILED = compileResult.code ?? '';
+const LandingHero: React.FC = () => {
+  const [transpiled, setTranspiled] = useState('');
 
-const LandingHero: React.FC = () => (
+  useEffect(() => {
+    const result = Basic4WebGL.transpile({
+      lib,
+      files: [{ name: 'Main.bas', source: DEMO_SOURCE }],
+    });
+    setTranspiled(result.code ?? '');
+  }, []);
+
+  return (
   <section style={{
     minHeight: 'calc(100vh - 52px)',
     display: 'flex',
@@ -140,11 +146,11 @@ const LandingHero: React.FC = () => (
           }}>
             ▶ live preview
           </span>
-          {DEMO_TRANSPILED && (
+          {transpiled && (
             <Runner
               width="100%"
               height="220px"
-              transpiled={DEMO_TRANSPILED}
+              transpiled={transpiled}
               projectId="landing-demo"
               assets={DEMO_ASSETS}
             />
@@ -154,6 +160,7 @@ const LandingHero: React.FC = () => (
       </div>
     </div>
   </section>
-);
+  );
+};
 
 export default LandingHero;
