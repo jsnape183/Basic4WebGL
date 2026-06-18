@@ -13,7 +13,7 @@ import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
 
 const ACCENT_SHADES = [
-  '#5050cc', '#7050cc', '#3060aa', '#6040bb', '#4050dd', '#5070bb',
+  '#f5576c', '#f06292', '#f093fb', '#e040a0', '#f4436c', '#e91e8c',
 ];
 
 function projectAccent(id: string): string {
