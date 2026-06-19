@@ -8,7 +8,7 @@
 
 **Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.2.4`.
 
-The P-list milestone closes out the language and runtime layer and targets `v1.0`. All subsequent milestones are post-1.0.
+Milestones 1–5 are fully defined. Milestones 6–13 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
 ---
 
@@ -21,7 +21,7 @@ Shipped and working:
 - Folder system, asset panel, import/export, package registry
 - Landing page with live game preview
 
-Known deferred issues (low risk, to be resolved as patches within the P-list milestone):
+Known deferred issues (low risk, to be resolved as patches within Milestone 1):
 1. Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation — may produce imprecise error locations
 2. Stray `}` and typo "occured" in `UnexpectedError` message template (`src/lib/CompilerLib/errors.ts`)
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
@@ -29,172 +29,171 @@ Known deferred issues (low risk, to be resolved as patches within the P-list mil
 
 ---
 
-## Milestone 1 — Language complete (v0.3 → v1.0)
+## Milestone 1 — Language complete (multiple minor bumps, current series)
 
-**Goal:** Close out the planned softBASIC runtime modules. Each module ships as a minor version bump with patch work in between.
+**Goal:** Close out the planned softBASIC runtime modules. Each module ships as a minor version bump with patch work in between. Deferred technical issues above resolved as patches within this milestone.
 
-### v0.3 — Scene management
-A `scene` module letting developers define named game states (menu, game, game-over) with individual `onenter` / `onupdate` / `onexit` lifecycle hooks. Avoids requiring users to hand-roll state machines in global variables.
+### Scene management
+A `scene` module for named game states (menu, game, game-over) with individual `onenter` / `onupdate` / `onexit` lifecycle hooks.
 
-Key deliverables:
-- `scene.bas` definition file
-- `scene.js` engine module wired into bootstrapper
-- `scene.switch(name)` runtime method
-- Transpiler support for multi-scene files or scene class pattern
-- Tests + docs
+Key deliverables: `scene.bas` + `scene.js` engine module + `scene.switch(name)` runtime method + tests + docs.
 
 Open questions:
-- Are scenes defined as softBASIC classes extending a `scene` base, or as top-level declarations?
-- How does `stage` state (background, sprites) transfer between scenes — explicit teardown or automatic?
+- Are scenes softBASIC classes extending a base, or top-level declarations?
+- How does stage state transfer between scenes — explicit teardown or automatic?
 
-### v0.4 — Spritesheets
-Extend the existing `animatedsprite` to support spritesheet slicing (define frame grid by tile size, or individual frame rects). Separate from the existing frame-sequence animation which requires individual image files.
+### Spritesheets
+Extend the existing `animatedsprite` to support spritesheet slicing (frame grid by tile size or individual frame rects).
 
-Key deliverables:
-- `spritesheet.bas` or extended `animatedsprite.bas`
-- Engine support for `PIXI.Spritesheet` or manual UV slicing
-- Asset panel preview for spritesheet frames
-- Tests + docs
+Key deliverables: engine support for PIXI.Spritesheet or manual UV slicing + tests + docs.
 
 Open questions:
 - New class (`spritesheet`) or extended constructor on `animatedsprite`?
-- Does the asset panel need a spritesheet editor/slicer, or is defining frame dimensions in code sufficient for v0.4?
+- Does the asset panel need a visual frame slicer in this milestone, or is defining frame dimensions in code sufficient?
 
-### v0.5 — Camera / viewport
-A `camera` module for scrolling worlds larger than the canvas. Moves the PIXI stage container rather than individual sprites.
+### Camera / viewport
+A `camera` module for scrolling worlds larger than the canvas.
 
-Key deliverables:
-- `camera.bas` definition file
-- `camera.js` engine module
-- `camera.follow(sprite)` for automatic tracking
-- `camera.setPosition(x, y)` / `camera.move(dx, dy)` for manual control
-- Tests + docs
+Key deliverables: `camera.bas` + `camera.js` + `camera.follow(sprite)` + `camera.setPosition` / `camera.move` + tests + docs.
 
 Open questions:
-- Does camera clip rendering at canvas bounds (culling) in v0.5 or is that deferred?
-- World size vs viewport size — does the developer define a world size explicitly?
-
-### v1.0 — Language milestone
-Tagged when all P-list modules are complete and deferred technical issues (above) are resolved. Represents a stable, feature-complete softBASIC runtime. No breaking changes after this point without a major version bump.
+- Does camera cull off-screen sprites in this milestone or is that deferred?
+- Does the developer define an explicit world size, or is the world unbounded?
 
 ---
 
-## Milestone 2 — Professional editor (v1.1)
+## Milestone 2 — Professional editor (minor bump)
 
 **Goal:** Make the editor credible for sustained use. Full intellisense backed by the existing `.bas` definition files.
 
 ### Deliverables
 - **Autocomplete** — module function names, class methods, variable names in scope
-- **Hover documentation** — show function signature and description on hover, sourced from `.bas` def files
-- **Parameter hints** — inline signature help as arguments are typed (argument count, current argument highlighted)
+- **Hover documentation** — function signature and description on hover, sourced from `.bas` def files
+- **Parameter hints** — inline signature help as arguments are typed (current argument highlighted)
 - **Error underlining** — surface compile diagnostics inline in the editor, not just in the bottom panel
 
-### Technical decisions to make
-- **Editor component:** Current editor is a basic `<textarea>`-equivalent. This milestone requires replacing it with Monaco Editor or CodeMirror 6. Monaco gives VS Code parity (better intellisense API); CodeMirror 6 is lighter and more embeddable. Decision needed before sprint starts.
-- **Language server vs in-editor:** A full LSP is overkill at this stage. The `.bas` definition files already encode the complete API surface — a static completion provider built from those is sufficient for v1.1. Dynamic (in-project) symbol resolution (user-defined functions, class names) should also be included.
-- **Incremental parsing:** Error underlining ideally runs on every keystroke. The current batch compiler is not designed for this. May need a lightweight incremental parse mode or debounced re-compile.
+### Technical decisions to make before sprint starts
+- **Editor component:** Current editor is a basic textarea. This milestone requires replacing it with Monaco Editor or CodeMirror 6. Monaco gives VS Code parity (better intellisense API); CodeMirror 6 is lighter and more embeddable.
+- **Completion provider:** A full LSP is overkill. The `.bas` definition files already encode the complete API surface — a static completion provider built from those is sufficient. Dynamic symbol resolution (user-defined functions, class names) should also be included.
+- **Incremental parsing for error underlining:** The current batch compiler is not designed for keystroke-level feedback. May need a lightweight incremental mode or debounced re-compile.
 
 ---
 
-## Milestone 3 — User accounts (v1.2)
+## Milestone 3 — User accounts (minor bump)
 
-**Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the foundation for future monetisation and AI features.
+**Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the prerequisite for Milestone 4 and all monetisation work.
 
 ### Architecture
-- **Backend:** Node.js API server. Stack (framework, ORM, hosting) TBD.
+- **Backend:** Node.js API server. Framework, ORM, and hosting TBD.
 - **Auth:** Email/password + OAuth (GitHub at minimum). JWT-based sessions.
-- **localStorage stays:** All projects remain usable without an account. Signing in unlocks sync.
-- **Sync model:** On sign-in, offer to import existing localStorage projects. Ongoing sync is opt-in per project ("Sync this project to cloud").
+- **localStorage stays:** All projects work without an account. Signing in unlocks sync.
+- **Sync model:** On sign-in, offer to import existing localStorage projects. Per-project opt-in to sync.
 - **Free tier limit:** 3 synced projects. Unlimited local-only projects.
 
 ### Deliverables
 - Node API: auth endpoints, project CRUD, asset storage
-- Sign-in / sign-up UI (modal or dedicated page)
+- Sign-in / sign-up UI
 - Guest → account migration flow (one-click import of localStorage projects)
-- Sync status indicators in the project list ("Synced", "Local only", "Unsaved changes")
-- Free tier enforcement (sync blocked at project 4 with upgrade prompt)
+- Sync status indicators in the project list
+- Free tier enforcement at project 4 with upgrade prompt
 
 ### Additional work in this milestone
 - **Observability:** Integrate error tracking (Sentry or equivalent) before user traffic scales. The current iframe `window.onerror` handler pipes runtime errors to the IDE console; production JS errors outside the iframe are currently uncaptured.
-- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Required the moment personal data is stored. Must ship with or before the account feature, not after.
+- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Must ship with or before accounts — cannot be deferred after.
 
 ### Open questions
 - Database: Postgres (most likely), hosted where?
-- Asset storage: S3-compatible object storage for images/audio
-- Will unauthenticated users still be able to use the app fully? (Yes — localStorage remains)
+- Asset storage: S3-compatible object storage for images and audio.
 
 ---
 
-## Milestone 4 — AI-assisted development (v1.3)
+## Milestone 4 — Cloud storage, project sharing, and game gallery (minor bump)
 
-**Goal:** Claude API integration in the editor. Primary adoption differentiator. Available on free tier with rate limits; expanded on paid tier.
-
-### Proposed interaction model
-- **Sidebar assistant:** Chat panel alongside the editor. User describes what they want; AI generates or modifies softBASIC code.
-- **Inline actions:** Right-click or shortcut to "explain this", "fix this error", "complete this function".
-- **Error explanation:** When a compile error appears, offer "Explain this error" which gives a plain-English description targeted at beginners.
-
-### Rate limiting and abuse prevention
-- **Per-user token budget:** Daily/monthly token allowance tracked server-side (not client-side). Free tier gets a meaningful but bounded allowance; paid tier gets a larger one.
-- **Request rate limiting:** Max N requests per minute per user, enforced at the API layer.
-- **Prompt injection mitigation:** User code is sent to Claude as part of the context. Must sanitise or clearly delimit user content so malicious game code cannot alter the system prompt or extract secrets. Use Claude's system prompt to enforce output format (softBASIC only, no explanations of unrelated topics).
-- **Cost cap per user:** Hard server-side spend cap per user per billing period. Beyond cap, AI features gracefully degrade with a clear message.
-- **Unauthenticated users:** AI features require sign-in (prevents trivial abuse via anonymous sessions).
-
-### Technical decisions to make
-- Which Claude model? Haiku for speed/cost on autocomplete-style tasks; Sonnet for generation and explanation.
-- Streaming responses: yes, for responsiveness in the sidebar.
-- Context window strategy: include current file, relevant `.bas` definitions, compiler error list. Exclude all other files by default to keep context small.
-
----
-
-## Milestone 5 — Cloud storage and project sharing (v1.4)
-
-**Goal:** Projects stored in the cloud are shareable and publishable.
+**Goal:** Cloud-synced projects become shareable and publishable. A public game gallery provides a growth and discovery mechanic.
 
 ### Deliverables
-- **Project sharing:** Generate a public read-only URL for any synced project. Recipients can view code and run the game in a sandboxed player — no account required to play.
-- **Published games:** Optional one-click "publish" that creates a persistent shareable URL with a clean play page (no editor chrome). Acts as a growth mechanic.
-- **Free tier storage limits:** Storage quota on assets (images, audio) per account. Soft limit with notification; hard limit prevents new asset uploads.
-- **Project forking:** "Remix this project" on a shared project URL creates a copy in the viewer's account.
+- **Project sharing:** Public read-only URL for any synced project. Recipients can view code and play the game in a sandboxed player without an account.
+- **Published games:** One-click "publish" creates a persistent play URL with clean chrome-free player page.
+- **Game gallery:** Browseable index of published games. Discoverable without an account.
+- **Free tier storage limits:** Asset storage quota per account (images, audio). Soft limit with notification; hard limit prevents new uploads.
+- **Project forking:** "Remix this project" on a shared URL creates a copy in the viewer's account.
+
+### Moderation
+Public content requires at minimum a report + takedown mechanism. Even a simple "Report this game" form and manual review queue is enough to start. This must be in scope for M4, not deferred.
 
 ### Open questions
-- Asset CDN: need object storage + CDN for published game assets (images, audio served at low latency)
-- Is there a gallery/discovery page for published games? (Likely v1.5 or later)
+- CDN strategy for published game assets (images, audio served at low latency globally)
+- Gallery curation: algorithm, recency, or manual featuring?
+- Moderation tooling: who reviews reports and how?
 
 ---
 
-## Milestone 6 — Paid tier (v1.5)
+## Milestone 5 — Package ecosystem (minor bump → v1.0)
 
-**Goal:** Monetisation. Paid tier unlocks higher limits and premium features.
+**Goal:** Third-party or first-party packages that extend the softBASIC runtime. The Redux package registry and `.bas` definition file architecture already provide the foundation. v1.0 is tagged on completion of this milestone — it represents softBASIC as a genuine, open platform.
 
-### Tier structure (draft)
-| Feature | Free | Paid |
-|---------|------|------|
-| Local projects | Unlimited | Unlimited |
-| Synced projects | 3 | Unlimited |
-| Asset storage | 100 MB | 2 GB |
-| AI requests | Limited daily budget | Expanded monthly budget |
-| Published games | 1 | Unlimited |
-| Priority support | — | Yes |
-
-### Deliverables
-- Stripe integration (subscription billing, webhook handling)
-- Feature flag system (server-side, not client-side — client-side flags are trivially bypassed)
-- Upgrade prompt UX at limit boundaries (not paywalled up-front — earned through use)
-- Billing management page (cancel, change plan, download invoices)
-
-### Open questions
-- Price point TBD
-- Annual billing discount?
-- Team/organisation tier (shared projects, multiple seats)? Likely post-v1.5.
+### Key decisions to make before sprint starts
+- **Scope:** First-party packages only (published by the softBASIC team), or open third-party community publishing? First-party is strongly recommended for v1.0 — third-party introduces trust, discovery, and security complexity that is better addressed post-1.0.
+- **Package format:** How are packages distributed? Bundled at build time, loaded from a registry, or user-uploaded?
+- **Discovery:** In-editor package browser, or docs-based listing?
+- **Versioning:** SemVer per package, or monorepo-style with softBASIC itself?
 
 ---
 
-## Items not on the milestone list (to revisit)
+## Milestones 6–13 — Trajectory (to be scoped before each milestone begins)
 
-- **Package ecosystem:** Third-party packages contributed by users. Architecture exists (package registry in Redux) but discovery, publishing, and trust model are undefined.
-- **Mobile/touch support:** The editor is desktop-only. Touch input in the runtime exists but the IDE itself is not usable on mobile.
-- **Multiplayer:** Real-time co-editing. Not on the near-term roadmap but the account infrastructure in v1.2 is a prerequisite.
-- **Game gallery / discovery:** Browse published games. Natural extension of v1.4 sharing.
-- **Spritesheet editor:** Visual frame slicer in the asset panel. Deferred from v0.4 if frame-dimension-in-code is sufficient.
+The milestones below are intentional direction-setters, not specifications. Each will be fully designed before implementation starts. What follows is enough context to understand the ordering rationale.
+
+### Milestone 6 — AI-assisted development (first phase)
+Claude API integration in the editor. First phase is deliberately constrained: single-file edits only, not a full code generator. Likely includes inline error explanation for beginners and assisted function writing. Requires M3 account infrastructure for per-user rate limiting and token budgets to be in place before this can ship responsibly.
+
+Key questions to answer when firming this up: Which Claude model per task type? What context is sent (current file, relevant `.bas` defs, error list)? What are the free tier token allowances? How is prompt injection from user game code mitigated?
+
+### Milestone 7 — Paid tier
+Stripe billing, server-side feature flags, and expanded limits for paying users. The free tier already has enforcement points from M3/M4 (synced project limit, storage quota, AI token budget) — this milestone converts those into a real subscription product.
+
+Unlocks: more synced projects, more storage, more AI usage, more published games. Pricing TBD.
+
+### Milestone 8 — Game export to desktop executable (paid tier only)
+
+User-initiated export that bundles a finished game project into a standalone installable — Windows `.exe` and macOS `.app` at minimum.
+
+This is a significant infrastructure and planning undertaking. The bundle must include:
+- PIXI.js runtime (currently CDN — must be local for offline distribution)
+- The softBASIC runtime engine modules
+- All transpiled game code
+- All game assets (images, audio)
+- A host shell (Electron or Tauri — decision needed)
+
+Additionally requires:
+- Code signing for both platforms to avoid OS security warnings (Windows Authenticode, macOS Apple Developer ID — both require certificates and provisioning)
+- Asset pipeline to package and reference local assets correctly
+- Build server or CI integration to run the packaging process
+
+**Note:** M8 and M13 (desktop IDE) share the same underlying shell technology decision. That choice should be made once, here, not independently at M13.
+
+### Milestone 9 — Mobile touch support
+Touch input in the runtime already partially exists. This milestone makes it first-class: touch events mapped to softBASIC input functions, responsive canvas sizing, and IDE usability on tablet (not necessarily phone).
+
+### Milestone 10 — Sprite editor
+In-app pixel art / sprite editor. Removes the dependency on external tools for basic sprite creation. Scope and format TBD — could range from a minimal pixel canvas to a layered editor.
+
+### Milestone 11 — Tilemap editor
+Visual tilemap editor integrated with the existing `tilemap` module. Paint tiles onto a grid, configure tile properties, export to a format the runtime can load. Scope TBD.
+
+### Milestone 12 — Music editor
+Basic in-app music / sequencer tool. Scope TBD — likely tracker-style given the beginner audience. Tied to the existing audio module.
+
+### Milestone 13 — Desktop app (IDE as installable)
+The softBASIC editor itself packaged as a native desktop application. Shares the Electron/Tauri decision made at M8. Enables offline use of the full IDE, local file system access for assets, and potentially better performance than the browser version.
+
+---
+
+## Perpetual parking lot
+
+Items that don't fit cleanly into the milestone sequence but should be revisited periodically:
+
+- **Multiplayer / real-time co-editing** — requires account infrastructure (M3) as a prerequisite. Significant complexity beyond that.
+- **Spritesheet editor** — may be pulled into M10 (sprite editor) depending on scope decisions there.
+- **Team / organisation tier** — shared projects, multiple seats. Natural extension after paid tier (M7).
+- **Game embedding** — embed a published game in an external site via `<iframe>`. Possible extension of M4 sharing infrastructure.

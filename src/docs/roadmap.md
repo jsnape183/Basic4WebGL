@@ -10,17 +10,39 @@ The core language and runtime are being completed. New modules for scene managem
 
 ---
 
-## Next
+## Near term
 
-Once the language layer is stable, the editor gets a significant upgrade — full autocomplete, hover documentation for every function, and inline parameter hints. The goal is an editor that feels as capable as the tools experienced developers are used to, while still being approachable for beginners.
+Once the language layer is stable, the editor gets a significant upgrade — full autocomplete, hover documentation for every function, and inline parameter hints as you type. The goal is an editor that feels as capable as the tools experienced developers are used to, while still being approachable for beginners.
+
+After the editor, optional accounts arrive. Signing in unlocks cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.
 
 ---
 
 ## Further out
 
-After the editor, the focus shifts to the platform: optional accounts, cloud-synced projects, and AI-assisted coding built directly into the editor. The aim is to make softBASIC genuinely useful as a long-term creative tool, not just a quick experiment.
+With accounts in place, sharing becomes possible: a link to your finished game that anyone can play in a browser, no account required on their end. A public gallery of published games will follow — a place to discover what people are making with softBASIC.
 
-Beyond that, sharing and publishing — the ability to send a link to your finished game and have anyone play it, no account required on their end.
+Alongside sharing, a package ecosystem opens the platform to first-party extension modules that go beyond the built-in library.
+
+That's the milestone we're calling v1.0 — a complete, open platform.
+
+---
+
+## Beyond v1.0
+
+After 1.0, the direction opens up. A few things we know are on the horizon:
+
+**AI assistance** — Claude built directly into the editor to help explain errors, suggest code, and assist with edits. The goal is making softBASIC genuinely useful for learners, not just a novelty feature.
+
+**Paid tier** — expanded limits and capabilities for users who want more.
+
+**Game export** — the ability to bundle a finished game into a standalone desktop executable that anyone can download and run. This is significant infrastructure work and will ship as a paid-tier feature when it's ready.
+
+**Mobile** — touch input support and an editor experience that works on tablet.
+
+**Creation tools** — in-app editors for sprites, tilemaps, and basic music, so you can build more of your game without leaving softBASIC.
+
+**Desktop app** — the IDE itself as a native installable, with offline support and local file access.
 
 ---
 
