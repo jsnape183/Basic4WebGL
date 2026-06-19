@@ -9,6 +9,7 @@ This is the final tutorial. You'll combine everything from the series into a com
 ## Step 1: Start from Tutorial 9
 
 Open your Tutorial 9 project. You should have:
+
 - `Player.bas` — moves with arrow keys, stays within bounds
 - `Enemy.bas` — falls from the top, loops back
 - `ScoreDisplay.bas` — shows the score
@@ -107,7 +108,7 @@ endfunction
 
 ## Step 5: Call checkCollisions from Player.bas
 
-The player doesn't know about Main.bas directly, but Main.bas *owns* the player — it calls `new Player()`. The simplest approach is to give the Player a reference to Main's check function.
+The player doesn't know about Main.bas directly, but Main.bas _owns_ the player — it calls `new Player()`. The simplest approach is to give the Player a reference to Main's check function.
 
 However, for a small game like this, the cleanest solution is to do the collision check in `Main.bas`'s `onupdate` by passing the `player` object up. Update `onenter` in Main.bas to keep a reference to the player:
 

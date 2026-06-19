@@ -1,6 +1,6 @@
 # Tutorial 1: Hello World
 
-Welcome to Basic4WebGL! In this tutorial you'll write your first program and get comfortable with the editor.
+Welcome to softBASIC! In this tutorial you'll write your first program and get comfortable with the editor.
 
 ## What you'll build
 
@@ -53,7 +53,7 @@ This prints `15`, `75`, `42`, `5`.
 
 ## Step 5: Store a value in a variable
 
-Variables let you name a value and use it later:
+Variables let you name a value and use it later, think of them as a container for saving information you may need!
 
 ```bas
 dim score
@@ -62,7 +62,7 @@ score = score + 10
 print score
 ```
 
-`dim` declares the variable. The next lines set and update its value. This prints `10`.
+`dim` declares the variable. The variable above is called score. The next lines set and update its value. This prints `10`.
 
 ## Step 6: Combine text and numbers
 

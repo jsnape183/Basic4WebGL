@@ -88,7 +88,7 @@ function onupdate(delta)
 endfunction
 ```
 
-Variables declared with `dim` outside any function — like `dim speed` here — belong to the object and are accessed with `self.`. Variables declared inside a function are local to that function call.
+Variables declared with `dim` outside any function — like `dim speed` here — belong to the object and are accessed with `self.`. Variables declared inside a function are local to that function call and cannot be accessed anywhere else.
 
 ## Complete code
 

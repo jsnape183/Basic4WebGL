@@ -2,6 +2,8 @@
 
 In this tutorial you'll add falling enemy ships to the game. You'll use an array to track all of them and spawn them at random positions along the top of the screen.
 
+An array is a collection of variables - each entry in the collection can be accessed by it's numeric position starting from 0 as the first element.
+
 ## What you'll build
 
 A wave of enemy ships that drift down from the top and loop back when they reach the bottom.
