@@ -107,4 +107,11 @@ export const docsManifest: DocSection[] = [
       { slug: 'release-notes', title: 'Release Notes', file: 'release-notes.md' },
     ],
   },
+  {
+    id: 'roadmap',
+    label: 'Roadmap',
+    topics: [
+      { slug: 'roadmap', title: 'Where we\'re heading', file: 'roadmap.md' },
+    ],
+  },
 ];
