@@ -15,6 +15,6 @@ export const firstPartyPackages: IPackage[] = [
     version: '2.2.0',
     isCore: false,
     isFirstParty: true,
-    moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'audio', 'collision', 'rayhit'],
+    moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'audio', 'collision', 'rayhit', 'scene', 'scenemanager'],
   },
 ];

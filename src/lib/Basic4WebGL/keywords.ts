@@ -21,6 +21,7 @@ export const SOFTBASIC_KEYWORDS = [
 
 export const SOFTBASIC_LIFECYCLE_EVENTS = [
   'onenter',
+  'onexit',
   'onupdate',
   'onkeydown',
   'onkeyup',

@@ -1,5 +1,6 @@
 const _sb = {
   ..._sbLifecycle,
+  ..._sbScene,
   ..._sbInput,
   ..._sbAssets,
   ..._sbAudio,

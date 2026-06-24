@@ -15,7 +15,8 @@ import tilemap from '../lib/Basic4WebGL/defs/tilemap.bas?raw';
 import audio from '../lib/Basic4WebGL/defs/audio.bas?raw';
 import collision from '../lib/Basic4WebGL/defs/collision.bas?raw';
 import rayhit from '../lib/Basic4WebGL/defs/rayhit.bas?raw';
-import SceneManager from '../lib/Basic4WebGL/defs/SceneManager.bas?raw';
+import scene from '../lib/Basic4WebGL/defs/Scene.bas?raw';
+import scenemanager from '../lib/Basic4WebGL/defs/SceneManager.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -35,5 +36,6 @@ export const packageModules: Record<string, string> = {
   audio,
   collision,
   rayhit,
-  SceneManager,
+  scene,
+  scenemanager,
 };
