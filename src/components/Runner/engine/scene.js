@@ -44,5 +44,6 @@ const _sbScene = {
       try { this._activeScene.onupdate(delta); } catch(e) { _throwError(e); }
     }
     this._applySwitch();
+    this._cameraUpdate();
   },
 };
