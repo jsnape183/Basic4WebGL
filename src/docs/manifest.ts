@@ -114,6 +114,7 @@ export const docsManifest: DocSection[] = [
           { slug: 'tutorial-13-scenes',            title: '13. Scenes, World, and HUD', file: 'tutorials/13-scenes.md' },
           { slug: 'tutorial-14-camera',            title: '14. Camera and Scrolling',   file: 'tutorials/14-camera.md' },
           { slug: 'tutorial-15-animated-sprites',  title: '15. Animated Sprites',       file: 'tutorials/15-animated-sprites.md' },
+          { slug: 'tutorial-16-raycaster',         title: '16. Wolfenstein Raycaster',   file: 'tutorials/16-raycaster.md' },
         ],
       },
     ],

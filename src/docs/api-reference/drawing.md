@@ -49,3 +49,15 @@ Draws a filled circle.
 pen.setFillColor(255, 200, 0)
 drawing.drawCircle(world.width() / 2, world.height() / 2, 40)
 ```
+
+## clear()
+
+Removes all shapes that were drawn with the `drawing` module. Call this at the start of `onupdate` to redraw the canvas each frame.
+
+```bas
+function onupdate(delta)
+  drawing.clear()
+  pen.setFillColor(255, 100, 0)
+  drawing.drawCircle(self.x, self.y, 20)
+endfunction
+```

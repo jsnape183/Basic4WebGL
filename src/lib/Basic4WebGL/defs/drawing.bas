@@ -9,3 +9,7 @@ endfunction
 function drawCircle(x, y, radius)
     call("_sb.drawCircle(drawcircle_x, drawcircle_y, drawcircle_radius)")
 endfunction
+
+function clear()
+    call("_sb.clearDrawing()")
+endfunction
