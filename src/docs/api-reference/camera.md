@@ -16,6 +16,7 @@ Tells the camera to follow a sprite or other object each frame, keeping it centr
 | speed     | number | Lerp factor 0–1. Pass `0` to snap instantly; values like `0.08` give smooth tracking |
 
 ```bas
+' Inside a class that extends scene:
 function onupdate(delta)
   camera.follow(self.player, 0.1)
 endfunction
@@ -102,7 +103,7 @@ function onenter()
 endfunction
 
 function onupdate(delta)
-  if input.keyDown(39) then
+  if input.getKeyDown(39) then
     self.player.move(4, 0)
   endif
   camera.follow(self.player, 0.08)
