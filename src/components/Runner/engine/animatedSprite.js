@@ -52,6 +52,35 @@ const _sbAnimatedSprites = {
     return (handle._sbCurrentAnim === String(name) && handle._sbPlaying) ? 1 : 0;
   },
 
+  stopAnim(handle) {
+    handle.stop();
+    handle._sbPlaying = false;
+    handle._sbCurrentAnim = null;
+  },
+
+  setAnimSpriteSheet(handle, imagePath, frameW, frameH) {
+    const base = _sbAssets.get(imagePath);
+    const cols = Math.floor(base.width / frameW);
+    const rows = Math.floor(base.height / frameH);
+    const frames = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        frames.push(
+          new PIXI.Texture({
+            source: base.source,
+            frame: new PIXI.Rectangle(c * frameW, r * frameH, frameW, frameH),
+          })
+        );
+      }
+    }
+    handle._allFrames = frames;
+    handle._animations = new Map();
+    handle._sbCurrentAnim = null;
+    handle._sbPlaying = false;
+    handle.textures = frames;
+    handle.stop();
+  },
+
   setAnimAngle(handle, angle) {
     handle.angle = Number(angle);
   },

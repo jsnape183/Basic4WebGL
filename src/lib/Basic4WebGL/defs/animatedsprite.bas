@@ -18,6 +18,14 @@ function isPlaying(name)
     return call("_sb.isPlayingAnim(this._handle, isplaying_name)")
 endfunction
 
+function stop()
+    call("_sb.stopAnim(this._handle)")
+endfunction
+
+function setSpriteSheet(imagePath, frameW, frameH)
+    call("_sb.setAnimSpriteSheet(this._handle, setspritesheet_imagePath, setspritesheet_frameW, setspritesheet_frameH)")
+endfunction
+
 function setAngle(angle)
     call("_sb.setAnimAngle(this._handle, setangle_angle)")
 endfunction

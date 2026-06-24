@@ -69,6 +69,32 @@ if not self.isPlaying("jump") then
 endif
 ```
 
+## stop()
+
+Stops the current animation and clears the active animation name. After calling `stop()`, `isPlaying()` returns `false` for all animations.
+
+```bas
+self.stop()
+```
+
+## setSpriteSheet(imagePath, frameW, frameH)
+
+Swaps the sprite sheet at runtime and resets all named animations. Use this to switch a character between entirely different sprite sheets — for example, switching from a walk sheet to a larger combat sheet. After calling `setSpriteSheet`, call `addAnim` again to define animations on the new sheet.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| imagePath | string | Filename of the new sprite sheet |
+| frameW    | number | Width of each frame on the new sheet |
+| frameH    | number | Height of each frame on the new sheet |
+
+```bas
+function switchToCombat()
+  self.setSpriteSheet("hero-combat.png", 64, 64)
+  self.addAnim("attack", 0, 5, 12, false)
+  self.play("attack")
+endfunction
+```
+
 ## setAngle(angle)
 
 Rotates the sprite.
