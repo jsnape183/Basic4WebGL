@@ -29,8 +29,8 @@ const _sbCamera = {
     if (this._followTarget) {
       const sw = app.renderer.width;
       const sh = app.renderer.height;
-      const desiredX = this._followTarget.position.x - sw / 2;
-      const desiredY = this._followTarget.position.y - sh / 2;
+      const desiredX = this._followTarget._handle.position.x - sw / 2;
+      const desiredY = this._followTarget._handle.position.y - sh / 2;
       if (this._followSpeed === 0) {
         this._camX = desiredX;
         this._camY = desiredY;
