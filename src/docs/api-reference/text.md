@@ -44,7 +44,7 @@ Moves the text to a new position.
 | y         | number | Vertical position in pixels |
 
 ```bas
-self.setPosition(stage.width() - 100, 20)
+self.setPosition(world.width() - 100, 20)
 ```
 
 ## setAlpha(a)

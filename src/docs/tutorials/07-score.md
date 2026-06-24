@@ -53,7 +53,7 @@ dim timer
 dim scoreDisplay as ScoreDisplay
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   score = 0
   timer = 0
   scoreDisplay = new ScoreDisplay()
@@ -109,7 +109,7 @@ dim timer
 dim scoreDisplay as ScoreDisplay
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   score = 0
   timer = 0
   scoreDisplay = new ScoreDisplay()

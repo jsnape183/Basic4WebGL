@@ -18,14 +18,14 @@ Look at the bounds-checking code in `Player.bas`:
 if x < halfW then
   x = halfW
 endif
-if x > stage.width() - halfW then
-  x = stage.width() - halfW
+if x > world.width() - halfW then
+  x = world.width() - halfW
 endif
 if y < halfH then
   y = halfH
 endif
-if y > stage.height() - halfH then
-  y = stage.height() - halfH
+if y > world.height() - halfH then
+  y = world.height() - halfH
 endif
 ```
 
@@ -54,8 +54,8 @@ endfunction
 Replace all four bounds checks in `onupdate` with two `clamp` calls:
 
 ```bas
-x = self.clamp(x, halfW, stage.width() - halfW)
-y = self.clamp(y, halfH, stage.height() - halfH)
+x = self.clamp(x, halfW, world.width() - halfW)
+y = self.clamp(y, halfH, world.height() - halfH)
 ```
 
 The same logic, but now each check is a single readable line. If you ever need to change how clamping works, you change it in one place.
@@ -135,8 +135,8 @@ function onupdate(delta)
     y = y - move
   endif
 
-  x = self.clamp(x, halfW, stage.width() - halfW)
-  y = self.clamp(y, halfH, stage.height() - halfH)
+  x = self.clamp(x, halfW, world.width() - halfW)
+  y = self.clamp(y, halfH, world.height() - halfH)
 
   self.transform.setPosition(x, y)
 endfunction

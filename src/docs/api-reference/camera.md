@@ -68,7 +68,7 @@ Returns the current camera x position — the world coordinate visible at the le
 
 ```bas
 dim spawnX
-spawnX = camera.x() + stage.width()
+spawnX = camera.x() + world.width()
 ```
 
 ---
@@ -81,7 +81,7 @@ Returns the current camera y position — the world coordinate visible at the to
 
 ```bas
 dim spawnY
-spawnY = camera.y() + stage.height()
+spawnY = camera.y() + world.height()
 ```
 
 ---

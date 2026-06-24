@@ -12,11 +12,11 @@ Continue with `Player.bas` and `Main.bas` from Tutorial 5.
 
 ## Step 2: Know the canvas size
 
-The canvas is always 640 pixels wide and 360 pixels tall. `stage.width()` and `stage.height()` return these values so you don't have to hardcode them.
+The canvas is always 640 pixels wide and 360 pixels tall. `world.width()` and `world.height()` return these values so you don't have to hardcode them.
 
 ```bas
-print stage.width()   ' prints 640
-print stage.height()  ' prints 360
+print world.width()   ' prints 640
+print world.height()  ' prints 360
 ```
 
 ## Step 3: Clamp the x position
@@ -27,8 +27,8 @@ After calculating the new position, check whether it has gone past an edge and c
 if x < 0 then
   x = 0
 endif
-if x > stage.width() then
-  x = stage.width()
+if x > world.width() then
+  x = world.width()
 endif
 ```
 
@@ -47,14 +47,14 @@ halfH = self.height() / 2
 if x < halfW then
   x = halfW
 endif
-if x > stage.width() - halfW then
-  x = stage.width() - halfW
+if x > world.width() - halfW then
+  x = world.width() - halfW
 endif
 if y < halfH then
   y = halfH
 endif
-if y > stage.height() - halfH then
-  y = stage.height() - halfH
+if y > world.height() - halfH then
+  y = world.height() - halfH
 endif
 ```
 
@@ -94,14 +94,14 @@ function onupdate(delta)
   if x < halfW then
     x = halfW
   endif
-  if x > stage.width() - halfW then
-    x = stage.width() - halfW
+  if x > world.width() - halfW then
+    x = world.width() - halfW
   endif
   if y < halfH then
     y = halfH
   endif
-  if y > stage.height() - halfH then
-    y = stage.height() - halfH
+  if y > world.height() - halfH then
+    y = world.height() - halfH
   endif
 
   self.transform.setPosition(x, y)
@@ -154,14 +154,14 @@ function onupdate(delta)
   if x < halfW then
     x = halfW
   endif
-  if x > stage.width() - halfW then
-    x = stage.width() - halfW
+  if x > world.width() - halfW then
+    x = world.width() - halfW
   endif
   if y < halfH then
     y = halfH
   endif
-  if y > stage.height() - halfH then
-    y = stage.height() - halfH
+  if y > world.height() - halfH then
+    y = world.height() - halfH
   endif
 
   self.transform.setPosition(x, y)
@@ -172,14 +172,14 @@ endfunction
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   dim player = new Player()
 endfunction
 ```
 
 ## What you've learned
 
-- `stage.width()` and `stage.height()` return the canvas dimensions (640 × 360)
+- `world.width()` and `world.height()` return the canvas dimensions (640 × 360)
 - `self.width()` and `self.height()` return the sprite's image dimensions
 - Clamping a position means checking both the minimum and maximum and correcting if out of range
 - Accounting for half the sprite size keeps the whole image on screen

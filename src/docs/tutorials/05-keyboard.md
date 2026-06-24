@@ -139,7 +139,7 @@ endfunction
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   dim player = new Player()
 endfunction
 ```

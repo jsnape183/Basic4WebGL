@@ -40,7 +40,7 @@ EndConstructor
 function onupdate(delta)
   dim y
   y = self.transform.y() + self.speed * delta / 1000
-  if y > stage.height() then
+  if y > world.height() then
     y = 0
   endif
   self.transform.setPosition(self.transform.x(), y)
@@ -60,7 +60,7 @@ dim scoreDisplay as ScoreDisplay
 dim enemies(0)
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   score = 0
   timer = 0
   scoreDisplay = new ScoreDisplay()
@@ -130,7 +130,7 @@ EndConstructor
 function onupdate(delta)
   dim y
   y = self.transform.y() + self.speed * delta / 1000
-  if y > stage.height() then
+  if y > world.height() then
     y = 0
   endif
   self.transform.setPosition(self.transform.x(), y)
@@ -146,7 +146,7 @@ dim scoreDisplay as ScoreDisplay
 dim enemies(0)
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   score = 0
   timer = 0
   scoreDisplay = new ScoreDisplay()

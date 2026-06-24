@@ -12,11 +12,11 @@ Start a new project called `Drawing`. In `Main.bas`, add an `onenter` function. 
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
 endfunction
 ```
 
-`stage.setBackground(r, g, b)` sets the canvas colour using red, green, and blue values from 0 to 255. `10, 10, 30` is a deep dark blue — like space.
+`world.setBackground(r, g, b)` sets the canvas colour using red, green, and blue values from 0 to 255. `10, 10, 30` is a deep dark blue — like space.
 
 Click **Run** and you should see a dark canvas.
 
@@ -41,7 +41,7 @@ Add these lines inside `onenter`:
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
 
   pen.setFillColor(80, 140, 200)
   drawing.drawCircle(480, 200, 80)
@@ -56,7 +56,7 @@ Draw a slightly larger, slightly transparent circle behind the planet to suggest
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
 
   pen.setFillColor(100, 160, 220)
   drawing.drawCircle(480, 200, 95)
@@ -95,7 +95,7 @@ drawing.drawRect(100, 170, 20, 10)
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
 
   ' Stars
   pen.setFillColor(255, 255, 255)
@@ -123,7 +123,7 @@ endfunction
 ## What you've learned
 
 - `onenter()` runs once when the program starts
-- `stage.setBackground(r, g, b)` sets the canvas background
+- `world.setBackground(r, g, b)` sets the canvas background
 - `pen.setFillColor(r, g, b)` sets the colour for the next shape
 - `drawing.drawRect(x, y, w, h)` and `drawing.drawCircle(x, y, r)` draw shapes — `x, y` is the centre
 - Shapes drawn later appear on top of shapes drawn earlier

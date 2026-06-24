@@ -51,7 +51,7 @@ Open `Main.bas` and add an `onenter` function that creates a Player:
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   dim player = new Player()
 endfunction
 ```
@@ -93,7 +93,7 @@ EndConstructor
 
 ```bas
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   dim player = new Player()
 endfunction
 ```

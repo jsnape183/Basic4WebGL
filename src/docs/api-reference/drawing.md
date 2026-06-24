@@ -47,5 +47,5 @@ Draws a filled circle.
 
 ```bas
 pen.setFillColor(255, 200, 0)
-drawing.drawCircle(stage.width() / 2, stage.height() / 2, 40)
+drawing.drawCircle(world.width() / 2, world.height() / 2, 40)
 ```

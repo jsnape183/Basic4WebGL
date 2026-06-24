@@ -26,7 +26,7 @@ Class
 Extends text
 
 Constructor()
-  super("GAME OVER", stage.width() / 2 - 100, stage.height() / 2 - 20)
+  super("GAME OVER", world.width() / 2 - 100, world.height() / 2 - 20)
   self.setStyle(40, 255, 80, 80)
   self.setAlpha(0)
   world.add(self)
@@ -52,7 +52,7 @@ dim enemies(0)
 dim running
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   running = 1
   score = 0
   timer = 0
@@ -198,7 +198,7 @@ Class
 Extends text
 
 Constructor()
-  super("GAME OVER", stage.width() / 2 - 100, stage.height() / 2 - 20)
+  super("GAME OVER", world.width() / 2 - 100, world.height() / 2 - 20)
   self.setStyle(40, 255, 80, 80)
   self.setAlpha(0)
   world.add(self)
@@ -223,7 +223,7 @@ dim music as audio("music.mp3")
 dim hitSound as audio("hit.wav")
 
 function onenter()
-  stage.setBackground(10, 10, 30)
+  world.setBackground(10, 10, 30)
   running = 1
   score = 0
   timer = 0
@@ -322,8 +322,8 @@ function onupdate(delta)
     y = y - move
   endif
 
-  x = self.clamp(x, halfW, stage.width() - halfW)
-  y = self.clamp(y, halfH, stage.height() - halfH)
+  x = self.clamp(x, halfW, world.width() - halfW)
+  y = self.clamp(y, halfH, world.height() - halfH)
 
   self.transform.setPosition(x, y)
 endfunction
@@ -347,7 +347,7 @@ EndConstructor
 function onupdate(delta)
   dim y
   y = self.transform.y() + self.speed * delta / 1000
-  if y > stage.height() then
+  if y > world.height() then
     y = 0
   endif
   self.transform.setPosition(self.transform.x(), y)
