@@ -1,8 +1,5 @@
 Class
 
-Constructor()
-EndConstructor
-
 function onenter()
 endfunction
 

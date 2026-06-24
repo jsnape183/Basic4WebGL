@@ -3,79 +3,85 @@ import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
 
-const sceneSource        = readFileSync('src/lib/Basic4WebGL/defs/Scene.bas',        'utf-8');
-const sceneManagerSource = readFileSync('src/lib/Basic4WebGL/defs/SceneManager.bas', 'utf-8');
+const sceneSource        = readFileSync('src/lib/Basic4WebGL/defs/scene.bas',        'utf-8');
+const sceneManagerSource = readFileSync('src/lib/Basic4WebGL/defs/scenemanager.bas', 'utf-8');
 
-const transpileWithScene = (source: string) =>
+// scene.bas is a class def file — goes into files[] with lowercase name
+// scenemanager.bas is a module — goes into lib[] with lowercase name
+
+const transpileWithScene = (childClassSource: string) =>
   compiler.transpile({
     lib: [],
     files: [
-      { name: 'Scene.bas',  source: sceneSource },
-      { name: 'Main.bas',   source },
+      { name: 'scene.bas',  source: sceneSource },
+      { name: 'MenuScene',  source: childClassSource },
     ],
   });
 
 const transpileWithSceneManager = (source: string) =>
   compiler.transpile({
-    lib: [{ name: 'SceneManager', source: sceneManagerSource }],
+    lib: [{ name: 'scenemanager', source: sceneManagerSource }],
     files: [{ name: 'Main.bas', source }],
   });
 
-const transpileWithBoth = (source: string) =>
+const transpileWithBoth = (childClassSource: string, mainSource: string) =>
   compiler.transpile({
-    lib: [{ name: 'SceneManager', source: sceneManagerSource }],
+    lib: [{ name: 'scenemanager', source: sceneManagerSource }],
     files: [
-      { name: 'Scene.bas', source: sceneSource },
-      { name: 'Main.bas',  source },
+      { name: 'scene.bas', source: sceneSource },
+      { name: 'MenuScene',  source: childClassSource },
+      { name: 'Main.bas',   source: mainSource },
     ],
   });
 
 // ─── Scene base class ──────────────────────────────────────────────────────────
+// In softBASIC, class inheritance is defined in a separate def file:
+//   Class extends scene
+//     function onenter() ... endfunction
+//   EndClass
+// Not in user source code.
 
 describe('Scene — class extension', () => {
-  test('class extending Scene compiles without error', () => {
+  test('Class extending scene compiles without error', () => {
     const result = transpileWithScene([
-      'class MenuScene extends Scene',
+      'Class extends scene',
       '  function onenter()',
       '  endfunction',
       '  function onupdate(delta)',
       '  endfunction',
       '  function onexit()',
       '  endfunction',
-      'endclass',
+      'EndClass',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
   });
 
-  test('class extending Scene with key hooks compiles without error', () => {
+  test('Class extending scene with key hooks compiles without error', () => {
     const result = transpileWithScene([
-      'class GameScene extends Scene',
+      'Class extends scene',
       '  function onkeydown(key)',
       '  endfunction',
       '  function onkeyup(key)',
       '  endfunction',
-      'endclass',
+      'EndClass',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
   });
 
-  test('scene subclass with no methods compiles without error', () => {
-    const result = transpileWithScene([
-      'class EmptyScene extends Scene',
-      'endclass',
-    ].join('\n'));
+  test('empty Class extending scene compiles without error', () => {
+    const result = transpileWithScene('Class extends scene\nEndClass');
     expect(result.diagnostics).toHaveLength(0);
   });
 });
 
-// ─── SceneManager.register ────────────────────────────────────────────────────
+// ─── scenemanager.register ────────────────────────────────────────────────────
 
-describe('SceneManager — register', () => {
+describe('scenemanager — register', () => {
   test('compiles without error', () => {
     const result = transpileWithSceneManager([
       'function test()',
       '  dim s',
-      '  SceneManager.register("menu", s)',
+      '  scenemanager.register("menu", s)',
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
@@ -85,20 +91,20 @@ describe('SceneManager — register', () => {
     const result = transpileWithSceneManager([
       'function test()',
       '  dim s',
-      '  SceneManager.register("menu", s)',
+      '  scenemanager.register("menu", s)',
       'endfunction',
     ].join('\n'));
     expect(result.code).toContain('_sb.sceneRegister(');
   });
 });
 
-// ─── SceneManager.switch ──────────────────────────────────────────────────────
+// ─── scenemanager.switch ──────────────────────────────────────────────────────
 
-describe('SceneManager — switch', () => {
+describe('scenemanager — switch', () => {
   test('compiles without error', () => {
     const result = transpileWithSceneManager([
       'function test()',
-      '  SceneManager.switch("game")',
+      '  scenemanager.switch("game")',
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
@@ -107,7 +113,7 @@ describe('SceneManager — switch', () => {
   test('emits _sb.sceneSwitch(', () => {
     const result = transpileWithSceneManager([
       'function test()',
-      '  SceneManager.switch("game")',
+      '  scenemanager.switch("game")',
       'endfunction',
     ].join('\n'));
     expect(result.code).toContain('_sb.sceneSwitch(');
@@ -116,20 +122,27 @@ describe('SceneManager — switch', () => {
 
 // ─── Integration: extend + register + switch ──────────────────────────────────
 
-describe('Scene + SceneManager — integration', () => {
+describe('Scene + scenemanager — integration', () => {
   test('full scene setup compiles without error', () => {
-    const result = transpileWithBoth([
-      'class MenuScene extends Scene',
+    const menuSceneSource = [
+      'Class extends scene',
       '  function onenter()',
       '  endfunction',
       '  function onupdate(delta)',
-      '    SceneManager.switch("game")',
+      '    scenemanager.switch("game")',
       '  endfunction',
-      'endclass',
-      'dim menu = new MenuScene()',
-      'SceneManager.register("menu", menu)',
-      'SceneManager.switch("menu")',
-    ].join('\n'));
+      'EndClass',
+    ].join('\n');
+
+    const mainSource = [
+      'function onenter()',
+      '  dim menu = new menuscene()',
+      '  scenemanager.register("menu", menu)',
+      '  scenemanager.switch("menu")',
+      'endfunction',
+    ].join('\n');
+
+    const result = transpileWithBoth(menuSceneSource, mainSource);
     expect(result.diagnostics).toHaveLength(0);
   });
 });
