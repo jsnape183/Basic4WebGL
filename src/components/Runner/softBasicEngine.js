@@ -6,6 +6,7 @@ const _sb = {
   ..._sbAudio,
   ..._sbDrawing,
   ..._sbStage,
+  ..._sbCamera,
   ..._sbSprites,
   ..._sbAnimatedSprites,
   ..._sbTilemaps,

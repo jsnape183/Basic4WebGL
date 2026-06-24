@@ -111,6 +111,7 @@
 
           // Mouse tracking must be attached after app.canvas exists.
           _sb._initMouse(app.canvas);
+          _sb._initStage();
 
           //${inlineAssets}
           await _sb.preloadFromLocalStorage(_sbProjectId);
