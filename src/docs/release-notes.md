@@ -1,5 +1,38 @@
 # Release Notes
 
+## v0.3.0 — 2026-06-24
+
+### Scene management
+
+- New `scene` base class — extend it to create named game states (menu, game, game-over) with `onenter`, `onupdate`, `onexit`, `onkeydown`, `onkeyup` lifecycle hooks
+- New `scenemanager` module — `register(name, obj)` to add scenes, `switch(name)` to activate one; transitions clear the stage automatically
+
+### Camera system
+
+- New `camera` module — `follow(target, speed)` for smooth or instant tracking, `setPosition(x, y)` to jump the view, `setBounds(width, height)` to clamp against world edges, `x()` / `y()` to read the current position
+- Camera position is updated automatically every frame via the scene update loop
+
+### World and HUD layers
+
+- New `world` module — replaces `stage` as the primary layer for game objects that scroll with the camera
+- New `hud` module — a separate layer pinned to the screen; HUD objects remain fixed regardless of camera position
+- `world.width()`, `world.height()`, `world.setBackground(r, g, b)` provide the canvas utilities previously on `stage`
+- `stage.*` is now fully deprecated; all calls continue to work as aliases but new code should use `world.*` and `hud.*`
+
+### animatedsprite additions
+
+- `stop()` — halts playback and clears the active animation name
+- `setSpriteSheet(imagePath, frameW, frameH)` — swaps to a different sprite sheet at runtime and resets all defined animations
+
+### Documentation
+
+- Three new advanced concept tutorials: **13. Scenes, World, and HUD**, **14. Camera and Scrolling**, **15. Animated Sprites**
+- Tutorial sidebar reorganised into two groups: *Making your first game* (1–12) and *Advanced concepts* (13–15)
+- New API reference pages: `world`, `hud`, `camera`
+- `stage` API reference page updated to a deprecation table
+
+---
+
 ## v0.2.4 — 2026-06-18
 
 ### Editor UI polish
