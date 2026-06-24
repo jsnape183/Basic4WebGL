@@ -12,7 +12,7 @@ Extends text
 
 Constructor()
   super("Score: 0", 20, 20)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 

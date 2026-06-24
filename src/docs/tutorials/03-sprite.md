@@ -33,7 +33,7 @@ Extends sprite
 Constructor()
   super("ship.png")
   self.transform.setPosition(320, 180)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 
@@ -43,7 +43,7 @@ This file describes your player ship. Line by line:
 - `Constructor()` — this code runs when a Player is created
 - `super("ship.png")` — loads the image
 - `self.transform.setPosition(320, 180)` — places it at the centre of the 640×360 canvas
-- `stage.add(self)` — makes it visible
+- `world.add(self)` — makes it visible
 
 ## Step 4: Create the Player in Main
 
@@ -85,7 +85,7 @@ Extends sprite
 Constructor()
   super("ship.png")
   self.transform.setPosition(320, 180)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 
@@ -104,7 +104,7 @@ endfunction
 - `Constructor()` runs when the object is created
 - `super("image.png")` loads the image
 - `self.transform.setPosition(x, y)` places the sprite on screen
-- `stage.add(self)` makes it visible
+- `world.add(self)` makes it visible
 - `dim name = new ClassName()` creates an object in Main
 
 ## Next up

@@ -12,7 +12,7 @@ Extends tilemap
 
 Constructor()
   super("tiles.png", 32, 32)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 

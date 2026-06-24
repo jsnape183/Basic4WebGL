@@ -34,7 +34,7 @@ Constructor(startX)
   super("enemy.png")
   self.speed = 120
   self.transform.setPosition(startX, 0)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function onupdate(delta)
@@ -100,7 +100,7 @@ Constructor(startX, startY)
   super("enemy.png")
   self.speed = 120
   self.transform.setPosition(startX, startY)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 
@@ -124,7 +124,7 @@ Constructor(startX, startY)
   super("enemy.png")
   self.speed = 120
   self.transform.setPosition(startX, startY)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function onupdate(delta)

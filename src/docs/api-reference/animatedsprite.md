@@ -12,7 +12,7 @@ Extends animatedsprite
 
 Constructor()
   super("character.png", 32, 32)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 

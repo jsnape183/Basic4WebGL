@@ -31,7 +31,7 @@ Extends text
 Constructor()
   super("Score: 0", 10, 10)
   self.setStyle(24, 255, 255, 100)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function setScore(s)
@@ -93,7 +93,7 @@ Extends text
 Constructor()
   super("Score: 0", 10, 10)
   self.setStyle(24, 255, 255, 100)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function setScore(s)

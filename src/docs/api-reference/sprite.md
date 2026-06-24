@@ -12,7 +12,7 @@ Extends sprite
 
 Constructor()
   super("player.png")
-  stage.add(self)
+  world.add(self)
 EndConstructor
 ```
 

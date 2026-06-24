@@ -1,42 +1,16 @@
-# stage
+# stage (deprecated)
 
-The `stage` module controls which objects are visible on screen and provides information about the canvas size. Any sprite, text, or tilemap must be added to the stage before it will appear.
+> **Deprecated:** Use `world` and `hud` instead. `stage.add`, `stage.remove`, and `stage.clear` continue to work but new code should use `world.add`, `world.remove`, and `world.clear`. See the [world](world) and [hud](hud) API reference pages.
 
-## add(obj)
+The `stage` module adds objects to the game world, removes them, and queries the canvas size.
 
-Adds an object to the stage so it becomes visible.
+`stage.add(obj)` → use `world.add(obj)` instead  
+`stage.remove(obj)` → use `world.remove(obj)` instead  
+`stage.clear()` → use `world.clear()` instead
 
-| Parameter | Type   | Description |
-|-----------|--------|-------------|
-| obj       | object | A sprite, animatedsprite, text, or tilemap instance |
+`stage.width()`, `stage.height()`, and `stage.setBackground()` are not deprecated.
 
-```bas
-function onenter()
-  stage.add(self)
-endfunction
-```
-
-## remove(obj)
-
-Removes an object from the stage so it is no longer visible.
-
-| Parameter | Type   | Description |
-|-----------|--------|-------------|
-| obj       | object | The object to remove |
-
-```bas
-stage.remove(enemy)
-```
-
-## clear()
-
-Removes all objects from the stage at once.
-
-```bas
-function onenter()
-  stage.clear()
-endfunction
-```
+---
 
 ## width()
 

@@ -29,7 +29,7 @@ Constructor()
   super("GAME OVER", stage.width() / 2 - 100, stage.height() / 2 - 20)
   self.setStyle(40, 255, 80, 80)
   self.setAlpha(0)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function show()
@@ -201,7 +201,7 @@ Constructor()
   super("GAME OVER", stage.width() / 2 - 100, stage.height() / 2 - 20)
   self.setStyle(40, 255, 80, 80)
   self.setAlpha(0)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function show()
@@ -284,7 +284,7 @@ Constructor()
   super("ship.png")
   self.speed = 250
   self.transform.setPosition(320, 180)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function clamp(value, minVal, maxVal)
@@ -341,7 +341,7 @@ Constructor(startX, startY)
   super("enemy.png")
   self.speed = 120
   self.transform.setPosition(startX, startY)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function onupdate(delta)
@@ -363,7 +363,7 @@ Extends text
 Constructor()
   super("Score: 0", 10, 10)
   self.setStyle(24, 255, 255, 100)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function setScore(s)

@@ -20,7 +20,7 @@ function onenter()
   dim title = new text()
   title.setText("Press SPACE to start")
   title.setPosition(400, 300)
-  stage.add(title)
+  world.add(title)
 endfunction
 
 function onupdate(delta)
@@ -63,7 +63,7 @@ Called once when this scene becomes the active scene. Use it to add sprites and 
 function onenter()
   dim bg = new sprite("background.png")
   bg.setPosition(400, 300)
-  stage.add(bg)
+  world.add(bg)
 endfunction
 ```
 
@@ -170,12 +170,12 @@ function onenter()
   dim title = new text()
   title.setText("My Game")
   title.setPosition(400, 250)
-  stage.add(title)
+  world.add(title)
 
   dim prompt = new text()
   prompt.setText("Press SPACE to play")
   prompt.setPosition(400, 320)
-  stage.add(prompt)
+  world.add(prompt)
 endfunction
 
 function onkeydown(key)
@@ -197,7 +197,7 @@ dim player
 function onenter()
   self.player = new sprite("player.png")
   self.player.setPosition(400, 300)
-  stage.add(self.player)
+  world.add(self.player)
 endfunction
 
 function onupdate(delta)
@@ -217,7 +217,7 @@ function onenter()
   dim msg = new text()
   msg.setText("Game Over — press R to restart")
   msg.setPosition(400, 300)
-  stage.add(msg)
+  world.add(msg)
 endfunction
 
 function onkeydown(key)

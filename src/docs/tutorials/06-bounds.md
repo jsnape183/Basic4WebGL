@@ -122,7 +122,7 @@ Constructor()
   super("ship.png")
   self.speed = 250
   self.transform.setPosition(320, 180)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function onupdate(delta)

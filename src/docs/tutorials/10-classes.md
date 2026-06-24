@@ -26,7 +26,7 @@ Constructor(startX, startY)   ' runs when a new object is created
   super("enemy.png")          ' call the parent class constructor
   self.speed = 120
   self.transform.setPosition(startX, startY)
-  stage.add(self)
+  world.add(self)
 EndConstructor
 
 function onupdate(delta)       ' a method — a function that belongs to the object
