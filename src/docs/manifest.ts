@@ -69,6 +69,7 @@ export const docsManifest: DocSection[] = [
           { slug: 'tilemap',         title: 'tilemap',         file: 'api-reference/tilemap.md' },
           { slug: 'audio',           title: 'audio',           file: 'api-reference/audio.md' },
           { slug: 'collision',       title: 'collision',       file: 'api-reference/collision.md' },
+          { slug: 'scene',           title: 'scene / scenemanager', file: 'api-reference/scene.md' },
         ],
       },
       {
