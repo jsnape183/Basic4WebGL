@@ -9,6 +9,7 @@ import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import PropertyMethodCallNode from '../../nodes/PropertyMethodCallNode';
+import SelfArrayAssignNode from '../../nodes/SelfArrayAssignNode';
 import { newLines } from '../../parserConfig';
 import { assertInsideClass } from './classGuards';
 
@@ -25,8 +26,15 @@ class SelfRule implements IParserRule {
     let chain = `this.${memberName}`;
 
     if (check(tokens.OpenParen, tokenStream.current())) {
-      // self.method(args)
       const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+      // self.arr(i) = value — array element assignment on a class member
+      if (check(tokens.Equals, tokenStream.current())) {
+        matchAndMove(tokens.Equals, tokenStream);
+        const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+        matchAndMove(newLines, tokenStream);
+        return new SelfArrayAssignNode({ chain }, [args, expr], loc);
+      }
+      // self.method(args) — method call statement
       matchAndMove(newLines, tokenStream);
       return new PropertyMethodCallNode(chain, args, loc);
     }

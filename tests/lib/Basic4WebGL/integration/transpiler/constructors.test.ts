@@ -145,3 +145,49 @@ describe('end-to-end: constructor + instance method', () => {
     expect(result).toContain('onenter_player=new_sb_player(100,0)');
   });
 });
+
+describe('self array element assignment — self.arr(i) = value', () => {
+  test('compiles without error', () => {
+    const src = [
+      'Class',
+      'dim cells(64)',
+      'function fill()',
+      '    dim i',
+      '    for i = 0 to 7',
+      '        self.cells(i) = 1',
+      '    next i',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ lib: [], files: [{ name: 'Grid', source: src }] });
+    const errs = result.diagnostics.filter((d) => !/cannot find transpiler rule/i.test(d.message));
+    expect(errs.map((d) => d.message).join('; ')).toBe('');
+  });
+
+  test('emits this.cells[i] = 1 in output', () => {
+    const src = [
+      'Class',
+      'dim cells(64)',
+      'function fill()',
+      '    dim i',
+      '    i = 3',
+      '    self.cells(i) = 1',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ lib: [], files: [{ name: 'Grid', source: src }] });
+    expect(result.code).toContain('this.cells[');
+    expect(result.code).toContain(']=1');
+  });
+
+  test('multi-dimensional: self.grid(r, c) = v emits this.grid[r][c] = v', () => {
+    const src = [
+      'Class',
+      'dim grid(16)',
+      'function set(r, c, v)',
+      '    self.grid(r, c) = v',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ lib: [], files: [{ name: 'Board', source: src }] });
+    expect(result.code).toContain('this.grid[');
+    expect(result.code).toContain('][');
+  });
+});
