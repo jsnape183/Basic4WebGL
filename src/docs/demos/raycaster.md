@@ -2,15 +2,15 @@
 
 A pure softBASIC tech demo. No images needed — everything is drawn with rectangles. WASD to walk, A/D to turn.
 
+Create a project with five files: `WorldMap.bas`, `Player.bas`, `Renderer.bas`, `Minimap.bas`, and `Main.bas`.
+
 ---
 
 ## How it works
 
-A raycaster fires one vertical ray per screen column and asks: *how far away did this ray hit a wall?* A nearby wall fills a tall slice of the screen; a distant one a short slice. That height difference creates the illusion of perspective depth.
+A raycaster fires one vertical ray per screen column. For each column it asks: *how far away did this ray hit a wall?* A nearby wall fills a tall slice; a distant one a short slice. That height difference creates the illusion of depth.
 
-The stepping algorithm is **DDA** (Digital Differential Analyser) — it moves through grid cells one at a time, always advancing along whichever axis brings the ray to the next grid line soonest.
-
-Rotation is a 2×2 matrix multiply on the direction vector and the camera plane each frame. Movement checks the candidate new cell before committing to it, giving simple but solid wall collision.
+The stepping algorithm is **DDA** (Digital Differential Analyser). Rotation is a 2×2 matrix multiply on the direction vector and camera plane each frame. Movement checks the candidate cell before committing, giving wall-sliding collision.
 
 ---
 
@@ -31,135 +31,148 @@ Rotation is a 2×2 matrix multiply on the direction vector and the camera plane 
 
 ---
 
-## Code — paste into a single Main.bas
+## WorldMap.bas
+
+Owns the map data. All other classes access it through `getCell(row, col)`.
 
 ```bas
-' ─── globals ────────────────────────────────────────────────────────────────
-dim worldMap(64)
+Class
 
-dim posX
-dim posY
+dim data(64)
+dim width
+
+function build()
+    self.width = 8
+    dim i
+    for i = 0 to 7
+        self.data(i) = 1
+        self.data(56 + i) = 1
+        self.data(i * 8) = 1
+        self.data(i * 8 + 7) = 1
+    next i
+    self.data(18) = 1
+    self.data(26) = 1
+    self.data(44) = 1
+    self.data(52) = 1
+    self.data(21) = 2
+    self.data(29) = 2
+endfunction
+
+function getCell(r, c)
+    return self.data(r * self.width + c)
+endfunction
+
+EndClass
+```
+
+---
+
+## Player.bas
+
+Owns position, direction, and camera plane. `handleInput` reads keys and updates the player each frame, using the map for collision.
+
+```bas
+Class
+
+dim x
+dim y
 dim dirX
 dim dirY
 dim planeX
 dim planeY
+dim moveSpeed
+dim rotSpeed
 
-dim MAPW
-dim STRIP
-dim RAYS
-dim SH
-dim SCY
-
-dim CELL
-dim MMAP_X
-dim MMAP_Y
-
-dim MOVE_SPEED
-dim ROT_SPEED
-
-' ─── map ─────────────────────────────────────────────────────────────────────
-
-function buildMap()
-    dim i
-
-    ' border
-    for i = 0 to 7
-        worldMap(i) = 1
-        worldMap(56 + i) = 1
-        worldMap(i * 8) = 1
-        worldMap(i * 8 + 7) = 1
-    next i
-
-    ' interior type-1 walls (red)
-    worldMap(18) = 1
-    worldMap(26) = 1
-    worldMap(44) = 1
-    worldMap(52) = 1
-
-    ' interior type-2 walls (blue)
-    worldMap(21) = 2
-    worldMap(29) = 2
+function init()
+    self.x         = 1.5
+    self.y         = 4.5
+    self.dirX      = 1.0
+    self.dirY      = 0.0
+    self.planeX    = 0.0
+    self.planeY    = 0.66
+    self.moveSpeed = 0.1
+    self.rotSpeed  = 0.07
 endfunction
 
-' ─── setup ───────────────────────────────────────────────────────────────────
-
-function onenter()
-    MAPW  = 8
-    STRIP = 4
-    RAYS  = 200
-    SH    = 600
-    SCY   = 300
-
-    posX   = 1.5
-    posY   = 4.5
-    dirX   = 1.0
-    dirY   = 0.0
-    planeX = 0.0
-    planeY = 0.66
-
-    CELL       = 8
-    MMAP_X     = 10
-    MMAP_Y     = 10
-    MOVE_SPEED = 0.1
-    ROT_SPEED  = 0.07
-
-    pen.setLineWidth(0)
-    world.setBackground(0, 0, 0)
-    buildMap()
-endfunction
-
-' ─── minimap ─────────────────────────────────────────────────────────────────
-
-function drawMinimap()
-    dim mr
-    dim mc
-    dim cx
-    dim cy
-    dim wt
-    dim px
-    dim py
-
-    ' dark background covering the full map area
-    pen.setFillColor(10, 10, 10)
-    drawing.drawRect(MMAP_X + 32, MMAP_Y + 32, 64, 64)
-
-    ' draw only wall cells — empty cells show as background
-    for mr = 0 to MAPW - 1
-        for mc = 0 to MAPW - 1
-            wt = worldMap(mr * MAPW + mc)
-            if wt > 0 then
-                cx = MMAP_X + mc * CELL + CELL / 2
-                cy = MMAP_Y + mr * CELL + CELL / 2
-                if wt = 1 then
-                    pen.setFillColor(160, 60, 60)
-                else
-                    pen.setFillColor(60, 60, 180)
-                endif
-                drawing.drawRect(cx, cy, CELL - 1, CELL - 1)
-            endif
-        next mc
-    next mr
-
-    ' player dot
-    px = MMAP_X + posX * CELL
-    py = MMAP_Y + posY * CELL
-    pen.setFillColor(255, 220, 0)
-    drawing.drawRect(px, py, 4, 4)
-
-    ' direction indicator
-    pen.setLineColor(255, 220, 0)
-    pen.setLineWidth(1)
-    drawing.drawLine(px, py, dirX * 10, dirY * 10)
-    pen.setLineWidth(0)
-endfunction
-
-' ─── update ──────────────────────────────────────────────────────────────────
-
-function onupdate(delta)
+function handleInput(theMap)
     dim nx
     dim ny
     dim oldDirX
     dim oldPlaneX
+    dim rs
+
+    rs = self.rotSpeed
+
+    ' W — walk forward
+    if input.getKeyDown(87) then
+        nx = self.x + self.dirX * self.moveSpeed
+        ny = self.y + self.dirY * self.moveSpeed
+        if theMap.getCell(math.floor(ny), math.floor(self.x)) = 0 then
+            self.y = ny
+        endif
+        if theMap.getCell(math.floor(self.y), math.floor(nx)) = 0 then
+            self.x = nx
+        endif
+    endif
+
+    ' S — walk backward
+    if input.getKeyDown(83) then
+        nx = self.x - self.dirX * self.moveSpeed
+        ny = self.y - self.dirY * self.moveSpeed
+        if theMap.getCell(math.floor(ny), math.floor(self.x)) = 0 then
+            self.y = ny
+        endif
+        if theMap.getCell(math.floor(self.y), math.floor(nx)) = 0 then
+            self.x = nx
+        endif
+    endif
+
+    ' D — turn right
+    if input.getKeyDown(68) then
+        oldDirX    = self.dirX
+        self.dirX  = self.dirX * math.cos(rs) - self.dirY * math.sin(rs)
+        self.dirY  = oldDirX * math.sin(rs) + self.dirY * math.cos(rs)
+        oldPlaneX  = self.planeX
+        self.planeX = self.planeX * math.cos(rs) - self.planeY * math.sin(rs)
+        self.planeY = oldPlaneX * math.sin(rs) + self.planeY * math.cos(rs)
+    endif
+
+    ' A — turn left
+    if input.getKeyDown(65) then
+        oldDirX    = self.dirX
+        self.dirX  = self.dirX * math.cos(rs) + self.dirY * math.sin(rs)
+        self.dirY  = -oldDirX * math.sin(rs) + self.dirY * math.cos(rs)
+        oldPlaneX  = self.planeX
+        self.planeX = self.planeX * math.cos(rs) + self.planeY * math.sin(rs)
+        self.planeY = -oldPlaneX * math.sin(rs) + self.planeY * math.cos(rs)
+    endif
+endfunction
+
+EndClass
+```
+
+---
+
+## Renderer.bas
+
+All DDA raycasting logic. Takes a player and map each frame, draws ceiling, floor, and all 200 wall strips.
+
+```bas
+Class
+
+dim rays
+dim strip
+dim screenH
+dim screenCY
+
+function init()
+    self.rays    = 200
+    self.strip   = 4
+    self.screenH  = 600
+    self.screenCY = 300
+endfunction
+
+function render(player, theMap)
     dim col
     dim camX
     dim rdx
@@ -183,73 +196,20 @@ function onupdate(delta)
     dim b
     dim px
 
-    ' ── input ────────────────────────────────────────────────────────────────
-
-    ' W — walk forward
-    if input.getKeyDown(87) then
-        nx = posX + dirX * MOVE_SPEED
-        ny = posY + dirY * MOVE_SPEED
-        if worldMap(math.floor(ny) * MAPW + math.floor(posX)) = 0 then
-            posY = ny
-        endif
-        if worldMap(math.floor(posY) * MAPW + math.floor(nx)) = 0 then
-            posX = nx
-        endif
-    endif
-
-    ' S — walk backward
-    if input.getKeyDown(83) then
-        nx = posX - dirX * MOVE_SPEED
-        ny = posY - dirY * MOVE_SPEED
-        if worldMap(math.floor(ny) * MAPW + math.floor(posX)) = 0 then
-            posY = ny
-        endif
-        if worldMap(math.floor(posY) * MAPW + math.floor(nx)) = 0 then
-            posX = nx
-        endif
-    endif
-
-    ' D — turn right
-    if input.getKeyDown(68) then
-        oldDirX  = dirX
-        dirX     = dirX * math.cos(ROT_SPEED) - dirY * math.sin(ROT_SPEED)
-        dirY     = oldDirX * math.sin(ROT_SPEED) + dirY * math.cos(ROT_SPEED)
-        oldPlaneX = planeX
-        planeX   = planeX * math.cos(ROT_SPEED) - planeY * math.sin(ROT_SPEED)
-        planeY   = oldPlaneX * math.sin(ROT_SPEED) + planeY * math.cos(ROT_SPEED)
-    endif
-
-    ' A — turn left
-    if input.getKeyDown(65) then
-        oldDirX  = dirX
-        dirX     = dirX * math.cos(ROT_SPEED) + dirY * math.sin(ROT_SPEED)
-        dirY     = -oldDirX * math.sin(ROT_SPEED) + dirY * math.cos(ROT_SPEED)
-        oldPlaneX = planeX
-        planeX   = planeX * math.cos(ROT_SPEED) + planeY * math.sin(ROT_SPEED)
-        planeY   = -oldPlaneX * math.sin(ROT_SPEED) + planeY * math.cos(ROT_SPEED)
-    endif
-
-    ' ── render ───────────────────────────────────────────────────────────────
-
-    drawing.clear()
-
-    ' ceiling
     pen.setFillColor(30, 30, 60)
     drawing.drawRect(400, 150, 800, 300)
 
-    ' floor
     pen.setFillColor(50, 40, 20)
     drawing.drawRect(400, 450, 800, 300)
 
-    ' cast one ray per column
-    for col = 0 to RAYS - 1
+    for col = 0 to self.rays - 1
 
-        camX = 2 * col / RAYS - 1
-        rdx  = dirX + planeX * camX
-        rdy  = dirY + planeY * camX
+        camX = 2 * col / self.rays - 1
+        rdx  = player.dirX + player.planeX * camX
+        rdy  = player.dirY + player.planeY * camX
 
-        mx = math.floor(posX)
-        my = math.floor(posY)
+        mx = math.floor(player.x)
+        my = math.floor(player.y)
 
         if math.abs(rdx) < 0.0001 then
             ddx = 1000000
@@ -264,18 +224,18 @@ function onupdate(delta)
 
         if rdx < 0 then
             stepx = -1
-            sdx   = (posX - mx) * ddx
+            sdx   = (player.x - mx) * ddx
         else
             stepx = 1
-            sdx   = (mx + 1 - posX) * ddx
+            sdx   = (mx + 1 - player.x) * ddx
         endif
 
         if rdy < 0 then
             stepy = -1
-            sdy   = (posY - my) * ddy
+            sdy   = (player.y - my) * ddy
         else
             stepy = 1
-            sdy   = (my + 1 - posY) * ddy
+            sdy   = (my + 1 - player.y) * ddy
         endif
 
         hit  = 0
@@ -291,7 +251,7 @@ function onupdate(delta)
                     my   = my + stepy
                     side = 1
                 endif
-                if worldMap(my * MAPW + mx) > 0 then
+                if theMap.getCell(my, mx) > 0 then
                     hit = 1
                 endif
             endif
@@ -304,15 +264,15 @@ function onupdate(delta)
         endif
 
         if pwd > 0.1 then
-            lh = SH / pwd
+            lh = self.screenH / pwd
         else
-            lh = SH
+            lh = self.screenH
         endif
-        if lh > SH then
-            lh = SH
+        if lh > self.screenH then
+            lh = self.screenH
         endif
 
-        wt = worldMap(my * MAPW + mx)
+        wt = theMap.getCell(my, mx)
         if wt = 1 then
             r = 180
             g = 50
@@ -329,12 +289,115 @@ function onupdate(delta)
         endif
 
         pen.setFillColor(r, g, b)
-        px = col * STRIP + STRIP / 2
-        drawing.drawRect(px, SCY, STRIP, lh)
+        px = col * self.strip + self.strip / 2
+        drawing.drawRect(px, self.screenCY, self.strip, lh)
 
     next col
+endfunction
 
-    drawMinimap()
+EndClass
+```
+
+---
+
+## Minimap.bas
+
+Draws the overhead view in the corner. Reads player position and direction, reads map cells via `getCell`.
+
+```bas
+Class
+
+dim cellSize
+dim offsetX
+dim offsetY
+
+function init()
+    self.cellSize = 8
+    self.offsetX  = 10
+    self.offsetY  = 10
+endfunction
+
+function draw(player, theMap)
+    dim mr
+    dim mc
+    dim cx
+    dim cy
+    dim wt
+    dim px
+    dim py
+    dim cs
+    dim mapPx
+
+    cs    = self.cellSize
+    mapPx = theMap.width * cs
+
+    pen.setFillColor(10, 10, 10)
+    drawing.drawRect(self.offsetX + mapPx / 2, self.offsetY + mapPx / 2, mapPx, mapPx)
+
+    for mr = 0 to theMap.width - 1
+        for mc = 0 to theMap.width - 1
+            wt = theMap.getCell(mr, mc)
+            if wt > 0 then
+                cx = self.offsetX + mc * cs + cs / 2
+                cy = self.offsetY + mr * cs + cs / 2
+                if wt = 1 then
+                    pen.setFillColor(160, 60, 60)
+                else
+                    pen.setFillColor(60, 60, 180)
+                endif
+                drawing.drawRect(cx, cy, cs - 1, cs - 1)
+            endif
+        next mc
+    next mr
+
+    px = self.offsetX + player.x * cs
+    py = self.offsetY + player.y * cs
+    pen.setFillColor(255, 220, 0)
+    drawing.drawRect(px, py, 4, 4)
+
+    pen.setLineColor(255, 220, 0)
+    pen.setLineWidth(1)
+    drawing.drawLine(px, py, player.dirX * 10, player.dirY * 10)
+    pen.setLineWidth(0)
+endfunction
+
+EndClass
+```
+
+---
+
+## Main.bas
+
+Setup and lifecycle only — no rendering logic.
+
+```bas
+dim theMap
+dim player
+dim renderer
+dim minimap
+
+function onenter()
+    pen.setLineWidth(0)
+    world.setBackground(0, 0, 0)
+
+    theMap = new WorldMap()
+    theMap.build()
+
+    player = new Player()
+    player.init()
+
+    renderer = new Renderer()
+    renderer.init()
+
+    minimap = new Minimap()
+    minimap.init()
+endfunction
+
+function onupdate(delta)
+    player.handleInput(theMap)
+    drawing.clear()
+    renderer.render(player, theMap)
+    minimap.draw(player, theMap)
 endfunction
 ```
 
@@ -348,15 +411,3 @@ endfunction
 | S   | Walk backward |
 | A   | Turn left |
 | D   | Turn right |
-
----
-
-## How movement works
-
-**Walking** adds `MOVE_SPEED` (0.1 world units) along the direction vector each frame. The new X and Y positions are checked independently before committing — this lets the player slide along walls instead of stopping dead on contact.
-
-**Turning** rotates the direction vector and the camera plane together by `ROT_SPEED` (0.07 radians) each frame using a 2×2 rotation matrix. The plane must rotate with the direction or the field of view distorts.
-
-**Side shading** halves the colour on faces hit by an east-west travelling ray, giving instant depth with no extra geometry.
-
-**The minimap** draws after the wall strips so it always sits on top. Only wall cells get individual rects — empty cells fall through to a single dark background rect, keeping draw calls low. The direction indicator uses `drawing.drawLine` with the direction vector scaled to 10 pixels; because `drawLine` treats its second pair of arguments as an offset from the start point, `dirX * 10` and `dirY * 10` are correct as written.
