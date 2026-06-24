@@ -1,9 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`method call in onentry works 1`] = `"class_sb_main{}main.sayhello=()=>{_print("Hello,World!");};;;main.onenter=()=>{main.sayhello();;};;_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`method call in onentry works 1`] = `"constmain={};main.sayhello=()=>{_print("Hello,World!");};;;main.onenter=()=>{main.sayhello();;};;_sb._sbClasses=[{name:"main",symbol:main}];"`;
 
-exports[`method onentry is added to class 1`] = `"class_sb_main{}main.onenter=()=>{_print("Hello,World!");};;_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`method onentry is added to class 1`] = `"constmain={};main.onenter=()=>{_print("Hello,World!");};;_sb._sbClasses=[{name:"main",symbol:main}];"`;
 
-exports[`module call in onentry works 1`] = `"class_sb_talk{}talk.sayhello=()=>{_print("Hello,World!");};class_sb_main{}main.onenter=()=>{talk.sayhello();;};;_sb._sbClasses=[{name:"talk",symbol:talk},{name:"main",symbol:main}];"`;
+exports[`module call in onentry works 1`] = `"consttalk={};talk.sayhello=()=>{_print("Hello,World!");};constmain={};main.onenter=()=>{talk.sayhello();;};;_sb._sbClasses=[{name:"talk",symbol:talk},{name:"main",symbol:main}];"`;
 
-exports[`prints hello world 1`] = `"class_sb_main{}_print("Hello,World!");_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`prints hello world 1`] = `"constmain={};_print("Hello,World!");_sb._sbClasses=[{name:"main",symbol:main}];"`;

@@ -27,8 +27,9 @@ class RootRule implements IGeneratable {
     const className = node.data as string;
     const classSymbol = table?.retrieveSymbol(className, symbolTypes.Class);
     const parentName = classSymbol?.parentClassName;
+    const isClass = classSymbol !== undefined;
 
-    return formatRoot(node, children, constructorContent, parentName);
+    return formatRoot(node, children, constructorContent, parentName, isClass);
   }
 }
 

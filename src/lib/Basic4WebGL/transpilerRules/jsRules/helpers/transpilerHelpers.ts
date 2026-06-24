@@ -79,7 +79,10 @@ export const formatClass = (className: string): string => {
   return `class ${prefixClass(className)}{}`;
 };
 
-export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string, parentName?: string): string => {
+export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string, parentName?: string, isClass?: boolean): string => {
+  if (!isClass) {
+    return `const ${node.data} = {};\n    ${children.join(';')}`;
+  }
   const extendsClause = parentName ? ` extends ${prefixClass(parentName)}` : '';
   const prefixedName = prefixClass(node.data as string);
   const classDecl = constructorContent
