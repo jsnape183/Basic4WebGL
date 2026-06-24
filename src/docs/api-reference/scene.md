@@ -25,7 +25,7 @@ endfunction
 
 function onupdate(delta)
   ' runs every frame while this scene is active
-  if input.keyDown(32) then
+  if input.getKeyDown(32) then
     scenemanager.switch("game")
   endif
 endfunction
@@ -196,13 +196,17 @@ dim player
 
 function onenter()
   self.player = new sprite("player.png")
-  self.player.setPosition(400, 300)
+  self.player.transform.setPosition(400, 300)
   world.add(self.player)
 endfunction
 
 function onupdate(delta)
-  if input.keyDown(37) then self.player.move(-3, 0) endif
-  if input.keyDown(39) then self.player.move(3, 0) endif
+  if input.getKeyDown(37) then
+    self.player.transform.setPosition(self.player.transform.x() - 3, self.player.transform.y())
+  endif
+  if input.getKeyDown(39) then
+    self.player.transform.setPosition(self.player.transform.x() + 3, self.player.transform.y())
+  endif
 endfunction
 
 EndClass

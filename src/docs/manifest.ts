@@ -89,19 +89,33 @@ export const docsManifest: DocSection[] = [
   {
     id: 'tutorials',
     label: 'Tutorials',
-    topics: [
-      { slug: 'tutorial-01-hello-world', title: '1. Hello World',        file: 'tutorials/01-hello-world.md' },
-      { slug: 'tutorial-02-drawing',     title: '2. Drawing on Screen',  file: 'tutorials/02-drawing.md' },
-      { slug: 'tutorial-03-sprite',      title: '3. Your First Sprite',  file: 'tutorials/03-sprite.md' },
-      { slug: 'tutorial-04-motion',      title: '4. Making Things Move', file: 'tutorials/04-motion.md' },
-      { slug: 'tutorial-05-keyboard',    title: '5. Keyboard Control',   file: 'tutorials/05-keyboard.md' },
-      { slug: 'tutorial-06-bounds',      title: '6. Staying on Screen',  file: 'tutorials/06-bounds.md' },
-      { slug: 'tutorial-07-score',       title: '7. Score and Text',      file: 'tutorials/07-score.md' },
-      { slug: 'tutorial-08-functions',   title: '8. Functions',           file: 'tutorials/08-functions.md' },
-      { slug: 'tutorial-09-enemies',     title: '9. Multiple Enemies',    file: 'tutorials/09-enemies.md' },
-      { slug: 'tutorial-10-classes',     title: '10. How Classes Work',   file: 'tutorials/10-classes.md' },
-      { slug: 'tutorial-11-dodge',       title: '11. Dodge!',             file: 'tutorials/11-dodge.md' },
-      { slug: 'tutorial-12-sound',       title: '12. Sound Effects and Music', file: 'tutorials/12-sound.md' },
+    topics: [],
+    groups: [
+      {
+        label: 'Making your first game',
+        topics: [
+          { slug: 'tutorial-01-hello-world', title: '1. Hello World',        file: 'tutorials/01-hello-world.md' },
+          { slug: 'tutorial-02-drawing',     title: '2. Drawing on Screen',  file: 'tutorials/02-drawing.md' },
+          { slug: 'tutorial-03-sprite',      title: '3. Your First Sprite',  file: 'tutorials/03-sprite.md' },
+          { slug: 'tutorial-04-motion',      title: '4. Making Things Move', file: 'tutorials/04-motion.md' },
+          { slug: 'tutorial-05-keyboard',    title: '5. Keyboard Control',   file: 'tutorials/05-keyboard.md' },
+          { slug: 'tutorial-06-bounds',      title: '6. Staying on Screen',  file: 'tutorials/06-bounds.md' },
+          { slug: 'tutorial-07-score',       title: '7. Score and Text',      file: 'tutorials/07-score.md' },
+          { slug: 'tutorial-08-functions',   title: '8. Functions',           file: 'tutorials/08-functions.md' },
+          { slug: 'tutorial-09-enemies',     title: '9. Multiple Enemies',    file: 'tutorials/09-enemies.md' },
+          { slug: 'tutorial-10-classes',     title: '10. How Classes Work',   file: 'tutorials/10-classes.md' },
+          { slug: 'tutorial-11-dodge',       title: '11. Dodge!',             file: 'tutorials/11-dodge.md' },
+          { slug: 'tutorial-12-sound',       title: '12. Sound Effects and Music', file: 'tutorials/12-sound.md' },
+        ],
+      },
+      {
+        label: 'Advanced concepts',
+        topics: [
+          { slug: 'tutorial-13-scenes',            title: '13. Scenes, World, and HUD', file: 'tutorials/13-scenes.md' },
+          { slug: 'tutorial-14-camera',            title: '14. Camera and Scrolling',   file: 'tutorials/14-camera.md' },
+          { slug: 'tutorial-15-animated-sprites',  title: '15. Animated Sprites',       file: 'tutorials/15-animated-sprites.md' },
+        ],
+      },
     ],
   },
   {
