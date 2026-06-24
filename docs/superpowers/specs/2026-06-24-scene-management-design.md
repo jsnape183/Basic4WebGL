@@ -2,23 +2,23 @@
 
 ## Goal
 
-Add a `scene` module to softBASIC that lets developers define named game states (menu, game, game-over, etc.) as classes, switch between them, and receive lifecycle and key events scoped to the active scene only.
+Add a `Scene` base class and a `SceneManager` module to softBASIC that let developers define named game states (menu, game, game-over, etc.) as classes, switch between them, and receive lifecycle and key events scoped to the active scene only.
 
 ## API
 
-### Base class
+### Base class — `Scene`
 
-`scene.bas` defines a base `Scene` class with silent no-op implementations of all five lifecycle hooks. User scene classes extend it and override only the methods they need.
+`Scene.bas` defines a base class with silent no-op implementations of all five lifecycle hooks. User scene classes extend it and override only the methods they need.
 
 ```bas
-class MenuScene extends scene
+class MenuScene extends Scene
   function onenter()
     ' runs once when this scene becomes active
   endfunction
 
   function onupdate(delta)
     ' runs every frame while this scene is active
-    if input.keyPressed(32) then scene.switch("game")
+    if input.keyPressed(32) then SceneManager.switch("game")
   endfunction
 
   function onkeydown(key)
@@ -34,34 +34,34 @@ endclass
 
 `onkeyup(key)` is also available, identical to `onkeydown`.
 
-### Module functions
+### Module — `SceneManager`
+
+`SceneManager.bas` defines two module-level functions:
 
 ```bas
-scene.register("menu", menuInstance)   ' associate a name with a scene object
-scene.switch("menu")                   ' switch to named scene
+SceneManager.register("menu", menuInstance)   ' associate a name with a scene object
+SceneManager.switch("menu")                   ' switch to named scene
 ```
-
-`register` and `switch` are module-level functions defined in `scene.bas`. The base class and module functions live in the same file — the class definition is the base to extend, the functions are the management API.
 
 ### Typical main file
 
 ```bas
 dim menu = new MenuScene()
 dim game = new GameScene()
-scene.register("menu", menu)
-scene.register("game", game)
-scene.switch("menu")
+SceneManager.register("menu", menu)
+SceneManager.register("game", game)
+SceneManager.switch("menu")
 ```
 
 ## Behaviour
 
 ### Stage auto-clear on switch
 
-When `scene.switch` fires, the stage is cleared automatically between `onexit` and `onenter`. Developers do not need to call `stage.clear()` manually. If a game needs objects to persist across scenes, they should be re-added in `onenter`.
+When `SceneManager.switch` fires, the stage is cleared automatically between `onexit` and `onenter`. Developers do not need to call `stage.clear()` manually. If a game needs objects to persist across scenes, they should be re-added in `onenter`.
 
 ### Deferred switching
 
-`scene.switch` is **queued**, not immediate. If called inside `onupdate`, the switch is applied at the end of that tick — after the current `onupdate` returns. This prevents mid-frame corruption. Sequence on switch:
+`SceneManager.switch` is **queued**, not immediate. If called inside `onupdate`, the switch is applied at the end of that tick — after the current `onupdate` returns. This prevents mid-frame corruption. Sequence on switch:
 
 1. Current scene's `onexit()` is called
 2. Stage is cleared (`this.clear()`)
@@ -70,7 +70,7 @@ When `scene.switch` fires, the stage is cleared automatically between `onexit` a
 
 ### Initial scene
 
-The transpiled user code runs synchronously before the PIXI ticker starts. `scene.switch("menu")` during that phase queues the switch. The bootstrapper calls `_sb._applySwitch()` immediately after the transpiled block, before registering key listeners and starting the ticker. This ensures `onenter` fires before the first frame renders.
+The transpiled user code runs synchronously before the PIXI ticker starts. `SceneManager.switch("menu")` during that phase queues the switch. The bootstrapper calls `_sb._applySwitch()` immediately after the transpiled block, before registering key listeners and starting the ticker. This ensures `onenter` fires before the first frame renders.
 
 ### Lifecycle routing
 
@@ -82,8 +82,9 @@ The transpiled user code runs synchronously before the PIXI ticker starts. `scen
 
 ### New files
 
-- `src/lib/Basic4WebGL/defs/scene.bas` — base class + `register` + `switch` module functions
-- `src/components/Runner/engine/scene.js` — `_sbScene` object
+- `src/lib/Basic4WebGL/defs/Scene.bas` — base class with no-op lifecycle hooks
+- `src/lib/Basic4WebGL/defs/SceneManager.bas` — module with `register` and `switch` functions
+- `src/components/Runner/engine/scene.js` — `_sbScene` object implementing all engine behaviour
 
 ### Modified files
 
@@ -91,11 +92,13 @@ The transpiled user code runs synchronously before the PIXI ticker starts. `scen
 - `src/components/Runner/bootstrapper.html` — two changes:
   1. Call `_sb._applySwitch()` after transpiled code block, before ticker/key listeners
   2. Add `_sb._sceneKeyDown(e.keyCode)` in `keydown` handler and `_sb._sceneKeyUp(e.keyCode)` in `keyup` handler
-- `src/constants/packageModules.ts` — add `scene` import
-- `src/constants/firstPartyPackages.ts` — add `'scene'` to `softGfx` module list
+- `src/constants/packageModules.ts` — add `Scene` and `SceneManager` imports
+- `src/constants/firstPartyPackages.ts` — add `'Scene'` and `'SceneManager'` to `softGfx` module list
 - `src/lib/Basic4WebGL/keywords.ts` — add `'onexit'` to `SOFTBASIC_LIFECYCLE_EVENTS` (currently missing; consumed by Monaco syntax highlighting)
 
 ### `scene.js` engine module
+
+Both `Scene.bas` and `SceneManager.bas` call into the same `_sbScene` engine object. `Scene.bas` has no engine calls (pure softBASIC no-ops). `SceneManager.bas` calls `_sb.sceneRegister` and `_sb.sceneSwitch`.
 
 ```js
 const _sbScene = {
@@ -151,7 +154,7 @@ const _sbScene = {
 
 `_sbScene._update` overrides `_sbLifecycle._update` in the `_sb` spread because `_sbScene` is spread after `_sbLifecycle` in `softBasicEngine.js`. It chains to `_sbLifecycle._update` to preserve existing top-level class lifecycle behaviour, then delegates to the active scene, then applies any pending switch.
 
-### `scene.bas` def file
+### `Scene.bas` def file
 
 ```bas
 Class
@@ -170,7 +173,11 @@ Class
   function onkeyup(key)
   endfunction
 EndClass
+```
 
+### `SceneManager.bas` def file
+
+```bas
 function register(name, obj)
     call("_sb.sceneRegister(register_name, register_obj)")
 endfunction
@@ -184,18 +191,18 @@ endfunction
 
 Transpiler tests (`tests/lib/Basic4WebGL/unit/transpiler/scene.test.ts`) verify:
 
-- A class extending `scene` transpiles correctly (calls `super()` in constructor, inherits base methods)
-- `scene.register("menu", obj)` transpiles to the correct `call()` form
-- `scene.switch("game")` transpiles to the correct `call()` form
+- A class extending `Scene` transpiles correctly (calls `super()` in constructor, inherits base methods)
+- `SceneManager.register("menu", obj)` transpiles to the correct `call()` form
+- `SceneManager.switch("game")` transpiles to the correct `call()` form
 
 Engine behaviour (deferred switching, auto-clear, lifecycle routing) is tested via integration or manual verification — the transpiler tests don't exercise runtime behaviour.
 
 ## Docs
 
 A new API reference page `src/docs/api-reference/scene.md` covering:
-- The base class and how to extend it
+- The `Scene` base class and how to extend it
 - All five lifecycle hooks with descriptions
-- `scene.register()` and `scene.switch()`
+- `SceneManager.register()` and `SceneManager.switch()`
 - A complete worked example (menu → game → game-over flow)
 
 Added to the softGfx group in `src/docs/manifest.ts`.
