@@ -54,6 +54,9 @@ dim CELL
 dim MMAP_X
 dim MMAP_Y
 
+dim MOVE_SPEED
+dim ROT_SPEED
+
 ' ─── map ─────────────────────────────────────────────────────────────────────
 
 function buildMap()
@@ -94,9 +97,11 @@ function onenter()
     planeX = 0.0
     planeY = 0.66
 
-    CELL   = 8
-    MMAP_X = 10
-    MMAP_Y = 10
+    CELL       = 8
+    MMAP_X     = 10
+    MMAP_Y     = 10
+    MOVE_SPEED = 0.1
+    ROT_SPEED  = 0.07
 
     pen.setLineWidth(0)
     world.setBackground(0, 0, 0)
@@ -151,8 +156,6 @@ endfunction
 ' ─── update ──────────────────────────────────────────────────────────────────
 
 function onupdate(delta)
-    dim ms
-    dim rs
     dim nx
     dim ny
     dim oldDirX
@@ -182,13 +185,10 @@ function onupdate(delta)
 
     ' ── input ────────────────────────────────────────────────────────────────
 
-    ms = delta * 0.003
-    rs = delta * 0.002
-
     ' W — walk forward
     if input.getKeyDown(87) then
-        nx = posX + dirX * ms
-        ny = posY + dirY * ms
+        nx = posX + dirX * MOVE_SPEED
+        ny = posY + dirY * MOVE_SPEED
         if worldMap(math.floor(ny) * MAPW + math.floor(posX)) = 0 then
             posY = ny
         endif
@@ -199,8 +199,8 @@ function onupdate(delta)
 
     ' S — walk backward
     if input.getKeyDown(83) then
-        nx = posX - dirX * ms
-        ny = posY - dirY * ms
+        nx = posX - dirX * MOVE_SPEED
+        ny = posY - dirY * MOVE_SPEED
         if worldMap(math.floor(ny) * MAPW + math.floor(posX)) = 0 then
             posY = ny
         endif
@@ -212,21 +212,21 @@ function onupdate(delta)
     ' D — turn right
     if input.getKeyDown(68) then
         oldDirX  = dirX
-        dirX     = dirX * math.cos(rs) - dirY * math.sin(rs)
-        dirY     = oldDirX * math.sin(rs) + dirY * math.cos(rs)
+        dirX     = dirX * math.cos(ROT_SPEED) - dirY * math.sin(ROT_SPEED)
+        dirY     = oldDirX * math.sin(ROT_SPEED) + dirY * math.cos(ROT_SPEED)
         oldPlaneX = planeX
-        planeX   = planeX * math.cos(rs) - planeY * math.sin(rs)
-        planeY   = oldPlaneX * math.sin(rs) + planeY * math.cos(rs)
+        planeX   = planeX * math.cos(ROT_SPEED) - planeY * math.sin(ROT_SPEED)
+        planeY   = oldPlaneX * math.sin(ROT_SPEED) + planeY * math.cos(ROT_SPEED)
     endif
 
     ' A — turn left
     if input.getKeyDown(65) then
         oldDirX  = dirX
-        dirX     = dirX * math.cos(rs) + dirY * math.sin(rs)
-        dirY     = -oldDirX * math.sin(rs) + dirY * math.cos(rs)
+        dirX     = dirX * math.cos(ROT_SPEED) + dirY * math.sin(ROT_SPEED)
+        dirY     = -oldDirX * math.sin(ROT_SPEED) + dirY * math.cos(ROT_SPEED)
         oldPlaneX = planeX
-        planeX   = planeX * math.cos(rs) + planeY * math.sin(rs)
-        planeY   = -oldPlaneX * math.sin(rs) + planeY * math.cos(rs)
+        planeX   = planeX * math.cos(ROT_SPEED) + planeY * math.sin(ROT_SPEED)
+        planeY   = -oldPlaneX * math.sin(ROT_SPEED) + planeY * math.cos(ROT_SPEED)
     endif
 
     ' ── render ───────────────────────────────────────────────────────────────
@@ -353,9 +353,9 @@ endfunction
 
 ## How movement works
 
-**Walking** adds a fraction of the direction vector to the player position each frame. The fraction is `delta * 0.003`, so movement scales with frame time regardless of frame rate. Before committing the move, the new X and Y positions are checked independently — this lets the player slide along walls instead of stopping dead on contact.
+**Walking** adds `MOVE_SPEED` (0.1 world units) along the direction vector each frame. The new X and Y positions are checked independently before committing — this lets the player slide along walls instead of stopping dead on contact.
 
-**Turning** rotates the direction vector and the camera plane together using a 2×2 rotation matrix. The plane must rotate with the direction or the field of view distorts. The rotation angle each frame is `delta * 0.002` radians (~115°/sec).
+**Turning** rotates the direction vector and the camera plane together by `ROT_SPEED` (0.07 radians) each frame using a 2×2 rotation matrix. The plane must rotate with the direction or the field of view distorts.
 
 **Side shading** halves the colour on faces hit by an east-west travelling ray, giving instant depth with no extra geometry.
 
