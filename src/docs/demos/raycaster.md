@@ -50,6 +50,10 @@ dim RAYS
 dim SH
 dim SCY
 
+dim CELL
+dim MMAP_X
+dim MMAP_Y
+
 ' ─── map ─────────────────────────────────────────────────────────────────────
 
 function buildMap()
@@ -90,9 +94,58 @@ function onenter()
     planeX = 0.0
     planeY = 0.66
 
+    CELL   = 8
+    MMAP_X = 10
+    MMAP_Y = 10
+
     pen.setLineWidth(0)
     world.setBackground(0, 0, 0)
     buildMap()
+endfunction
+
+' ─── minimap ─────────────────────────────────────────────────────────────────
+
+function drawMinimap()
+    dim mr
+    dim mc
+    dim cx
+    dim cy
+    dim wt
+    dim px
+    dim py
+
+    ' dark background covering the full map area
+    pen.setFillColor(10, 10, 10)
+    drawing.drawRect(MMAP_X + 32, MMAP_Y + 32, 64, 64)
+
+    ' draw only wall cells — empty cells show as background
+    for mr = 0 to MAPW - 1
+        for mc = 0 to MAPW - 1
+            wt = worldMap(mr * MAPW + mc)
+            if wt > 0 then
+                cx = MMAP_X + mc * CELL + CELL / 2
+                cy = MMAP_Y + mr * CELL + CELL / 2
+                if wt = 1 then
+                    pen.setFillColor(160, 60, 60)
+                else
+                    pen.setFillColor(60, 60, 180)
+                endif
+                drawing.drawRect(cx, cy, CELL - 1, CELL - 1)
+            endif
+        next mc
+    next mr
+
+    ' player dot
+    px = MMAP_X + posX * CELL
+    py = MMAP_Y + posY * CELL
+    pen.setFillColor(255, 220, 0)
+    drawing.drawRect(px, py, 4, 4)
+
+    ' direction indicator
+    pen.setLineColor(255, 220, 0)
+    pen.setLineWidth(1)
+    drawing.drawLine(px, py, dirX * 10, dirY * 10)
+    pen.setLineWidth(0)
 endfunction
 
 ' ─── update ──────────────────────────────────────────────────────────────────
@@ -280,6 +333,8 @@ function onupdate(delta)
         drawing.drawRect(px, SCY, STRIP, lh)
 
     next col
+
+    drawMinimap()
 endfunction
 ```
 
@@ -303,3 +358,5 @@ endfunction
 **Turning** rotates the direction vector and the camera plane together using a 2×2 rotation matrix. The plane must rotate with the direction or the field of view distorts. The rotation angle each frame is `delta * 0.002` radians (~115°/sec).
 
 **Side shading** halves the colour on faces hit by an east-west travelling ray, giving instant depth with no extra geometry.
+
+**The minimap** draws after the wall strips so it always sits on top. Only wall cells get individual rects — empty cells fall through to a single dark background rect, keeping draw calls low. The direction indicator uses `drawing.drawLine` with the direction vector scaled to 10 pixels; because `drawLine` treats its second pair of arguments as an offset from the start point, `dirX * 10` and `dirY * 10` are correct as written.
