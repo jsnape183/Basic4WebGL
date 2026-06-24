@@ -89,8 +89,8 @@ describe('dim x, y as Sprite — multi-declarator with objects', () => {
       'function onenter()\n  dim x, y as Sprite("img.png")\nendfunction'
     );
     expect(result.code).toContain('onenter_x = undefined');
-    expect(result.code).toContain('onenter_y = new sprite(');
-    expect(result.code).not.toContain('onenter_x = new sprite(');
+    expect(result.code).toContain('onenter_y = new _sb_sprite(');
+    expect(result.code).not.toContain('onenter_x = new _sb_sprite(');
   });
 
   test('10. dim x as Sprite("a"), y as Sprite("b") compiles without diagnostics', () => {
@@ -100,12 +100,12 @@ describe('dim x, y as Sprite — multi-declarator with objects', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 
-  test('11. dim x as Sprite("a"), y as Sprite("b") emits two new sprite()', () => {
+  test('11. dim x as Sprite("a"), y as Sprite("b") emits two new _sb_sprite()', () => {
     const result = transpileWithSprite(
       'function onenter()\n  dim x as Sprite("a"), y as Sprite("b")\nendfunction'
     );
-    expect(result.code).toContain('onenter_x = new sprite(');
-    expect(result.code).toContain('onenter_y = new sprite(');
+    expect(result.code).toContain('onenter_x = new _sb_sprite(');
+    expect(result.code).toContain('onenter_y = new _sb_sprite(');
   });
 });
 
@@ -136,7 +136,7 @@ describe('dim combo — mixed init forms', () => {
     );
     expect(result.code).toContain('onenter_x = 10');
     expect(result.code).toContain('onenter_y = undefined');
-    expect(result.code).toContain('onenter_z = new sprite(');
+    expect(result.code).toContain('onenter_z = new _sb_sprite(');
   });
 });
 
@@ -165,12 +165,12 @@ describe('dim regression — existing forms unchanged', () => {
     expect(result.code).toContain('onenter_x = undefined');
   });
 
-  test('19. dim x as Sprite("img.png") compiles and emits new sprite()', () => {
+  test('19. dim x as Sprite("img.png") compiles and emits new _sb_sprite()', () => {
     const result = transpileWithSprite(
       'function onenter()\n  dim x as Sprite("img.png")\nendfunction'
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('onenter_x = new sprite(');
+    expect(result.code).toContain('onenter_x = new _sb_sprite(');
   });
 
   test('20. dim x(5) compiles and emits _createArray([5])', () => {

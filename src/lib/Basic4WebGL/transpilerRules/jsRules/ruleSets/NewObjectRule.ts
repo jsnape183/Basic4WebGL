@@ -5,17 +5,18 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import Symbols from '@CompilerLib/symbols';
 import nodeTypes from '../../../nodeTypes';
-import { doChild } from '../helpers/transpilerHelpers';
+import { doChild, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.NewObject)
 class NewObjectRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
     const className = node.data.classSymbol.name;
+    const prefixed = prefixClass(className);
     if (node.children.length > 0) {
       const args = doChild(node, 0, table);
-      return `new ${className}(${args})`;
+      return `new ${prefixed}(${args})`;
     }
-    return `new ${className}()`;
+    return `new ${prefixed}()`;
   }
 }
 

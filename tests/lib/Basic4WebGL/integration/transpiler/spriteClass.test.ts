@@ -24,7 +24,7 @@ describe('Sprite class — instantiation', () => {
       'endfunction',
     ].join('\n');
     const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
-    expect(result).toContain('newsprite(');
+    expect(result).toContain('new_sb_sprite(');
   });
 });
 
@@ -140,7 +140,7 @@ describe('Sprite class — package module loader', () => {
       'endfunction',
     ].join('\n');
     const result = compileOk({ lib: loaderLib, files: [{ name: 'Main', source: src }] });
-    expect(result).toContain('this.transform=newObjectTransform(');
+    expect(result).toContain('this.transform=new_sb_ObjectTransform(');
     expect(result).not.toContain('constructor.transform');
   });
 });

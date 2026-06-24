@@ -45,13 +45,17 @@ export const formatSymbol = (data: Symbol) => {
       return `this.${data.name}`;
     }
     if (data.scope.type === scopeTypes.Class) {
-      return `${data.scope.name}.prototype.${data.name}`;
+      return `${prefixClass(data.scope.name)}.prototype.${data.name}`;
     }
     return `${data.scope.name}.${data.name}`;
   }
 
   if (data.scope.type === scopeTypes.Function) {
     return `${data.scope.name}_${data.name}`;
+  }
+
+  if (data.scope.type === scopeTypes.Class) {
+    return `${prefixClass(data.scope.name)}.prototype.${data.name}`;
   }
 
   return `${data.scope.name}.${data.name}`;
@@ -63,21 +67,24 @@ export const formatFunctionDecl = (
   body: string
 ) => {
   if (node.data.scope.type === scopeTypes.Class) {
-    return `${node.data.fullScope}.prototype.${node.data.name} = function(${params}) {${body}};`;
+    return `${prefixClass(node.data.fullScope)}.prototype.${node.data.name} = function(${params}) {${body}};`;
   }
 
   return `${node.data.fullScope}.${node.data.name} = (${params}) => {${body}};`;
 };
 
+export const prefixClass = (name: string): string => `_sb_${name}`;
+
 export const formatClass = (className: string): string => {
-  return `class ${className}{}`;
+  return `class ${prefixClass(className)}{}`;
 };
 
 export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string, parentName?: string): string => {
-  const extendsClause = parentName ? ` extends ${parentName}` : '';
+  const extendsClause = parentName ? ` extends ${prefixClass(parentName)}` : '';
+  const prefixedName = prefixClass(node.data as string);
   const classDecl = constructorContent
-    ? `class ${node.data}${extendsClause}{ ${constructorContent} }`
-    : `class ${node.data}${extendsClause}{}`;
+    ? `class ${prefixedName}${extendsClause}{ ${constructorContent} }`
+    : `class ${prefixedName}${extendsClause}{}`;
   return `${classDecl}
     ${children.join(';')}`;
 };

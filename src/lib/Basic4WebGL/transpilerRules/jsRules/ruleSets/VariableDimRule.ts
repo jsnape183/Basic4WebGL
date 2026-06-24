@@ -5,12 +5,13 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
+import { prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.VariableDim)
 class VariableDimRule implements IGeneratable {
   generate(node: Tree): string {
     if (node.data.scope.type === scopeTypes.Class) {
-      return `${node.data.scope.name}.prototype.${node.data.name} = undefined;`;
+      return `${prefixClass(node.data.scope.name)}.prototype.${node.data.name} = undefined;`;
     }
 
     if (

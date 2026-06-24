@@ -19,13 +19,13 @@ const mainFile = { name: 'Main', source: loadSampleFile('Main', folder) };
 describe('class extends — transpiler output', () => {
   test('class with extends emits class Boss extends Enemy {}', () => {
     const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
-    expect(result).toContain('classbossextendsenemy');
+    expect(result).toContain('class_sb_bossextends_sb_enemy');
   });
 
   test('class without extends still emits class X {}', () => {
     const src = ['Class', 'dim health'].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Enemy', source: src }] });
-    expect(result).toContain('classenemy{');
+    expect(result).toContain('class_sb_enemy{');
     expect(result).not.toContain('extends');
   });
 });
@@ -230,7 +230,7 @@ describe('super() in constructor', () => {
 describe('super.method() — transpiler output', () => {
   test('super.takeDamage(amount) emits Enemy.prototype.takeDamage.call(this, amount)', () => {
     const result = compileOk({ lib: [], files: [enemyFile, bossFile, mainFile] });
-    expect(result).toContain('enemy.prototype.takedamage.call(this');
+    expect(result).toContain('_sb_enemy.prototype.takedamage.call(this');
   });
 });
 

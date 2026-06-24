@@ -6,7 +6,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { formatSymbol } from '../helpers/transpilerHelpers';
+import { formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.DictionaryDim)
 class DictionaryDimRule implements IGeneratable {
@@ -14,7 +14,7 @@ class DictionaryDimRule implements IGeneratable {
     const rhs = '_createDict()';
 
     if (node.data.scope.type === scopeTypes.Class) {
-      return `${node.data.scope.name}.prototype.${node.data.name} = ${rhs};`;
+      return `${prefixClass(node.data.scope.name)}.prototype.${node.data.name} = ${rhs};`;
     }
 
     if (

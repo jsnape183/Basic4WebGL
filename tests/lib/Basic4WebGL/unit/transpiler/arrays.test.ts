@@ -160,7 +160,7 @@ describe('TypedArrayDimRule', () => {
       classSymbol: classSym('Tile'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('Level.prototype.tiles = _createTypedArray([3], () => null);');
+      .toBe('_sb_Level.prototype.tiles = _createTypedArray([3], () => null);');
   });
 
   test('multi-dimensional typed array', () => {

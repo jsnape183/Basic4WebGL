@@ -6,7 +6,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
+import { doChild, formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.TypedArrayDim)
 class TypedArrayDimRule implements IGeneratable {
@@ -17,7 +17,7 @@ class TypedArrayDimRule implements IGeneratable {
     const rhs = `_createTypedArray([${sizes}], () => null)`;
 
     if (arraySymbol.scope.type === scopeTypes.Class) {
-      return `${arraySymbol.scope.name}.prototype.${arraySymbol.name} = ${rhs};`;
+      return `${prefixClass(arraySymbol.scope.name)}.prototype.${arraySymbol.name} = ${rhs};`;
     }
 
     if (

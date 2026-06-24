@@ -62,7 +62,7 @@ describe('dim x as Type(args) — constructor call site', () => {
       'endfunction',
     ].join('\n');
     const result = compileOk({ lib: [], files: [pointFile, { name: 'Main', source: mainSrc }] });
-    expect(result).toContain('onenter_p=newpoint(10,20)');
+    expect(result).toContain('onenter_p=new_sb_point(10,20)');
   });
 
   test('dim without args emits null (no-arg form is null-initialised)', () => {
@@ -88,7 +88,7 @@ describe('Constructor transpiled output', () => {
       'EndConstructor',
     ].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Point', source: src }] });
-    expect(result).toContain('classpoint{');
+    expect(result).toContain('class_sb_point{');
     expect(result).toContain('constructor(constructor_startX,constructor_startY)');
     expect(result).toContain('this.x=constructor_startX');
     expect(result).toContain('this.y=constructor_startY');
@@ -97,7 +97,7 @@ describe('Constructor transpiled output', () => {
   test('class without constructor still emits bare class declaration', () => {
     const src = ['Class', 'dim x'].join('\n');
     const result = compileOk({ lib: [], files: [{ name: 'Box', source: src }] });
-    expect(result).toContain('classbox{}');
+    expect(result).toContain('class_sb_box{}');
   });
 });
 
@@ -138,10 +138,10 @@ describe('end-to-end: constructor + instance method', () => {
     expect(result).toContain('this.x=constructor_startX');
 
     // Instance method uses function() and this.
-    expect(result).toContain('player.prototype.move=function(move_dx)');
+    expect(result).toContain('_sb_player.prototype.move=function(move_dx)');
     expect(result).toContain('this.x=this.x+move_dx');
 
     // Call site passes args
-    expect(result).toContain('onenter_player=newplayer(100,0)');
+    expect(result).toContain('onenter_player=new_sb_player(100,0)');
   });
 });

@@ -6,7 +6,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
+import { doChild, formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.Dim)
 class DimRule implements IGeneratable {
@@ -15,7 +15,7 @@ class DimRule implements IGeneratable {
     const rhs = `_createArray([${sizes}])`;
 
     if (node.data.scope.type === scopeTypes.Class) {
-      return `${node.data.scope.name}.prototype.${node.data.name} = ${rhs};`;
+      return `${prefixClass(node.data.scope.name)}.prototype.${node.data.name} = ${rhs};`;
     }
 
     if (

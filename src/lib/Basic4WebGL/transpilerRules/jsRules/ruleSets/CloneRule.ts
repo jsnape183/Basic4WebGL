@@ -5,7 +5,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import Symbols from '@CompilerLib/symbols';
 import nodeTypes from '../../../nodeTypes';
-import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
+import { doChild, formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.Clone)
 class CloneRule implements IGeneratable {
@@ -15,7 +15,7 @@ class CloneRule implements IGeneratable {
 
     if (node.children.length > 0) {
       const args = doChild(node, 0, table);
-      return `${lhs} = new ${className}(${args});`;
+      return `${lhs} = new ${prefixClass(className)}(${args});`;
     }
     return `${lhs} = null;`;
   }

@@ -5,7 +5,7 @@ import {
 } from '@CompilerLib/transpiler/IGeneratable';
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
-import { doChild } from '../helpers/transpilerHelpers';
+import { doChild, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.SuperMethodCall)
 class SuperMethodCallRule implements IGeneratable {
@@ -13,7 +13,7 @@ class SuperMethodCallRule implements IGeneratable {
     const { parentName, methodName } = node.data as { parentName: string; methodName: string };
     const args = doChild(node, 0, table);
     const argStr = args ? `, ${args}` : '';
-    return `${parentName}.prototype.${methodName}.call(this${argStr});`;
+    return `${prefixClass(parentName)}.prototype.${methodName}.call(this${argStr});`;
   }
 }
 

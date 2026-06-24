@@ -57,22 +57,22 @@ const errMessages = (result: ReturnType<typeof transpile>) =>
 // ─── new keyword — expression ──────────────────────────────────────────────
 
 describe('new keyword — expression', () => {
-  test('new Enemy() emits new enemy() in assignment', () => {
+  test('new Enemy() emits new _sb_enemy() in assignment', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim e as Enemy', 'e = new Enemy()'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new enemy()');
+    expect(result.code).toContain('new _sb_enemy()');
   });
 
-  test('new Enemy("goblin") emits new enemy("goblin")', () => {
+  test('new Enemy("goblin") emits new _sb_enemy("goblin")', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim e as Enemy', 'e = new Enemy("goblin")'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new enemy("goblin")');
+    expect(result.code).toContain('new _sb_enemy("goblin")');
   });
 });
 
@@ -83,13 +83,13 @@ describe('dim a as ClassName — null init and explicit construction', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy');
     expect(result.diagnostics).toHaveLength(0);
     expect(result.code).toContain('main.e = null');
-    expect(result.code).not.toContain('new enemy()');
+    expect(result.code).not.toContain('new _sb_enemy()');
   });
 
-  test('dim e as Enemy = new Enemy() emits new enemy()', () => {
+  test('dim e as Enemy = new Enemy() emits new _sb_enemy()', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy = new Enemy()');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new enemy()');
+    expect(result.code).toContain('new _sb_enemy()');
   });
 
   test('dim e as Enemy = new Sprite() is a type error', () => {
@@ -104,17 +104,17 @@ describe('dim a as ClassName — null init and explicit construction', () => {
   test('dim e as Enemy("img") (with args) still emits new Enemy("img")', () => {
     const result = transpileWith([enemyFile], 'dim e as Enemy("img")');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('new enemy("img")');
+    expect(result.code).toContain('new _sb_enemy("img")');
   });
 });
 
 // ─── dim a = new ClassName(args) — type inference ─────────────────────────
 
 describe('dim a = new ClassName(args) — type inference', () => {
-  test('dim e = new Enemy() emits main.e = new enemy()', () => {
+  test('dim e = new Enemy() emits main.e = new _sb_enemy()', () => {
     const result = transpileWith([enemyFile], 'dim e = new Enemy()');
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.e = new enemy()');
+    expect(result.code).toContain('main.e = new _sb_enemy()');
   });
 
   test('dim e = new Enemy() — subsequent method call compiles', () => {
@@ -185,13 +185,13 @@ describe('typed array — declaration', () => {
 // ─── typed array — element assignment ──────────────────────────────────────
 
 describe('typed array — element assignment', () => {
-  test('enemies(0) = new Enemy() emits array[0]=new enemy()', () => {
+  test('enemies(0) = new Enemy() emits array[0]=new _sb_enemy()', () => {
     const result = transpileWith(
       [enemyFile],
       ['dim enemies(10) as Enemy', 'enemies(0) = new Enemy()'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.enemies[0]=new enemy()');
+    expect(result.code).toContain('main.enemies[0]=new _sb_enemy()');
   });
 
   test('enemies(0) = new Sprite() is a type error (wrong class)', () => {
@@ -256,7 +256,7 @@ describe('typed dict — element assignment', () => {
       ].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('main.players.set("Alice",new sprite())');
+    expect(result.code).toContain('main.players.set("Alice",new _sb_sprite())');
   });
 
   test('players["Alice"] = new Enemy() is a type error (wrong class)', () => {

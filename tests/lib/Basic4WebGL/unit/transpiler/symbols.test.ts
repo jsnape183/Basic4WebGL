@@ -109,7 +109,7 @@ describe('Dim rule', () => {
 
   test('class-scope array emits prototype form without let', () => {
     const d = node(nodeTypes.Dim, classArrSym('arr', 'Enemy'), [emptyList(nodeTypes.VariableList)]);
-    expect(new DimRule().generate(d, undefined)).toBe('Enemy.prototype.arr = _createArray([]);');
+    expect(new DimRule().generate(d, undefined)).toBe('_sb_Enemy.prototype.arr = _createArray([]);');
   });
 });
 

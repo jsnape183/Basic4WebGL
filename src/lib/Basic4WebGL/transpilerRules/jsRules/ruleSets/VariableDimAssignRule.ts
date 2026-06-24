@@ -6,7 +6,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { doChild } from '../helpers/transpilerHelpers';
+import { doChild, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.VariableDimAssign)
 class VariableDimAssignRule implements IGeneratable {
@@ -14,7 +14,7 @@ class VariableDimAssignRule implements IGeneratable {
     const rhs = doChild(node, 0, table);
 
     if (node.data.scope.type === scopeTypes.Class) {
-      return `${node.data.scope.name}.prototype.${node.data.name} = ${rhs};`;
+      return `${prefixClass(node.data.scope.name)}.prototype.${node.data.name} = ${rhs};`;
     }
 
     if (

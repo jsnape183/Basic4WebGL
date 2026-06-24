@@ -15,7 +15,7 @@ describe('Text class — instantiation', () => {
       'endfunction',
     ].join('\n');
     const result = compileOk({ lib: [textLib], files: [{ name: 'Main', source: src }] });
-    expect(result).toContain('newtext(');
+    expect(result).toContain('new_sb_text(');
   });
 });
 
