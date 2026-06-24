@@ -115,3 +115,20 @@ Returns the height of the sprite in pixels.
 dim h
 h = self.height()
 ```
+
+## setDepth(n)
+
+Sets the draw order of the sprite relative to other sprites in the same container. A higher value draws in front; a lower value draws behind.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| n         | number | Depth value — higher values are drawn on top |
+
+```bas
+dim player as sprite("player.png")
+dim enemy as sprite("enemy.png")
+player.setDepth(10)
+enemy.setDepth(5)
+world.add(player)
+world.add(enemy)
+```

@@ -12,6 +12,7 @@ const inputSource = readFileSync('src/lib/Basic4WebGL/defs/input.bas', 'utf-8');
 const stageSource = readFileSync('src/lib/Basic4WebGL/defs/stage.bas', 'utf-8');
 const textSource = readFileSync('src/lib/Basic4WebGL/defs/text.bas', 'utf-8');
 const penSource = readFileSync('src/lib/Basic4WebGL/defs/pen.bas', 'utf-8');
+const drawingSource = readFileSync('src/lib/Basic4WebGL/defs/drawing.bas', 'utf-8');
 
 const transpileWithSprite = (source: string) =>
   compiler.transpile({
@@ -53,6 +54,12 @@ const transpileWithText = (source: string) =>
 const transpileWithPen = (source: string) =>
   compiler.transpile({
     lib: [{ name: 'pen', source: penSource }],
+    files: [{ name: 'Main.bas', source }],
+  });
+
+const transpileWithDrawing = (source: string) =>
+  compiler.transpile({
+    lib: [{ name: 'drawing', source: drawingSource }],
     files: [{ name: 'Main.bas', source }],
   });
 
@@ -360,5 +367,22 @@ describe('pen — setLineWidth', () => {
       'function test()\n  pen.setLineWidth(4)\nendfunction'
     );
     expect(result.code).toContain('_sb.setLineWidth(setlinewidth_n');
+  });
+});
+
+// ─── drawing — drawImageStrip ─────────────────────────────────────────────────
+
+describe('drawing — drawImageStrip', () => {
+  test('compiles without error', () => {
+    const result = transpileWithDrawing(
+      'function test()\n  drawing.drawImageStrip("wall.png", 10, 100, 120, 1, 200)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.drawImageStrip(', () => {
+    const result = transpileWithDrawing(
+      'function test()\n  drawing.drawImageStrip("wall.png", 10, 100, 120, 1, 200)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.drawImageStrip(');
   });
 });

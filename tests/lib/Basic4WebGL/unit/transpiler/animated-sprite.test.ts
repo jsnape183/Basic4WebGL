@@ -238,3 +238,20 @@ describe('AnimatedSprite — end-to-end', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 });
+
+// ─── setDepth ─────────────────────────────────────────────────────────────────
+
+describe('AnimatedSprite — setDepth', () => {
+  test('compiles without error', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setDepth(3)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setDepth(', () => {
+    const result = transpileWithAnimSprite(
+      'function test()\n  dim s as AnimatedSprite("hero.png", 48, 48)\n  s.setDepth(3)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setDepth(');
+  });
+});

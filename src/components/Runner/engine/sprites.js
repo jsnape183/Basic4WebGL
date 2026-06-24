@@ -37,6 +37,9 @@ const _sbSprites = {
   getSpriteHeight(obj) {
     return obj.height;
   },
+  setDepth(obj, n) {
+    obj.zIndex = n;
+  },
   createText(content, x, y) {
     const textStyle = new PIXI.TextStyle({
       fontFamily: 'Arial',

@@ -76,3 +76,20 @@ Returns the total height of the tilemap in pixels.
 dim mapH
 mapH = self.heightPx()
 ```
+
+## setDepth(n)
+
+Sets the draw order of the tilemap relative to sprites and other tilemaps in the same container. A higher value draws in front; a lower value draws behind.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| n         | number | Depth value — higher values are drawn on top |
+
+```bas
+dim floor as tilemap("tileset.png", 32, 32)
+dim walls as tilemap("tileset.png", 32, 32)
+floor.setDepth(0)
+walls.setDepth(1)
+world.add(floor)
+world.add(walls)
+```

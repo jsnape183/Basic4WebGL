@@ -22,4 +22,8 @@ function heightPx()
     return call("_sb.tileMapHeightPx(this._handle)")
 endfunction
 
+function setDepth(n)
+    call("_sb.setDepth(this._handle, setdepth_n)")
+endfunction
+
 EndClass

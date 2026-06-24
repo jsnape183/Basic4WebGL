@@ -58,5 +58,18 @@ const _sbDrawing = (() => {
       }
       _drawObjs.length = 0;
     },
+    drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight) {
+      const base = _sbAssets.get(imageName);
+      const texture = new PIXI.Texture({
+        source: base.source,
+        frame: new PIXI.Rectangle(srcX, 0, 1, base.height),
+      });
+      const obj = new PIXI.Sprite(texture);
+      obj.width = destWidth;
+      obj.height = destHeight;
+      obj.anchor.set(0.5, 0.5);
+      obj.position.set(destX, destY);
+      return _track(obj);
+    },
   };
 })();

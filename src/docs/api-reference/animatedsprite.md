@@ -178,3 +178,20 @@ Returns the frame height in pixels.
 dim h
 h = self.height()
 ```
+
+## setDepth(n)
+
+Sets the draw order of the animated sprite relative to other sprites in the same container. A higher value draws in front; a lower value draws behind.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| n         | number | Depth value — higher values are drawn on top |
+
+```bas
+dim hero as animatedsprite("hero.png", 48, 48)
+dim shadow as animatedsprite("shadow.png", 48, 48)
+hero.setDepth(10)
+shadow.setDepth(1)
+world.add(hero)
+world.add(shadow)
+```

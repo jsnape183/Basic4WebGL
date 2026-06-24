@@ -4,7 +4,9 @@ let hudContainer;
 const _sbStage = {
   _initStage() {
     worldContainer = new PIXI.Container();
+    worldContainer.sortableChildren = true;
     hudContainer = new PIXI.Container();
+    hudContainer.sortableChildren = true;
     app.stage.addChild(worldContainer);
     app.stage.addChild(hudContainer);
   },

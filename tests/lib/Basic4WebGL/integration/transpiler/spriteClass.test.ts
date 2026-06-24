@@ -158,3 +158,17 @@ describe('Sprite class — _handle in method body', () => {
     expect(transformLib.source).toContain('this._handle');
   });
 });
+
+describe('Sprite class — setDepth', () => {
+  test('s.setDepth(5) compiles and emits _sb.setDepth call', () => {
+    const src = [
+      'function onenter()',
+      '    dim s as sprite("bunny.png")',
+      '    s.setDepth(5)',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: libs, files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('_sb.setDepth');
+    expect(result).toContain('5');
+  });
+});

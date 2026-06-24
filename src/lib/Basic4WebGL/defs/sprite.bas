@@ -38,4 +38,8 @@ function height()
     return call("_sb.getSpriteHeight(this._handle)")
 endfunction
 
+function setDepth(n)
+    call("_sb.setDepth(this._handle, setdepth_n)")
+endfunction
+
 EndClass

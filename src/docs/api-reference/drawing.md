@@ -61,3 +61,30 @@ function onupdate(delta)
   drawing.drawCircle(self.x, self.y, 20)
 endfunction
 ```
+
+## drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight)
+
+Draws a single vertical column of pixels from an image to the screen. This is the building block for column-based renderers such as raycasters — call it once per screen column to build up a scene one vertical strip at a time.
+
+The source column is always 1 pixel wide, taken from `srcX` and stretched to `destWidth` at the destination.
+
+| Parameter  | Type   | Description |
+|------------|--------|-------------|
+| imageName  | string | Name of a pre-loaded image asset |
+| srcX       | number | X position of the source column in the image |
+| destX      | number | Horizontal centre of the destination strip on screen |
+| destY      | number | Vertical centre of the destination strip on screen |
+| destWidth  | number | Width of the strip on screen in pixels |
+| destHeight | number | Height of the strip on screen in pixels |
+
+```bas
+function onupdate(delta)
+  drawing.clear()
+  dim col
+  for col = 0 to 199
+    dim srcX
+    srcX = col * 2
+    drawing.drawImageStrip("wall.png", srcX, col, world.height() / 2, 2, 200)
+  next col
+endfunction
+```

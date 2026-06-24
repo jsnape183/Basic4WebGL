@@ -169,3 +169,20 @@ describe('TileMap — end-to-end', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 });
+
+// ─── setDepth ─────────────────────────────────────────────────────────────────
+
+describe('TileMap — setDepth', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMap(
+      'function test()\n  dim m as TileMap("tileset.png", 32, 32)\n  m.setDepth(2)\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setDepth(', () => {
+    const result = transpileWithTileMap(
+      'function test()\n  dim m as TileMap("tileset.png", 32, 32)\n  m.setDepth(2)\nendfunction'
+    );
+    expect(result.code).toContain('_sb.setDepth(');
+  });
+});
