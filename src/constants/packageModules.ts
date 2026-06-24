@@ -17,6 +17,9 @@ import collision from '../lib/Basic4WebGL/defs/collision.bas?raw';
 import rayhit from '../lib/Basic4WebGL/defs/rayhit.bas?raw';
 import scene from '../lib/Basic4WebGL/defs/Scene.bas?raw';
 import scenemanager from '../lib/Basic4WebGL/defs/SceneManager.bas?raw';
+import camera from '../lib/Basic4WebGL/defs/camera.bas?raw';
+import world from '../lib/Basic4WebGL/defs/world.bas?raw';
+import hud from '../lib/Basic4WebGL/defs/hud.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -38,4 +41,7 @@ export const packageModules: Record<string, string> = {
   rayhit,
   scene,
   scenemanager,
+  camera,
+  world,
+  hud,
 };
