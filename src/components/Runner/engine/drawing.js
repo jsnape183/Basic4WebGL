@@ -12,7 +12,7 @@ const _sbDrawing = (() => {
   }
 
   function _track(obj) {
-    app.stage.addChild(obj);
+    worldContainer.addChild(obj);
     _drawObjs.push(obj);
     return obj;
   }
