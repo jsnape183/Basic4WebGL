@@ -25,6 +25,12 @@ const LandingNav: React.FC = () => (
       softBASIC
     </span>
     <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+      <Link
+        to="/demos"
+        style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: 14 }}
+      >
+        Demos
+      </Link>
       <a
         href="/docs"
         target="_blank"

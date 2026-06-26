@@ -116,6 +116,12 @@ export const docsManifest: DocSection[] = [
           { slug: 'tutorial-15-animated-sprites',  title: '15. Animated Sprites',       file: 'tutorials/15-animated-sprites.md' },
         ],
       },
+      {
+        label: 'Demos',
+        topics: [
+          { slug: 'raycaster', title: 'Wolfenstein-Style Raycaster', file: 'demos/raycaster.md' },
+        ],
+      },
     ],
   },
   {

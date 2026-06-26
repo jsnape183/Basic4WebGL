@@ -4,10 +4,12 @@ import LandingPage from "../../pages/LandingPage";
 import ProjectsPage from "../../pages/ProjectsPage";
 import EditPage from "../../pages/EditPage";
 import DocsPage from "../../pages/DocsPage";
+import DemosPage from "../../pages/DemosPage";
 
 const GlobalRoutes: React.FC = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
+    <Route path="/demos" element={<DemosPage />} />
     <Route path="/projects" element={<ProjectsPage />} />
     <Route path="/projects/:id/edit" element={<EditPage />} />
     <Route path="/docs" element={<DocsPage />} />

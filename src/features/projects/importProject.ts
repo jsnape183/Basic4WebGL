@@ -7,7 +7,8 @@ import { addAsset } from '../assets/assetsSlice';
 import { ProjectExportJson } from './exportProject';
 
 export const importProject =
-  (json: ProjectExportJson) => (dispatch: AppDispatch) => {
+  (json: ProjectExportJson, options?: { tags?: string[] }) =>
+  (dispatch: AppDispatch): string => {
     const newProjectId = uuidv4();
 
     const folderIdMap: Record<string, string> = {};
@@ -19,7 +20,12 @@ export const importProject =
     const assetIdMap: Record<string, string> = {};
     json.assets.forEach((a) => { assetIdMap[a.id] = uuidv4(); });
 
-    dispatch(addProject({ id: newProjectId, name: json.project.name, packageIds: ['softcore', 'softgfx'] }));
+    dispatch(addProject({
+      id: newProjectId,
+      name: json.project.name,
+      tags: options?.tags,
+      packageIds: ['softcore', 'softgfx'],
+    }));
 
     json.folders.forEach((f) => {
       dispatch(addFolder({
@@ -89,4 +95,6 @@ export const importProject =
         fullName: asset.fullName,
       }));
     });
+
+    return newProjectId;
   };

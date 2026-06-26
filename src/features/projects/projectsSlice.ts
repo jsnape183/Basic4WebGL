@@ -4,6 +4,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  tags?: string[];
   packageIds: string[];
 }
 
@@ -68,6 +69,14 @@ const projectsSlice = createSlice({
       if (!project) return;
       project.description = action.payload.description;
     },
+    setProjectTags: (
+      state,
+      action: PayloadAction<{ projectId: string; tags: string[] }>
+    ) => {
+      const project = state.items.find((p) => p.id === action.payload.projectId);
+      if (!project) return;
+      project.tags = action.payload.tags;
+    },
   },
 });
 
@@ -78,5 +87,6 @@ export const {
   removePackageFromProject,
   renameProject,
   setProjectDescription,
+  setProjectTags,
 } = projectsSlice.actions;
 export default projectsSlice.reducer;

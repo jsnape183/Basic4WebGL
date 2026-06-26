@@ -162,6 +162,12 @@ const EditPage: React.FC = () => {
             </>
           )}
           <div className="flex-1" />
+          <Link
+            to="/demos"
+            className="text-sm text-ds-text-muted hover:text-ds-text transition-colors mr-4"
+          >
+            Demos
+          </Link>
           <a
             href="/docs"
             target="_blank"

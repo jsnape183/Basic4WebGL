@@ -300,6 +300,18 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
               <> &middot; {assets.length} {assets.length === 1 ? 'asset' : 'assets'}</>
             )}
           </p>
+          {project.tags && project.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-1.5 py-0.5 rounded bg-ds-bg border border-ds-border text-ds-text-dim"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           {project.description ? (
             <div className="flex items-start gap-1 min-h-[2.5rem]">
               <div className="flex-1 min-w-0">
