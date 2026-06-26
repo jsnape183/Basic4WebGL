@@ -1,6 +1,8 @@
 // src/components/Projects/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { RootState, AppDispatch } from '../../store';
@@ -8,9 +10,34 @@ import { createProjectWithMainFile } from '../../features/projects/createProject
 import { deleteProjectWithMainFile } from '../../features/projects/deleteProjectAndFiles';
 import { exportProject, ProjectExportJson } from '../../features/projects/exportProject';
 import { importProject } from '../../features/projects/importProject';
-import { Project, renameProject } from '../../features/projects/projectsSlice';
+import { Project, renameProject, setProjectDescription } from '../../features/projects/projectsSlice';
 import { useAllFilesForProject } from '../../hooks/useAllFilesForProject';
 import { useAssetsForProject } from '../../hooks/useAssetsForProject';
+
+const CardMarkdown: React.FC<{ content: string }> = ({ content }) => (
+  <ReactMarkdown
+    remarkPlugins={[remarkGfm]}
+    components={{
+      p: ({ children }) => <span className="block text-xs text-ds-text-muted leading-snug">{children}</span>,
+      strong: ({ children }) => <strong className="font-semibold text-ds-text">{children}</strong>,
+      em: ({ children }) => <em>{children}</em>,
+      a: ({ children }) => <span className="text-ds-accent">{children}</span>,
+      code: ({ children }) => <code className="font-mono text-ds-accent">{children}</code>,
+      h1: ({ children }) => <span className="block font-bold text-ds-text text-xs">{children}</span>,
+      h2: ({ children }) => <span className="block font-semibold text-ds-text text-xs">{children}</span>,
+      h3: ({ children }) => <span className="block font-semibold text-ds-text text-xs">{children}</span>,
+      ul: ({ children }) => <span className="block">{children}</span>,
+      ol: ({ children }) => <span className="block">{children}</span>,
+      li: ({ children }) => <span className="block text-xs text-ds-text-muted">{children}</span>,
+    }}
+  >
+    {content}
+  </ReactMarkdown>
+);
+
+function descriptionSnippet(desc: string): string {
+  return desc.length > 100 ? desc.slice(0, 100) + '…' : desc;
+}
 
 const ACCENT_SHADES = [
   '#f5576c', '#f06292', '#f093fb', '#e040a0', '#f4436c', '#e91e8c',
@@ -36,6 +63,10 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [newName, setNewName] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const [showDescModal, setShowDescModal] = useState(false);
+  const [descText, setDescText] = useState('');
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const openDeleteModal = () => {
     setConfirmName('');
@@ -84,6 +115,71 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [showRenameModal]);
+
+  const openDescModal = () => {
+    setDescText(project.description ?? '');
+    setShowDescModal(true);
+  };
+
+  const handleDescSave = () => {
+    dispatch(setProjectDescription({ projectId: project.id, description: descText }));
+    setShowDescModal(false);
+  };
+
+  useEffect(() => {
+    if (showDescModal) setTimeout(() => descTextareaRef.current?.focus(), 0);
+  }, [showDescModal]);
+
+  useEffect(() => {
+    if (!showDescModal) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDescModal(false); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showDescModal]);
+
+  const descModal = showDescModal
+    ? ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDescModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="desc-modal-title"
+            className="bg-ds-surface border border-ds-border rounded-lg p-6 w-full max-w-md shadow-xl"
+          >
+            <h2 id="desc-modal-title" className="text-ds-text text-lg font-semibold mb-1">
+              Edit description
+            </h2>
+            <p className="text-ds-text-dim text-xs mb-3">Supports markdown</p>
+            <textarea
+              ref={descTextareaRef}
+              value={descText}
+              onChange={(e) => setDescText(e.target.value)}
+              placeholder="Describe this project…"
+              rows={6}
+              className="w-full bg-ds-bg border border-ds-border rounded px-3 py-2 text-ds-text text-sm focus:outline-none focus:ring-2 focus:ring-ds-accent mb-4 resize-y font-mono"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleDescSave}
+                className="bg-accent-gradient text-white text-sm px-4 py-2 rounded hover:opacity-90 transition"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowDescModal(false)}
+                className="bg-ds-surface-2 text-ds-text-muted text-sm px-4 py-2 rounded hover:bg-ds-border transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   const renameModal = showRenameModal
     ? ReactDOM.createPortal(
@@ -180,6 +276,7 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
 
   return (
     <>
+      {descModal}
       {renameModal}
       {deleteModal}
       <div className="relative group bg-ds-surface border border-ds-border rounded-xl overflow-hidden hover:border-ds-accent transition-colors">
@@ -197,12 +294,35 @@ const ProjectCard: React.FC<{ project: Project; onRemove: (id: string) => void }
               ✏️
             </button>
           </div>
-          <p className="text-ds-text-muted text-xs">
+          <p className="text-ds-text-muted text-xs mb-2">
             {files.length} {files.length === 1 ? 'file' : 'files'}
             {assets.length > 0 && (
               <> &middot; {assets.length} {assets.length === 1 ? 'asset' : 'assets'}</>
             )}
           </p>
+          {project.description ? (
+            <div className="flex items-start gap-1 min-h-[2.5rem]">
+              <div className="flex-1 min-w-0">
+                <CardMarkdown content={descriptionSnippet(project.description)} />
+              </div>
+              <button
+                onClick={openDescModal}
+                className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-text transition-opacity flex-shrink-0 p-0.5 mt-0.5"
+                aria-label="Edit description"
+                title="Edit description"
+              >
+                ✏️
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={openDescModal}
+              className="opacity-0 group-hover:opacity-100 text-ds-text-dim hover:text-ds-text-muted text-xs transition-opacity block"
+              aria-label="Add description"
+            >
+              + Add description…
+            </button>
+          )}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-ds-border-subtle">
             <Link
               to={`/projects/${project.id}/edit`}

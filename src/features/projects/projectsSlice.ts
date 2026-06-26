@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface Project {
   id: string;
   name: string;
+  description?: string;
   packageIds: string[];
 }
 
@@ -59,6 +60,14 @@ const projectsSlice = createSlice({
       if (!project) return;
       project.name = action.payload.name;
     },
+    setProjectDescription: (
+      state,
+      action: PayloadAction<{ projectId: string; description: string }>
+    ) => {
+      const project = state.items.find((p) => p.id === action.payload.projectId);
+      if (!project) return;
+      project.description = action.payload.description;
+    },
   },
 });
 
@@ -68,5 +77,6 @@ export const {
   addPackageToProject,
   removePackageFromProject,
   renameProject,
+  setProjectDescription,
 } = projectsSlice.actions;
 export default projectsSlice.reducer;
