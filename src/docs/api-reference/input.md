@@ -34,6 +34,44 @@ function onupdate(delta)
 endfunction
 ```
 
+## keyPressed(keycode)
+
+Checks whether a specific key was pressed on this exact frame. Unlike `getKeyDown()`, this only returns `true` once — on the frame the key transitions from up to down — even if the key is held for many frames afterward. Use it for actions that should happen once per press, like jumping or firing a single shot.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| keycode   | number | The numeric key code to check |
+
+**Returns:** `true` on the frame the key was pressed, `false` otherwise.
+
+```bas
+function onupdate(delta)
+  if input.keyPressed(32) then
+    self.jump()
+  endif
+endfunction
+```
+
+Compare this to `getKeyDown(32)`, which would return `true` on every frame the key is held — fine for continuous movement, but it would call `self.jump()` dozens of times a second while the key is down.
+
+## keyReleased(keycode)
+
+Checks whether a specific key was released on this exact frame — the down-to-up counterpart to `keyPressed()`.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| keycode   | number | The numeric key code to check |
+
+**Returns:** `true` on the frame the key was released, `false` otherwise.
+
+```bas
+function onupdate(delta)
+  if input.keyReleased(32) then
+    self.stopCharging()
+  endif
+endfunction
+```
+
 ## mouseX()
 
 Returns the current horizontal position of the mouse cursor on the canvas.

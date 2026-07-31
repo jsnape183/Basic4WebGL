@@ -150,6 +150,13 @@ Shipped in `camera.bas`/`camera.js`. `camera.shake(intensity, duration)` offsets
 
 Tests: `tests/lib/Basic4WebGL/unit/transpiler/camera.test.ts`. Docs: `src/docs/api-reference/camera.md`.
 
+### ~~P10 — Keyboard press/release events~~ **[DONE]**
+Re-audited 2026-07-31: this was listed as "not started" below, but `onkeydown(key)`/`onkeyup(key)` scene lifecycle hooks already existed, shipped alongside scene management in v0.3.0 — dispatched from `bootstrapper.html` to the active scene, every `_sbClass`, and every `_sbInstance`. The real gap was a bug, not a missing feature: the native browser `keydown` event auto-repeats while a key is held, and the listener never checked `event.repeat`, so `onkeydown` fired repeatedly during a sustained hold instead of once per physical press as documented. Fixed with a one-line `if (e.repeat) return;` guard in `bootstrapper.html`.
+
+Also added `input.keyPressed(keycode)`/`input.keyReleased(keycode)` — frame-synced, edge-triggered polling functions for use inside `onupdate`, complementing the existing level-triggered `input.getKeyDown(keycode)`. Edge detection lives in `_sbInput.registerKey()` (`src/components/Runner/engine/input.js`), comparing the new `down` state against the previous `_keys` value before updating it; the `_justPressed`/`_justReleased` maps are cleared each frame via `_sbInput._resetFrameInput()`, called at the end of `_sbScene._update()` (`src/components/Runner/engine/scene.js`) after all `onupdate` calls for that frame have run.
+
+Tests: `tests/lib/Basic4WebGL/unit/transpiler/softgfx.test.ts`. Docs: `src/docs/api-reference/input.md`, `src/docs/api-reference/scene.md`.
+
 ## Lower Priority / Future
 
 Re-audited 2026-07-31 — several items below were previously listed as not-yet-built but already exist.
@@ -161,7 +168,6 @@ Re-audited 2026-07-31 — several items below were previously listed as not-yet-
 - **Save/load (localStorage)** — expose to user programs for game state persistence. Not started.
 - **Text styling** — `Text.setStyle(size,r,g,b)` covers size and colour; font family and alignment are not yet exposed.
 - **Particle system** — emitter abstraction over PIXI particles. Not started.
-- **Keyboard events (press/release, not just down state)** — not started.
 - **Touch input** — see P5 note above.
 - **Two-pass compilation** — remove file ordering constraint for class references. Not started.
 - **Spritesheet editor** — visual frame slicer in the asset panel (see P7 note above).

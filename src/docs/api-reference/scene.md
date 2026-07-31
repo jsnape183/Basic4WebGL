@@ -96,7 +96,7 @@ endfunction
 
 ### onkeydown(key)
 
-Called when a key is pressed while this scene is active. Only the active scene receives key events.
+Called once when a key is pressed while this scene is active — holding the key down does not call it again. Only the active scene receives key events.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|

@@ -124,6 +124,7 @@
           // Key listeners are registered after the transpiled code so that
           // _sbClasses is populated and onkeydown/onkeyup resolve correctly.
           document.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
             _sb._sceneKeyDown(e.keyCode);
             _sb.registerKey(e.keyCode, true);
             _sb._sbClasses.forEach((c) => { if (c.symbol.onkeydown) c.symbol.onkeydown(e.keyCode); });

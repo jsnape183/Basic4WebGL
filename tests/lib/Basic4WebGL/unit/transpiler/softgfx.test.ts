@@ -268,6 +268,36 @@ describe('input — mouseDown', () => {
   });
 });
 
+describe('input — keyPressed', () => {
+  test('compiles without error', () => {
+    const result = transpileWithInput(
+      'function test()\n  if input.keyPressed(32)\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.keyPressed(', () => {
+    const result = transpileWithInput(
+      'function test()\n  if input.keyPressed(32)\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.code).toContain('_sb.keyPressed(');
+  });
+});
+
+describe('input — keyReleased', () => {
+  test('compiles without error', () => {
+    const result = transpileWithInput(
+      'function test()\n  if input.keyReleased(32)\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.keyReleased(', () => {
+    const result = transpileWithInput(
+      'function test()\n  if input.keyReleased(32)\n    dim x\n    x = 1\n  endif\nendfunction'
+    );
+    expect(result.code).toContain('_sb.keyReleased(');
+  });
+});
+
 // ─── stage — width, height, setBackground ─────────────────────────────────────
 
 describe('stage — width', () => {

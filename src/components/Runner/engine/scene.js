@@ -45,5 +45,6 @@ const _sbScene = {
     }
     this._applySwitch();
     this._cameraUpdate(delta);
+    this._resetFrameInput();
   },
 };
