@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.3.1 — 2026-07-31
+
+### Documentation
+
+- Reconciled `docs/roadmap.md` and `docs/language/library-roadmap.md` with the actual v0.3.0 shipped work — scene management and camera/viewport were still listed as open items after they'd already landed
+- Added a required step to `CLAUDE.md`'s feature-completion checklist: roadmap docs must be updated in the same commit as any feature that closes a tracked roadmap item
+
 ## v0.3.0 — 2026-06-24
 
 ### Scene management
