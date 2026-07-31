@@ -1,6 +1,6 @@
 # Release Notes
 
-## v0.4.0 — 2026-07-31
+## v0.3.2 — 2026-07-31
 
 ### Camera system
 

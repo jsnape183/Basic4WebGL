@@ -30,7 +30,9 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 
 ### Pushing to main — required extra step
 
-**When explicitly told to push**, update `src/docs/release-notes.md` with a summary of the changes and bump the `version` field in `package.json` appropriately (patch for fixes/docs, minor for new features). Commit both together with a `chore: bump version to x.y.z` message, then push. Do not update release notes or version unless the user asks you to push.
+**When explicitly told to push**, update `src/docs/release-notes.md` with a summary of the changes and bump the `version` field in `package.json`. Commit both together with a `chore: bump version to x.y.z` message, then push. Do not update release notes or version unless the user asks you to push.
+
+**Versioning model (see `docs/roadmap.md` for full detail):** patch bump (`0.x.Y`) for fixes, docs, and small independent features — this is the default for nearly everything. Minor bump (`0.X.0`) is reserved for closing out a whole roadmap milestone (see `docs/roadmap.md`), not for shipping one new function or module. When in doubt, patch.
 
 ---
 

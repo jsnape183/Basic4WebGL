@@ -6,7 +6,7 @@
 
 ## Versioning model
 
-**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.3.0`.
+**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.3.2` — Milestone 1 shipped as `v0.3.0`; `camera.shake` and a build fix landed as patches since.
 
 Milestones 1–5 are fully defined. Milestones 6–13 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
