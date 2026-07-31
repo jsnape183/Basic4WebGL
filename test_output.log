@@ -1,0 +1,189 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/jsnap/source/repos/Basic4WebGL[39m
+
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/audio.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/inheritance.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/arrays.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/typed-collections.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/string.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 86[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/dictionaries.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 89[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/tilemap.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/dim-extensions.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 112[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/math.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 157[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/softgfx.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 147[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/animated-sprite.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 164[2mms[22m[39m
+ [31m❯[39m tests/lib/Basic4WebGL/unit/transpiler/collision.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 156[2mms[22m[39m
+   [32m✓[39m collision — spriteCollide[2m > [22mcompiles without error[32m 37[2mms[22m[39m
+   [32m✓[39m collision — spriteCollide[2m > [22memits _sb.spriteCollide([32m 7[2mms[22m[39m
+   [32m✓[39m collision — boxCollide[2m > [22mcompiles without error[32m 34[2mms[22m[39m
+   [32m✓[39m collision — boxCollide[2m > [22memits _sb.boxCollide([32m 4[2mms[22m[39m
+   [32m✓[39m collision — circleCollide[2m > [22mcompiles without error[32m 6[2mms[22m[39m
+   [32m✓[39m collision — circleCollide[2m > [22memits _sb.circleCollide([32m 9[2mms[22m[39m
+   [32m✓[39m collision — pointInBox[2m > [22mcompiles without error[32m 3[2mms[22m[39m
+   [32m✓[39m collision — pointInBox[2m > [22memits _sb.pointInBox([32m 10[2mms[22m[39m
+   [32m✓[39m collision — raycast[2m > [22mcompiles without error[32m 4[2mms[22m[39m
+   [32m✓[39m collision — raycast[2m > [22memits _sb.raycast([32m 3[2mms[22m[39m
+   [32m✓[39m collision — raycastAll[2m > [22mcompiles without error[32m 2[2mms[22m[39m
+   [32m✓[39m collision — raycastAll[2m > [22memits _sb.raycastAll([32m 3[2mms[22m[39m
+[31m   [31m×[31m collision — RayHit property access[2m > [22mh.distance property access compiles without error[39m[32m 20[2mms[22m[39m
+[31m     → expected [ { …(3) } ] to have a length of +0 but got 1[39m
+[31m   [31m×[31m collision — RayHit property access[2m > [22mh.sprite property access compiles without error[39m[32m 4[2mms[22m[39m
+[31m     → expected [ { …(3) } ] to have a length of +0 but got 1[39m
+   [32m✓[39m gfx — boxCollide backward compat[2m > [22mcompiles without error[32m 1[2mms[22m[39m
+   [32m✓[39m gfx — boxCollide backward compat[2m > [22memits _sb.spriteCollide( (not _sb.boxCollide)[32m 1[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/stage-clear.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 133[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/spriteClass.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/tutorials/tutorials.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 397[2mms[22m[39m
+ [32m✓[39m tests/ui/features/files/filesSlice.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/ui/features/folders/folderThunks.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/ui/features/projects/importProject.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/language-fixes.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/parser/constructs.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/instanceMethods.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/textClass.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/constructors.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/chainedMethodCall.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/classComposition.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/conditionals.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/lexer/tokens.test.ts [2m([22m[2m45 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/coreConstructs.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/compileResult.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/ui/features/ui/uiSlice.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/variables.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/booleans.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/ui/features/assets/assetsSlice.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/ui/features/projects/projectsSlice.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/parser/booleans.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/ui/features/folders/foldersSlice.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/ui/features/packages/packagesSlice.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/monacoHelpers/signatures.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/monacoHelpers/catalogue.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/symbols.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/ui/features/session/sessionSlice.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+[90mstdout[2m | tests/debug-temp.test.ts[2m > [22m[2mdebug truthy if
+[22m[39mDIAGNOSTICS: []
+CODE: class main{}
+    main.check = (check_n) => {
+        return check_n > 0;
+      
+      ;};;main.test = () => {
+        if(main.check(37)){_print("key")
+      }
+      
+      ;};;
+
+    _sb._sbClasses = [
+
+ [32m✓[39m tests/debug-temp.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/transpiler/arithmatic.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/symbols/scopePriority.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/ui/features/projects/exportProject.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/expressions.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/nodes/nodeLoc.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/symbols/symbolTable.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/parser/parser.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/keywords.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/generator/classGenerator.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/ui/utils/fileNameValidation.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/monacoHelpers/monarchRules.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/errors/errors.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetPreview/getAssetType.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/control.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/generator/proxies.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/tree/tree.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/generator/moduleGenerator.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/parser/tokenRuleCoverage.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/types/sourceLocation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/monacoHelpers/hover.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/integration/lexer/lexer.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetTree/validateAssetName.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/lib/CompilerLib/unit/lexer/token.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/transpiler/symbolRules.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui/utils/reorder.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/monacoHelpers/completions.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/ui/selectors/getFullName.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/lib/Basic4WebGL/unit/nodes/nodeTypes.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetPreview/AssetPreview.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 356[2mms[22m[39m
+   [33m[2m✓[22m[39m AssetPreview[2m > [22mrenders ImagePreview for image assets [33m 306[2mms[22m[39m
+ [32m✓[39m tests/ui/components/BottomPanel/BottomPanel.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 619[2mms[22m[39m
+   [33m[2m✓[22m[39m renders Console tab active by default [33m 422[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetPreview/ImagePreview.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 354[2mms[22m[39m
+   [33m[2m✓[22m[39m ImagePreview[2m > [22mrenders image with src from asset content [33m 307[2mms[22m[39m
+ [32m✓[39m tests/ui/components/FileTabs/FileTabs.test.tsx [2m([22m[2m11 tests[22m[2m)[22m[33m 715[2mms[22m[39m
+   [33m[2m✓[22m[39m active tab has aria-selected="true" [33m 315[2mms[22m[39m
+ [32m✓[39m tests/ui/components/FileTree/FileTreeReorder.test.tsx [2m([22m[2m1 test[22m[2m)[22m[33m 385[2mms[22m[39m
+   [33m[2m✓[22m[39m drag handle button is rendered for each file [33m 383[2mms[22m[39m
+ [32m✓[39m tests/ui/components/Modal/ModalWithInput.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 937[2mms[22m[39m
+   [33m[2m✓[22m[39m renders trigger button with openText [33m 325[2mms[22m[39m
+   [33m[2m✓[22m[39m calls onSubmit with input value and closes [33m 341[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetPreview/TextEditor.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1102[2mms[22m[39m
+   [33m[2m✓[22m[39m TextEditor[2m > [22mrenders decoded asset content in textarea on mount [33m 305[2mms[22m[39m
+ [32m✓[39m tests/ui/hooks/useProjectForBuild.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AddPackageModal/AddPackageModal.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1006[2mms[22m[39m
+   [33m[2m✓[22m[39m filters packages by search input [33m 302[2mms[22m[39m
+ [32m✓[39m tests/ui/components/AssetTree/AssetTree.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 486[2mms[22m[39m
+ [32m✓[39m tests/ui/components/FileTree/PackagesSection.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 952[2mms[22m[39m
+   [33m[2m✓[22m[39m expands to show package names when header button is clicked [33m 447[2mms[22m[39m
+ [32m✓[39m tests/ui/components/FileTree/FileTree.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 651[2mms[22m[39m
+   [33m[2m✓[22m[39m renders file list with role="listbox" [33m 386[2mms[22m[39m
+ [32m✓[39m tests/ui/components/Modal/ModalWithInputValidation.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 2113[2mms[22m[39m
+   [33m[2m✓[22m[39m does not show error message when modal first opens [33m 412[2mms[22m[39m
+   [33m[2m✓[22m[39m shows inline error when input is invalid [33m 317[2mms[22m[39m
+   [33m[2m✓[22m[39m error disappears when input becomes valid [33m 349[2mms[22m[39m
+   [33m[2m✓[22m[39m does not call onSubmit when input is invalid [33m 339[2mms[22m[39m
+   [33m[2m✓[22m[39m works normally (no validation) when validate prop is omitted [33m 332[2mms[22m[39m
+ [32m✓[39m tests/ui/components/FileTree/FileTreeValidation.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1701[2mms[22m[39m
+   [33m[2m✓[22m[39m rejects a filename starting with a number [33m 612[2mms[22m[39m
+   [33m[2m✓[22m[39m does not double-append .bas when user already typed it [33m 314[2mms[22m[39m
+ [32m✓[39m tests/ui/smoke.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/ui/pages/EditPage.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 116[2mms[22m[39m
+ [32m✓[39m tests/ui/hooks/useRunnerMessages.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m tests/ui/hooks/useAutoSave.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m tests/ui/hooks/useCompiler.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/lib/Basic4WebGL/unit/transpiler/collision.test.ts[2m > [22mcollision — RayHit property access[2m > [22mh.distance property access compiles without error
+[31m[1mAssertionError[22m: expected [ { …(3) } ] to have a length of +0 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/lib/Basic4WebGL/unit/transpiler/collision.test.ts:[2m192:32[22m[39m
+    [90m190| [39m      [32m'endfunction'[39m[33m,[39m
+    [90m191| [39m    ][33m.[39m[34mjoin[39m([32m'\n'[39m))[33m;[39m
+    [90m192| [39m    [34mexpect[39m(result[33m.[39mdiagnostics)[33m.[39m[34mtoHaveLength[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m193| [39m  })[33m;[39m
+    [90m194| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lib/Basic4WebGL/unit/transpiler/collision.test.ts[2m > [22mcollision — RayHit property access[2m > [22mh.sprite property access compiles without error
+[31m[1mAssertionError[22m: expected [ { …(3) } ] to have a length of +0 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/lib/Basic4WebGL/unit/transpiler/collision.test.ts:[2m205:32[22m[39m
+    [90m203| [39m      [32m'endfunction'[39m[33m,[39m
+    [90m204| [39m    ][33m.[39m[34mjoin[39m([32m'\n'[39m))[33m;[39m
+    [90m205| [39m    [34mexpect[39m(result[33m.[39mdiagnostics)[33m.[39m[34mtoHaveLength[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m206| [39m  })[33m;[39m
+    [90m207| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m88 passed[39m[22m[90m (89)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m833 passed[39m[22m[90m (835)[39m
+[2m   Start at [22m 14:49:10
+[2m   Duration [22m 15.80s[2m (transform 7.89s, setup 22.38s, collect 65.00s, tests 14.58s, environment 52.43s, prepare 22.06s)[22m
+

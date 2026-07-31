@@ -19,7 +19,6 @@ const descComponents: Components = {
 };
 
 const DemoRow: React.FC<{ demo: DemoEntry }> = ({ demo }) => {
-  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const projects = useSelector((state: RootState) => state.projects.items);
 
