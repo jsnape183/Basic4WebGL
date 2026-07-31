@@ -169,7 +169,7 @@ Re-audited 2026-07-31 — several items below were previously listed as not-yet-
 - **Text styling** — `Text.setStyle(size,r,g,b)` covers size and colour; font family and alignment are not yet exposed.
 - **Particle system** — emitter abstraction over PIXI particles. Not started.
 - **Touch input** — see P5 note above.
-- **Two-pass compilation** — remove file ordering constraint for class references. Not started.
+- ~~Two-pass compilation~~ **[DONE]** — resolved by `sortByDependencies.ts` (topological sort of project files by `new`/`as`/`extends`/method references, wired into `useProjectForBuild.ts`), shipped 2026-06-17/18, before v0.3.0. No file-ordering constraint remains for class references.
 - **Spritesheet editor** — visual frame slicer in the asset panel (see P7 note above).
 
 ---
