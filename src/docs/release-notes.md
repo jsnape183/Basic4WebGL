@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.3.3 — 2026-07-31
+
+### Input
+
+- New `input.keyPressed(keycode)` / `input.keyReleased(keycode)` — frame-synced, edge-triggered checks for one-shot actions like jumping or firing, complementing the existing continuous `input.getKeyDown(keycode)`
+
+### Fixes
+
+- Fixed `onkeydown` firing repeatedly while a key was held (browser key-repeat) instead of once per physical press, as documented
+
 ## v0.3.2 — 2026-07-31
 
 ### Camera system
