@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.3.4 — 2026-07-31
+
+### Text
+
+- New `text.setFont(fontFamily)` and `text.setAlign(align)` — expose font family and left/center/right alignment, previously only settable via `setStyle(size,r,g,b)` for size and colour
+
 ## v0.3.3 — 2026-07-31
 
 ### Input
