@@ -147,6 +147,28 @@ describe('camera — x and y', () => {
   });
 });
 
+// ─── camera.shake ─────────────────────────────────────────────────────────────
+
+describe('camera — shake', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCamera([
+      'function onupdate(delta)',
+      '  camera.shake(6, 0.3)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.cameraShake(', () => {
+    const result = transpileWithCamera([
+      'function onupdate(delta)',
+      '  camera.shake(6, 0.3)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.cameraShake(');
+  });
+});
+
 // ─── world ────────────────────────────────────────────────────────────────────
 
 describe('world — add', () => {

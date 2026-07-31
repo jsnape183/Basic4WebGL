@@ -5,6 +5,9 @@ const _sbCamera = {
   _followSpeed: 0,
   _boundsW: null,
   _boundsH: null,
+  _shakeIntensity: 0,
+  _shakeDuration: 0,
+  _shakeElapsed: 0,
 
   cameraFollow(target, speed) {
     this._followTarget = target;
@@ -25,7 +28,13 @@ const _sbCamera = {
   cameraX() { return this._camX; },
   cameraY() { return this._camY; },
 
-  _cameraUpdate() {
+  cameraShake(intensity, duration) {
+    this._shakeIntensity = intensity;
+    this._shakeDuration = duration;
+    this._shakeElapsed = 0;
+  },
+
+  _cameraUpdate(delta) {
     if (this._followTarget) {
       const sw = app.renderer.width;
       const sh = app.renderer.height;
@@ -45,7 +54,18 @@ const _sbCamera = {
       this._camX = Math.max(0, Math.min(this._boundsW - sw, this._camX));
       this._camY = Math.max(0, Math.min(this._boundsH - sh, this._camY));
     }
-    worldContainer.position.set(-this._camX, -this._camY);
+
+    let shakeX = 0;
+    let shakeY = 0;
+    if (this._shakeElapsed < this._shakeDuration) {
+      this._shakeElapsed += (delta || 0) / 60;
+      const remaining = Math.max(0, 1 - this._shakeElapsed / this._shakeDuration);
+      const magnitude = this._shakeIntensity * remaining;
+      shakeX = (Math.random() * 2 - 1) * magnitude;
+      shakeY = (Math.random() * 2 - 1) * magnitude;
+    }
+
+    worldContainer.position.set(-this._camX + shakeX, -this._camY + shakeY);
   },
 
   _cameraReset() {
@@ -55,6 +75,9 @@ const _sbCamera = {
     this._followSpeed = 0;
     this._boundsW = null;
     this._boundsH = null;
+    this._shakeIntensity = 0;
+    this._shakeDuration = 0;
+    this._shakeElapsed = 0;
     worldContainer.position.set(0, 0);
   },
 };

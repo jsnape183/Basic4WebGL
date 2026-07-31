@@ -3,11 +3,11 @@ import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
 
-const sceneSource        = readFileSync('src/lib/Basic4WebGL/defs/scene.bas',        'utf-8');
-const sceneManagerSource = readFileSync('src/lib/Basic4WebGL/defs/scenemanager.bas', 'utf-8');
+const sceneSource        = readFileSync('src/lib/Basic4WebGL/defs/Scene.bas',        'utf-8');
+const sceneManagerSource = readFileSync('src/lib/Basic4WebGL/defs/SceneManager.bas', 'utf-8');
 
-// scene.bas is a class def file — goes into files[] with lowercase name
-// scenemanager.bas is a module — goes into lib[] with lowercase name
+// Scene.bas is a class def file — goes into files[] with lowercase name
+// SceneManager.bas is a module — goes into lib[] with lowercase name
 
 const transpileWithScene = (childClassSource: string) =>
   compiler.transpile({

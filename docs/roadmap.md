@@ -28,8 +28,7 @@ Known deferred issues (low risk, to be resolved as patches within Milestone 2):
 2. Stray `}` and typo "occured" in `UnexpectedError` message template (`src/lib/CompilerLib/errors.ts`)
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
 4. `new Tree()` direct construction bypasses loc — should prefer `node()` factory; add JSDoc warning
-5. `camera.shake(intensity, duration)` not implemented — named as a hard prerequisite in the (design-only, not yet built) "COMPOUND" top-down-shooter demo spec
-6. No visual spritesheet editor/slicer in the asset panel — defining frame dimensions in code is the only option
+5. No visual spritesheet editor/slicer in the asset panel — defining frame dimensions in code is the only option
 
 ---
 
@@ -41,10 +40,10 @@ Known deferred issues (low risk, to be resolved as patches within Milestone 2):
 Shipped as a `Scene` base class + `SceneManager` module. Open questions resolved: scenes are softBASIC classes extending `Scene` (not top-level declarations), overriding only the lifecycle hooks they need (`onenter`, `onupdate(delta)`, `onexit`, `onkeydown(key)`, `onkeyup(key)`). Stage state transfer is **automatic** — the stage clears between `onexit` and `onenter` on every switch; anything that should persist across scenes is re-added in the new scene's `onenter`. Switching is deferred/queued (applied at end of tick), not immediate.
 
 ### ~~Spritesheets~~ **[DONE]**
-Shipped as an extended `animatedsprite` constructor (`AnimatedSprite(imagePath, frameW, frameH)` slices the image into a frame grid) rather than a separate class — resolves the "new class vs. extended constructor" open question in favour of extension. `setSpriteSheet()` and `stop()` were added alongside it. The asset-panel visual slicer question was resolved as **not in scope** — still code-only (see deferred issue #6 above).
+Shipped as an extended `animatedsprite` constructor (`AnimatedSprite(imagePath, frameW, frameH)` slices the image into a frame grid) rather than a separate class — resolves the "new class vs. extended constructor" open question in favour of extension. `setSpriteSheet()` and `stop()` were added alongside it. The asset-panel visual slicer question was resolved as **not in scope** — still code-only (see deferred issue #5 above).
 
 ### ~~Camera / viewport~~ **[DONE]**
-Shipped as `camera` + `world` + `hud` modules, deprecating `stage`. Open questions resolved: **no culling** in this milestone (deferred, off-screen sprites still render); world size is **explicit and optional** via `camera.setBounds(width, height)` — without it the camera is unbounded.
+Shipped as `camera` + `world` + `hud` modules, deprecating `stage`. Open questions resolved: **no culling** in this milestone (deferred, off-screen sprites still render); world size is **explicit and optional** via `camera.setBounds(width, height)` — without it the camera is unbounded. `camera.shake(intensity, duration)` shipped as a follow-up patch after the milestone closed (see `docs/language/library-roadmap.md` P9) — it was surfaced as a gap by the (still design-only) "COMPOUND" demo spec.
 
 ---
 

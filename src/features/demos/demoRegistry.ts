@@ -1,5 +1,5 @@
 import { ProjectExportJson } from '../projects/exportProject';
-import raycasterJson from '../../docs/demos/raycaster.b4wgl.json';
+import raycasterJson from '../../docs/demos/Raycaster.b4wgl.json';
 
 export interface DemoEntry {
   slug: string;

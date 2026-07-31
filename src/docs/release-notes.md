@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.4.0 — 2026-07-31
+
+### Camera system
+
+- New `camera.shake(intensity, duration)` — jitters the view with a decaying random offset, for impacts, explosions, or damage feedback. A fresh call restarts the effect from full intensity rather than stacking
+
+### Fixes
+
+- Fixed the Raycaster demo failing to build in production (`vite build`) due to a case-mismatched import path
+
 ## v0.3.1 — 2026-07-31
 
 ### Documentation

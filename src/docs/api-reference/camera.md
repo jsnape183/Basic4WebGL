@@ -86,6 +86,26 @@ spawnY = camera.y() + world.height()
 
 ---
 
+## camera.shake(intensity, duration)
+
+Shakes the camera view with a random jitter that fades out over time. Use it for impacts, explosions, or taking damage.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| intensity | number | Maximum shake offset in pixels |
+| duration  | number | How long the shake lasts, in seconds |
+
+```bas
+function takeDamage(amount)
+  self.hp = self.hp - amount
+  camera.shake(6, 0.3)
+endfunction
+```
+
+The jitter fades out smoothly over `duration`, so a fresh `camera.shake()` call restarts the effect from full intensity rather than stacking with any shake already in progress.
+
+---
+
 ## Full example — side-scrolling platformer camera
 
 **GameScene class file:**

@@ -143,12 +143,12 @@ world.add(player)
 hud.add(scoreText)
 ```
 
-**Known gap surfaced while reviewing this:** `docs/superpowers/specs/2026-06-26-compound-shooter-design.md` (a planned "COMPOUND" top-down-shooter demo, not yet built — only the design doc has landed) lists `camera.shake(intensity, duration)` as a prerequisite. It is **not implemented** — `camera.bas`/`camera.js` have no `shake` method. This blocks that demo from starting.
-
 Design spec: `docs/superpowers/specs/2026-06-24-camera-design.md`. Tests: `tests/lib/Basic4WebGL/unit/transpiler/camera.test.ts`. Docs: `src/docs/api-reference/camera.md`, `world.md`, `hud.md`; tutorial `src/docs/tutorials/14-camera.md`.
 
-### P9 — `camera.shake(intensity, duration)`
-**New, next priority.** Not implemented. Named as a hard prerequisite in `docs/superpowers/specs/2026-06-26-compound-shooter-design.md` for the planned "COMPOUND" top-down-shooter demo (design doc only — no code yet, not in `demoRegistry.ts`). Small, self-contained addition to `camera.bas`/`camera.js`: temporarily offset `worldContainer` position by a decaying random jitter over `duration`, on top of the existing follow/bounds position.
+### ~~P9 — `camera.shake(intensity, duration)`~~ **[DONE]**
+Shipped in `camera.bas`/`camera.js`. `camera.shake(intensity, duration)` offsets `worldContainer` by a decaying random jitter — magnitude `intensity * (1 - elapsed/duration)`, elapsed tracked in seconds off the PIXI ticker delta passed into `_cameraUpdate(delta)` — layered on top of the existing follow/bounds position each tick. A new `shake()` call restarts the effect from full intensity rather than stacking with one in progress. State resets on scene switch alongside the rest of camera state (`_cameraReset()`). This unblocks the planned "COMPOUND" top-down-shooter demo (`docs/superpowers/specs/2026-06-26-compound-shooter-design.md`), which is still design-only — no code yet, not in `demoRegistry.ts`.
+
+Tests: `tests/lib/Basic4WebGL/unit/transpiler/camera.test.ts`. Docs: `src/docs/api-reference/camera.md`.
 
 ## Lower Priority / Future
 

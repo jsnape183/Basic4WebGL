@@ -17,3 +17,7 @@ endfunction
 function y()
     return call("_sb.cameraY()")
 endfunction
+
+function shake(intensity, duration)
+    call("_sb.cameraShake(shake_intensity, shake_duration)")
+endfunction
