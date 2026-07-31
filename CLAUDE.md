@@ -67,13 +67,14 @@ tests/                   # All tests, mirroring src/ structure
 
 ## Adding a new language feature or library module
 
-Every new softBASIC module/class requires **five steps**:
+Every new softBASIC module/class requires **six steps**:
 
 1. **`.bas` definition file** (`src/lib/Basic4WebGL/defs/<name>.bas`) — defines the API surface as softBASIC function/class declarations that call through to `_sb.*` engine methods.
 2. **Engine JS file** (`src/components/Runner/engine/<name>.js`) — implements the actual runtime behaviour using PIXI.js and browser APIs.
 3. **Bootstrapper wiring** (`src/components/Runner/softBasicEngine.js`) — registers the new engine module so it is available at runtime.
 4. **Tests** (`tests/lib/Basic4WebGL/unit/transpiler/<name>.test.ts` and/or integration tests) — written first (TDD). Tests verify the transpiler output, not runtime behaviour.
 5. **Docs** — add or update in-app documentation to cover the new feature (see Docs section below). New modules get an API Reference page; changes to existing language behaviour must be reflected in the relevant Language Guide topic.
+6. **Roadmap docs** — if the feature closes out (fully or partially) an item tracked in `docs/roadmap.md` or `docs/language/library-roadmap.md`, update those files in the same commit: mark the item done, replace open questions with how they were actually resolved, and note any real gap left behind (e.g. a deferred sub-feature) as a new tracked item rather than silently dropping it. These two roadmap files have gone stale before — pulled from `origin/main`, matched against the actual shipped code, but not updated — because this step didn't exist yet. Don't rely on `src/docs/roadmap.md` (the public-facing summary) as the source of truth for this; it's a separate file that must also be kept current, not a substitute.
 
 ---
 

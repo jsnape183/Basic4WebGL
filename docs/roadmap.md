@@ -1,68 +1,56 @@
 # softBASIC — Internal Product Roadmap
 
-> Internal document. Not for publication. Last updated: 2026-06-19.
+> Internal document. Not for publication. Last updated: 2026-07-31.
 
 ---
 
 ## Versioning model
 
-**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.2.4`.
+**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.3.0`.
 
 Milestones 1–5 are fully defined. Milestones 6–13 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
 ---
 
-## Current state (v0.2.4)
+## Current state (v0.3.0)
 
 Shipped and working:
 - Full softBASIC compiler (lexer → parser → transpiler → PIXI.js runtime)
 - Sprite, animatedsprite, tilemap, text, drawing, audio, collision, input modules
+- Scene management (`Scene` base class + `SceneManager`), camera (`camera` module), and world/HUD layers (`world` + `hud`, replacing the deprecated `stage` module) — closes out Milestone 1, see below
 - Typed collections, class inheritance, `new` keyword, dependency-ordered multi-file builds
 - Folder system, asset panel, import/export, package registry
 - Landing page with live game preview
+- Demos page, launched with a Wolfenstein-style raycaster tech demo
 
-Known deferred issues (low risk, to be resolved as patches within Milestone 1):
+Known deferred issues (low risk, to be resolved as patches within Milestone 2):
 1. Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation — may produce imprecise error locations
 2. Stray `}` and typo "occured" in `UnexpectedError` message template (`src/lib/CompilerLib/errors.ts`)
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
 4. `new Tree()` direct construction bypasses loc — should prefer `node()` factory; add JSDoc warning
+5. `camera.shake(intensity, duration)` not implemented — named as a hard prerequisite in the (design-only, not yet built) "COMPOUND" top-down-shooter demo spec
+6. No visual spritesheet editor/slicer in the asset panel — defining frame dimensions in code is the only option
 
 ---
 
-## Milestone 1 — Language complete (multiple minor bumps, current series)
+## ~~Milestone 1 — Language complete~~ **[DONE — shipped as v0.3.0, 2026-06-24]**
 
-**Goal:** Close out the planned softBASIC runtime modules. Each module ships as a minor version bump with patch work in between. Deferred technical issues above resolved as patches within this milestone.
+**Goal:** Close out the planned softBASIC runtime modules.
 
-### Scene management
-A `scene` module for named game states (menu, game, game-over) with individual `onenter` / `onupdate` / `onexit` lifecycle hooks.
+### ~~Scene management~~ **[DONE]**
+Shipped as a `Scene` base class + `SceneManager` module. Open questions resolved: scenes are softBASIC classes extending `Scene` (not top-level declarations), overriding only the lifecycle hooks they need (`onenter`, `onupdate(delta)`, `onexit`, `onkeydown(key)`, `onkeyup(key)`). Stage state transfer is **automatic** — the stage clears between `onexit` and `onenter` on every switch; anything that should persist across scenes is re-added in the new scene's `onenter`. Switching is deferred/queued (applied at end of tick), not immediate.
 
-Key deliverables: `scene.bas` + `scene.js` engine module + `scene.switch(name)` runtime method + tests + docs.
+### ~~Spritesheets~~ **[DONE]**
+Shipped as an extended `animatedsprite` constructor (`AnimatedSprite(imagePath, frameW, frameH)` slices the image into a frame grid) rather than a separate class — resolves the "new class vs. extended constructor" open question in favour of extension. `setSpriteSheet()` and `stop()` were added alongside it. The asset-panel visual slicer question was resolved as **not in scope** — still code-only (see deferred issue #6 above).
 
-Open questions:
-- Are scenes softBASIC classes extending a base, or top-level declarations?
-- How does stage state transfer between scenes — explicit teardown or automatic?
-
-### Spritesheets
-Extend the existing `animatedsprite` to support spritesheet slicing (frame grid by tile size or individual frame rects).
-
-Key deliverables: engine support for PIXI.Spritesheet or manual UV slicing + tests + docs.
-
-Open questions:
-- New class (`spritesheet`) or extended constructor on `animatedsprite`?
-- Does the asset panel need a visual frame slicer in this milestone, or is defining frame dimensions in code sufficient?
-
-### Camera / viewport
-A `camera` module for scrolling worlds larger than the canvas.
-
-Key deliverables: `camera.bas` + `camera.js` + `camera.follow(sprite)` + `camera.setPosition` / `camera.move` + tests + docs.
-
-Open questions:
-- Does camera cull off-screen sprites in this milestone or is that deferred?
-- Does the developer define an explicit world size, or is the world unbounded?
+### ~~Camera / viewport~~ **[DONE]**
+Shipped as `camera` + `world` + `hud` modules, deprecating `stage`. Open questions resolved: **no culling** in this milestone (deferred, off-screen sprites still render); world size is **explicit and optional** via `camera.setBounds(width, height)` — without it the camera is unbounded.
 
 ---
 
 ## Milestone 2 — Professional editor (minor bump)
+
+**Now the current focus.**
 
 **Goal:** Make the editor credible for sustained use. Full intellisense backed by the existing `.bas` definition files.
 
