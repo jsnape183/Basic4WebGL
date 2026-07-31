@@ -21,4 +21,12 @@ function setStyle(size, r, g, b)
     call("_sb.setTextStyle(this._handle, setstyle_size, setstyle_r, setstyle_g, setstyle_b)")
 endfunction
 
+function setFont(fontFamily)
+    call("_sb.setTextFont(this._handle, setfont_fontFamily)")
+endfunction
+
+function setAlign(align)
+    call("_sb.setTextAlign(this._handle, setalign_align)")
+endfunction
+
 EndClass

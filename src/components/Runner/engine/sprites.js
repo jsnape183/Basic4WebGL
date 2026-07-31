@@ -70,4 +70,10 @@ const _sbSprites = {
     obj.style.fontSize = size;
     obj.style.fill = `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
   },
+  setTextFont(obj, fontFamily) {
+    obj.style.fontFamily = fontFamily;
+  },
+  setTextAlign(obj, align) {
+    obj.style.align = align;
+  },
 };

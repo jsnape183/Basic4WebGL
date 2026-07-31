@@ -40,6 +40,28 @@ describe('Text class — instance methods', () => {
     ].join('\n');
     compileOk({ lib: [textLib], files: [{ name: 'Main', source: src }] });
   });
+
+  test('setFont on text instance compiles', () => {
+    const src = [
+      'function onenter()',
+      '    dim label as text("Hello", 10, 20)',
+      '    label.setFont("Courier New")',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [textLib], files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('setfont(');
+  });
+
+  test('setAlign on text instance compiles', () => {
+    const src = [
+      'function onenter()',
+      '    dim label as text("Hello", 10, 20)',
+      '    label.setAlign("center")',
+      'endfunction',
+    ].join('\n');
+    const result = compileOk({ lib: [textLib], files: [{ name: 'Main', source: src }] });
+    expect(result).toContain('setalign(');
+  });
 });
 
 describe('Text class — _handle in method body', () => {
@@ -49,5 +71,13 @@ describe('Text class — _handle in method body', () => {
 
   test('text.bas constructor assigns _handle', () => {
     expect(textLib.source).toContain('_handle = call("_sb.createText(constructor_content, constructor_x, constructor_y)")');
+  });
+
+  test('text.bas setFont emits this._handle in call string', () => {
+    expect(textLib.source).toContain('_sb.setTextFont(this._handle, setfont_fontFamily)');
+  });
+
+  test('text.bas setAlign emits this._handle in call string', () => {
+    expect(textLib.source).toContain('_sb.setTextAlign(this._handle, setalign_align)');
   });
 });

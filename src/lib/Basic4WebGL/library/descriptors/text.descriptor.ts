@@ -24,5 +24,20 @@ export const textDescriptor: ClassDescriptor = {
       params: ['a'],
       body: (p, self) => `_sb.setAlpha(${self._handle}, ${p.a})`,
     },
+    {
+      name: 'setStyle',
+      params: ['size', 'r', 'g', 'b'],
+      body: (p, self) => `_sb.setTextStyle(${self._handle}, ${p.size}, ${p.r}, ${p.g}, ${p.b})`,
+    },
+    {
+      name: 'setFont',
+      params: ['fontFamily'],
+      body: (p, self) => `_sb.setTextFont(${self._handle}, ${p.fontFamily})`,
+    },
+    {
+      name: 'setAlign',
+      params: ['align'],
+      body: (p, self) => `_sb.setTextAlign(${self._handle}, ${p.align})`,
+    },
   ],
 };

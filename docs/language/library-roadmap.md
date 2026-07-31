@@ -43,7 +43,7 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
 | `TileMap` *(class)* | `constructor(tilesetPath, tileW, tileH)` `load(jsonPath)` `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` |
-| `Text` *(class)* | `constructor(content,x,y)` `setText` `setPosition` `setAlpha` `setStyle(size,r,g,b)` |
+| `Text` *(class)* | `constructor(content,x,y)` `setText` `setPosition` `setAlpha` `setStyle(size,r,g,b)` `setFont(fontFamily)` `setAlign(align)` |
 | `Audio` *(class)* | `constructor(soundPath)` `play()` `playLoop()` `stop()` `setVolume(v)` `isPlaying()` |
 | `ObjectTransform` *(class)* | `setPosition(x,y)` `x()` `y()` — shared transform mixin used by Sprite/AnimatedSprite/TileMap |
 | `RayHit` *(class)* | fields: `sprite`, `distance` — result type for `collision.raycast*` |
@@ -166,7 +166,7 @@ Re-audited 2026-07-31 — several items below were previously listed as not-yet-
 - **Polygon collision** — still not implemented (AABB, circle, and raycast only).
 - **Physics / gravity** — Rapier WASM or manual implementation. Not started.
 - **Save/load (localStorage)** — expose to user programs for game state persistence. Not started.
-- **Text styling** — `Text.setStyle(size,r,g,b)` covers size and colour; font family and alignment are not yet exposed.
+- ~~Text styling~~ **[DONE]** — `Text.setStyle(size,r,g,b)` covers size and colour; `setFont(fontFamily)` and `setAlign(align)` shipped 2026-07-31, exposing font family and left/center/right alignment.
 - **Particle system** — emitter abstraction over PIXI particles. Not started.
 - **Touch input** — see P5 note above.
 - ~~Two-pass compilation~~ **[DONE]** — resolved by `sortByDependencies.ts` (topological sort of project files by `new`/`as`/`extends`/method references, wired into `useProjectForBuild.ts`), shipped 2026-06-17/18, before v0.3.0. No file-ordering constraint remains for class references.

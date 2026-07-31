@@ -73,3 +73,27 @@ Sets the font size and colour.
 ```bas
 self.setStyle(24, 255, 255, 0)
 ```
+
+## setFont(fontFamily)
+
+Sets the font used to draw the text. Use a common web-safe font name such as `"Arial"`, `"Courier New"`, `"Georgia"`, or `"Verdana"`.
+
+| Parameter  | Type   | Description |
+|------------|--------|-------------|
+| fontFamily | string | Name of the font to use |
+
+```bas
+self.setFont("Courier New")
+```
+
+## setAlign(align)
+
+Sets how the text lines up when it wraps onto more than one line. Has no visible effect on a single line of text.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| align     | string | `"left"`, `"center"`, or `"right"` |
+
+```bas
+self.setAlign("center")
+```
