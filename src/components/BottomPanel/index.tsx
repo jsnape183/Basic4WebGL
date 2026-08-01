@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { LogItem, LogItemType } from '../../Types/LogItem';
+import { SourceLocation } from '../../lib/CompilerLib/compiler/types';
 
 type BottomPanelProps = {
   logs: LogItem[];
+  onJumpToLoc?: (loc: SourceLocation) => void;
 };
 
 const TAG_STYLES: Record<LogItemType, string> = {
@@ -21,7 +23,7 @@ const TAG_LABELS: Record<LogItemType, string> = {
 
 type Tab = 'console' | 'problems';
 
-const BottomPanel: React.FC<BottomPanelProps> = ({ logs }) => {
+const BottomPanel: React.FC<BottomPanelProps> = ({ logs, onJumpToLoc }) => {
   const [activeTab, setActiveTab] = useState<Tab>('console');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -80,7 +82,11 @@ const BottomPanel: React.FC<BottomPanelProps> = ({ logs }) => {
             <li className="text-ds-text-dim py-1 px-1">No output.</li>
           )}
           {visibleLogs.map((log, i) => (
-            <li key={i} className="flex items-start gap-2 px-1 py-0.5">
+            <li
+              key={i}
+              className={`flex items-start gap-2 px-1 py-0.5 ${log.loc ? 'cursor-pointer hover:bg-ds-surface-2' : ''}`}
+              onClick={log.loc ? () => onJumpToLoc?.(log.loc!) : undefined}
+            >
               <span className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${TAG_STYLES[log.type]}`}>
                 {TAG_LABELS[log.type]}
               </span>

@@ -33,7 +33,7 @@ export const useCompiler = (projectId: string) => {
         const locStr = d.loc
           ? ` (${d.loc.filename}:${d.loc.line}:${d.loc.col})`
           : '';
-        dispatch(addLog({ type: LogItemType.Error, text: d.message + locStr }));
+        dispatch(addLog({ type: LogItemType.Error, text: d.message + locStr, loc: d.loc }));
       });
       dispatch(setIsRunning(false));
       dispatch(setTranspiled(''));

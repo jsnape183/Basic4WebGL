@@ -99,3 +99,23 @@ test('run dispatches error logs and resets isRunning on compile failure', () => 
   expect(state.session.isRunning).toBe(false);
   expect(state.session.logs.some((l) => l.text === 'Undefined variable')).toBe(true);
 });
+
+test('run attaches loc to error log entries when the diagnostic has one', () => {
+  const loc = { line: 3, col: 5, filename: 'Main' };
+  vi.spyOn(Basic4WebGL, 'transpile').mockReturnValue({
+    code: undefined,
+    diagnostics: [{ message: 'Undefined variable', severity: 'error', loc }],
+  });
+
+  const store = makeStore();
+  const { result } = renderHook(() => useCompiler('p1'), {
+    wrapper: wrapper(store),
+  });
+
+  act(() => {
+    result.current.run();
+  });
+
+  const errorLog = store.getState().session.logs.find((l) => l.text.startsWith('Undefined variable'));
+  expect(errorLog?.loc).toEqual(loc);
+});

@@ -1,3 +1,5 @@
+import { SourceLocation } from '../lib/CompilerLib/compiler/types';
+
 export enum LogItemType {
   Notice,
   Warning,
@@ -8,4 +10,5 @@ export enum LogItemType {
 export type LogItem = {
   text: string;
   type: LogItemType;
+  loc?: SourceLocation;
 };

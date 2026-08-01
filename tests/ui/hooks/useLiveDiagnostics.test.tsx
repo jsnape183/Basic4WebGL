@@ -1,0 +1,104 @@
+// @vitest-environment jsdom
+import { renderHook, act } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import { vi, afterEach, beforeEach, test, expect } from 'vitest';
+import sessionReducer from '../../../src/features/session/sessionSlice';
+import filesReducer, { addFile, updateFile } from '../../../src/features/files/filesSlice';
+import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
+import packagesReducer, { seedPackages } from '../../../src/features/packages/packagesSlice';
+import { firstPartyPackages } from '../../../src/constants/firstPartyPackages';
+import { useLiveDiagnostics } from '../../../src/hooks/useLiveDiagnostics';
+import Basic4WebGL from '../../../src/lib/Basic4WebGL';
+import React from 'react';
+
+const makeStore = () => {
+  const store = configureStore({
+    reducer: {
+      session: sessionReducer,
+      files: filesReducer,
+      projects: projectsReducer,
+      packages: packagesReducer,
+    },
+  });
+  store.dispatch(seedPackages(firstPartyPackages));
+  store.dispatch(addProject({ id: 'p1', name: 'Test', packageIds: ['softcore', 'softgfx'] }));
+  store.dispatch(addFile({ id: 'f1', name: 'Main.bas', source: 'print "hi"', projectId: 'p1' }));
+  return store;
+};
+
+const wrapper =
+  (store: ReturnType<typeof makeStore>) =>
+  ({ children }: { children: React.ReactNode }) => (
+    <Provider store={store}>{children}</Provider>
+  );
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+test('does not compile before the debounce interval elapses', () => {
+  const spy = vi.spyOn(Basic4WebGL, 'transpile');
+  const store = makeStore();
+  renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+
+  act(() => {
+    vi.advanceTimersByTime(200);
+  });
+  expect(spy).not.toHaveBeenCalled();
+});
+
+test('compiles silently after the debounce interval, without touching session state', () => {
+  vi.spyOn(Basic4WebGL, 'transpile').mockReturnValue({
+    diagnostics: [{ message: 'Undefined variable', severity: 'error', loc: { line: 1, col: 1, filename: 'Main' } }],
+  });
+  const store = makeStore();
+  const { result } = renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+
+  expect(result.current).toHaveLength(1);
+  expect(store.getState().session.logs).toHaveLength(0);
+  expect(store.getState().session.transpiled).toBe('');
+});
+
+test('resets the timer on rapid successive changes (only compiles once)', () => {
+  const spy = vi.spyOn(Basic4WebGL, 'transpile').mockReturnValue({ diagnostics: [] });
+  const store = makeStore();
+  const { rerender } = renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+
+  act(() => {
+    store.dispatch(
+      updateFile({
+        id: 'f1',
+        projectId: 'p1',
+        name: 'Main.bas',
+        source: 'a',
+        folderId: null,
+        fullName: 'Main.bas',
+      })
+    );
+    vi.advanceTimersByTime(200);
+    store.dispatch(
+      updateFile({
+        id: 'f1',
+        projectId: 'p1',
+        name: 'Main.bas',
+        source: 'ab',
+        folderId: null,
+        fullName: 'Main.bas',
+      })
+    );
+    vi.advanceTimersByTime(200);
+  });
+  rerender();
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+
+  expect(spy).toHaveBeenCalledTimes(1);
+});

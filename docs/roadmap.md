@@ -24,7 +24,7 @@ Shipped and working:
 - Demos page, launched with a Wolfenstein-style raycaster tech demo
 
 Known deferred issues (low risk, to be resolved as patches within Milestone 2):
-1. Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation — may produce imprecise error locations
+1. ~~Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation~~ **[RESOLVED]** — gated by `tests/lib/Basic4WebGL/unit/parser/locPropagation.test.ts`; the three rules themselves were fine, the actual bug was one level deeper in `VariableFactorRule` (bare-identifier lookup threw without attaching the already-captured identifier `loc`, so the fallback grabbed the next token's line instead) — fixed there
 2. Stray `}` and typo "occured" in `UnexpectedError` message template (`src/lib/CompilerLib/errors.ts`)
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
 4. `new Tree()` direct construction bypasses loc — should prefer `node()` factory; add JSDoc warning
@@ -53,16 +53,19 @@ Shipped as `camera` + `world` + `hud` modules, deprecating `stage`. Open questio
 
 **Goal:** Make the editor credible for sustained use. Full intellisense backed by the existing `.bas` definition files.
 
-### Deliverables
-- **Autocomplete** — module function names, class methods, variable names in scope
-- **Hover documentation** — function signature and description on hover, sourced from `.bas` def files
-- **Parameter hints** — inline signature help as arguments are typed (current argument highlighted)
-- **Error underlining** — surface compile diagnostics inline in the editor, not just in the bottom panel
+Re-audited 2026-07-31: this milestone was further along than tracked here — the two "technical decisions" below were already made and shipped (plan: `docs/superpowers/plans/2026-05-24-monaco-phase1.md`, spec: `docs/superpowers/specs/2026-05-24-monaco-improvements-research.md`), and three of the four deliverables are live in some form. What's actually left is two independent, patch-sized pieces — see "Remaining scope" below.
 
-### Technical decisions to make before sprint starts
-- **Editor component:** Current editor is a basic textarea. This milestone requires replacing it with Monaco Editor or CodeMirror 6. Monaco gives VS Code parity (better intellisense API); CodeMirror 6 is lighter and more embeddable.
-- **Completion provider:** A full LSP is overkill. The `.bas` definition files already encode the complete API surface — a static completion provider built from those is sufficient. Dynamic symbol resolution (user-defined functions, class names) should also be included.
-- **Incremental parsing for error underlining:** The current batch compiler is not designed for keystroke-level feedback. May need a lightweight incremental mode or debounced re-compile.
+### Deliverables
+- ~~**Editor replaced with Monaco**~~ **[DONE]** — `@monaco-editor/react` integrated in `src/components/Editor/index.tsx`, replacing the old textarea.
+- **Autocomplete** **[PARTIAL]** — live via `src/monacoHelpers/completions.ts`, registered in `Editor/index.tsx`. Scoped to the static library catalogue only (module functions, class methods, constructors) — does not yet resolve user-defined functions, classes, or in-scope variables.
+- **Hover documentation** **[PARTIAL]** — live via `src/monacoHelpers/hover.ts`, same library-only scope limit as autocomplete.
+- **Parameter hints** **[PARTIAL]** — live via `src/monacoHelpers/signatures.ts`, same library-only scope limit.
+- ~~**Error underlining**~~ **[DONE]** — `useLiveDiagnostics` silently debounces (~450ms) a `Basic4WebGL.transpile()` call and `Editor` maps the resulting diagnostic to a Monaco marker via `monacoHelpers/diagnostics.ts#toMarkers`, squiggling only the active file live as the developer types. Cross-file errors are surfaced by making error entries in the bottom console clickable — `BottomPanel`'s `onJumpToLoc` switches the selected file and moves the cursor. Live/debounced diagnostics and jump-clicks never write a console log entry or auto-switch tabs on their own — only the explicit Build/Run path and explicit clicks touch console/tab state.
+
+### Remaining scope
+1. **Dynamic symbol resolution** — extend the completion/hover/signature-help providers to also resolve user-defined functions, classes, and in-scope variables, not just static library members. This is what upgrades the three "PARTIAL" deliverables above to done, and is the one remaining Milestone 2 item.
+
+Closes out as its own patch. The milestone (and minor bump to `v0.4.0`) completes once it lands.
 
 ---
 

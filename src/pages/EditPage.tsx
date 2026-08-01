@@ -11,8 +11,10 @@ import Editor from '../components/Editor';
 import Preview from '../components/Preview';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useCompiler } from '../hooks/useCompiler';
+import { useLiveDiagnostics } from '../hooks/useLiveDiagnostics';
 import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import { useAutoSave } from '../hooks/useAutoSave';
+import { SourceLocation } from '../lib/CompilerLib/compiler/types';
 import TreePanel from '../components/TreePanel';
 import ProjectShell, { FilesIcon, ExportIcon } from '../components/ProjectShell';
 import { exportProject } from '../features/projects/exportProject';
@@ -40,8 +42,10 @@ const EditPage: React.FC = () => {
   const [openAssetTabs, setOpenAssetTabs] = useState<AssetTabEntry[]>([]);
   const [activeAssetTabId, setActiveAssetTabId] = useState<string | null>(null);
   const [dirtyAssetIds, setDirtyAssetIds] = useState<string[]>([]);
+  const [jumpTarget, setJumpTarget] = useState<{ line: number; col: number } | null>(null);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
+  const diagnostics = useLiveDiagnostics(id ?? '');
   useRunnerMessages(id);
   useAutoSave();
 
@@ -82,6 +86,14 @@ const EditPage: React.FC = () => {
     if (source && selectedFile) {
       dispatch(updateFile({ ...selectedFile, source }));
     }
+  };
+
+  const handleJumpToLoc = (loc: SourceLocation) => {
+    const target = files.find((f) => f.name === loc.filename);
+    if (!target) return;
+    setActiveAssetTabId(null);
+    dispatch(selectFile({ projectId: project.id, fileId: target.id }));
+    setJumpTarget({ line: loc.line, col: loc.col });
   };
 
   const handleTabSelect = (fileId: string) => {
@@ -239,6 +251,8 @@ const EditPage: React.FC = () => {
                   file={selectedFile}
                   height="100%"
                   onCursorChange={(line, col) => setCursorPos({ line, col })}
+                  diagnostics={diagnostics}
+                  jumpTo={jumpTarget}
                 />
               )}
             </div>
@@ -255,7 +269,7 @@ const EditPage: React.FC = () => {
           </ErrorBoundary>
         ) : undefined
       }
-      panel={<BottomPanel logs={logs} />}
+      panel={<BottomPanel logs={logs} onJumpToLoc={handleJumpToLoc} />}
       footer={
         <>
           <span>Ln {cursorPos.line}, Col {cursorPos.col}</span>

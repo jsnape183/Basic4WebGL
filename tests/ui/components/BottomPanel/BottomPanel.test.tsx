@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { LogItemType } from '../../../../src/Types/LogItem';
 import BottomPanel from '../../../../src/components/BottomPanel';
 
@@ -43,4 +44,24 @@ test('collapse button toggles panel body visibility', async () => {
   const toggle = screen.getByRole('button', { name: /collapse|expand/i });
   await user.click(toggle);
   expect(screen.queryByText('compiled ok')).not.toBeInTheDocument();
+});
+
+test('clicking an error log entry with a loc calls onJumpToLoc', async () => {
+  const user = userEvent.setup();
+  const onJumpToLoc = vi.fn();
+  const loc = { line: 4, col: 1, filename: 'main.bas' };
+  const logsWithLoc = [
+    { type: LogItemType.Error, text: 'main.bas:4 undefined var', loc },
+  ];
+  render(<BottomPanel logs={logsWithLoc} onJumpToLoc={onJumpToLoc} />);
+  await user.click(screen.getByText('main.bas:4 undefined var'));
+  expect(onJumpToLoc).toHaveBeenCalledWith(loc);
+});
+
+test('error entries without a loc are not clickable', async () => {
+  const user = userEvent.setup();
+  const onJumpToLoc = vi.fn();
+  render(<BottomPanel logs={logs} onJumpToLoc={onJumpToLoc} />);
+  await user.click(screen.getByText('main.bas:4 undefined var'));
+  expect(onJumpToLoc).not.toHaveBeenCalled();
 });

@@ -17,7 +17,7 @@ import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
-import { CompilationError } from '@CompilerLib/errors';
+import { CompilationError, SymbolError } from '@CompilerLib/errors';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -124,12 +124,23 @@ class VariableFactorRule implements IParserRule {
     }
     if (!check(tokens.OpenParen, tokenStream.current())) {
       let varSymbol: Symbol;
-      if (symbolTable.check(name, symbolTypes.Array)) {
-        varSymbol = symbolTable.get(name, symbolTypes.Array);
-      } else if (symbolTable.check(name, symbolTypes.Dictionary)) {
-        varSymbol = symbolTable.get(name, symbolTypes.Dictionary);
-      } else {
-        varSymbol = symbolTable.get(name);
+      try {
+        if (symbolTable.check(name, symbolTypes.Array)) {
+          varSymbol = symbolTable.get(name, symbolTypes.Array);
+        } else if (symbolTable.check(name, symbolTypes.Dictionary)) {
+          varSymbol = symbolTable.get(name, symbolTypes.Dictionary);
+        } else {
+          varSymbol = symbolTable.get(name);
+        }
+      } catch (e) {
+        // symbolTable.get() throws with no loc — by this point the identifier
+        // token has already been consumed, so the fallback loc a caller assigns
+        // would land on whatever comes next (often the following line). Attach
+        // the identifier's own loc here instead.
+        if (e instanceof SymbolError && !e.loc) {
+          e.loc = loc;
+        }
+        throw e;
       }
       if (isInstancePropertyAccess(varSymbol, symbolTable)) {
         throw new CompilationError(`'${name}' is a class property — use self.${name}`);

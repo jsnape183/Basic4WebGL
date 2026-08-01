@@ -1,19 +1,20 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, act } from '@testing-library/react';
+import { render, act, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { vi, afterEach } from 'vitest';
-import sessionReducer from '../../../src/features/session/sessionSlice';
-import filesReducer from '../../../src/features/files/filesSlice';
+import sessionReducer, { addLog } from '../../../src/features/session/sessionSlice';
+import filesReducer, { addFile } from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
 import packagesReducer from '../../../src/features/packages/packagesSlice';
 import assetsReducer from '../../../src/features/assets/assetsSlice';
-import uiReducer from '../../../src/features/ui/uiSlice';
+import uiReducer, { selectFile } from '../../../src/features/ui/uiSlice';
 import foldersReducer from '../../../src/features/folders/foldersSlice';
 import EditPage from '../../../src/pages/EditPage';
 import { LogItemType } from '../../../src/Types/LogItem';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('@monaco-editor/react', () => ({
   default: () => null,
@@ -76,4 +77,25 @@ test('captures window messages while not running', async () => {
   expect(state.session.logs).toHaveLength(1);
   expect(state.session.logs[0].type).toBe(LogItemType.Output);
   expect(state.session.logs[0].text).toBe('final frame');
+});
+
+test('clicking a BottomPanel error entry with a loc switches the selected file and sets the jump target', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-2';
+  const store = makeStore(projectId);
+
+  store.dispatch(addFile({ id: 'file-main', name: 'Main', source: '', projectId }));
+  store.dispatch(addFile({ id: 'file-other', name: 'Other', source: '', projectId }));
+  store.dispatch(selectFile({ projectId, fileId: 'file-main' }));
+
+  const loc = { line: 4, col: 1, filename: 'Other' };
+  store.dispatch(
+    addLog({ type: LogItemType.Error, text: 'Other:4 undefined variable', loc })
+  );
+
+  renderEditPage(projectId, store);
+
+  await user.click(screen.getByText('Other:4 undefined variable'));
+
+  expect(store.getState().ui.selectedFileByProject[projectId]).toBe('file-other');
 });
