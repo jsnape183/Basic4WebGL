@@ -1,6 +1,9 @@
 // src/monacoHelpers/hover.ts
 import type { Monaco } from '@monaco-editor/react';
 import { getModuleMethod, getConstructor } from './catalogue';
+import { scanEnclosingScope } from './scopeScanner';
+import { getVisibleSymbols, type SymbolContext } from './symbolCatalogue';
+import { symbolTypes } from '../lib/Basic4WebGL/symbolTypes';
 
 /**
  * Given a line of source and a word range (Monaco 1-based columns),
@@ -28,7 +31,7 @@ export function parseHoverContext(
   };
 }
 
-export function registerHoverProvider(monaco: Monaco): { dispose(): void } {
+export function registerHoverProvider(monaco: Monaco, symbolContext?: SymbolContext): { dispose(): void } {
   return monaco.languages.registerHoverProvider('softBasic', {
     provideHover(model, position) {
       const word = model.getWordAtPosition(position);
@@ -59,6 +62,26 @@ export function registerHoverProvider(monaco: Monaco): { dispose(): void } {
             { value: ctor.description },
           ],
         };
+      }
+
+      // Case 3: dynamic fallback — a user-defined function/variable/class visible
+      // at the cursor. Static library results above always take priority.
+      if (symbolContext) {
+        const scopeStack = scanEnclosingScope(model.getValue(), position.lineNumber, position.column);
+        const symbols = getVisibleSymbols(
+          symbolContext.getSymbols(),
+          symbolContext.getActiveFilename() ?? '',
+          scopeStack
+        );
+        const match = symbols.find((s) => s.name.toLowerCase() === word.word.toLowerCase());
+        if (match) {
+          if (match.kind === symbolTypes.Function) {
+            const params = (match.parameters ?? []).map((p) => p.name).join(', ');
+            return { contents: [{ value: `**${match.name}(${params})**` }] };
+          }
+          const typeLabel = match.className ?? match.kind;
+          return { contents: [{ value: `**${match.name}** : ${typeLabel}` }] };
+        }
       }
 
       return null;

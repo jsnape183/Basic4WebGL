@@ -9,6 +9,8 @@ import { registerHoverProvider } from '../../monacoHelpers/hover';
 import { registerSignatureHelpProvider } from '../../monacoHelpers/signatures';
 import { toMarkers } from '../../monacoHelpers/diagnostics';
 import { Diagnostic } from '../../lib/CompilerLib/compiler/types';
+import { SymbolSnapshotEntry } from '../../lib/CompilerLib/symbols';
+import { SymbolContext } from '../../monacoHelpers/symbolCatalogue';
 
 type SBEditorProps = {
   file: IFile | undefined;
@@ -17,13 +19,28 @@ type SBEditorProps = {
   onCursorChange?: (line: number, col: number) => void;
   diagnostics?: Diagnostic[];
   jumpTo?: { line: number; col: number } | null;
+  symbols?: SymbolSnapshotEntry[];
 };
 
-const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorChange, diagnostics, jumpTo }) => {
+const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorChange, diagnostics, jumpTo, symbols }) => {
   const monaco = useMonaco();
   const [languageLoaded, setLanguageLoaded] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const editorRef = useRef<monacoT.editor.IStandaloneCodeEditor | null>(null);
+
+  // Providers register once per `monaco` instance mount, so they can't close over
+  // `symbols`/`file` values that change every debounce cycle. Keep the latest in
+  // refs (same pattern as `editorRef`) and hand the providers accessor functions
+  // instead, so completions/hover/signatures stay pure and don't need remounting.
+  const symbolsRef = useRef<SymbolSnapshotEntry[]>(symbols ?? []);
+  useEffect(() => {
+    symbolsRef.current = symbols ?? [];
+  }, [symbols]);
+
+  const fileRef = useRef<IFile | undefined>(file);
+  useEffect(() => {
+    fileRef.current = file;
+  }, [file]);
 
   useEffect(() => {
     if (!monaco) return;
@@ -33,9 +50,14 @@ const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorCha
     const languageConfigDisposable = monaco.languages.setLanguageConfiguration('softBasic', buildLanguageConfig());
     monaco.editor.defineTheme('softBasicTheme', getMonacoTheme());
 
-    const completionDisposable = registerCompletionProvider(monaco);
-    const hoverDisposable = registerHoverProvider(monaco);
-    const signatureDisposable = registerSignatureHelpProvider(monaco);
+    const symbolContext: SymbolContext = {
+      getSymbols: () => symbolsRef.current,
+      getActiveFilename: () => fileRef.current?.name,
+    };
+
+    const completionDisposable = registerCompletionProvider(monaco, symbolContext);
+    const hoverDisposable = registerHoverProvider(monaco, symbolContext);
+    const signatureDisposable = registerSignatureHelpProvider(monaco, symbolContext);
 
     setLanguageLoaded(true);
 

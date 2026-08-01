@@ -32,7 +32,7 @@ const transpile = (project: CompilerProject): CompileResult => {
     const code =
       globals +
       transpilerInstance.transpile(parseResult, parseResult.symbolTable, transpilerRules);
-    return { code, diagnostics: [] };
+    return { code, diagnostics: [], symbols: parseResult.symbolTable.getSnapshot() };
   } catch (e: unknown) {
     const err = e as Error & { loc?: SourceLocation };
     const diagnostic: Diagnostic = {

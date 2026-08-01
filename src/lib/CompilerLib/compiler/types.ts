@@ -1,3 +1,5 @@
+import type { SymbolSnapshotEntry } from '../symbols';
+
 export type ProjectFile = {
   name: string;
   source: string;
@@ -24,4 +26,5 @@ export type CompileResult = {
   code?: string;
   diagnostics: Diagnostic[];
   sourceMap?: string;
+  symbols?: SymbolSnapshotEntry[];
 };

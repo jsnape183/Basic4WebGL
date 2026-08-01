@@ -46,6 +46,19 @@ export class Symbol {
   }
 }
 
+export type SymbolSnapshotEntry = {
+  name: string;
+  kind: string;
+  scopeName: string;
+  scopeType: string;
+  fullScope: string;
+  className?: string;
+  parentClassName?: string;
+  isParam?: boolean;
+  dimensions?: number;
+  parameters?: { name: string; className?: string }[];
+};
+
 class Symbols {
   private isMatchingType: (expected: string, actual: string) => Boolean;
   private table: Array<Symbol> = [];
@@ -318,6 +331,32 @@ class Symbols {
     );
 
     return result ?? new Array<symbol>();
+  }
+
+  /**
+   * Serializable snapshot of the entire flat symbol table, for editor-side
+   * tooling (autocomplete/hover/signature help) to resolve user-defined
+   * symbols. Dynamically-added properties (classSymbol/isParam/dimensions/
+   * parameters) live on subclasses or are bolted on ad hoc by parser rules,
+   * so they're read via `as any` at this mapping boundary rather than
+   * widening the base Symbol class's declared shape.
+   */
+  getSnapshot(): SymbolSnapshotEntry[] {
+    return this.table.map((s) => ({
+      name: s.name,
+      kind: s.type,
+      scopeName: s.scope.name,
+      scopeType: s.scope.type,
+      fullScope: s.fullScope,
+      className: (s as any).classSymbol?.name,
+      parentClassName: s.parentClassName,
+      isParam: (s as any).isParam,
+      dimensions: (s as any).dimensions,
+      parameters: (s as any).parameters?.map((p: Symbol) => ({
+        name: p.name,
+        className: (p as any).classSymbol?.name,
+      })),
+    }));
   }
 }
 

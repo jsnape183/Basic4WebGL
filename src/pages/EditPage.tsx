@@ -11,7 +11,7 @@ import Editor from '../components/Editor';
 import Preview from '../components/Preview';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useCompiler } from '../hooks/useCompiler';
-import { useLiveDiagnostics } from '../hooks/useLiveDiagnostics';
+import { useLiveAnalysis } from '../hooks/useLiveAnalysis';
 import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { SourceLocation } from '../lib/CompilerLib/compiler/types';
@@ -45,7 +45,7 @@ const EditPage: React.FC = () => {
   const [jumpTarget, setJumpTarget] = useState<{ line: number; col: number } | null>(null);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
-  const diagnostics = useLiveDiagnostics(id ?? '');
+  const { diagnostics, symbols } = useLiveAnalysis(id ?? '');
   useRunnerMessages(id);
   useAutoSave();
 
@@ -253,6 +253,7 @@ const EditPage: React.FC = () => {
                   onCursorChange={(line, col) => setCursorPos({ line, col })}
                   diagnostics={diagnostics}
                   jumpTo={jumpTarget}
+                  symbols={symbols}
                 />
               )}
             </div>

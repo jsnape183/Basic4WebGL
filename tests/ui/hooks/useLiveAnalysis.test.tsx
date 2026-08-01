@@ -8,7 +8,7 @@ import filesReducer, { addFile, updateFile } from '../../../src/features/files/f
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
 import packagesReducer, { seedPackages } from '../../../src/features/packages/packagesSlice';
 import { firstPartyPackages } from '../../../src/constants/firstPartyPackages';
-import { useLiveDiagnostics } from '../../../src/hooks/useLiveDiagnostics';
+import { useLiveAnalysis } from '../../../src/hooks/useLiveAnalysis';
 import Basic4WebGL from '../../../src/lib/Basic4WebGL';
 import React from 'react';
 
@@ -42,7 +42,7 @@ afterEach(() => {
 test('does not compile before the debounce interval elapses', () => {
   const spy = vi.spyOn(Basic4WebGL, 'transpile');
   const store = makeStore();
-  renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+  renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
 
   act(() => {
     vi.advanceTimersByTime(200);
@@ -55,13 +55,13 @@ test('compiles silently after the debounce interval, without touching session st
     diagnostics: [{ message: 'Undefined variable', severity: 'error', loc: { line: 1, col: 1, filename: 'Main' } }],
   });
   const store = makeStore();
-  const { result } = renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+  const { result } = renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
 
   act(() => {
     vi.advanceTimersByTime(500);
   });
 
-  expect(result.current).toHaveLength(1);
+  expect(result.current.diagnostics).toHaveLength(1);
   expect(store.getState().session.logs).toHaveLength(0);
   expect(store.getState().session.transpiled).toBe('');
 });
@@ -69,7 +69,7 @@ test('compiles silently after the debounce interval, without touching session st
 test('resets the timer on rapid successive changes (only compiles once)', () => {
   const spy = vi.spyOn(Basic4WebGL, 'transpile').mockReturnValue({ diagnostics: [] });
   const store = makeStore();
-  const { rerender } = renderHook(() => useLiveDiagnostics('p1'), { wrapper: wrapper(store) });
+  const { rerender } = renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
 
   act(() => {
     store.dispatch(
@@ -101,4 +101,38 @@ test('resets the timer on rapid successive changes (only compiles once)', () => 
   });
 
   expect(spy).toHaveBeenCalledTimes(1);
+});
+
+test('a symbol snapshot from a clean compile survives a subsequent failing compile', () => {
+  const spy = vi.spyOn(Basic4WebGL, 'transpile');
+  spy.mockReturnValueOnce({
+    diagnostics: [],
+    symbols: [{ name: 'score', kind: 'Variable', scopeName: '', scopeType: '', fullScope: '' }],
+  });
+
+  const store = makeStore();
+  const { result, rerender } = renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+  expect(result.current.symbols).toHaveLength(1);
+
+  spy.mockReturnValueOnce({ diagnostics: [{ message: 'oops', severity: 'error' }] });
+  act(() => {
+    store.dispatch(
+      updateFile({
+        id: 'f1',
+        projectId: 'p1',
+        name: 'Main.bas',
+        source: 'broken',
+        folderId: null,
+        fullName: 'Main.bas',
+      })
+    );
+    vi.advanceTimersByTime(500);
+  });
+  rerender();
+
+  expect(result.current.diagnostics).toHaveLength(1);
+  expect(result.current.symbols).toHaveLength(1); // unchanged — last-known-good
 });

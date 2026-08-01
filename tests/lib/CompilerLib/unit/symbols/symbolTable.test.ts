@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import Symbols, { SymbolScope } from '@CompilerLib/symbols';
 import BuiltInType from '@CompilerLib/builtInTypes';
+import { ArraySymbol, FunctionSymbol, symbolTypes } from '@Basic4WebGL/symbolTypes';
 
 const variant = new BuiltInType('Variant');
 
@@ -104,5 +105,59 @@ describe('scope depth', () => {
       table.clearScope();
     }
     expect(table.getScopeDepth()).toBe(1);
+  });
+});
+
+// ─── getSnapshot() ───────────────────────────────────────────────────────────
+
+describe('getSnapshot', () => {
+  test('maps a plain variable', () => {
+    const table = new Symbols(variant);
+    table.add('score', symbolTypes.Variable);
+    const snap = table.getSnapshot().find((s) => s.name === 'score');
+    expect(snap).toMatchObject({ name: 'score', kind: 'Variable', scopeName: '', fullScope: '' });
+  });
+
+  test('carries classSymbol name and dimensions for a typed array', () => {
+    const table = new Symbols(variant);
+    const classSym = table.add('enemy', symbolTypes.Class);
+    const arr = new ArraySymbol(
+      'enemies',
+      symbolTypes.Array,
+      table.getScope(),
+      table.getFullScopeName(),
+      1,
+      classSym
+    );
+    table.addTyped(arr);
+    const snap = table.getSnapshot().find((s) => s.name === 'enemies');
+    expect(snap).toMatchObject({ kind: 'Array', dimensions: 1, className: 'enemy' });
+  });
+
+  test("maps a function's parameters", () => {
+    const table = new Symbols(variant);
+    const param = table.add('amount', symbolTypes.Parameter);
+    const fn = new FunctionSymbol(
+      'takedamage',
+      symbolTypes.Function,
+      table.getScope(),
+      table.getFullScopeName(),
+      [param]
+    );
+    table.addTyped(fn);
+    const snap = table.getSnapshot().find((s) => s.name === 'takedamage');
+    expect(snap?.parameters).toEqual([{ name: 'amount', className: undefined }]);
+  });
+
+  test('marks isParam and carries parentClassName for a class symbol', () => {
+    const table = new Symbols(variant);
+    const param = table.add('hp', symbolTypes.Parameter);
+    (param as any).isParam = true;
+    const classSym = table.add('enemy', symbolTypes.Class);
+    classSym.parentClassName = 'basemonster';
+
+    const snap = table.getSnapshot();
+    expect(snap.find((s) => s.name === 'hp')?.isParam).toBe(true);
+    expect(snap.find((s) => s.name === 'enemy')?.parentClassName).toBe('basemonster');
   });
 });

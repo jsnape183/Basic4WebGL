@@ -5,6 +5,7 @@ import { vi, afterEach, describe, test, expect } from 'vitest';
 import SBEditor from '../../../../src/components/Editor';
 import { IFile } from '../../../../src/features/files/filesSlice';
 import { Diagnostic } from '../../../../src/lib/CompilerLib/compiler/types';
+import { SymbolSnapshotEntry } from '../../../../src/lib/CompilerLib/symbols';
 
 const fakeModel = { getLineMaxColumn: () => 40 };
 const fakeEditor = {
@@ -35,14 +36,18 @@ vi.mock('@monaco-editor/react', () => ({
   }),
 }));
 
+const registerCompletionProvider = vi.fn(() => ({ dispose: vi.fn() }));
+const registerHoverProvider = vi.fn(() => ({ dispose: vi.fn() }));
+const registerSignatureHelpProvider = vi.fn(() => ({ dispose: vi.fn() }));
+
 vi.mock('../../../../src/monacoHelpers/completions', () => ({
-  registerCompletionProvider: () => ({ dispose: vi.fn() }),
+  registerCompletionProvider: (...args: unknown[]) => registerCompletionProvider(...args),
 }));
 vi.mock('../../../../src/monacoHelpers/hover', () => ({
-  registerHoverProvider: () => ({ dispose: vi.fn() }),
+  registerHoverProvider: (...args: unknown[]) => registerHoverProvider(...args),
 }));
 vi.mock('../../../../src/monacoHelpers/signatures', () => ({
-  registerSignatureHelpProvider: () => ({ dispose: vi.fn() }),
+  registerSignatureHelpProvider: (...args: unknown[]) => registerSignatureHelpProvider(...args),
 }));
 
 const file: IFile = {
@@ -97,5 +102,53 @@ describe('SBEditor diagnostics + jumpTo', () => {
     render(<SBEditor file={file} height="100%" onChange={() => {}} />);
     expect(fakeEditor.setPosition).not.toHaveBeenCalled();
     expect(fakeEditor.revealPositionInCenter).not.toHaveBeenCalled();
+  });
+});
+
+describe('SBEditor symbols prop', () => {
+  test('a symbols prop flows into the SymbolContext passed to every register*Provider call', () => {
+    const symbols: SymbolSnapshotEntry[] = [
+      { name: 'score', kind: 'Variable', scopeName: '', scopeType: '', fullScope: '' },
+    ];
+    render(<SBEditor file={file} height="100%" onChange={() => {}} symbols={symbols} />);
+
+    expect(registerCompletionProvider).toHaveBeenCalled();
+    expect(registerHoverProvider).toHaveBeenCalled();
+    expect(registerSignatureHelpProvider).toHaveBeenCalled();
+
+    for (const spy of [registerCompletionProvider, registerHoverProvider, registerSignatureHelpProvider]) {
+      const symbolContext = spy.mock.calls[spy.mock.calls.length - 1][1] as {
+        getSymbols(): SymbolSnapshotEntry[];
+        getActiveFilename(): string | undefined;
+      };
+      expect(symbolContext.getSymbols()).toEqual(symbols);
+      expect(symbolContext.getActiveFilename()).toBe(file.name);
+    }
+  });
+
+  test('the SymbolContext reflects the latest symbols prop without re-registering providers', () => {
+    const initial: SymbolSnapshotEntry[] = [];
+    const { rerender } = render(<SBEditor file={file} height="100%" onChange={() => {}} symbols={initial} />);
+
+    const symbolContext = registerCompletionProvider.mock.calls[
+      registerCompletionProvider.mock.calls.length - 1
+    ][1] as { getSymbols(): SymbolSnapshotEntry[] };
+    expect(symbolContext.getSymbols()).toEqual([]);
+
+    const updated: SymbolSnapshotEntry[] = [
+      { name: 'score', kind: 'Variable', scopeName: '', scopeType: '', fullScope: '' },
+    ];
+    rerender(<SBEditor file={file} height="100%" onChange={() => {}} symbols={updated} />);
+
+    // Same accessor object (captured once at registration time) now reads the new value.
+    expect(symbolContext.getSymbols()).toEqual(updated);
+  });
+
+  test('no symbols prop still passes a SymbolContext that returns an empty array', () => {
+    render(<SBEditor file={file} height="100%" onChange={() => {}} />);
+    const symbolContext = registerCompletionProvider.mock.calls[
+      registerCompletionProvider.mock.calls.length - 1
+    ][1] as { getSymbols(): SymbolSnapshotEntry[] };
+    expect(symbolContext.getSymbols()).toEqual([]);
   });
 });
