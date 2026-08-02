@@ -661,8 +661,18 @@ with:
         symbolTable,
         undefined
       );
-      const arraySymbol = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array);
+      const arraySymbol = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array, true);
 ```
+
+Note the trailing `true` — this is the only call site that should resolve a `Parameter`-kind
+symbol through the fallback (`resolveIndexableSymbol`'s `includeParameterFallback` flag,
+added in Task 2 after code review found the default fallback was accidentally granting
+dict/array *read* indexing to bare function parameters, which never worked before this
+feature and was never a deliberate design decision — see `resolveIndexableSymbol.ts`'s
+comment for the full rationale). This one write-side array call site is the exception:
+`arr(i) = v` on a bare array parameter is pre-existing, intentional, already-tested
+behavior (see the regression test in Step 1) that must keep resolving to a `Parameter`-kind
+symbol and staying on the unguarded fast path in Step 4 below.
 
 - [ ] **Step 4: Branch the array-write codegen on symbol kind and dimension count**
 
