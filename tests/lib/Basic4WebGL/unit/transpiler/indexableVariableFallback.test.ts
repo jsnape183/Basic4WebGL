@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
 
@@ -161,5 +162,55 @@ describe('Array write fallback — plain dim variable holding an array', () => {
     ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
     expect(result.code).not.toContain('_sbCheckedArraySet');
+  });
+});
+
+describe('Doc examples that depend on this fix', () => {
+  test('dictionaries.md "Iterating over a dictionary" example compiles', () => {
+    const dictLib = {
+      name: 'dict',
+      source: readFileSync('src/lib/Basic4WebGL/defs/dict.bas', 'utf-8'),
+    };
+    const arrayLib = {
+      name: 'array',
+      source: readFileSync('src/lib/Basic4WebGL/defs/array.bas', 'utf-8'),
+    };
+    const result = compiler.transpile({
+      lib: [dictLib, arrayLib],
+      files: [{
+        name: 'Main.bas',
+        source: [
+          'dim scores[]',
+          'scores["Alice"] = 100',
+          'scores["Bob"] = 80',
+          '',
+          'dim k',
+          'k = dict.keys(scores)',
+          '',
+          'dim i',
+          'for i = 0 to array.length(k) - 1',
+          '  print k(i)',
+          '  print scores[k(i)]',
+          'next i',
+        ].join('\n'),
+      }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('save.md "getAll()" example compiles with direct indexing', () => {
+    const result = transpile([
+      'function getstate()',
+      '  dim d[]',
+      '  d["level"] = 3',
+      '  return d',
+      'endfunction',
+      'function onenter()',
+      '  dim state',
+      '  state = getstate()',
+      '  print state["level"]',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
   });
 });
