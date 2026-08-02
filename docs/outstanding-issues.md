@@ -87,19 +87,13 @@ all construction through `node()` or typed subclass constructors.
 
 ---
 
-## 5. File load order is manually controlled — no automatic dependency resolution
+## 5. ~~File load order is manually controlled — no automatic dependency resolution~~ **[RESOLVED]**
 
-**File(s):** `src/lib/CompilerLib/parser/index.ts`, `src/lib/Basic4WebGL/index.ts`
+**File(s):** `src/lib/Basic4WebGL/sortByDependencies.ts`, `src/hooks/useProjectForBuild.ts`
 
-**Risk:** Medium for usability — users must manually order project files so that class definitions appear before any file that uses them as a type (`dim x as ClassName`). Getting the order wrong produces a `Class X has not been declared yet` compile error with no guidance on how to fix it.
+Resolved by `sortByDependencies.ts` — a topological sort of project files by `new`/`as`/`extends`/method references, wired into `useProjectForBuild.ts`. Shipped 2026-06-17/18, before `v0.3.0` (see `docs/language/library-roadmap.md`'s "Two-pass compilation [DONE]"), but this entry wasn't updated at the time. No file-ordering constraint remains for class references; the compiler now orders files itself regardless of how they're listed in the project.
 
-**Context:** The compiler shares a single `Symbols` table across all files and processes them sequentially in the order provided by the project. When `DimRule` parses `dim x as Car`, it does an immediate symbol table lookup for the `Car` class. If `Car.bas` has not yet been parsed, the symbol does not exist. This is a fundamental consequence of the single-pass architecture.
-
-**Desired behaviour:** The compiler should analyse all files for top-level class declarations in a first pass, then compile in full. This would make file order irrelevant for type references.
-
-**Suggested follow-up:** Add a pre-pass in `parse()` (or the lexer pipeline) that registers all module/class names before the main parse loop runs. Class bodies would still be compiled in the second pass, but their names would be available to all files from the start. This requires separating "symbol registration" from "body parsing" for the `Root` and `Class` rules.
-
-**Workaround:** Order files in the project with leaf classes first and consumers after. `Key.bas` before `Car.bas` before `Main.bas`.
+**Original problem (for context):** The compiler shares a single `Symbols` table across all files and processes them sequentially in the order provided by the project. When `DimRule` parsed `dim x as Car`, it did an immediate symbol table lookup for the `Car` class — if `Car.bas` hadn't been parsed yet, the symbol didn't exist, producing a `Class X has not been declared yet` error with no guidance.
 
 ---
 
@@ -108,3 +102,7 @@ all construction through `node()` or typed subclass constructors.
 ---
 
 *Updated 2026-05-24 — Library architecture refactor (P3) complete. Runtime singletons replaced by `_sb` engine. Descriptor+generator system eliminates fragile `call()` strings. `Sprite` and `Text` are now classes. softGfx package bumped to v2.0.0.*
+
+---
+
+*Updated 2026-08-02 — issue 5 marked resolved; it was fixed by `sortByDependencies.ts` back on 2026-06-17/18 but this file was never updated to reflect it, so it sat listed as open for over a month after the fix shipped.*

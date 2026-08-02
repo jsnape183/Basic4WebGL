@@ -1,29 +1,30 @@
 # softBASIC — Internal Product Roadmap
 
-> Internal document. Not for publication. Last updated: 2026-07-31.
+> Internal document. Not for publication. Last updated: 2026-08-02.
 
 ---
 
 ## Versioning model
 
-**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.3.2` — Milestone 1 shipped as `v0.3.0`; `camera.shake` and a build fix landed as patches since.
+**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.4.2` — Milestone 1 shipped as `v0.3.0`, Milestone 2 (professional editor) shipped as `v0.4.0`; two patches landed since fixing real bugs discovered in the newly-shipped editor intellisense (see "Post-ship fixes" under Milestone 2 below).
 
 Milestones 1–5 are fully defined. Milestones 6–13 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
 ---
 
-## Current state (v0.3.0)
+## Current state (v0.4.2)
 
 Shipped and working:
 - Full softBASIC compiler (lexer → parser → transpiler → PIXI.js runtime)
 - Sprite, animatedsprite, tilemap, text, drawing, audio, collision, input modules
-- Scene management (`Scene` base class + `SceneManager`), camera (`camera` module), and world/HUD layers (`world` + `hud`, replacing the deprecated `stage` module) — closes out Milestone 1, see below
+- Scene management (`Scene` base class + `SceneManager`), camera (`camera` module), and world/HUD layers (`world` + `hud`, replacing the deprecated `stage` module) — closes out Milestone 1
+- Professional Monaco-based editor — autocomplete, hover documentation, parameter hints, live error underlining, and dynamic symbol resolution (user-defined functions/classes/variables, not just the built-in library) — closes out Milestone 2, see below
 - Typed collections, class inheritance, `new` keyword, dependency-ordered multi-file builds
 - Folder system, asset panel, import/export, package registry
 - Landing page with live game preview
 - Demos page, launched with a Wolfenstein-style raycaster tech demo
 
-Known deferred issues (low risk, to be resolved as patches within Milestone 2):
+Known deferred issues (low risk, not currently scheduled):
 1. ~~Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation~~ **[RESOLVED]** — gated by `tests/lib/Basic4WebGL/unit/parser/locPropagation.test.ts`; the three rules themselves were fine, the actual bug was one level deeper in `VariableFactorRule` (bare-identifier lookup threw without attaching the already-captured identifier `loc`, so the fallback grabbed the next token's line instead) — fixed there
 2. Stray `}` and typo "occured" in `UnexpectedError` message template (`src/lib/CompilerLib/errors.ts`)
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
@@ -47,13 +48,9 @@ Shipped as `camera` + `world` + `hud` modules, deprecating `stage`. Open questio
 
 ---
 
-## Milestone 2 — Professional editor (minor bump)
-
-**Now the current focus.**
+## ~~Milestone 2 — Professional editor~~ **[DONE — shipped as v0.4.0, 2026-08-01]**
 
 **Goal:** Make the editor credible for sustained use. Full intellisense backed by the existing `.bas` definition files.
-
-Re-audited 2026-07-31: this milestone was further along than tracked here — the two "technical decisions" below were already made and shipped (plan: `docs/superpowers/plans/2026-05-24-monaco-phase1.md`, spec: `docs/superpowers/specs/2026-05-24-monaco-improvements-research.md`), and three of the four deliverables are live in some form. What's actually left is two independent, patch-sized pieces — see "Remaining scope" below.
 
 ### Deliverables
 - ~~**Editor replaced with Monaco**~~ **[DONE]** — `@monaco-editor/react` integrated in `src/components/Editor/index.tsx`, replacing the old textarea.
@@ -64,11 +61,21 @@ Re-audited 2026-07-31: this milestone was further along than tracked here — th
 - ~~**Dynamic symbol resolution**~~ **[DONE]** (2026-08-01) — `Symbols.getSnapshot()` exposes a serializable flat symbol table; `Basic4WebGL.transpile()` returns it on a clean compile. `useLiveAnalysis` caches this snapshot with **last-known-good** semantics — it only advances on a zero-diagnostic compile, so intellisense reflects the file as of its last successful compile rather than the literal (possibly broken) current buffer, same staleness tolerance already accepted for error underlining. A new `monacoHelpers/scopeScanner.ts` textually tracks live `function`/`endfunction` and `constructor`/`endconstructor` nesting at the cursor, independent of the compiler, so it stays correct even while the buffer doesn't compile — deliberately does not track `if`/`for`/`while`/`do`, matching the compiler's existing function/constructor-only scoping (see "Block-level lexical scoping" in the parking lot below). `monacoHelpers/symbolCatalogue.ts` is the dynamic mirror of the static `catalogue.ts`; the static catalogue always wins on a name conflict. Confirmed empirically during implementation (not assumed from the design doc): file/class scope names in the symbol table are always lowercase — the lexer lowercases filenames before parsing — even though `IFile.name` in the editor preserves whatever case the user gave the file, so every scope-name comparison in `symbolCatalogue.ts` lowercases both sides.
 
 ### Remaining scope
-None — all deliverables above are done. Milestone 2 is complete; the next push is a minor bump to `v0.4.0` per the versioning model.
+None — all deliverables above are done. Milestone 2 shipped as `v0.4.0`.
+
+### Post-ship fixes
+Real-world validation after `v0.4.0` shipped surfaced two bugs in the dynamic symbol resolution feature — both invisible in unit tests because every test fixture used pre-normalized/pre-stripped names rather than the actual shapes flowing through the running app:
+
+- **`v0.4.2`** — Two compounding bugs in `completions.ts` broke autocomplete filtering the moment any prefix was typed (i.e. normal usage): `parseCompletionModule`'s regex required a bare trailing dot, so typing a filter character after it (`ship.setSc`) made the owner unresolvable and completion silently fell back to unrelated suggestions; separately, the suggestion `range` was a zero-width point at the cursor rather than spanning the typed prefix, breaking Monaco's own built-in filtering/ranking for whatever *was* returned. Hover was unaffected — it resolves via Monaco's own `getWordAtPosition` (an already-complete token), not this regex-based partial parsing.
+- **Earlier in the `v0.4.x` line** — `Editor`'s `SymbolContext.getActiveFilename()` passed the raw `IFile.name` (e.g. `Main.bas`, with extension and casing preserved) into symbol-table scope-name lookups, but the symbol table always scopes symbols under the extension-stripped, lowercased filename (`main`). This broke dot-completion on any object instance (`ship.` for a `sprite`) and bare-word completion of anything scoped to a file's own module rather than global.
+
+Both were found via live reproduction against the running app (not just unit tests) after a user report that autocomplete "didn't work at all." Worth remembering when adding intellisense-adjacent tests going forward: fixtures need to carry the real shapes (`Main.bas`, not `main`; a typed-but-incomplete prefix, not just an empty one) or they'll validate the wrong thing.
 
 ---
 
 ## Milestone 3 — User accounts (minor bump)
+
+**Now the current focus.**
 
 **Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the prerequisite for Milestone 4 and all monetisation work.
 

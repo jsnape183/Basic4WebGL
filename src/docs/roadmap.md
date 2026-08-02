@@ -4,19 +4,13 @@ softBASIC is under active development. Here's the broad shape of where things ar
 
 ---
 
-## What just shipped (v0.3.0)
+## What just shipped (v0.4.0)
 
-The foundational layer of the platform is now complete. Scene management, camera/viewport control, and world/HUD layers all shipped in v0.3.0, alongside animated sprite improvements and an expanded tutorial series covering these features.
+The editor now feels like a real IDE. Autocomplete for softBASIC functions and class members, hover documentation, and inline parameter hints — all backed by live analysis of your own code, not just the built-in library, so your own functions, classes, and variables show up too. Errors underline live as you type, and console error entries jump straight to the file and line. This builds on the foundational layer that shipped in v0.3.0: scene management, camera/viewport control, and world/HUD layers.
 
 ## Right now
 
-The editor is the next focus. Full autocomplete for softBASIC functions and class members, hover documentation for every function, and inline parameter hints as you type. The goal is an editor that feels as capable as the tools experienced developers are used to, while still being approachable for beginners.
-
----
-
-## Near term
-
-After the editor, optional accounts arrive. Signing in unlocks cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.
+Optional accounts are next. Signing in will unlock cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.
 
 ---
 
