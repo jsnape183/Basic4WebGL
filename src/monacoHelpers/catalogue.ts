@@ -6,6 +6,8 @@ import { drawingDescriptor } from '../lib/Basic4WebGL/library/descriptors/drawin
 import { stageDescriptor } from '../lib/Basic4WebGL/library/descriptors/stage.descriptor';
 import { penDescriptor } from '../lib/Basic4WebGL/library/descriptors/pen.descriptor';
 import { assetmanagerDescriptor } from '../lib/Basic4WebGL/library/descriptors/assetmanager.descriptor';
+import { fileDescriptor } from '../lib/Basic4WebGL/library/descriptors/file.descriptor';
+import { saveDescriptor } from '../lib/Basic4WebGL/library/descriptors/save.descriptor';
 import type { ClassDescriptor, ModuleDescriptor } from '../lib/Basic4WebGL/library/generator/types';
 import { DESCRIPTIONS } from './descriptions';
 
@@ -128,6 +130,8 @@ export const CATALOGUE: Record<string, CatalogueEntry> = {
   stage: fromModule(stageDescriptor),
   pen: fromModule(penDescriptor),
   assetmanager: fromModule(assetmanagerDescriptor),
+  file: fromModule(fileDescriptor),
+  save: fromModule(saveDescriptor),
   // NOTE: ObjectTransform stub for documentation purposes.
   // Monaco completion for two-level chains (bunny.transform.x())
   // requires extending the completion provider to resolve property chains.

@@ -4,7 +4,7 @@ export const firstPartyPackages: IPackage[] = [
   {
     id: 'softcore',
     name: 'softCore',
-    version: '1.0.0',
+    version: '1.1.0',
     isCore: true,
     isFirstParty: true,
     moduleNames: ['math', 'string', 'array', 'file', 'save'],

@@ -37,6 +37,20 @@ export const DESCRIPTIONS: Record<string, Record<string, string>> = {
   assetmanager: {
     loadImage: 'Loads an image asset by filename and returns a reference to it.',
   },
+  file: {
+    write: 'Saves text under a name. Replaces anything already saved there.',
+    read: 'Loads text previously saved under a name. Returns an empty string if nothing has been saved there yet.',
+    exists: 'Returns true if something has been saved under this name.',
+    delete: 'Removes whatever was saved under this name.',
+  },
+  save: {
+    set: 'Saves a single value (number, string, array, or dictionary) under a name.',
+    get: 'Loads a value previously saved under a name. Returns an empty string if nothing has been saved there yet.',
+    exists: 'Returns true if a value has been saved under this name.',
+    delete: 'Removes a single saved value.',
+    setAll: 'Saves an entire dictionary of values at once, replacing everything previously saved.',
+    getAll: 'Loads everything previously saved, as a single dictionary.',
+  },
   math: {
     abs: 'Returns the absolute value of n.',
     acos: 'Returns the arccosine of n in radians.',

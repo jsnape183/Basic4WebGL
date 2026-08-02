@@ -33,6 +33,7 @@ Known deferred issues (low risk, not currently scheduled):
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
 4. `new Tree()` direct construction bypasses loc — should prefer `node()` factory; add JSDoc warning
 5. No visual spritesheet editor/slicer in the asset panel — defining frame dimensions in code is the only option
+6. A variable can't be bracket/paren-indexed (`x["key"]`, `x(i)`) unless it was declared with `dim x[]`/`dim x(N)` and built up in the same scope — capturing a dict/array returned by a function call into a plain `dim x` (or reassigning a `dim x[]`-declared variable's whole value from one) doesn't compile. Discovered 2026-08-02 while building the `file`/`save` feature (see `save.md`'s `getAll()` note and `cypress/e2e/save-load.cy.ts`'s inline comment) — and it turns out to already silently break a shipped example: `docs/language-guide/dictionaries.md`'s "Iterating over a dictionary" section (`k = dict.keys(scores)` then `k(i)`) does not actually compile, confirmed directly
 
 ---
 
