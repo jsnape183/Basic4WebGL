@@ -156,7 +156,7 @@ class VariableFactorRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
 
-    const arraySym = symbolTable.get(name, symbolTypes.Array) as any;
+    const arraySym = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array) as any;
 
     if (arraySym.classSymbol && check(tokens.Dot, tokenStream.current())) {
       matchAndMove(tokens.Dot, tokenStream);

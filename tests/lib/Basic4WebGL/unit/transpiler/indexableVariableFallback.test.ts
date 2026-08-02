@@ -81,3 +81,46 @@ describe('Dictionary write fallback — plain dim variable holding a dict', () =
     expect(result.diagnostics[0].message).toMatch(/Dictionary p .*has not been declared/);
   });
 });
+
+describe('Array read fallback — plain dim variable holding an array', () => {
+  test('indexing a plain dim variable with () compiles and emits the checked accessor', () => {
+    const result = transpile([
+      'function getitems()',
+      '  dim a(1)',
+      '  a(0) = "sword"',
+      '  return a',
+      'endfunction',
+      'function test()',
+      '  dim items',
+      '  items = getitems()',
+      '  print items(0)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_sbCheckedArrayGet(test_items,0,"items")');
+  });
+
+  test('a real dim x(N) array keeps using the unguarded fast path', () => {
+    const result = transpile('dim arr(2)\nprint arr(0)');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.arr[0]');
+    expect(result.code).not.toContain('_sbCheckedArrayGet');
+  });
+
+  test('a real dim x(N,M) multi-dim array keeps using the unguarded fast path', () => {
+    const result = transpile('dim grid(2,2)\nprint grid(0,1)');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.grid[0][1]');
+    expect(result.code).not.toContain('_sbCheckedArrayGet');
+  });
+
+  test('indexing a bare function parameter with () is still a compile error (no new scope for parameters)', () => {
+    const result = transpile([
+      'function readit(p)',
+      '  print p(0)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message).toMatch(/Array p .*has not been declared/);
+  });
+});
