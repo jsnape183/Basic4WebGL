@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-07-31 (revised same-day after pulling origin/main — local main was 15 commits behind and missing shipped scene/camera work)
+> Last updated: 2026-08-02 (Save/load promoted to `docs/roadmap.md` Milestone 3)
 
 ---
 
@@ -165,7 +165,7 @@ Re-audited 2026-07-31 — several items below were previously listed as not-yet-
 - ~~Circle collision~~ **[DONE]** — `collision.circleCollide(a,radiusA,b,radiusB)` shipped, plus `raycast`/`raycastAll`/`pointInBox` (beyond original AABB-only scope).
 - **Polygon collision** — still not implemented (AABB, circle, and raycast only).
 - **Physics / gravity** — Rapier WASM or manual implementation. Not started.
-- **Save/load (localStorage)** — expose to user programs for game state persistence. Not started.
+- ~~Save/load (localStorage)~~ **[PROMOTED]** — moved to `docs/roadmap.md` Milestone 3 (Public beta readiness), 2026-08-02. This had sat here unscheduled despite being the actual gate on shippable games (persistent high scores, "continue" saves, roguelike/RPG progression) — a capability gap, not a nice-to-have polish item like the others in this list.
 - ~~Text styling~~ **[DONE]** — `Text.setStyle(size,r,g,b)` covers size and colour; `setFont(fontFamily)` and `setAlign(align)` shipped 2026-07-31, exposing font family and left/center/right alignment.
 - **Particle system** — emitter abstraction over PIXI particles. Not started.
 - **Touch input** — see P5 note above.

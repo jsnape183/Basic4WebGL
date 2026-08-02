@@ -8,7 +8,9 @@
 
 **Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.4.2` — Milestone 1 shipped as `v0.3.0`, Milestone 2 (professional editor) shipped as `v0.4.0`; two patches landed since fixing real bugs discovered in the newly-shipped editor intellisense (see "Post-ship fixes" under Milestone 2 below).
 
-Milestones 1–5 are fully defined. Milestones 6–13 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
+**Public beta vs. v1.0:** these are two distinct bars, not the same milestone. Public beta (Milestone 3) means someone can design, build, and ship a complete game anonymously — gated on game state save/load and production error tracking, not accounts. v1.0 (Milestone 6) additionally requires accounts, sharing, the gallery, and the package ecosystem (Milestones 4–6). Reframed 2026-08-02 after concluding accounts weren't actually the missing link for "can someone build a full game" — persistent state was.
+
+Milestones 1–6 are fully defined. Milestones 7–14 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
 ---
 
@@ -73,11 +75,31 @@ Both were found via live reproduction against the running app (not just unit tes
 
 ---
 
-## Milestone 3 — User accounts (minor bump)
+## Milestone 3 — Public beta readiness (minor bump)
 
 **Now the current focus.**
 
-**Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the prerequisite for Milestone 4 and all monetisation work.
+**Goal:** Reach the point where someone can design, build, and ship a genuinely complete game — entirely anonymously, no account, no backend — before any of the account/sharing/package work begins. Deliberately scoped narrower than v1.0: accounts, sharing, and the package ecosystem (Milestones 4–6) are valuable but not on the critical path to "can someone build a complete game."
+
+**Why this milestone exists:** Re-assessed 2026-08-02, prompted by a simple question: with the editor now credible (Milestone 2) and the core runtime already broad (scenes, camera, collision, sprites, audio, text, tilemaps), what's actually stopping someone from shipping a complete game today? Not accounts — the answer is state persistence. A roguelike, an RPG, or even a simple arcade game with a high-score table cannot exist without some way to survive a page reload. That gap was sitting misfiled as a "nice to have" in `docs/language/library-roadmap.md`'s Lower Priority list, unscheduled, next to genuine polish items (particles, polygon collision) it doesn't belong alongside.
+
+### Deliverables
+- **Game state save/load** — a new library module (working name `storage`) exposing something like `storage.save(key, data)` / `storage.load(key)` / `storage.exists(key)` / `storage.delete(key)`, backed by browser `localStorage` and scoped per-project so games don't collide with each other. Promoted here from `library-roadmap.md`'s backlog, where it had sat as "Not started" with no milestone attached despite being the actual gate on shippable games. Follows the standard six-step library feature process (`.bas` def, engine module, bootstrapper wiring, tests, docs, roadmap update).
+- **Production error tracking** — integrate Sentry or equivalent. Previously scoped under Milestone 4 (accounts) as "before user traffic scales," but public beta is when real anonymous traffic actually starts, accounts or not. The current iframe `window.onerror` handler pipes runtime errors to the IDE console; production JS errors outside the iframe are currently uncaptured. GDPR groundwork stays with Milestone 4, since beta introduces no new personal-data surface — no accounts, no backend.
+
+### Explicitly out of scope for this milestone
+Accounts, cloud sync, sharing, the game gallery, and the package ecosystem — all remain gated behind v1.0 (Milestones 4–6), unchanged from before this reframe.
+
+### Open questions
+- Serialization format for `storage.save` — handle softBASIC's typed collections (arrays/dictionaries) directly, or only primitives, leaving structured data to user-level encoding?
+- Per-project storage key namespacing — automatic (derived from project ID), or does the user pick a save-slot name?
+- Storage quota — `localStorage` is typically ~5–10MB per origin; worth confirming that's not a practical concern given game assets are stored separately (not base64-inlined here).
+
+---
+
+## Milestone 4 — User accounts (minor bump)
+
+**Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the prerequisite for Milestone 5 and all monetisation work.
 
 ### Architecture
 - **Backend:** Node.js API server. Framework, ORM, and hosting TBD.
@@ -94,8 +116,7 @@ Both were found via live reproduction against the running app (not just unit tes
 - Free tier enforcement at project 4 with upgrade prompt
 
 ### Additional work in this milestone
-- **Observability:** Integrate error tracking (Sentry or equivalent) before user traffic scales. The current iframe `window.onerror` handler pipes runtime errors to the IDE console; production JS errors outside the iframe are currently uncaptured.
-- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Must ship with or before accounts — cannot be deferred after.
+- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Must ship with or before accounts — cannot be deferred after. (Observability/error-tracking moved to Milestone 3 — see reframe note there.)
 
 ### Open questions
 - Database: Postgres (most likely), hosted where?
@@ -103,7 +124,7 @@ Both were found via live reproduction against the running app (not just unit tes
 
 ---
 
-## Milestone 4 — Cloud storage, project sharing, and game gallery (minor bump)
+## Milestone 5 — Cloud storage, project sharing, and game gallery (minor bump)
 
 **Goal:** Cloud-synced projects become shareable and publishable. A public game gallery provides a growth and discovery mechanic.
 
@@ -115,7 +136,7 @@ Both were found via live reproduction against the running app (not just unit tes
 - **Project forking:** "Remix this project" on a shared URL creates a copy in the viewer's account.
 
 ### Moderation
-Public content requires at minimum a report + takedown mechanism. Even a simple "Report this game" form and manual review queue is enough to start. This must be in scope for M4, not deferred.
+Public content requires at minimum a report + takedown mechanism. Even a simple "Report this game" form and manual review queue is enough to start. This must be in scope for M5, not deferred.
 
 ### Open questions
 - CDN strategy for published game assets (images, audio served at low latency globally)
@@ -124,7 +145,7 @@ Public content requires at minimum a report + takedown mechanism. Even a simple 
 
 ---
 
-## Milestone 5 — Package ecosystem (minor bump → v1.0)
+## Milestone 6 — Package ecosystem (minor bump → v1.0)
 
 **Goal:** Third-party or first-party packages that extend the softBASIC runtime. The Redux package registry and `.bas` definition file architecture already provide the foundation. v1.0 is tagged on completion of this milestone — it represents softBASIC as a genuine, open platform.
 
@@ -136,21 +157,21 @@ Public content requires at minimum a report + takedown mechanism. Even a simple 
 
 ---
 
-## Milestones 6–13 — Trajectory (to be scoped before each milestone begins)
+## Milestones 7–14 — Trajectory (to be scoped before each milestone begins)
 
 The milestones below are intentional direction-setters, not specifications. Each will be fully designed before implementation starts. What follows is enough context to understand the ordering rationale.
 
-### Milestone 6 — AI-assisted development (first phase)
-Claude API integration in the editor. First phase is deliberately constrained: single-file edits only, not a full code generator. Likely includes inline error explanation for beginners and assisted function writing. Requires M3 account infrastructure for per-user rate limiting and token budgets to be in place before this can ship responsibly.
+### Milestone 7 — AI-assisted development (first phase)
+Claude API integration in the editor. First phase is deliberately constrained: single-file edits only, not a full code generator. Likely includes inline error explanation for beginners and assisted function writing. Requires M4 account infrastructure for per-user rate limiting and token budgets to be in place before this can ship responsibly.
 
 Key questions to answer when firming this up: Which Claude model per task type? What context is sent (current file, relevant `.bas` defs, error list)? What are the free tier token allowances? How is prompt injection from user game code mitigated?
 
-### Milestone 7 — Paid tier
-Stripe billing, server-side feature flags, and expanded limits for paying users. The free tier already has enforcement points from M3/M4 (synced project limit, storage quota, AI token budget) — this milestone converts those into a real subscription product.
+### Milestone 8 — Paid tier
+Stripe billing, server-side feature flags, and expanded limits for paying users. The free tier already has enforcement points from M4/M5 (synced project limit, storage quota, AI token budget) — this milestone converts those into a real subscription product.
 
 Unlocks: more synced projects, more storage, more AI usage, more published games. Pricing TBD.
 
-### Milestone 8 — Game export to desktop executable (paid tier only)
+### Milestone 9 — Game export to desktop executable (paid tier only)
 
 User-initiated export that bundles a finished game project into a standalone installable — Windows `.exe` and macOS `.app` at minimum.
 
@@ -166,22 +187,22 @@ Additionally requires:
 - Asset pipeline to package and reference local assets correctly
 - Build server or CI integration to run the packaging process
 
-**Note:** M8 and M13 (desktop IDE) share the same underlying shell technology decision. That choice should be made once, here, not independently at M13.
+**Note:** M9 and M14 (desktop IDE) share the same underlying shell technology decision. That choice should be made once, here, not independently at M14.
 
-### Milestone 9 — Mobile touch support
+### Milestone 10 — Mobile touch support
 Touch input in the runtime already partially exists. This milestone makes it first-class: touch events mapped to softBASIC input functions, responsive canvas sizing, and IDE usability on tablet (not necessarily phone).
 
-### Milestone 10 — Sprite editor
+### Milestone 11 — Sprite editor
 In-app pixel art / sprite editor. Removes the dependency on external tools for basic sprite creation. Scope and format TBD — could range from a minimal pixel canvas to a layered editor.
 
-### Milestone 11 — Tilemap editor
+### Milestone 12 — Tilemap editor
 Visual tilemap editor integrated with the existing `tilemap` module. Paint tiles onto a grid, configure tile properties, export to a format the runtime can load. Scope TBD.
 
-### Milestone 12 — Music editor
+### Milestone 13 — Music editor
 Basic in-app music / sequencer tool. Scope TBD — likely tracker-style given the beginner audience. Tied to the existing audio module.
 
-### Milestone 13 — Desktop app (IDE as installable)
-The softBASIC editor itself packaged as a native desktop application. Shares the Electron/Tauri decision made at M8. Enables offline use of the full IDE, local file system access for assets, and potentially better performance than the browser version.
+### Milestone 14 — Desktop app (IDE as installable)
+The softBASIC editor itself packaged as a native desktop application. Shares the Electron/Tauri decision made at M9. Enables offline use of the full IDE, local file system access for assets, and potentially better performance than the browser version.
 
 ---
 
@@ -189,8 +210,8 @@ The softBASIC editor itself packaged as a native desktop application. Shares the
 
 Items that don't fit cleanly into the milestone sequence but should be revisited periodically:
 
-- **Multiplayer / real-time co-editing** — requires account infrastructure (M3) as a prerequisite. Significant complexity beyond that.
-- **Spritesheet editor** — may be pulled into M10 (sprite editor) depending on scope decisions there.
-- **Team / organisation tier** — shared projects, multiple seats. Natural extension after paid tier (M7).
-- **Game embedding** — embed a published game in an external site via `<iframe>`. Possible extension of M4 sharing infrastructure.
+- **Multiplayer / real-time co-editing** — requires account infrastructure (M4) as a prerequisite. Significant complexity beyond that.
+- **Spritesheet editor** — may be pulled into M11 (sprite editor) depending on scope decisions there.
+- **Team / organisation tier** — shared projects, multiple seats. Natural extension after paid tier (M8).
+- **Game embedding** — embed a published game in an external site via `<iframe>`. Possible extension of M5 sharing infrastructure.
 - **Block-level lexical scoping** (`if`/`endif`, `for`/`next`, `while`/`endwhile`, `do`/`until`) — currently intentional, not a bug: only `Function`, `Constructor`, and the per-file `Class`/module scope push onto `Symbols`' scope stack (`RootRule`, `FunctionRule`, `ConstructorRule`). A `dim` inside an `if` is visible for the rest of the enclosing function; blocks don't shadow or scope variables. No decision has been made yet on whether/how to tighten this — it has real design questions of its own (shadowing rules, error messages for use-outside-block). Revisit deliberately, not as a side effect of other work. Consequence noted during the M2 dynamic-symbol-resolution design (2026-08-01): that feature's editor-side scope scanner intentionally matches current compiler semantics (block dims visible to the whole enclosing function) rather than anticipating this — if block scoping ever lands, the compiler will need per-block loc ranges for its own error-checking anyway, and the editor scanner should switch to reading those ranges rather than reimplementing block-counting logic itself.
