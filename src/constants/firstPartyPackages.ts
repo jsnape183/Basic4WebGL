@@ -7,7 +7,7 @@ export const firstPartyPackages: IPackage[] = [
     version: '1.0.0',
     isCore: true,
     isFirstParty: true,
-    moduleNames: ['math', 'string', 'array'],
+    moduleNames: ['math', 'string', 'array', 'file', 'save'],
   },
   {
     id: 'softgfx',
