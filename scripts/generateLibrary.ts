@@ -10,6 +10,7 @@ import { drawingDescriptor } from '../src/lib/Basic4WebGL/library/descriptors/dr
 import { penDescriptor } from '../src/lib/Basic4WebGL/library/descriptors/pen.descriptor';
 import { assetmanagerDescriptor } from '../src/lib/Basic4WebGL/library/descriptors/assetmanager.descriptor';
 import { fileDescriptor } from '../src/lib/Basic4WebGL/library/descriptors/file.descriptor';
+import { saveDescriptor } from '../src/lib/Basic4WebGL/library/descriptors/save.descriptor';
 
 const classDescriptors: ClassDescriptor[] = [
   spriteDescriptor,
@@ -23,6 +24,7 @@ const moduleDescriptors: ModuleDescriptor[] = [
   penDescriptor,
   assetmanagerDescriptor,
   fileDescriptor,
+  saveDescriptor,
 ];
 
 const OUT_DIR = 'src/lib/Basic4WebGL/defs';
