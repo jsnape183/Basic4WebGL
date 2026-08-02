@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.4.1 — 2026-08-02
+
+### Fixes
+
+- Fixed autocomplete (and hover/signature help) returning nothing for dot-completion on object instances — `ship.` for a sprite, or any user-defined class instance — instead of the object's actual members. The editor was matching the active file's raw name (`Main.bas`) against the symbol table's normalized scope name (`main`), so the lookup never matched. Static module completions (`string.`) and bare-word completion of globals were unaffected, which is why the break wasn't total.
+
 ## v0.4.0 — 2026-08-02
 
 Closes out Milestone 2 (editor intellisense).
