@@ -41,6 +41,12 @@ Checks whether a value has been saved under a name yet.
 
 **Returns:** true or false
 
+```bas
+if save.exists("highscore") == true
+  print "You have a saved high score!"
+endif
+```
+
 ## delete(key)
 
 Removes a single saved value. Does nothing if there was nothing saved under that name.
@@ -48,6 +54,10 @@ Removes a single saved value. Does nothing if there was nothing saved under that
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
 | key       | string | The name to remove |
+
+```bas
+save.delete("highscore")
+```
 
 ## setAll(data)
 
@@ -63,6 +73,8 @@ state["level"] = 3
 state["score"] = 4200
 save.setAll(state)
 ```
+
+> **Note:** `data` must be a dictionary. Passing anything else (a number, a string, an array) will cause an error.
 
 ## getAll()
 
