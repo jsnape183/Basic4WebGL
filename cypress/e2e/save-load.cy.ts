@@ -92,6 +92,12 @@ function onenter()
   dim loadeditems
   loadeditems = loaded["items"]
 
+  ' writing back through the fallback-typed variables too, not just reading —
+  ' exercises _sbCheckedDictSet/_sbCheckedArraySet in a real browser, same as
+  ' the reads above exercise _sbCheckedDictGet/_sbCheckedArrayGet
+  loadeditems(0) = "shield"
+  loaded["level"] = 99
+
   print "level: " + string.str(loaded["level"])
   print "first item: " + loadeditems(0)
   print "leftover exists: " + string.str(save.exists("leftover"))
@@ -100,8 +106,8 @@ endfunction
 
   it('round-trips a dict containing an array, and setAll wipes prior individually-set keys', () => {
     visitAndRun('save02', 'Save Test 2', SOURCE);
-    cy.get('span').contains('level: 3').should('exist');
-    cy.get('span').contains('first item: sword').should('exist');
+    cy.get('span').contains('level: 99').should('exist');
+    cy.get('span').contains('first item: shield').should('exist');
     cy.get('span').contains('leftover exists: false').should('exist');
   });
 });
