@@ -85,5 +85,7 @@ Loads everything previously saved, as a single dictionary.
 ```bas
 dim state
 state = save.getAll()
-print state["level"]
+print "Saved items: " + string.str(array.length(state))
 ```
+
+> **Note:** If you need to read a specific value back, use `get` with its key — that's the reliable way to read one field. `getAll()` is best for bulk checks, like counting how many things have been saved or confirming there's any save data at all.
