@@ -86,27 +86,28 @@ function onenter()
   state["items"] = items
   save.setAll(state)
 
-  ' Note: save.getAll() returns a dict, but softBASIC's bracket-index syntax
-  ' (dict["key"]) only works on a variable declared as a dictionary with
-  ' dim x[] and built up in place — not on a plain variable holding a dict
-  ' handed back from a function call. So instead of indexing into "loaded"
-  ' directly, read it back with the shared array.* functions, which accept
-  ' any expression as their argument and special-case dictionaries: length
-  ' is key count, join concatenates the values in insertion order (level was
-  ' set before items, so this also proves the nested array came back intact).
   dim loaded
   loaded = save.getAll()
 
-  print "count: " + string.str(array.length(loaded))
-  print "values: " + array.join(loaded, " | ")
+  dim loadeditems
+  loadeditems = loaded["items"]
+
+  ' writing back through the fallback-typed variables too, not just reading —
+  ' exercises _sbCheckedDictSet/_sbCheckedArraySet in a real browser, same as
+  ' the reads above exercise _sbCheckedDictGet/_sbCheckedArrayGet
+  loadeditems(0) = "shield"
+  loaded["level"] = 99
+
+  print "level: " + string.str(loaded["level"])
+  print "first item: " + loadeditems(0)
   print "leftover exists: " + string.str(save.exists("leftover"))
 endfunction
 `.trim();
 
   it('round-trips a dict containing an array, and setAll wipes prior individually-set keys', () => {
     visitAndRun('save02', 'Save Test 2', SOURCE);
-    cy.get('span').contains('count: 2').should('exist');
-    cy.get('span').contains('values: 3 | sword').should('exist');
+    cy.get('span').contains('level: 99').should('exist');
+    cy.get('span').contains('first item: shield').should('exist');
     cy.get('span').contains('leftover exists: false').should('exist');
   });
 });

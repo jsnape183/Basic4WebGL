@@ -16,6 +16,7 @@ import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
 import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
+import resolveIndexableSymbol from './helpers/resolveIndexableSymbol';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 import { CompilationError, SymbolError } from '@CompilerLib/errors';
 
@@ -92,7 +93,7 @@ class VariableFactorRule implements IParserRule {
     }
     // Dictionary lookup in expression context: dict["key"] or dict["key"].member
     if (check(tokens.OpenBracket, tokenStream.current())) {
-      const dictSym = symbolTable.get(name, symbolTypes.Dictionary) as any;
+      const dictSym = resolveIndexableSymbol(symbolTable, name, symbolTypes.Dictionary) as any;
       matchAndMove(tokens.OpenBracket, tokenStream);
       const keyExpr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -155,7 +156,7 @@ class VariableFactorRule implements IParserRule {
     );
     matchAndMove(tokens.CloseParen, tokenStream);
 
-    const arraySym = symbolTable.get(name, symbolTypes.Array) as any;
+    const arraySym = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array) as any;
 
     if (arraySym.classSymbol && check(tokens.Dot, tokenStream.current())) {
       matchAndMove(tokens.Dot, tokenStream);

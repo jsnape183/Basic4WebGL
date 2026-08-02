@@ -17,6 +17,7 @@ import { newLines } from '../../parserConfig';
 import { CompilationError } from '@CompilerLib/errors';
 import nodeTypes from '../../nodeTypes';
 import TypedElementAccessNode from '../../nodes/TypedElementAccessNode';
+import resolveIndexableSymbol from './Expressions/helpers/resolveIndexableSymbol';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -72,9 +73,17 @@ class VariableRule implements IParserRule {
         functionSymbol
       );
     }
-    // Handle dictionary access/assignment: dict["key"].method() or dict["key"] = value
-    if (symbolTable.check(name, symbolTypes.Dictionary)) {
-      const dictSym = symbolTable.get(name, symbolTypes.Dictionary) as any;
+    // Handle dictionary access/assignment: dict["key"].method() or dict["key"] = value.
+    // A Dictionary-kind symbol is always followed by '[' by construction (dim x[]
+    // only ever parses that way) so no lookahead is needed for it. A plain
+    // Variable-kind symbol only takes this branch when '[' is actually next,
+    // so ordinary `x = 5` assignment is unaffected.
+    const isDictLike =
+      symbolTable.check(name, symbolTypes.Dictionary) ||
+      (check(tokens.OpenBracket, tokenStream.current()) &&
+        symbolTable.check(name, symbolTypes.Variable));
+    if (isDictLike) {
+      const dictSym = resolveIndexableSymbol(symbolTable, name, symbolTypes.Dictionary) as any;
       matchAndMove(tokens.OpenBracket, tokenStream);
       const keyExpr = getParserRule('BoolExpression').parse(
         tokenStream,
@@ -170,11 +179,16 @@ class VariableRule implements IParserRule {
       }
     }
 
-    // Handle array indexing: arr(i) = v for both Array and Variable (pass-by-ref array param)
+    // Handle array indexing: arr(i) = v for Array-kind symbols, and for
+    // Variable-kind symbols (covers both pass-by-ref array parameters and a
+    // plain dim holding an array returned from a function call) when '(' is
+    // actually next — `check(name, Variable)` already matches Parameter-kind
+    // symbols too (see isMatchingType in transpilerRules/symbolRules.ts), so
+    // this single check covers both cases.
     const isArrayLike =
       symbolTable.check(name, symbolTypes.Array) ||
       (check(tokens.OpenParen, tokenStream.current()) &&
-        symbolTable.check(name, symbolTypes.Parameter));
+        symbolTable.check(name, symbolTypes.Variable));
     if (isArrayLike) {
       const dims = getParserRule('ExpressionList').parse(
         tokenStream,
@@ -187,9 +201,7 @@ class VariableRule implements IParserRule {
         symbolTable,
         undefined
       );
-      const arraySymbol = symbolTable.check(name, symbolTypes.Array)
-        ? symbolTable.get(name, 'Array')
-        : symbolTable.get(name, symbolTypes.Variable);
+      const arraySymbol = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array, true);
       if (expr.type === nodeTypes.NewObject) {
         const arrClass = (arraySymbol as any).classSymbol?.name;
         const newClass = expr.data.classSymbol.name;
