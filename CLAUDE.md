@@ -38,6 +38,7 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 - **Branch:** Work directly on `main`. No feature branches unless explicitly requested.
 - **Commits:** Frequent, small, imperative-style messages (`feat:`, `fix:`, `docs:`).
 - **Tests:** All tests live in `tests/` mirroring `src/`. Run the full suite before committing any compiler/transpiler changes. Separately, `cypress/e2e/` holds browser-based e2e tests (see [E2E tests (Cypress)](#e2e-tests-cypress) above) — not part of this suite, not run automatically, but the only thing that verifies real runtime behaviour.
+- **Scratch tests:** One-off probe/repro files created during investigation or code review (e.g. "does this doc example actually compile", "does this symbol resolve") go in `tests/scratch/` — gitignored and excluded from Vitest's `include` glob (`vite.config.ts`), so they never get committed and never affect `npx vitest run`. When a scratch file is no longer actively needed, mark its top-level `describe`/`test` as `.skip` rather than deleting it — cheap to keep, easy to revive if it turns out useful later, and self-documents that it's retired rather than silently rotting as clutter.
 
 ### Pushing to main — required extra step
 

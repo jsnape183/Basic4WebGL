@@ -21,6 +21,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/ui/setup.ts'],
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['**/node_modules/**', 'tests/scratch/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
