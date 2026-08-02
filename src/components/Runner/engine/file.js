@@ -3,11 +3,11 @@ const _sbFile = (() => {
 
   function readAll(projectId) {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + projectId);
-    if (!raw) return {};
+    if (!raw) return Object.create(null);
     try {
-      return JSON.parse(raw);
+      return Object.assign(Object.create(null), JSON.parse(raw));
     } catch (_) {
-      return {};
+      return Object.create(null);
     }
   }
 
