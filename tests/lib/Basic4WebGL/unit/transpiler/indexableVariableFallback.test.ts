@@ -37,5 +37,6 @@ describe('Dictionary read fallback — plain dim variable holding a dict', () =>
       'endfunction',
     ].join('\n'));
     expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message).toMatch(/Dictionary p .*has not been declared/);
   });
 });
