@@ -52,7 +52,11 @@ const SBEditor: React.FC<SBEditorProps> = ({ file, height, onChange, onCursorCha
 
     const symbolContext: SymbolContext = {
       getSymbols: () => symbolsRef.current,
-      getActiveFilename: () => fileRef.current?.name,
+      // Symbol table scope names are always the extension-stripped, lowercased
+      // filename (lexer/index.ts: `f.name.replace('.bas', '').toLowerCase()`),
+      // but IFile.name keeps the raw '.bas'/casing (e.g. 'Main.bas') — normalize
+      // the same way here so scope-name lookups in symbolCatalogue.ts actually match.
+      getActiveFilename: () => fileRef.current?.name.replace('.bas', '').toLowerCase(),
     };
 
     const completionDisposable = registerCompletionProvider(monaco, symbolContext);

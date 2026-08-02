@@ -50,13 +50,17 @@ vi.mock('../../../../src/monacoHelpers/signatures', () => ({
   registerSignatureHelpProvider: (...args: unknown[]) => registerSignatureHelpProvider(...args),
 }));
 
+// Real IFile.name values include the '.bas' extension and original casing
+// (see createProjectWithMainFile.ts: `name: 'Main.bas'`) — the fixture must
+// match that shape, since the whole point of the tests below is to verify
+// the extension gets stripped before reaching the symbol table lookups.
 const file: IFile = {
   id: 'f1',
-  name: 'Main',
+  name: 'Main.bas',
   source: 'print "hi"',
   projectId: 'p1',
   folderId: null,
-  fullName: 'Main',
+  fullName: 'Main.bas',
 };
 
 afterEach(() => {
@@ -66,7 +70,7 @@ afterEach(() => {
 describe('SBEditor diagnostics + jumpTo', () => {
   test('a diagnostic in the active file results in one marker', () => {
     const diagnostics: Diagnostic[] = [
-      { message: 'Undefined variable', severity: 'error', loc: { line: 1, col: 1, filename: 'Main' } },
+      { message: 'Undefined variable', severity: 'error', loc: { line: 1, col: 1, filename: 'Main.bas' } },
     ];
     render(<SBEditor file={file} height="100%" onChange={() => {}} diagnostics={diagnostics} />);
     expect(setModelMarkers).toHaveBeenCalled();
@@ -122,8 +126,19 @@ describe('SBEditor symbols prop', () => {
         getActiveFilename(): string | undefined;
       };
       expect(symbolContext.getSymbols()).toEqual(symbols);
-      expect(symbolContext.getActiveFilename()).toBe(file.name);
+      // Symbol table scope names are always the extension-stripped, lowercased
+      // filename (lexer/index.ts: `f.name.replace('.bas', '').toLowerCase()`),
+      // so getActiveFilename() must match that shape, not the raw IFile.name.
+      expect(symbolContext.getActiveFilename()).toBe('main');
     }
+  });
+
+  test('getActiveFilename strips the .bas extension and lowercases, matching the symbol table\'s scope-name convention', () => {
+    render(<SBEditor file={file} height="100%" onChange={() => {}} symbols={[]} />);
+    const symbolContext = registerCompletionProvider.mock.calls[
+      registerCompletionProvider.mock.calls.length - 1
+    ][1] as { getActiveFilename(): string | undefined };
+    expect(symbolContext.getActiveFilename()).toBe('main');
   });
 
   test('the SymbolContext reflects the latest symbols prop without re-registering providers', () => {
