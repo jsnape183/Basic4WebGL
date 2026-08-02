@@ -52,7 +52,10 @@ const _sbSave = (() => {
       writeBlob(blob);
     },
     saveSetAll(dict) {
-      writeBlob(dict instanceof Map ? dict : new Map());
+      if (!(dict instanceof Map)) {
+        throw new Error('save.setAll requires a dictionary');
+      }
+      writeBlob(dict);
     },
     saveGetAll() {
       return readBlob();
