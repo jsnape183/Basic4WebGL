@@ -3,6 +3,8 @@ const _sb = {
   ..._sbScene,
   ..._sbInput,
   ..._sbAssets,
+  ..._sbFile,
+  ..._sbSave,
   ..._sbAudio,
   ..._sbDrawing,
   ..._sbStage,
