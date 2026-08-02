@@ -29,4 +29,13 @@ describe('Dictionary read fallback — plain dim variable holding a dict', () =>
     expect(result.code).toContain('_sbDictGet(main.scores,"Alice")');
     expect(result.code).not.toContain('_sbCheckedDictGet');
   });
+
+  test('indexing a bare function parameter with [] is still a compile error (no new scope for parameters)', () => {
+    const result = transpile([
+      'function readit(p)',
+      '  print p["level"]',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+  });
 });
