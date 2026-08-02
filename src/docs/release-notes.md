@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.4.3 — 2026-08-02
+
+### Fixes
+
+- Fixed a compiler bug where a plain `dim state` variable that received a dictionary or array back from a function call (e.g. `state = save.getAll()`, `k = dict.keys(scores)`) could not be indexed — `state["key"]` or `k(i)` was a compile error with no workaround, since indexing only worked on a variable declared up front as `dim x[]`/`dim x(N)`, and those couldn't be reassigned from a function's return value either. Both reads and writes now work on such a variable, with a clear error message if the value turns out not to actually be a dictionary or array at runtime.
+- `save.md`'s `getAll()` example now reads back a value with direct indexing instead of the `array.length()` workaround it previously needed.
+
 ## v0.4.2 — 2026-08-02
 
 ### Fixes
