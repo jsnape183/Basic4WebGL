@@ -4,9 +4,11 @@ softBASIC is under active development. Here's the broad shape of where things ar
 
 ---
 
-## What just shipped (v0.4.0)
+## What just shipped
 
 The editor now feels like a real IDE. Autocomplete for softBASIC functions and class members, hover documentation, and inline parameter hints — all backed by live analysis of your own code, not just the built-in library, so your own functions, classes, and variables show up too. Errors underline live as you type, and console error entries jump straight to the file and line. This builds on the foundational layer that shipped in v0.3.0: scene management, camera/viewport control, and world/HUD layers.
+
+Since then, your games can now save and load progress. Whether it's a high-score table, an in-progress level, or a whole inventory, your game can save it and have it still be there the next time someone plays — no account or backend needed. This was the last missing piece for shipping a genuinely complete game.
 
 ## Right now
 

@@ -94,9 +94,9 @@ Originally scoped with a second deliverable, production error tracking — but t
 Accounts, cloud sync, sharing, the game gallery, and the package ecosystem — all remain gated behind v1.0 (Milestones 4–6), unchanged from before this reframe.
 
 ### Open questions
-- Serialization format for `storage.save` — handle softBASIC's typed collections (arrays/dictionaries) directly, or only primitives, leaving structured data to user-level encoding?
-- Per-project storage key namespacing — automatic (derived from project ID), or does the user pick a save-slot name?
-- Storage quota — `localStorage` is typically ~5–10MB per origin; worth confirming that's not a practical concern given game assets are stored separately (not base64-inlined here).
+- ~~Serialization format for `storage.save` — handle softBASIC's typed collections (arrays/dictionaries) directly, or only primitives, leaving structured data to user-level encoding?~~ **[RESOLVED]** — `save.js`'s `encode`/`decode` functions handle typed collections (dicts/arrays) directly via a recursive Map-aware encoder.
+- ~~Per-project storage key namespacing — automatic (derived from project ID), or does the user pick a save-slot name?~~ **[RESOLVED]** — automatic, derived from `_sbProjectId` (`file.js`'s `sb_files:<projectId>` key), not a user-picked slot name.
+- ~~Storage quota — `localStorage` is typically ~5–10MB per origin; worth confirming that's not a practical concern given game assets are stored separately (not base64-inlined here).~~ **[RESOLVED]** — differently than anticipated: rather than confirming quota isn't a concern, the design deliberately lets `QuotaExceededError` propagate as a visible runtime error (see `file.js`'s `writeAll` and its comment), a design choice rather than a quota-headroom finding.
 
 ---
 
