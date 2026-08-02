@@ -1,6 +1,8 @@
 import math from '../lib/Basic4WebGL/defs/math.bas?raw';
 import string from '../lib/Basic4WebGL/defs/string.bas?raw';
 import array from '../lib/Basic4WebGL/defs/array.bas?raw';
+import file from '../lib/Basic4WebGL/defs/file.bas?raw';
+import save from '../lib/Basic4WebGL/defs/save.bas?raw';
 import gfx from '../lib/Basic4WebGL/defs/gfx.bas?raw';
 import input from '../lib/Basic4WebGL/defs/input.bas?raw';
 import drawing from '../lib/Basic4WebGL/defs/drawing.bas?raw';
@@ -25,6 +27,8 @@ export const packageModules: Record<string, string> = {
   math,
   string,
   array,
+  file,
+  save,
   gfx,
   input,
   drawing,
