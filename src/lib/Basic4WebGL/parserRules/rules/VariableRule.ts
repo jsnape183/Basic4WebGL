@@ -17,6 +17,7 @@ import { newLines } from '../../parserConfig';
 import { CompilationError } from '@CompilerLib/errors';
 import nodeTypes from '../../nodeTypes';
 import TypedElementAccessNode from '../../nodes/TypedElementAccessNode';
+import resolveIndexableSymbol from './Expressions/helpers/resolveIndexableSymbol';
 
 function isInstancePropertyAccess(symbol: Symbol, symbolTable: Symbols): boolean {
   if (symbol.scope.type !== scopeTypes.Class) return false;
@@ -72,9 +73,17 @@ class VariableRule implements IParserRule {
         functionSymbol
       );
     }
-    // Handle dictionary access/assignment: dict["key"].method() or dict["key"] = value
-    if (symbolTable.check(name, symbolTypes.Dictionary)) {
-      const dictSym = symbolTable.get(name, symbolTypes.Dictionary) as any;
+    // Handle dictionary access/assignment: dict["key"].method() or dict["key"] = value.
+    // A Dictionary-kind symbol is always followed by '[' by construction (dim x[]
+    // only ever parses that way) so no lookahead is needed for it. A plain
+    // Variable-kind symbol only takes this branch when '[' is actually next,
+    // so ordinary `x = 5` assignment is unaffected.
+    const isDictLike =
+      symbolTable.check(name, symbolTypes.Dictionary) ||
+      (check(tokens.OpenBracket, tokenStream.current()) &&
+        symbolTable.check(name, symbolTypes.Variable));
+    if (isDictLike) {
+      const dictSym = resolveIndexableSymbol(symbolTable, name, symbolTypes.Dictionary) as any;
       matchAndMove(tokens.OpenBracket, tokenStream);
       const keyExpr = getParserRule('BoolExpression').parse(
         tokenStream,

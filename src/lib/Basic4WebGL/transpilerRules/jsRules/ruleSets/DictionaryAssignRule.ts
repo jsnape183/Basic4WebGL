@@ -5,12 +5,18 @@ import {
 } from '@CompilerLib/transpiler/IGeneratable';
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
+import { symbolTypes } from '../../../symbolTypes';
 import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.DictionaryAssign)
 class DictionaryAssignRule implements IGeneratable {
   generate(node: Tree, table: Symbols): string {
-    return `${formatSymbol(node.data)}.set(${doChild(node, 0, table)},${doChild(node, 1, table)});`;
+    const key = doChild(node, 0, table);
+    const value = doChild(node, 1, table);
+    if (node.data.type === symbolTypes.Variable) {
+      return `_sbCheckedDictSet(${formatSymbol(node.data)},${key},${value},"${node.data.name}");`;
+    }
+    return `${formatSymbol(node.data)}.set(${key},${value});`;
   }
 }
 

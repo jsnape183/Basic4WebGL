@@ -40,3 +40,44 @@ describe('Dictionary read fallback — plain dim variable holding a dict', () =>
     expect(result.diagnostics[0].message).toMatch(/Dictionary p .*has not been declared/);
   });
 });
+
+describe('Dictionary write fallback — plain dim variable holding a dict', () => {
+  test('writing into a plain dim variable with [] compiles and emits the checked accessor', () => {
+    const result = transpile([
+      'function getstate()',
+      '  dim d[]',
+      '  return d',
+      'endfunction',
+      'function test()',
+      '  dim state',
+      '  state = getstate()',
+      '  state["level"] = 5',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_sbCheckedDictSet(test_state,"level",5,"state")');
+  });
+
+  test('a real dim x[] dictionary keeps using the unguarded fast path for writes', () => {
+    const result = transpile('dim scores[]\nscores["Alice"] = 100');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.scores.set("Alice",100)');
+    expect(result.code).not.toContain('_sbCheckedDictSet');
+  });
+
+  test('plain dim assignment (x = 5) is unaffected by the dict fallback gate', () => {
+    const result = transpile('dim x\nx = 5');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.x = 5;');
+  });
+
+  test('writing into a bare function parameter with [] is still a compile error (no new scope for parameters)', () => {
+    const result = transpile([
+      'function writeit(p)',
+      '  p["level"] = 5',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message).toMatch(/Dictionary p .*has not been declared/);
+  });
+});
