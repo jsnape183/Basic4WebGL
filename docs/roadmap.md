@@ -8,7 +8,7 @@
 
 **Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.4.2` — Milestone 1 shipped as `v0.3.0`, Milestone 2 (professional editor) shipped as `v0.4.0`; two patches landed since fixing real bugs discovered in the newly-shipped editor intellisense (see "Post-ship fixes" under Milestone 2 below).
 
-**Public beta vs. v1.0:** these are two distinct bars, not the same milestone. Public beta (Milestone 3) means someone can design, build, and ship a complete game anonymously — gated on game state save/load and production error tracking, not accounts. v1.0 (Milestone 6) additionally requires accounts, sharing, the gallery, and the package ecosystem (Milestones 4–6). Reframed 2026-08-02 after concluding accounts weren't actually the missing link for "can someone build a full game" — persistent state was.
+**Public beta vs. v1.0:** these are two distinct bars, not the same milestone. Public beta (Milestone 3) means someone can design, build, and ship a complete game anonymously — gated on game state save/load, not accounts. (Production error tracking was also on this list until scoping the milestone turned up that it's already shipped — see Milestone 3.) v1.0 (Milestone 6) additionally requires accounts, sharing, the gallery, and the package ecosystem (Milestones 4–6). Reframed 2026-08-02 after concluding accounts weren't actually the missing link for "can someone build a full game" — persistent state was.
 
 Milestones 1–6 are fully defined. Milestones 7–14 are intentionally loose — trajectory markers only. Each will be fully scoped and planned before implementation begins, so detail accumulates just-in-time rather than speculating years ahead.
 
@@ -25,6 +25,7 @@ Shipped and working:
 - Folder system, asset panel, import/export, package registry
 - Landing page with live game preview
 - Demos page, launched with a Wolfenstein-style raycaster tech demo
+- Production error tracking (Sentry) — React app crashes and sandboxed game-iframe runtime errors both captured, the latter with full project source attached for reproduction; shipped 2026-06-17, DSN confirmed live in the production deployment
 
 Known deferred issues (low risk, not currently scheduled):
 1. ~~Delegation-only parser rules (BoolTermRule, ExpressionRule, ModuleFactorRule) not verified for loc propagation~~ **[RESOLVED]** — gated by `tests/lib/Basic4WebGL/unit/parser/locPropagation.test.ts`; the three rules themselves were fine, the actual bug was one level deeper in `VariableFactorRule` (bare-identifier lookup threw without attaching the already-captured identifier `loc`, so the fallback grabbed the next token's line instead) — fixed there
@@ -83,9 +84,13 @@ Both were found via live reproduction against the running app (not just unit tes
 
 **Why this milestone exists:** Re-assessed 2026-08-02, prompted by a simple question: with the editor now credible (Milestone 2) and the core runtime already broad (scenes, camera, collision, sprites, audio, text, tilemaps), what's actually stopping someone from shipping a complete game today? Not accounts — the answer is state persistence. A roguelike, an RPG, or even a simple arcade game with a high-score table cannot exist without some way to survive a page reload. That gap was sitting misfiled as a "nice to have" in `docs/language/library-roadmap.md`'s Lower Priority list, unscheduled, next to genuine polish items (particles, polygon collision) it doesn't belong alongside.
 
+Originally scoped with a second deliverable, production error tracking — but that turned out to already be shipped (see "Already done" below), discovered while planning this milestone out. So this milestone is now down to one deliverable.
+
 ### Deliverables
 - **Game state save/load** — a new library module (working name `storage`) exposing something like `storage.save(key, data)` / `storage.load(key)` / `storage.exists(key)` / `storage.delete(key)`, backed by browser `localStorage` and scoped per-project so games don't collide with each other. Promoted here from `library-roadmap.md`'s backlog, where it had sat as "Not started" with no milestone attached despite being the actual gate on shippable games. Follows the standard six-step library feature process (`.bas` def, engine module, bootstrapper wiring, tests, docs, roadmap update).
-- **Production error tracking** — integrate Sentry or equivalent. Previously scoped under Milestone 4 (accounts) as "before user traffic scales," but public beta is when real anonymous traffic actually starts, accounts or not. The current iframe `window.onerror` handler pipes runtime errors to the IDE console; production JS errors outside the iframe are currently uncaptured. GDPR groundwork stays with Milestone 4, since beta introduces no new personal-data surface — no accounts, no backend.
+
+### Already done (discovered, not built, while scoping this milestone)
+- ~~**Production error tracking**~~ — this was believed to be an open gap ("production JS errors outside the iframe are currently uncaptured") but that claim was stale. Sentry has been fully integrated since `eebf711` (2026-06-17): `Sentry.init()` in `main.tsx` gated on `VITE_SENTRY_DSN`; `ErrorBoundary.componentDidCatch` forwards React crashes; `useRunnerMessages` forwards **iframe/game runtime errors** too, via `Sentry.captureMessage`, attaching the full project source (asset binaries stripped) as context for reproduction. Confirmed the production DSN is actually set in the Railway deployment, so this isn't just dead code — it's live. Nothing left to do here.
 
 ### Explicitly out of scope for this milestone
 Accounts, cloud sync, sharing, the game gallery, and the package ecosystem — all remain gated behind v1.0 (Milestones 4–6), unchanged from before this reframe.
@@ -116,7 +121,7 @@ Accounts, cloud sync, sharing, the game gallery, and the package ecosystem — a
 - Free tier enforcement at project 4 with upgrade prompt
 
 ### Additional work in this milestone
-- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Must ship with or before accounts — cannot be deferred after. (Observability/error-tracking moved to Milestone 3 — see reframe note there.)
+- **GDPR groundwork:** Cookie consent, privacy policy, right-to-erasure endpoint. Must ship with or before accounts — cannot be deferred after. (Error tracking was previously listed here too, but turned out to already be shipped — see Milestone 3's "Already done" note.)
 
 ### Open questions
 - Database: Postgres (most likely), hosted where?
