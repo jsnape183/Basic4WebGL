@@ -124,3 +124,42 @@ describe('Array read fallback — plain dim variable holding an array', () => {
     expect(result.diagnostics[0].message).toMatch(/Array p .*has not been declared/);
   });
 });
+
+describe('Array write fallback — plain dim variable holding an array', () => {
+  test('writing into a plain dim variable with () compiles and emits the checked accessor', () => {
+    const result = transpile([
+      'function getitems()',
+      '  dim a(1)',
+      '  return a',
+      'endfunction',
+      'function test()',
+      '  dim items',
+      '  items = getitems()',
+      '  items(0) = "bow"',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_sbCheckedArraySet(test_items,0,"bow","items")');
+  });
+
+  test('a real dim x(N) array keeps using the unguarded fast path for writes', () => {
+    const result = transpile('dim arr(2)\narr(0) = "sword"');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('main.arr[0]="sword"');
+    expect(result.code).not.toContain('_sbCheckedArraySet');
+  });
+
+  test('array pass-by-ref parameter assignment still compiles (Parameter-kind fallback preserved)', () => {
+    const result = transpile([
+      'function fillfirst(arr)',
+      '  arr(0) = 99',
+      'endfunction',
+      'function test()',
+      '  dim nums(2)',
+      '  fillfirst(nums)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).not.toContain('_sbCheckedArraySet');
+  });
+});

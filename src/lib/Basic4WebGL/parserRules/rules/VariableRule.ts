@@ -179,11 +179,16 @@ class VariableRule implements IParserRule {
       }
     }
 
-    // Handle array indexing: arr(i) = v for both Array and Variable (pass-by-ref array param)
+    // Handle array indexing: arr(i) = v for Array-kind symbols, and for
+    // Variable-kind symbols (covers both pass-by-ref array parameters and a
+    // plain dim holding an array returned from a function call) when '(' is
+    // actually next — `check(name, Variable)` already matches Parameter-kind
+    // symbols too (see isMatchingType in transpilerRules/symbolRules.ts), so
+    // this single check covers both cases.
     const isArrayLike =
       symbolTable.check(name, symbolTypes.Array) ||
       (check(tokens.OpenParen, tokenStream.current()) &&
-        symbolTable.check(name, symbolTypes.Parameter));
+        symbolTable.check(name, symbolTypes.Variable));
     if (isArrayLike) {
       const dims = getParserRule('ExpressionList').parse(
         tokenStream,
@@ -196,9 +201,7 @@ class VariableRule implements IParserRule {
         symbolTable,
         undefined
       );
-      const arraySymbol = symbolTable.check(name, symbolTypes.Array)
-        ? symbolTable.get(name, 'Array')
-        : symbolTable.get(name, symbolTypes.Variable);
+      const arraySymbol = resolveIndexableSymbol(symbolTable, name, symbolTypes.Array, true);
       if (expr.type === nodeTypes.NewObject) {
         const arrClass = (arraySymbol as any).classSymbol?.name;
         const newClass = expr.data.classSymbol.name;
