@@ -14,11 +14,22 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 | Run tests with coverage | `npm run test:ci` |
 | Build for verification | `npx vite build` |
 | Dev server | `npm run dev` |
+| Run e2e tests (Cypress) | `npm run dev` in one terminal, then `npm run cypress:run` (headless) or `npm run cypress:open` (interactive) in another |
 
 ### IMPORTANT: verification command
 
 **Use `npx vite build` (or `npm run build`) to verify the project builds.** Do NOT use:
 - `tsc --noEmit` — has pre-existing TypeScript env issues unrelated to our code (`tsconfig.node.json` composite mode expects declaration files that don't exist)
+
+### E2E tests (Cypress)
+
+`cypress/e2e/tutorials.cy.ts` is the **only** layer that verifies real runtime behaviour in an actual browser (WebGL/PIXI execution) — the Vitest suite (see step 4 below) deliberately checks transpiler *output*, not what the compiled game does when it runs. Scope and limits, so you don't over- or under-trust it:
+
+- Covers the published tutorials (currently 1–9 and 11): seeds a project directly into `localStorage` (`persist:softBASIC`), clicks Run, and asserts no `ERR` entries appear in the bottom console panel. That's the only assertion — it doesn't inspect rendered pixels or game state.
+- Does **not** exercise editor-side features (autocomplete, hover, signature help, diagnostics) — it never touches Monaco, only the compiled game's runtime console output.
+- Cypress does not start the dev server itself (no `start-server-and-test`) — `npm run dev` must already be running on port 5173 before `cypress:run`/`cypress:open`.
+- Not wired into CI — there is no CI config in this repo yet, so this only runs when invoked manually.
+- If you change tutorial source code, the engine runtime, or anything a published tutorial exercises, run this suite manually (it won't run for you) and update the matching `describe` block in `tutorials.cy.ts` if the tutorial's code sample changed.
 
 ---
 
@@ -26,7 +37,7 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 
 - **Branch:** Work directly on `main`. No feature branches unless explicitly requested.
 - **Commits:** Frequent, small, imperative-style messages (`feat:`, `fix:`, `docs:`).
-- **Tests:** All tests live in `tests/` mirroring `src/`. Run the full suite before committing any compiler/transpiler changes.
+- **Tests:** All tests live in `tests/` mirroring `src/`. Run the full suite before committing any compiler/transpiler changes. Separately, `cypress/e2e/` holds browser-based e2e tests (see [E2E tests (Cypress)](#e2e-tests-cypress) above) — not part of this suite, not run automatically, but the only thing that verifies real runtime behaviour.
 
 ### Pushing to main — required extra step
 
@@ -74,7 +85,7 @@ Every new softBASIC module/class requires **six steps**:
 1. **`.bas` definition file** (`src/lib/Basic4WebGL/defs/<name>.bas`) — defines the API surface as softBASIC function/class declarations that call through to `_sb.*` engine methods.
 2. **Engine JS file** (`src/components/Runner/engine/<name>.js`) — implements the actual runtime behaviour using PIXI.js and browser APIs.
 3. **Bootstrapper wiring** (`src/components/Runner/softBasicEngine.js`) — registers the new engine module so it is available at runtime.
-4. **Tests** (`tests/lib/Basic4WebGL/unit/transpiler/<name>.test.ts` and/or integration tests) — written first (TDD). Tests verify the transpiler output, not runtime behaviour.
+4. **Tests** (`tests/lib/Basic4WebGL/unit/transpiler/<name>.test.ts` and/or integration tests) — written first (TDD). Tests verify the transpiler output, not runtime behaviour. If the feature affects a published tutorial's code sample or the engine runtime, also run the Cypress e2e suite (see [E2E tests (Cypress)](#e2e-tests-cypress)) — it's the only layer that actually runs the compiled game in a browser.
 5. **Docs** — add or update in-app documentation to cover the new feature (see Docs section below). New modules get an API Reference page; changes to existing language behaviour must be reflected in the relevant Language Guide topic.
 6. **Roadmap docs** — if the feature closes out (fully or partially) an item tracked in `docs/roadmap.md` or `docs/language/library-roadmap.md`, update those files in the same commit: mark the item done, replace open questions with how they were actually resolved, and note any real gap left behind (e.g. a deferred sub-feature) as a new tracked item rather than silently dropping it. These two roadmap files have gone stale before — pulled from `origin/main`, matched against the actual shipped code, but not updated — because this step didn't exist yet. Don't rely on `src/docs/roadmap.md` (the public-facing summary) as the source of truth for this; it's a separate file that must also be kept current, not a substitute.
 
