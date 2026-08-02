@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.4.0 — 2026-08-02
+
+Closes out Milestone 2 (editor intellisense).
+
+### Editor
+
+- New inline error underlining — compile diagnostics now surface live as squiggles in the active file (debounced ~450ms), not just in the bottom console. Console error entries with a location are now clickable, jumping straight to the file and line
+- New dynamic symbol resolution — autocomplete, hover, and parameter hints now understand your own functions, classes, and in-scope variables, not just the built-in library API
+- Fixed a bug where errors from bare-identifier lookups pointed at the wrong line
+
 ## v0.3.4 — 2026-07-31
 
 ### Text
