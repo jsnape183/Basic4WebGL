@@ -43,6 +43,31 @@
         ? Array.from(col.values()).join(sep)
         : col.join(sep);
 
+      const _sbCheckedDictGet = (val, key, label) => {
+        if (!(val instanceof Map)) {
+          throw new Error(`'${label}' does not hold a dictionary — cannot read key ${JSON.stringify(key)}.`);
+        }
+        return _sbDictGet(val, key);
+      };
+      const _sbCheckedDictSet = (val, key, value, label) => {
+        if (!(val instanceof Map)) {
+          throw new Error(`'${label}' does not hold a dictionary — cannot set key ${JSON.stringify(key)}.`);
+        }
+        val.set(key, value);
+      };
+      const _sbCheckedArrayGet = (val, index, label) => {
+        if (!Array.isArray(val)) {
+          throw new Error(`'${label}' does not hold an array — cannot read index ${index}.`);
+        }
+        return val[index];
+      };
+      const _sbCheckedArraySet = (val, index, value, label) => {
+        if (!Array.isArray(val)) {
+          throw new Error(`'${label}' does not hold an array — cannot set index ${index}.`);
+        }
+        val[index] = value;
+      };
+
       const _print = (value) => {
         console.log(value);
         if(typeof value === 'string' || typeof value === 'number'){
