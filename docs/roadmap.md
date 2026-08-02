@@ -76,9 +76,7 @@ Both were found via live reproduction against the running app (not just unit tes
 
 ---
 
-## Milestone 3 — Public beta readiness (minor bump)
-
-**Now the current focus.**
+## ~~Milestone 3 — Public beta readiness~~ **[DONE]**
 
 **Goal:** Reach the point where someone can design, build, and ship a genuinely complete game — entirely anonymously, no account, no backend — before any of the account/sharing/package work begins. Deliberately scoped narrower than v1.0: accounts, sharing, and the package ecosystem (Milestones 4–6) are valuable but not on the critical path to "can someone build a complete game."
 
@@ -87,7 +85,7 @@ Both were found via live reproduction against the running app (not just unit tes
 Originally scoped with a second deliverable, production error tracking — but that turned out to already be shipped (see "Already done" below), discovered while planning this milestone out. So this milestone is now down to one deliverable.
 
 ### Deliverables
-- **Game state save/load** — a new library module (working name `storage`) exposing something like `storage.save(key, data)` / `storage.load(key)` / `storage.exists(key)` / `storage.delete(key)`, backed by browser `localStorage` and scoped per-project so games don't collide with each other. Promoted here from `library-roadmap.md`'s backlog, where it had sat as "Not started" with no milestone attached despite being the actual gate on shippable games. Follows the standard six-step library feature process (`.bas` def, engine module, bootstrapper wiring, tests, docs, roadmap update).
+- ~~**Game state save/load**~~ **[DONE]** — shipped as two modules: `file` (raw string I/O, `localStorage`-backed) and `save` (auto-serializing convenience layer on top, single-blob-per-project). See `docs/superpowers/specs/2026-08-02-file-save-io-design.md` for the full design.
 
 ### Already done (discovered, not built, while scoping this milestone)
 - ~~**Production error tracking**~~ — this was believed to be an open gap ("production JS errors outside the iframe are currently uncaptured") but that claim was stale. Sentry has been fully integrated since `eebf711` (2026-06-17): `Sentry.init()` in `main.tsx` gated on `VITE_SENTRY_DSN`; `ErrorBoundary.componentDidCatch` forwards React crashes; `useRunnerMessages` forwards **iframe/game runtime errors** too, via `Sentry.captureMessage`, attaching the full project source (asset binaries stripped) as context for reproduction. Confirmed the production DSN is actually set in the Railway deployment, so this isn't just dead code — it's live. Nothing left to do here.
@@ -103,6 +101,8 @@ Accounts, cloud sync, sharing, the game gallery, and the package ecosystem — a
 ---
 
 ## Milestone 4 — User accounts (minor bump)
+
+**Now the current focus.**
 
 **Goal:** Optional account layer. localStorage remains the primary store. Accounts add cloud sync and are the prerequisite for Milestone 5 and all monetisation work.
 
