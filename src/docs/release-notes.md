@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.4.2 — 2026-08-02
+
+### Fixes
+
+- Fixed autocomplete filtering breaking as soon as any prefix was typed — `ship.setSc` would silently fall back to unrelated suggestions instead of showing `setScale`, and bare-word completion (e.g. typing `sco` toward a `score` variable) could surface an unrelated match instead of the intended one. Both bugs only appeared once you typed past the trigger character, which is normal usage. Hover was unaffected.
+
 ## v0.4.1 — 2026-08-02
 
 ### Fixes
