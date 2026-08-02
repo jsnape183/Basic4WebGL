@@ -30,9 +30,16 @@ describe('parseCompletionModule', () => {
     expect(parseCompletionModule('')).toBeNull();
   });
 
-  it('returns null when dot is not at the end', () => {
-    // "math.sin" — dot is in the middle, cursor is after "sin" not after "."
-    expect(parseCompletionModule('math.sin')).toBeNull();
+  it('extracts the module name even with a partially-typed member name after the dot', () => {
+    // "math.sin" — the whole point of completion is filtering as you type past
+    // the dot, so the owner must still resolve once characters follow it.
+    expect(parseCompletionModule('math.sin')).toBe('math');
+  });
+
+  it('extracts the last segment\'s owner in a chained member access', () => {
+    // "self.transform.setPos" — the owner of the in-progress member is
+    // "transform", not "self" and not the whole chain.
+    expect(parseCompletionModule('self.transform.setPos')).toBe('transform');
   });
 });
 
@@ -145,5 +152,79 @@ describe('registerCompletionProvider dynamic resolution', () => {
     const labels = result.suggestions.map((s: any) => s.label);
     expect(labels).toContain('floor'); // static math module
     expect(labels).not.toContain('bogus'); // dynamic 'math' module member, shadowed
+  });
+
+  test('dot-context member completion still resolves once a partial member name has been typed', () => {
+    // "e.h" — a user filtering toward "hp" mid-typing. Before the fix,
+    // parseCompletionModule required the text to end in a bare dot, so typing
+    // any filter character made the owner ('e') unresolvable and completion
+    // silently fell through to unrelated bare-word suggestions instead.
+    const { monaco, getProvider } = makeFakeMonaco();
+    registerCompletionProvider(monaco as any, makeSymbolContext('main'));
+    const provider = getProvider();
+
+    const model = makeModel(['e.h']);
+    const position = { lineNumber: 1, column: 4 };
+    const result = provider.provideCompletionItems(model, position);
+
+    const labels = result.suggestions.map((s: any) => s.label);
+    expect(labels).toContain('hp');
+  });
+
+  test('static module member completion still resolves once a partial member name has been typed', () => {
+    // "math.si" — same regression as above, but through the static catalogue
+    // branch (isKnownModule), which shares the same moduleName parsing.
+    const { monaco, getProvider } = makeFakeMonaco();
+    registerCompletionProvider(monaco as any, makeSymbolContext('main'));
+    const provider = getProvider();
+
+    const model = makeModel(['math.si']);
+    const position = { lineNumber: 1, column: 8 };
+    const result = provider.provideCompletionItems(model, position);
+
+    const labels = result.suggestions.map((s: any) => s.label);
+    expect(labels).toContain('sin');
+  });
+
+  test('suggestion range covers the partially-typed bare word, not a zero-width point at the cursor', () => {
+    // A zero-width range at the cursor breaks Monaco's own suggestion filtering
+    // and ranking for the returned items (confirmed against a live Monaco
+    // instance: unrelated suggestions "won" and the intended match never
+    // surfaced) — the range must span back to where the typed word starts.
+    const { monaco, getProvider } = makeFakeMonaco();
+    registerCompletionProvider(monaco as any, makeSymbolContext('enemy'));
+    const provider = getProvider();
+
+    const model = makeModel(['  h']);
+    const position = { lineNumber: 1, column: 4 }; // cursor right after "h"
+    const result = provider.provideCompletionItems(model, position);
+
+    const hp = result.suggestions.find((s: any) => s.label === 'hp');
+    expect(hp).toBeDefined();
+    expect(hp.range).toEqual({
+      startLineNumber: 1,
+      endLineNumber: 1,
+      startColumn: 3, // start of "h", not column 4 (the cursor)
+      endColumn: 4,
+    });
+  });
+
+  test('suggestion range covers only the partial member name after a dot, not the owner', () => {
+    const { monaco, getProvider } = makeFakeMonaco();
+    registerCompletionProvider(monaco as any, makeSymbolContext('main'));
+    const provider = getProvider();
+
+    const model = makeModel(['e.h']);
+    const position = { lineNumber: 1, column: 4 }; // cursor right after "e.h"
+    const result = provider.provideCompletionItems(model, position);
+
+    const hp = result.suggestions.find((s: any) => s.label === 'hp');
+    expect(hp).toBeDefined();
+    expect(hp.range).toEqual({
+      startLineNumber: 1,
+      endLineNumber: 1,
+      startColumn: 3, // start of "h" (right after "e."), not "e.h"'s start
+      endColumn: 4,
+    });
   });
 });

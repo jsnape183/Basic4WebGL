@@ -9,11 +9,15 @@ import type { SymbolSnapshotEntry } from '../lib/CompilerLib/symbols';
 import { symbolTypes } from '../lib/Basic4WebGL/symbolTypes';
 
 /**
- * Extracts the module name from text ending in "identifier.".
- * Returns the lowercased module name, or null if the pattern does not match.
+ * Extracts the owner from text ending in "identifier." optionally followed by
+ * a partially-typed member name ("identifier.partial"). Matching only a bare
+ * trailing dot would make the owner unresolvable the moment the user types a
+ * single filter character — which is most of the time completion is actually
+ * useful — so the trailing `\w*` absorbs that in-progress member name.
+ * Returns the lowercased owner name, or null if the pattern does not match.
  */
 export function parseCompletionModule(textBeforeCursor: string): string | null {
-  const match = textBeforeCursor.match(/(\w+)\.$/);
+  const match = textBeforeCursor.match(/(\w+)\.\w*$/);
   if (!match) return null;
   return match[1].toLowerCase();
 }
@@ -77,10 +81,21 @@ export function registerCompletionProvider(monaco: Monaco, symbolContext?: Symbo
       const textBeforeCursor = lineContent.substring(0, position.column - 1);
       const moduleName = parseCompletionModule(textBeforeCursor);
 
+      // The range must span back to the start of whatever's already been typed
+      // (the bare word, or the partial member name after a dot) — not a
+      // zero-width point at the cursor. Monaco's own suggestion filtering and
+      // ranking keys off each item's declared range; a zero-width range made it
+      // treat every candidate as equally (un)matched instead of scoring them
+      // against what the user actually typed (confirmed against a live Monaco
+      // instance — unrelated suggestions "won" and the intended match never
+      // surfaced). `\w` naturally stops at a preceding '.', so this covers both
+      // the bare-word and dot-member cases with the same computation.
+      const currentWordMatch = textBeforeCursor.match(/\w*$/);
+      const currentWordLength = currentWordMatch ? currentWordMatch[0].length : 0;
       const range = {
         startLineNumber: position.lineNumber,
         endLineNumber: position.lineNumber,
-        startColumn: position.column,
+        startColumn: position.column - currentWordLength,
         endColumn: position.column,
       };
 
