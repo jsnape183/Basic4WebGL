@@ -36,13 +36,14 @@ Two paths — pick based on complexity.
 
 1. Create a new project in the running app; add the assets from the brief.
 2. Write `.bas` files in Monaco. Run frequently — use inline error underlining, autocomplete, and hover as you go, rather than writing blind and debugging after the fact.
-3. Once it runs cleanly with zero console `ERR` entries, use the app's own **Export** feature to produce the `.b4wgl.json`. This guarantees the shipped file is exactly what was tested — no hand-crafted JSON that might not match what actually ran.
+3. Once it runs cleanly with zero console `ERR` entries, use the app's own **Export** feature to produce the `.b4wgl.json`. This guarantees the shipped file is exactly what was tested — no hand-crafted JSON that might not match what actually ran. Export downloads the file to the browser's Downloads folder — move (rename if needed) it into `src/docs/demos/<Slug>.b4wgl.json` in the repo; it isn't saved there automatically.
 
 **Path B — hand-write `.bas` + assets, then run the assembler script.** Use this for small, single-file demos simple enough to hold entirely in your head.
 
 1. Create `demo-src/<slug>/` with your `.bas` file(s) at its root and an `assets/` subfolder for any images or audio.
 2. Run `npm run build:demo -- demo-src/<slug> <SlugName>` — produces `src/docs/demos/<SlugName>.b4wgl.json`.
 3. **Still required, exactly like Path A's last step:** load the result into the running app (Demos page → Try Demo, or import the JSON directly) and click Run to verify zero console `ERR` entries. The script only assembles the file — it doesn't prove the code is correct.
+4. Commit `demo-src/<slug>/` to git alongside the generated `.b4wgl.json` — it's the maintainable plain-text source for that demo (easier to edit and diff than the opaque JSON blob), not a throwaway scratch folder.
 
 ## Step 4: Production checklist (mandatory, no exceptions)
 

@@ -1,14 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
+import type { ProjectExportJson } from '../../src/features/projects/exportProject';
 
-export interface ProjectExportJson {
-  version: 1;
-  project: { name: string };
-  folders: Array<{ id: string; name: string; parentId: string | null; section: 'files' | 'assets' }>;
-  files: Array<{ id: string; name: string; source: string; folderId: string | null; fullName: string }>;
-  assets: Array<{ id: string; name: string; content: string; folderId: string | null; fullName: string }>;
-  fileOrder: Record<string, string[]>;
-  assetOrder: Record<string, string[]>;
-}
+export type { ProjectExportJson };
 
 export interface RawBasFile {
   name: string;
