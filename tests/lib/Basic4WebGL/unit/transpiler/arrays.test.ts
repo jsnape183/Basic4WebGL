@@ -207,6 +207,11 @@ describe('Array utility functions — compile without error', () => {
     const result = withArray('array.clear(arr)');
     expect(result.diagnostics).toHaveLength(0);
   });
+
+  test('array.sort compiles', () => {
+    const result = withArray('array.sort(arr)');
+    expect(result.diagnostics).toHaveLength(0);
+  });
 });
 
 describe('Typed array declaration — integration', () => {

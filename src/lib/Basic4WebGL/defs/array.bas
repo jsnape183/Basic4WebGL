@@ -8,4 +8,5 @@ function contains(col, item): return call("_sbContains(contains_col, contains_it
 function indexOf(arr, item): return call("indexof_arr.indexOf(indexof_item)"):endfunction
 function remove(col, key): call("_sbRemove(remove_col, remove_key)"):endfunction
 function clear(col): call("_sbClear(clear_col)"):endfunction
+function sort(arr): call("sort_arr.sort()"):endfunction
 ' End of Array functions

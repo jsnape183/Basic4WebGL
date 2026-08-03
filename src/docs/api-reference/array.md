@@ -130,3 +130,19 @@ Removes all items from an array.
 ```bas
 array.clear(inventory)
 ```
+
+## sort(arr)
+
+Sorts an array in place, alphabetically (numbers are compared as text, so `10` sorts before `2`). Use this for names and other text; for sorting numbers into numeric order, write your own comparison instead.
+
+| Parameter | Type  | Description |
+|-----------|-------|-------------|
+| arr       | array | The array to sort |
+
+```bas
+dim names(3)
+names(0) = "Zoe"
+names(1) = "Amir"
+names(2) = "Priya"
+array.sort(names)   ' names is now "Amir", "Priya", "Zoe"
+```
