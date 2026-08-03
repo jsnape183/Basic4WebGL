@@ -1,5 +1,19 @@
 # Release Notes
 
+## v0.5.0 — 2026-08-03
+
+Closes out Milestone 3 (public beta readiness — save/load). Your games can now remember things between play sessions.
+
+### File and save storage
+
+- New `file` module — `write(path, content)`, `read(path)`, `exists(path)`, `delete(path)` for saving and loading plain text in the player's browser, persisting between visits
+- New `save` module, built on top of `file` — `set(key, value)`, `get(key)`, `exists(key)`, `delete(key)` for saving numbers, strings, arrays, and dictionaries directly, without converting them to text yourself; `setAll(dict)` / `getAll()` save or load a project's entire save data as one dictionary
+- Each project's saved data is kept separate automatically — no setup needed
+
+### Fixes
+
+- Fixed `dict.keys`, `dict.values`, and `dict.joinKeys` — documented and implemented, but never actually usable in a real project, since the `dict` module had been left out of the list of modules a project can compile against
+
 ## v0.4.3 — 2026-08-02
 
 ### Fixes
