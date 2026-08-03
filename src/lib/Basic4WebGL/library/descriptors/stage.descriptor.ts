@@ -18,5 +18,20 @@ export const stageDescriptor: ModuleDescriptor = {
       params: [],
       body: (_p, _self) => `_sb.clear()`,
     },
+    {
+      name: 'width',
+      params: [],
+      returns: (_p, _self) => `_sb.getStageWidth()`,
+    },
+    {
+      name: 'height',
+      params: [],
+      returns: (_p, _self) => `_sb.getStageHeight()`,
+    },
+    {
+      name: 'setBackground',
+      params: ['r', 'g', 'b'],
+      body: (p, _self) => `_sb.setBackground(${p.r}, ${p.g}, ${p.b})`,
+    },
   ],
 };

@@ -13,5 +13,10 @@ export const penDescriptor: ModuleDescriptor = {
       params: ['r', 'g', 'b'],
       body: (p, _self) => `_sb.setLineColor(${p.r}, ${p.g}, ${p.b})`,
     },
+    {
+      name: 'setLineWidth',
+      params: ['n'],
+      body: (p, _self) => `_sb.setLineWidth(${p.n})`,
+    },
   ],
 };

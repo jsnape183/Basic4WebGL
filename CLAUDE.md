@@ -92,6 +92,14 @@ Every new softBASIC module/class requires **six steps**:
 5. **Docs** — add or update in-app documentation to cover the new feature (see Docs section below). New modules get an API Reference page; changes to existing language behaviour must be reflected in the relevant Language Guide topic.
 6. **Roadmap docs** — if the feature closes out (fully or partially) an item tracked in `docs/roadmap.md` or `docs/language/library-roadmap.md`, update those files in the same commit: mark the item done, replace open questions with how they were actually resolved, and note any real gap left behind (e.g. a deferred sub-feature) as a new tracked item rather than silently dropping it. These two roadmap files have gone stale before — pulled from `origin/main`, matched against the actual shipped code, but not updated — because this step didn't exist yet. Don't rely on `src/docs/roadmap.md` (the public-facing summary) as the source of truth for this; it's a separate file that must also be kept current, not a substitute.
 
+### Descriptor-generated `.bas` files — never hand-edit
+
+Some `.bas` def files are **generated**, not hand-written: `sprite`, `text`, `transform`, `stage`, `gfx`, `drawing`, `pen`, `assetmanager`, `file`, `save` (see `src/lib/Basic4WebGL/library/registry.ts` for the authoritative list). Each has a `.descriptor.ts` in `src/lib/Basic4WebGL/library/descriptors/` — the descriptor is the source of truth; the `.bas` file is build output, produced by `npm run generate:library`.
+
+**If a `.bas` file is in `registry.ts`, edit its descriptor and regenerate. Never hand-edit the `.bas` file directly.** This convention was violated repeatedly across this project's history — new functions (`drawing.clear`, `sprite.setScale`, etc.) and deprecation removals (`gfx.getKeyDown` moving to `input`) were made by hand-editing the shipped `.bas` file without updating the descriptor. That went unnoticed for months because nothing checked the two stayed in sync — until running the generator for an unrelated reason would have silently deleted real, documented, working functions. Now caught by a permanent regression test: `tests/lib/Basic4WebGL/unit/generator/generatedDefsInSync.test.ts` asserts every registered descriptor's generated output is byte-identical to its checked-in `.bas` file, and fails immediately if the two diverge.
+
+Not every `.bas` file is descriptor-generated — `math`, `string`, `array`, `dict`, `input`, `audio`, `collision`, `scene`, `scenemanager`, `camera`, `world`, `hud`, `animatedsprite`, `tilemap` etc. are hand-written and edited directly as normal. Check `registry.ts` if unsure whether a given module is generated.
+
 ---
 
 ## Docs section

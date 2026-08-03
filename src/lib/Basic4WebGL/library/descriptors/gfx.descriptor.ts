@@ -8,10 +8,5 @@ export const gfxDescriptor: ModuleDescriptor = {
       params: ['a', 'b'],
       returns: (p, _self) => `_sb.spriteCollide(${p.a}, ${p.b})`,
     },
-    {
-      name: 'getKeyDown',
-      params: ['keycode'],
-      returns: (p, _self) => `_sb.getKeyDown(${p.keycode})`,
-    },
   ],
 };

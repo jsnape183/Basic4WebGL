@@ -18,5 +18,16 @@ export const drawingDescriptor: ModuleDescriptor = {
       params: ['x', 'y', 'radius'],
       body: (p, _self) => `_sb.drawCircle(${p.x}, ${p.y}, ${p.radius})`,
     },
+    {
+      name: 'clear',
+      params: [],
+      body: (_p, _self) => `_sb.clearDrawing()`,
+    },
+    {
+      name: 'drawImageStrip',
+      params: ['imageName', 'srcX', 'destX', 'destY', 'destWidth', 'destHeight'],
+      body: (p, _self) =>
+        `_sb.drawImageStrip(${p.imageName}, ${p.srcX}, ${p.destX}, ${p.destY}, ${p.destWidth}, ${p.destHeight})`,
+    },
   ],
 };

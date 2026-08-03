@@ -53,7 +53,13 @@ test('generates Constructor and EndConstructor blocks', () => {
 
 test('constructor param is prefixed with constructor_', () => {
   const output = generateClass(spriteDescriptor);
-  expect(output).toContain('_handle = call("_sb.createSprite(constructor_imagePath)")');
+  expect(output).toContain('self._handle = call("_sb.createSprite(constructor_imagePath)")');
+});
+
+test('constructor assignment uses explicit self. prefix (required for member assignment)', () => {
+  const output = generateClass(spriteDescriptor);
+  const assignLine = output.split('\n').find((l) => l.includes('= call("_sb.createSprite'));
+  expect(assignLine?.trim().startsWith('self._handle =')).toBe(true);
 });
 
 test('class self proxy resolves to this.prop', () => {
@@ -115,7 +121,7 @@ test('constructor after lines are emitted after the assignTo line', () => {
   };
   const output = generateClass(desc);
   const lines = output.split('\n');
-  const assignIdx = lines.findIndex((l) => l.includes('_handle = call('));
+  const assignIdx = lines.findIndex((l) => l.includes('self._handle = call('));
   const afterIdx = lines.findIndex((l) => l.includes('dim transform as ObjectTransform'));
   expect(afterIdx).toBeGreaterThan(assignIdx);
   expect(output).toContain('dim transform as ObjectTransform(call("this._handle"))');
@@ -136,7 +142,7 @@ describe('transformDescriptor', () => {
   test('constructor stores handle param', () => {
     const output = generateClass(transformDescriptor);
     expect(output).toContain('Constructor(handle)');
-    expect(output).toContain('_handle = call("constructor_handle")');
+    expect(output).toContain('self._handle = call("constructor_handle")');
   });
 
   test('setPosition delegates to _sb.setPosition with this._handle', () => {

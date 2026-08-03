@@ -18,7 +18,7 @@ export function generateClass(descriptor: ClassDescriptor): string {
     const ctorParams = ctor.params.join(', ');
     lines.push(`Constructor(${ctorParams})`);
     const p = makeParamProxy('constructor');
-    lines.push(`    ${ctor.assignTo} = call("${ctor.body(p, self)}")`);
+    lines.push(`    self.${ctor.assignTo} = call("${ctor.body(p, self)}")`);
     if (ctor.after) {
       ctor.after(p, self).forEach((line) => lines.push(`    ${line}`));
     }
