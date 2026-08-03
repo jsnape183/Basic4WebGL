@@ -12,6 +12,7 @@
     "test:watch": "vitest --watch",
     "test:ci": "vitest run --coverage",
     "generate:library": "vite-node scripts/generateLibrary.ts",
+    "build:demo": "vite-node scripts/buildDemo.ts",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
