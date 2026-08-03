@@ -23,13 +23,14 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 
 ### E2E tests (Cypress)
 
-`cypress/e2e/tutorials.cy.ts` is the **only** layer that verifies real runtime behaviour in an actual browser (WebGL/PIXI execution) — the Vitest suite (see step 4 below) deliberately checks transpiler *output*, not what the compiled game does when it runs. Scope and limits, so you don't over- or under-trust it:
+`cypress/e2e/tutorials.cy.ts` and `cypress/e2e/demos.cy.ts` are the **only** layers that verify real runtime behaviour in an actual browser (WebGL/PIXI execution) — the Vitest suite (see step 4 below) deliberately checks transpiler *output*, not what the compiled game does when it runs. Scope and limits, so you don't over- or under-trust it:
 
 - Covers the published tutorials (currently 1–9 and 11): seeds a project directly into `localStorage` (`persist:softBASIC`), clicks Run, and asserts no `ERR` entries appear in the bottom console panel. That's the only assertion — it doesn't inspect rendered pixels or game state.
 - Does **not** exercise editor-side features (autocomplete, hover, signature help, diagnostics) — it never touches Monaco, only the compiled game's runtime console output.
 - Cypress does not start the dev server itself (no `start-server-and-test`) — `npm run dev` must already be running on port 5173 before `cypress:run`/`cypress:open`.
 - Not wired into CI — there is no CI config in this repo yet, so this only runs when invoked manually.
 - If you change tutorial source code, the engine runtime, or anything a published tutorial exercises, run this suite manually (it won't run for you) and update the matching `describe` block in `tutorials.cy.ts` if the tutorial's code sample changed.
+- `demos.cy.ts` covers shipped demos the same way, but seeds each demo's real `.b4wgl.json` export (read via `cy.readFile`, including its real assets) rather than a hardcoded snippet, since demos already have a real export to test against. Adding a new demo requires adding its own `describe` block here — see `docs/demo-authoring-guide.md`.
 
 ---
 
@@ -99,6 +100,12 @@ Some `.bas` def files are **generated**, not hand-written: `sprite`, `text`, `tr
 **If a `.bas` file is in `registry.ts`, edit its descriptor and regenerate. Never hand-edit the `.bas` file directly.** This convention was violated repeatedly across this project's history — new functions (`drawing.clear`, `sprite.setScale`, etc.) and deprecation removals (`gfx.getKeyDown` moving to `input`) were made by hand-editing the shipped `.bas` file without updating the descriptor. That went unnoticed for months because nothing checked the two stayed in sync — until running the generator for an unrelated reason would have silently deleted real, documented, working functions. Now caught by a permanent regression test: `tests/lib/Basic4WebGL/unit/generator/generatedDefsInSync.test.ts` asserts every registered descriptor's generated output is byte-identical to its checked-in `.bas` file, and fails immediately if the two diverge.
 
 Not every `.bas` file is descriptor-generated — `math`, `string`, `array`, `dict`, `input`, `audio`, `collision`, `scene`, `scenemanager`, `camera`, `world`, `hud`, `animatedsprite`, `tilemap` etc. are hand-written and edited directly as normal. Check `registry.ts` if unsure whether a given module is generated.
+
+---
+
+## Creating demos
+
+See `docs/demo-authoring-guide.md` for the full workflow: the pre-production questions to ask before writing any code (concept, required assets with dimensions/animation details, controls, whether new engine features are needed), the two ways to build a demo (live in the app vs. hand-write + `scripts/buildDemo.ts`), and the mandatory production checklist — including a `cypress/e2e/demos.cy.ts` spec, which is not optional.
 
 ---
 
