@@ -1,12 +1,12 @@
 # softBASIC — Internal Product Roadmap
 
-> Internal document. Not for publication. Last updated: 2026-08-02.
+> Internal document. Not for publication. Last updated: 2026-08-03.
 
 ---
 
 ## Versioning model
 
-**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.4.2` — Milestone 1 shipped as `v0.3.0`, Milestone 2 (professional editor) shipped as `v0.4.0`; two patches landed since fixing real bugs discovered in the newly-shipped editor intellisense (see "Post-ship fixes" under Milestone 2 below).
+**Trunk-based development.** All work lands on `main`. Patch bumps (`0.x.Y`) are continuous — any fix, doc update, or small feature that ships independently. Minor bumps (`0.X.0`) mark milestone completions, each representing a discrete capability step. Currently at `v0.4.3`, but this understates where things actually are: Milestone 1 shipped as `v0.3.0`, Milestone 2 (professional editor) shipped as `v0.4.0` — but **Milestone 3 (save/load) was never given its own version bump or release-notes entry**, despite closing out a whole milestone (which the versioning model itself says warrants a *minor* bump, not a patch). `v0.4.1`/`v0.4.2` covered unrelated editor bug fixes that happened to land around the same time; `v0.4.3` covers a compiler-limitation fix discovered *while building* Milestone 3 (see "Known deferred issues" #6 below) — but the feature itself was folded into the version-number background noise rather than announced. **This needs a proper `v0.5.0` cut before calling Milestone 3 actually released**, not just implemented.
 
 **Public beta vs. v1.0:** these are two distinct bars, not the same milestone. Public beta (Milestone 3) means someone can design, build, and ship a complete game anonymously — gated on game state save/load, not accounts. (Production error tracking was also on this list until scoping the milestone turned up that it's already shipped — see Milestone 3.) v1.0 (Milestone 6) additionally requires accounts, sharing, the gallery, and the package ecosystem (Milestones 4–6). Reframed 2026-08-02 after concluding accounts weren't actually the missing link for "can someone build a full game" — persistent state was.
 
@@ -14,7 +14,7 @@ Milestones 1–6 are fully defined. Milestones 7–14 are intentionally loose �
 
 ---
 
-## Current state (v0.4.2)
+## Current state (v0.4.3)
 
 Shipped and working:
 - Full softBASIC compiler (lexer → parser → transpiler → PIXI.js runtime)
@@ -33,7 +33,9 @@ Known deferred issues (low risk, not currently scheduled):
 3. No test for `PrintNode.validate()` throw path (unreachable in practice)
 4. `new Tree()` direct construction bypasses loc — should prefer `node()` factory; add JSDoc warning
 5. No visual spritesheet editor/slicer in the asset panel — defining frame dimensions in code is the only option
-6. A variable can't be bracket/paren-indexed (`x["key"]`, `x(i)`) unless it was declared with `dim x[]`/`dim x(N)` and built up in the same scope — capturing a dict/array returned by a function call into a plain `dim x` (or reassigning a `dim x[]`-declared variable's whole value from one) doesn't compile. Discovered 2026-08-02 while building the `file`/`save` feature (see `save.md`'s `getAll()` note and `cypress/e2e/save-load.cy.ts`'s inline comment) — and it turns out to already silently break a shipped example: `docs/language-guide/dictionaries.md`'s "Iterating over a dictionary" section (`k = dict.keys(scores)` then `k(i)`) does not actually compile, confirmed directly
+6. ~~A variable can't be bracket/paren-indexed (`x["key"]`, `x(i)`) unless it was declared with `dim x[]`/`dim x(N)` and built up in the same scope~~ **[RESOLVED, `v0.4.3`]** — fixed via a token-gated `Variable`-kind fallback (`resolveIndexableSymbol.ts`) plus runtime-checked accessors (`_sbCheckedDictGet`/`Set`, `_sbCheckedArrayGet`/`Set`) that only engage for the new loosely-typed case; the existing strictly-typed fast path is untouched. Confirmed both previously-broken examples (`dictionaries.md`'s `dict.keys` iteration, `save.md`'s `getAll()`) now compile. Design: `docs/superpowers/specs/2026-08-02-indexable-variable-fallback-design.md`.
+7. **`dict` module is undocumented-broken, same class of bug as #6's root cause was for `file`/`save` before it shipped.** `dict.keys`/`dict.values`/`dict.joinKeys` have a real `.bas` def and are documented (`src/docs/api-reference/dict.md`), but `dict` was never registered in `src/constants/packageModules.ts` or either package's `moduleNames` — so `dict.*` cannot actually be used in any real project today, despite being a beginner-level, frequently-needed operation (iterating a dictionary). In progress as of 2026-08-03.
+8. **6 checked-in `.bas` def files have drifted from their TypeScript descriptors** (`drawing.bas`, `gfx.bas`, `pen.bas`, `sprite.bas`, `stage.bas`, `text.bas`) — running `npm run generate:library` (which regenerates *every* registered module, not just new ones) currently overwrites real, shipped behavior with stale descriptor output, since the descriptors were never updated to match. No current user-facing impact (the committed `.bas` files work correctly as-is), but a real risk the next time anyone runs the generator for an unrelated reason. In progress as of 2026-08-03.
 
 ---
 
