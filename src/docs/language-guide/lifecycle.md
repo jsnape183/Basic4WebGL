@@ -31,13 +31,13 @@ endfunction
 
 **You cannot use your images or sounds yet.** They have not loaded at this point, so creating a `sprite`, `animatedsprite` or `tilemap` here will stop the game with an error telling you to move that code into `onenter()`. Set your game's pieces up in `onenter()` — that is what it is for.
 
-**Your module's variables are not set up yet either.** A `dim` written at the top of a file has not run when `oninit` is called, so its value is still empty:
+**Your module's variables are not set up yet either.** A `dim` written at the top of a file has not run when `oninit` is called, so reading it prints `null` instead of the value you expect:
 
 ```bas
 dim score = 100
 
 function oninit()
-  print score      ' empty — the line above has not run yet
+  print score      ' prints "null" — the line above has not run yet
 endfunction
 
 function onenter()
