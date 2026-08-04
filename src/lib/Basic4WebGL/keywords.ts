@@ -20,6 +20,7 @@ export const SOFTBASIC_KEYWORDS = [
 ] as const;
 
 export const SOFTBASIC_LIFECYCLE_EVENTS = [
+  'oninit',
   'onenter',
   'onexit',
   'onupdate',
