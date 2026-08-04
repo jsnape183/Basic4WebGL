@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-08-02 (Save/load promoted to `docs/roadmap.md` Milestone 3)
+> Last updated: 2026-08-04 (P11 `oninit` hook shipped; P12 pixel-art filtering opened)
 
 ---
 
@@ -156,6 +156,18 @@ Re-audited 2026-07-31: this was listed as "not started" below, but `onkeydown(ke
 Also added `input.keyPressed(keycode)`/`input.keyReleased(keycode)` — frame-synced, edge-triggered polling functions for use inside `onupdate`, complementing the existing level-triggered `input.getKeyDown(keycode)`. Edge detection lives in `_sbInput.registerKey()` (`src/components/Runner/engine/input.js`), comparing the new `down` state against the previous `_keys` value before updating it; the `_justPressed`/`_justReleased` maps are cleared each frame via `_sbInput._resetFrameInput()`, called at the end of `_sbScene._update()` (`src/components/Runner/engine/scene.js`) after all `onupdate` calls for that frame have run.
 
 Tests: `tests/lib/Basic4WebGL/unit/transpiler/softgfx.test.ts`. Docs: `src/docs/api-reference/input.md`, `src/docs/api-reference/scene.md`.
+
+### ~~P11 — `oninit` pre-load lifecycle hook~~ **[DONE — 2026-08-04]**
+Every lifecycle hook (`onenter`, `onupdate`, `onexit`, `onkeydown`, `onkeyup`) fired *after* asset preloading, so there was no point at which softBASIC could configure the runtime before textures were created. Surfaced while briefing the "collect the coins" platformer demo, which needs nearest-neighbour texture filtering — PIXI applies the scale mode at texture-creation time, so setting it after preload is too late.
+
+Shipped as `oninit`, a module-level hook fired on every module before preloading begins. The enabling change is **two-phase module initialisation** in the transpiler: `RootRule` now partitions each root's children into inert declarations (function/method assignments, which stay inline) and executable top-level statements (wrapped in `_sb._deferModuleBody(() => {...})`). That makes the whole transpiled block declaration-only, so `bootstrapper.html` can run it — and `_sb._fireInit()` — ahead of `preloadFromLocalStorage`, then replay module bodies in file order via `_sb._runModuleBodies()` once assets exist.
+
+Resolved design questions: fires on **every module**, mirroring the existing `onenter` loop over `_sbClasses`; **not** on class instances (none exist yet at that point — `_sbInstances` is necessarily empty, and `Scene` deliberately gets no `oninit` stub); asset misuse is caught by a **runtime** guard in `_sbAssets.get()` rather than a compile-time ban, since the compiler has no way to know which library calls touch assets. Design: `docs/superpowers/specs/2026-08-04-oninit-lifecycle-hook-design.md`.
+
+Tests: `tests/lib/Basic4WebGL/unit/transpiler/oninit.test.ts`, `tests/components/Runner/lifecycle.test.ts`, `tests/components/Runner/assets.test.ts`, `tests/components/Runner/bootstrapper.test.ts`, and `cypress/e2e/oninit.cy.ts` (the only layer that can prove firing order across the real async boot sequence). Docs: `src/docs/language-guide/lifecycle.md`.
+
+### P12 — Pixel-art texture filtering
+Deliberately **not** shipped with P11 — `oninit` is the missing *mechanism*, this is the rendering option that motivated it, and it belongs with the demo it serves. Needs a softBASIC call (something like `gfx.setPixelArt(true)`) that sets PIXI's default scale mode to nearest-neighbour, called from `oninit` so it is in place before textures are created. Without it, scaled-up pixel art is filtered smooth and looks blurry.
 
 ## Lower Priority / Future
 
