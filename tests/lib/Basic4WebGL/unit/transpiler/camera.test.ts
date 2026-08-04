@@ -169,6 +169,50 @@ describe('camera — shake', () => {
   });
 });
 
+// ─── camera.setZoom and camera.zoom ───────────────────────────────────────────
+
+describe('camera — setZoom', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCamera([
+      'function oninit()',
+      '  camera.setZoom(4)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.cameraSetZoom(', () => {
+    const result = transpileWithCamera([
+      'function oninit()',
+      '  camera.setZoom(4)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.cameraSetZoom(');
+  });
+});
+
+describe('camera — zoom', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCamera([
+      'function onupdate(delta)',
+      '  dim z',
+      '  z = camera.zoom()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.cameraZoom()', () => {
+    const result = transpileWithCamera([
+      'function onupdate(delta)',
+      '  dim z',
+      '  z = camera.zoom()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.cameraZoom()');
+  });
+});
+
 // ─── world ────────────────────────────────────────────────────────────────────
 
 describe('world — add', () => {
@@ -232,6 +276,26 @@ describe('world — clear', () => {
       'endfunction',
     ].join('\n'));
     expect(result.code).toContain('_sb.clearWorld()');
+  });
+});
+
+describe('world — setPixelPerfect', () => {
+  test('compiles without error', () => {
+    const result = transpileWithWorld([
+      'function oninit()',
+      '  world.setPixelPerfect(true)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.setPixelPerfect(', () => {
+    const result = transpileWithWorld([
+      'function oninit()',
+      '  world.setPixelPerfect(true)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setPixelPerfect(');
   });
 });
 

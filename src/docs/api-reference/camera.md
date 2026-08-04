@@ -106,6 +106,37 @@ The jitter fades out smoothly over `duration`, so a fresh `camera.shake()` call 
 
 ---
 
+## camera.setZoom(z)
+
+Magnifies the view. Useful for small pixel-art sprites and tiles that would otherwise look tiny on a full-size screen — combine with `world.setPixelPerfect(true)` (see the [world](world) module) to keep the magnified art crisp instead of blurry.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| z         | number | Zoom factor. `1` is normal size (the default). `2` doubles everything, `4` quadruples it, and so on |
+
+```bas
+function onenter()
+  camera.setZoom(4)
+endfunction
+```
+
+Zooming affects everything in the world — tilemaps, sprites, enemies, coins — all at once, the same way `camera.follow` and `camera.setBounds` already work in world coordinates. It does not affect HUD elements, which always stay a fixed size on screen.
+
+---
+
+## camera.zoom()
+
+Returns the current zoom factor.
+
+**Returns:** number
+
+```bas
+dim z
+z = camera.zoom()
+```
+
+---
+
 ## Full example — side-scrolling platformer camera
 
 **GameScene class file:**

@@ -166,8 +166,10 @@ Resolved design questions: fires on **every module**, mirroring the existing `on
 
 Tests: `tests/lib/Basic4WebGL/unit/transpiler/oninit.test.ts`, `tests/components/Runner/lifecycle.test.ts`, `tests/components/Runner/assets.test.ts`, `tests/components/Runner/bootstrapper.test.ts`, and `cypress/e2e/oninit.cy.ts` (the only layer that can prove firing order across the real async boot sequence). Docs: `src/docs/language-guide/lifecycle.md`.
 
-### P12 — Pixel-art texture filtering
-Deliberately **not** shipped with P11 — `oninit` is the missing *mechanism*, this is the rendering option that motivated it, and it belongs with the demo it serves. Needs a softBASIC call (something like `gfx.setPixelArt(true)`) that sets PIXI's default scale mode to nearest-neighbour, called from `oninit` so it is in place before textures are created. Without it, scaled-up pixel art is filtered smooth and looks blurry.
+### ~~P12 — Pixel-art texture filtering~~ **[DONE, 2026-08-04]**
+Shipped as `world.setPixelPerfect(v)` — sets `PIXI.TextureStyle.defaultOptions.scaleMode` to `'nearest'`/`'linear'`. Called from `oninit`, before any texture loads, this is the whole implementation — no retroactive per-texture cache-walk needed, since PIXI's default only affects textures created *after* the call, and `oninit` now guarantees nothing has loaded yet. That simplicity is a direct payoff of shipping P11 (`oninit`) as a real mechanism rather than working around the timing problem.
+
+Shipped alongside it: `camera.setZoom(z)` / `camera.zoom()` — the companion feature needed to actually make small pixel-art tiles/sprites visible on a full-size canvas. Zooms `worldContainer` as a whole (matching Godot's `Camera2D.zoom` — verified against Godot's own docs before implementing), so every world object (tilemap, sprites, enemies) magnifies together with no per-object scale bookkeeping; `tileAt()`, `transform.x()`/`y()`, and all other position/collision math are completely unaffected, since they operate in the same shared logical coordinate space regardless of how that space is rendered. `camera.follow`/`setBounds`'s existing pan math was made zoom-aware (visible world width/height divides by zoom); default zoom is `1`, so every existing project is unaffected. Tests: `tests/lib/Basic4WebGL/unit/transpiler/camera.test.ts`. Docs: `src/docs/api-reference/camera.md`, `src/docs/api-reference/world.md`.
 
 ## Lower Priority / Future
 

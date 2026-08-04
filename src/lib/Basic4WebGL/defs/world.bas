@@ -21,3 +21,7 @@ endfunction
 function setBackground(r, g, b)
     call("_sb.setBackground(setbackground_r, setbackground_g, setbackground_b)")
 endfunction
+
+function setPixelPerfect(v)
+    call("_sb.setPixelPerfect(setpixelperfect_v)")
+endfunction

@@ -21,3 +21,11 @@ endfunction
 function shake(intensity, duration)
     call("_sb.cameraShake(shake_intensity, shake_duration)")
 endfunction
+
+function setZoom(z)
+    call("_sb.cameraSetZoom(setzoom_z)")
+endfunction
+
+function zoom()
+    return call("_sb.cameraZoom()")
+endfunction

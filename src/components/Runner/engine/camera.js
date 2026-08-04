@@ -8,6 +8,7 @@ const _sbCamera = {
   _shakeIntensity: 0,
   _shakeDuration: 0,
   _shakeElapsed: 0,
+  _zoom: 1,
 
   cameraFollow(target, speed) {
     this._followTarget = target;
@@ -28,6 +29,11 @@ const _sbCamera = {
   cameraX() { return this._camX; },
   cameraY() { return this._camY; },
 
+  cameraSetZoom(z) {
+    this._zoom = z;
+  },
+  cameraZoom() { return this._zoom; },
+
   cameraShake(intensity, duration) {
     this._shakeIntensity = intensity;
     this._shakeDuration = duration;
@@ -36,10 +42,10 @@ const _sbCamera = {
 
   _cameraUpdate(delta) {
     if (this._followTarget) {
-      const sw = app.renderer.width;
-      const sh = app.renderer.height;
-      const desiredX = this._followTarget._handle.position.x - sw / 2;
-      const desiredY = this._followTarget._handle.position.y - sh / 2;
+      const visibleW = app.renderer.width / this._zoom;
+      const visibleH = app.renderer.height / this._zoom;
+      const desiredX = this._followTarget._handle.position.x - visibleW / 2;
+      const desiredY = this._followTarget._handle.position.y - visibleH / 2;
       if (this._followSpeed === 0) {
         this._camX = desiredX;
         this._camY = desiredY;
@@ -49,10 +55,10 @@ const _sbCamera = {
       }
     }
     if (this._boundsW !== null) {
-      const sw = app.renderer.width;
-      const sh = app.renderer.height;
-      this._camX = Math.max(0, Math.min(this._boundsW - sw, this._camX));
-      this._camY = Math.max(0, Math.min(this._boundsH - sh, this._camY));
+      const visibleW = app.renderer.width / this._zoom;
+      const visibleH = app.renderer.height / this._zoom;
+      this._camX = Math.max(0, Math.min(this._boundsW - visibleW, this._camX));
+      this._camY = Math.max(0, Math.min(this._boundsH - visibleH, this._camY));
     }
 
     let shakeX = 0;
@@ -65,7 +71,11 @@ const _sbCamera = {
       shakeY = (Math.random() * 2 - 1) * magnitude;
     }
 
-    worldContainer.position.set(-this._camX + shakeX, -this._camY + shakeY);
+    worldContainer.scale.set(this._zoom, this._zoom);
+    worldContainer.position.set(
+      -this._camX * this._zoom + shakeX,
+      -this._camY * this._zoom + shakeY
+    );
   },
 
   _cameraReset() {
@@ -78,6 +88,8 @@ const _sbCamera = {
     this._shakeIntensity = 0;
     this._shakeDuration = 0;
     this._shakeElapsed = 0;
+    this._zoom = 1;
+    worldContainer.scale.set(1, 1);
     worldContainer.position.set(0, 0);
   },
 };

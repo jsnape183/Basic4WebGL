@@ -75,4 +75,9 @@ const _sbStage = {
   setBackground(r, g, b) {
     app.renderer.background.color = (r << 16) | (g << 8) | b;
   },
+  setPixelPerfect(v) {
+    // Only affects textures created after this call — call from oninit(),
+    // before asset preload, so every texture picks it up from the start.
+    PIXI.TextureStyle.defaultOptions.scaleMode = v ? 'nearest' : 'linear';
+  },
 };

@@ -89,3 +89,21 @@ function onenter()
   world.setBackground(30, 30, 50)
 endfunction
 ```
+
+---
+
+## world.setPixelPerfect(v)
+
+Turns on crisp, blocky scaling for all images in your game — the classic pixel-art look, instead of smooth, blurry scaling. Use this for small hand-drawn or retro-style art, especially if you plan to zoom the camera in with `camera.setZoom()` or scale up sprites with `setScale()`.
+
+Call this from `oninit()`, before your images have loaded — see the Lifecycle Functions topic in the Language Guide. Calling it later only affects images that load after the call, not ones already on screen.
+
+| Parameter | Type              | Description |
+|-----------|-------------------|-------------|
+| v         | `true` or `false` | `true` for crisp pixel-art scaling, `false` for smooth scaling (the default) |
+
+```bas
+function oninit()
+  world.setPixelPerfect(true)
+endfunction
+```
