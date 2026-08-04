@@ -17,6 +17,44 @@ function loadRuntimeHelpers() {
   return factory();
 }
 
+// The order of these steps is the whole point of the `oninit` feature — user
+// code has to be declared, and oninit fired, before a single asset loads. A
+// unit test can't prove the async sequence actually behaves (cypress/e2e/
+// oninit.cy.ts does that), but it can lock the source order so an accidental
+// reorder fails loudly here first.
+describe('boot sequence order', () => {
+  const html = readFileSync('src/components/Runner/bootstrapper.html', 'utf-8');
+  const at = (needle: string) => {
+    const index = html.indexOf(needle);
+    expect(index, `bootstrapper.html no longer contains ${needle}`).toBeGreaterThan(-1);
+    return index;
+  };
+
+  test('declares transpiled code and fires oninit before any preloading', () => {
+    expect(at('//${transpiled}')).toBeLessThan(at('_sb._fireInit()'));
+    expect(at('_sb._fireInit()')).toBeLessThan(at('//${inlineAssets}'));
+    expect(at('_sb._fireInit()')).toBeLessThan(at('_sb.preloadFromLocalStorage'));
+    expect(at('_sb._fireInit()')).toBeLessThan(at('_sb.preloadAudioFromLocalStorage'));
+  });
+
+  test('runs deferred module bodies after preloading and before the scene switch', () => {
+    expect(at('_sb.preloadAudioFromLocalStorage')).toBeLessThan(
+      at('_sb._runModuleBodies()')
+    );
+    expect(at('_sb._runModuleBodies()')).toBeLessThan(at('_sb._applySwitch()'));
+  });
+
+  test('registers input listeners, the ticker and onenter after module bodies', () => {
+    expect(at('_sb._runModuleBodies()')).toBeLessThan(at("addEventListener('keydown'"));
+    expect(at('_sb._runModuleBodies()')).toBeLessThan(at('app.ticker.add'));
+    expect(at('_sb._runModuleBodies()')).toBeLessThan(at('c.symbol.onenter'));
+  });
+
+  test('initialises the stage before firing oninit', () => {
+    expect(at('_sb._initStage()')).toBeLessThan(at('_sb._fireInit()'));
+  });
+});
+
 describe('checked dict/array runtime accessors', () => {
   test('_sbCheckedDictGet reads a Map value', () => {
     const { _sbCheckedDictGet } = loadRuntimeHelpers();

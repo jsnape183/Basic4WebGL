@@ -138,16 +138,28 @@
           _sb._initMouse(app.canvas);
           _sb._initStage();
 
+          // The transpiled code runs before assets are preloaded. Thanks to
+          // two-phase module initialisation it only *declares* things here —
+          // module objects, classes, functions — and registers each module's
+          // own top-level statements for later via _sb._deferModuleBody.
+          // That is what gives oninit somewhere to run.
+          //${transpiled};
+
+          _sb._fireInit();
+
           //${inlineAssets}
           await _sb.preloadFromLocalStorage(_sbProjectId);
           await _sb.preloadAudioFromLocalStorage(_sbProjectId);
 
-          //${transpiled};
+          // Phase two: replay every module's top-level statements, in file
+          // order, now that assets exist and sprites can be created.
+          _sb._runModuleBodies();
 
           _sb._applySwitch();
 
-          // Key listeners are registered after the transpiled code so that
-          // _sbClasses is populated and onkeydown/onkeyup resolve correctly.
+          // Key listeners are registered after the module bodies have run so
+          // that _sbClasses is populated and onkeydown/onkeyup resolve
+          // correctly.
           document.addEventListener('keydown', (e) => {
             if (e.repeat) return;
             _sb._sceneKeyDown(e.keyCode);
