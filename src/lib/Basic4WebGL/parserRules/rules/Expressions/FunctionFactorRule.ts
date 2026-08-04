@@ -19,7 +19,10 @@ class FunctionFactorRule implements IParserRule {
     );
 
     const functionSymbol = symbolTable.get(name, 'Function');
-    return new FunctionTermNode(functionSymbol, expr, loc);
+    // `data.receiver` is set when the caller is dispatching through an object
+    // instance and has already resolved the instance's JS name. Plain function
+    // calls leave it undefined and keep resolving via the symbol.
+    return new FunctionTermNode(functionSymbol, expr, loc, data?.receiver);
   }
 }
 

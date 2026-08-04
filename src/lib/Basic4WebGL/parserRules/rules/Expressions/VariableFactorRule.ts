@@ -54,12 +54,20 @@ class VariableFactorRule implements IParserRule {
       const memberName = tokenStream.prev().text.toLowerCase();
 
       // Method call: member followed by '('
+      // The scope push is only so the method symbol resolves against the
+      // instance's cloned members. The *emitted* receiver must come from the
+      // instance symbol (ownerFormatted) — the method symbol's fullScope is the
+      // lexical declaration chain (e.g. `main.onenter.s`), which is only a valid
+      // JS path when the instance is module-scoped. Passing it explicitly keeps
+      // this in step with the statement path in ObjectPropertyRule, which has
+      // always built its call target from ownerFormatted.
       if (check(tokens.OpenParen, tokenStream.current())) {
         symbolTable.setScope(name);
         let node: Tree;
         try {
           node = getParserRule('FunctionFactor').parse(tokenStream, symbolTable, {
             name: memberName,
+            receiver: ownerFormatted,
           });
         } finally {
           symbolTable.clearScope();
