@@ -98,6 +98,8 @@ endfunction
 
 Lifecycle functions work the same way inside classes. Instance methods with these names will be called by the engine on every active instance. The one exception is `oninit`, which only runs on modules — see above.
 
+An object becomes active when you add it with `world.add(obj)` or `hud.add(obj)`, and stops being active when you remove it with `world.remove(obj)`, `world.clear()`, `hud.remove(obj)`, `hud.clear()`, or when the scene changes. Every object that is active at the start of a frame gets exactly one `onupdate` that frame, so it is always safe to add or remove objects from inside an `onupdate` — a common thing to do when an enemy dies or a new one spawns. An object added during a frame starts updating on the *next* frame. If one object removes a different object earlier in the same frame, that removed object may still receive one last `onupdate` before it stops being active.
+
 ```bas
 Class
 dim x

@@ -71,6 +71,23 @@ app.ticker.add((ticker) => _SoftBasicGfx.getInstance()._update(ticker.deltaTime)
 `this.` bindings corrected for `_componentToHex`, `setFillColor`, `setLineColor`, `drawLine`,
 `drawRect`, `drawCircle`, `clear()`, and the keyup handler.
 
+### ~~Bug 3 — instance `onupdate()` stops firing after any remove/clear/scene switch~~ **[FIXED, 2026-08-04]**
+A distant relative of Bug 1 (and of Bug 2's `this.` theme): per-object `onupdate` was wired
+up correctly, but the frame loop lost track of *which* objects to dispatch to. `_sb` is built
+by spreading all 14 engine modules once, which gives `_sbInstances` a second property slot on
+`_sb` aliasing `_sbLifecycle`'s array. `stage.js` **reassigned** the module's slot in five
+places (`removeFromWorld`, `clearWorld`, `removeFromHud`, `clearHud`, `clear`), detaching the
+two — so the loop, which reads `_sb`'s slot, iterated an orphaned array forever. Objects added
+afterwards never updated; objects removed never *stopped* updating. Both symptoms silent.
+
+Fixed by having `stage.js` reach the registry through `this` like every other module, and by
+mutating it in place only (`_retainInstances()` in `lifecycle.js`), so the two slots can never
+diverge. Instance dispatch now iterates a per-frame snapshot, which in-place mutation requires:
+otherwise an object calling `world.remove(self)` from its own `onupdate` makes a sibling skip
+that frame. Gated by `tests/components/Runner/stage.test.ts` and
+`cypress/e2e/instanceUpdateRegistry.cy.ts`. Design:
+`docs/superpowers/specs/2026-08-04-instance-update-registry-aliasing-design.md`.
+
 ---
 
 ## Priorities

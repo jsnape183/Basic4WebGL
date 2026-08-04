@@ -14,39 +14,35 @@ const _sbStage = {
   // ── world ────────────────────────────────────────────────────────────────
   addToWorld(obj) {
     worldContainer.addChild(obj._handle);
-    if (!_sbLifecycle._sbInstances.includes(obj)) {
-      _sbLifecycle._sbInstances.push(obj);
+    if (!this._sbInstances.includes(obj)) {
+      this._sbInstances.push(obj);
     }
   },
   removeFromWorld(obj) {
     worldContainer.removeChild(obj._handle);
-    _sbLifecycle._sbInstances = _sbLifecycle._sbInstances.filter((i) => i !== obj);
+    this._retainInstances((i) => i !== obj);
   },
   clearWorld() {
     const worldHandles = new Set(worldContainer.children);
     worldContainer.removeChildren();
-    _sbLifecycle._sbInstances = _sbLifecycle._sbInstances.filter(
-      (i) => !worldHandles.has(i._handle)
-    );
+    this._retainInstances((i) => !worldHandles.has(i._handle));
   },
 
   // ── hud ──────────────────────────────────────────────────────────────────
   addToHud(obj) {
     hudContainer.addChild(obj._handle);
-    if (!_sbLifecycle._sbInstances.includes(obj)) {
-      _sbLifecycle._sbInstances.push(obj);
+    if (!this._sbInstances.includes(obj)) {
+      this._sbInstances.push(obj);
     }
   },
   removeFromHud(obj) {
     hudContainer.removeChild(obj._handle);
-    _sbLifecycle._sbInstances = _sbLifecycle._sbInstances.filter((i) => i !== obj);
+    this._retainInstances((i) => i !== obj);
   },
   clearHud() {
     const hudHandles = new Set(hudContainer.children);
     hudContainer.removeChildren();
-    _sbLifecycle._sbInstances = _sbLifecycle._sbInstances.filter(
-      (i) => !hudHandles.has(i._handle)
-    );
+    this._retainInstances((i) => !hudHandles.has(i._handle));
   },
 
   // ── deprecated stage aliases ──────────────────────────────────────────────
@@ -61,7 +57,8 @@ const _sbStage = {
   clear() {
     worldContainer.removeChildren();
     hudContainer.removeChildren();
-    _sbLifecycle._sbInstances = [];
+    // Emptied in place, never replaced — see _retainInstances in lifecycle.js.
+    this._sbInstances.length = 0;
     this._cameraReset();
   },
 

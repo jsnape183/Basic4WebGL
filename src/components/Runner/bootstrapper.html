@@ -165,13 +165,15 @@
             _sb._sceneKeyDown(e.keyCode);
             _sb.registerKey(e.keyCode, true);
             _sb._sbClasses.forEach((c) => { if (c.symbol.onkeydown) c.symbol.onkeydown(e.keyCode); });
-            _sb._sbInstances.forEach((inst) => { if (inst.onkeydown) inst.onkeydown(e.keyCode); });
+            // Snapshot — a handler may add or remove objects mid-dispatch.
+            _sb._sbInstances.slice().forEach((inst) => { if (inst.onkeydown) inst.onkeydown(e.keyCode); });
           });
           document.addEventListener('keyup', (e) => {
             _sb._sceneKeyUp(e.keyCode);
             _sb.registerKey(e.keyCode, false);
             _sb._sbClasses.forEach((c) => { if (c.symbol.onkeyup) c.symbol.onkeyup(e.keyCode); });
-            _sb._sbInstances.forEach((inst) => { if (inst.onkeyup) inst.onkeyup(e.keyCode); });
+            // Snapshot — a handler may add or remove objects mid-dispatch.
+            _sb._sbInstances.slice().forEach((inst) => { if (inst.onkeyup) inst.onkeyup(e.keyCode); });
           });
 
           app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
