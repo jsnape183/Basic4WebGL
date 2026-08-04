@@ -18,6 +18,28 @@ const _sbLifecycle = {
     this._deferredModuleBodies.push(fn);
   },
 
+  // Drops every registered instance that fails `predicate`, **in place**.
+  //
+  // The instance registry must never be replaced with a fresh array. `_sb` is
+  // built by spreading every engine module into one object, so `_sbInstances`
+  // exists as a property on both `_sb` and this module, aliasing a single
+  // array. Reassigning either slot silently detaches the two: the per-frame
+  // loop reads `this._sbInstances` with `this` bound to `_sb`, so it would go
+  // on iterating the orphaned array forever — objects added afterwards would
+  // never update, and objects removed would never stop. Mutating in place
+  // keeps every holder of the reference looking at the same live registry.
+  _retainInstances(predicate) {
+    const instances = this._sbInstances;
+    let write = 0;
+    for (let read = 0; read < instances.length; read += 1) {
+      if (predicate(instances[read])) {
+        instances[write] = instances[read];
+        write += 1;
+      }
+    }
+    instances.length = write;
+  },
+
   _runModuleBodies() {
     const bodies = this._deferredModuleBodies;
     this._deferredModuleBodies = [];
@@ -52,7 +74,14 @@ const _sbLifecycle = {
         }
       }
     });
-    this._sbInstances.forEach((inst) => {
+    // Iterate a snapshot: the registry is mutated in place, and an object's
+    // own onupdate very often removes something (`world.remove(self)` when an
+    // enemy dies). Walking the live array would make that splice shift the
+    // remaining entries down under the cursor and silently skip an object for
+    // that frame. A per-frame snapshot gives every object registered at the
+    // start of the frame exactly one update, and defers new arrivals to the
+    // next frame.
+    this._sbInstances.slice().forEach((inst) => {
       if (inst.onupdate) {
         try {
           inst.onupdate(delta);
