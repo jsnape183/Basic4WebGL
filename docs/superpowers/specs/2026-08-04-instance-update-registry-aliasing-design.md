@@ -173,7 +173,7 @@ was checked.
 - **`tests/components/Runner/stage.test.ts` (new, 19 tests).** Loads the 14 real engine
   module sources plus the real `softBasicEngine.js` and evaluates them in one scope, so the
   actual production spread is exercised rather than a hand-rolled stand-in — which matters,
-  since the bug lived entirely in that seam. **13 of the 19 failed before the fix.** Covers
+  since the bug lived entirely in that seam. **15 of the 19 failed before the fix (4 passed incidentally).** Covers
   the identity invariant after each of the five triggers, dispatch after each trigger, that
   removals still genuinely remove, and the mid-iteration mutation semantics.
 - **`cypress/e2e/instanceUpdateRegistry.cy.ts` (new, 4 specs).** The load-bearing proof: this
