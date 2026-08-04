@@ -3,3 +3,5 @@ node_modules
 .worktrees/
 dist/
 tests/scratch/
+cypress/screenshots/
+cypress/videos/
