@@ -79,9 +79,30 @@ export const formatClass = (className: string): string => {
   return `class ${prefixClass(className)}{}`;
 };
 
-export const formatRoot = (node: Tree, children: Array<string>, constructorContent?: string, parentName?: string, isClass?: boolean): string => {
+/**
+ * Phase 2 of two-phase module initialisation.
+ *
+ * A root's own top-level statements are wrapped in a callback registered with
+ * the engine instead of running where they sit. The bootstrapper replays them
+ * (in file order) only after assets have preloaded, which is what lets the
+ * declaration half of the transpiled output — and therefore `oninit` — run
+ * before preloading starts. Emitted only when there is something to defer, so
+ * declaration-only modules produce byte-identical output to before.
+ */
+const formatDeferredModuleBody = (
+  declarations: Array<string>,
+  statements: Array<string>
+): string => {
+  if (!statements.length) return '';
+  const separator = declarations.length ? ';\n    ' : '';
+  return `${separator}_sb._deferModuleBody(() => {${statements.join(';')}});`;
+};
+
+export const formatRoot = (node: Tree, declarations: Array<string>, statements: Array<string>, constructorContent?: string, parentName?: string, isClass?: boolean): string => {
+  const deferredBody = formatDeferredModuleBody(declarations, statements);
+
   if (!isClass) {
-    return `const ${node.data} = {};\n    ${children.join(';')}`;
+    return `const ${node.data} = {};\n    ${declarations.join(';')}${deferredBody}`;
   }
   const extendsClause = parentName ? ` extends ${prefixClass(parentName)}` : '';
   const prefixedName = prefixClass(node.data as string);
@@ -89,5 +110,5 @@ export const formatRoot = (node: Tree, children: Array<string>, constructorConte
     ? `class ${prefixedName}${extendsClause}{ ${constructorContent} }`
     : `class ${prefixedName}${extendsClause}{}`;
   return `${classDecl}
-    ${children.join(';')}`;
+    ${declarations.join(';')}${deferredBody}`;
 };

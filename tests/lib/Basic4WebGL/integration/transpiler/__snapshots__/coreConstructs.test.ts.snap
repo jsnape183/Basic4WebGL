@@ -6,4 +6,4 @@ exports[`method onentry is added to class 1`] = `"constmain={};main.onenter=()=>
 
 exports[`module call in onentry works 1`] = `"consttalk={};talk.sayhello=()=>{_print("Hello,World!");};constmain={};main.onenter=()=>{talk.sayhello();;};;_sb._sbClasses=[{name:"talk",symbol:talk},{name:"main",symbol:main}];"`;
 
-exports[`prints hello world 1`] = `"constmain={};_print("Hello,World!");_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`prints hello world 1`] = `"constmain={};_sb._deferModuleBody(()=>{_print("Hello,World!")});;_sb._sbClasses=[{name:"main",symbol:main}];"`;
