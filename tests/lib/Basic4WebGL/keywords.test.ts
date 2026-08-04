@@ -33,7 +33,7 @@ describe('SOFTBASIC_KEYWORDS', () => {
 
 describe('SOFTBASIC_LIFECYCLE_EVENTS', () => {
   it('contains lifecycle hook names', () => {
-    for (const e of ['onenter', 'onupdate', 'onkeydown', 'onkeyup', 'onpointerdown', 'onpointermove']) {
+    for (const e of ['oninit', 'onenter', 'onupdate', 'onkeydown', 'onkeyup', 'onpointerdown', 'onpointermove']) {
       expect(SOFTBASIC_LIFECYCLE_EVENTS).toContain(e);
     }
   });

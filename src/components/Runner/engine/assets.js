@@ -36,6 +36,13 @@ const _sbAssets = (() => {
     },
 
     get(name) {
+      // Only reachable from oninit(), which runs before preloading starts.
+      // Everywhere else in the boot sequence _ready is already true, so the
+      // generic "check the filename" message below would be actively
+      // misleading here — the filename is usually fine, the timing isn't.
+      if (!_ready) {
+        throw Error(`Assets are not loaded yet — "${name}" cannot be used inside oninit(). Assets finish loading after oninit() runs, so create sprites in onenter() instead.`);
+      }
       if (!_cache.has(name)) {
         throw Error(`Asset "${name}" not found. Make sure the filename is correct and included in your assets.`);
       }

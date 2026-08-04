@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`for statement generates correct code 1`] = `"constmain={};for(main.x=0;main.x<=9;main.x++){_print("Helloworld")};_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`for statement generates correct code 1`] = `"constmain={};_sb._deferModuleBody(()=>{for(main.x=0;main.x<=9;main.x++){_print("Helloworld")}});;_sb._sbClasses=[{name:"main",symbol:main}];"`;
 
-exports[`if statement generates correct code 1`] = `"constmain={};if(1==2){_print("Mathisbroken")};_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`if statement generates correct code 1`] = `"constmain={};_sb._deferModuleBody(()=>{if(1==2){_print("Mathisbroken")}});;_sb._sbClasses=[{name:"main",symbol:main}];"`;
 
-exports[`while statement generates correct code 1`] = `"constmain={};while(1==2){_print("Helloworld")};_sb._sbClasses=[{name:"main",symbol:main}];"`;
+exports[`while statement generates correct code 1`] = `"constmain={};_sb._deferModuleBody(()=>{while(1==2){_print("Helloworld")}});;_sb._sbClasses=[{name:"main",symbol:main}];"`;
