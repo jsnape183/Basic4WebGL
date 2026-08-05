@@ -12,6 +12,7 @@ import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import PropertyMethodCallNode from '../../nodes/PropertyMethodCallNode';
 import SelfArrayAssignNode from '../../nodes/SelfArrayAssignNode';
 import SelfDictAssignNode from '../../nodes/SelfDictAssignNode';
+import TypedElementAccessNode from '../../nodes/TypedElementAccessNode';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 import { newLines } from '../../parserConfig';
 
@@ -81,6 +82,30 @@ class ObjectPropertyRule implements IParserRule {
         symbolTable,
         undefined
       );
+
+      // obj.bullets(0).explode() — chain a method call, as a statement, onto
+      // the element read out of a TYPED array field declared on another
+      // instance's class (issue #20, the external-instance counterpart of
+      // #14c's self.bullets(0).explode()).
+      if (
+        arraySymbol &&
+        (arraySymbol as any).classSymbol &&
+        check(tokens.Dot, tokenStream.current())
+      ) {
+        matchAndMove(tokens.Dot, tokenStream);
+        matchAndMove(tokens.Variable, tokenStream);
+        const innerMember = tokenStream.prev().text.toLowerCase();
+        if (check(tokens.OpenParen, tokenStream.current())) {
+          const innerArgs = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          matchAndMove(newLines, tokenStream);
+          return new TypedElementAccessNode(
+            { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: true },
+            [args, innerArgs],
+            loc
+          );
+        }
+      }
+
       if (arraySymbol && check(tokens.Equals, tokenStream.current())) {
         matchAndMove(tokens.Equals, tokenStream);
         const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);

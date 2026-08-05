@@ -100,9 +100,36 @@ class VariableFactorRule implements IParserRule {
           }
         }
         if (arraySymbol) {
+          const elementChain = `${ownerFormatted}.${memberName}`;
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+
+          // obj.bullets(0).getX() — chain a method/property access onto the
+          // element read out of a TYPED array field declared on another
+          // instance's class (issue #20, the external-instance counterpart
+          // of #14c's self.bullets(0).getX()). Mirrors SelfFactorRule's
+          // identical branch, reusing the same chain-based
+          // TypedElementAccessNode instead of a parallel node.
+          if ((arraySymbol as any).classSymbol && check(tokens.Dot, tokenStream.current())) {
+            matchAndMove(tokens.Dot, tokenStream);
+            matchAndMove(tokens.Variable, tokenStream);
+            const innerMember = tokenStream.prev().text.toLowerCase();
+            if (check(tokens.OpenParen, tokenStream.current())) {
+              const innerArgs = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+              return new TypedElementAccessNode(
+                { chain: elementChain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+                [args, innerArgs],
+                loc
+              );
+            }
+            return new TypedElementAccessNode(
+              { chain: elementChain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+              [args],
+              loc
+            );
+          }
+
           return new SelfArrayLookupNode(
-            { chain: `${ownerFormatted}.${memberName}`, symbol: arraySymbol },
+            { chain: elementChain, symbol: arraySymbol },
             [args],
             loc
           );

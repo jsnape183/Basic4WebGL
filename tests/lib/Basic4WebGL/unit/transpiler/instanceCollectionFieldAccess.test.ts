@@ -109,3 +109,76 @@ describe('external instance dictionary field — indexed write (statement contex
     expect(code).toContain('main.enemy.flags.set("stunned",true);');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Roadmap issue #20: chaining a method call onto an element read from a
+// TYPED array field, accessed through an EXTERNAL instance — the one shape
+// deliberately left out of #14(c), which only fixed this for `self`
+// (self.bullets(0).getX()). `someInstance.bullets(0).getX()` failed to
+// parse until this fix: the external-instance branch in VariableFactorRule
+// returned a plain indexed read without checking for a typed element or a
+// following Dot, unlike the self path.
+// ---------------------------------------------------------------------------
+
+const bulletClass = [
+  'Class',
+  '  dim x',
+  '  Constructor(startX)',
+  '    self.x = startX',
+  '  EndConstructor',
+  '  function getX()',
+  '    return self.x',
+  '  endfunction',
+  '  function explode()',
+  '  endfunction',
+  'endclass',
+].join('\n');
+
+const shipClass = [
+  'Class',
+  '  dim bullets(1) as Bullet',
+  '  Constructor()',
+  '    self.bullets(0) = new Bullet(42)',
+  '  EndConstructor',
+  'endclass',
+].join('\n');
+
+const compileMainWithShip = (lines: string[]) => {
+  const result = transpile([
+    { name: 'Bullet.bas', source: bulletClass },
+    { name: 'Ship.bas', source: shipClass },
+    { name: 'Main.bas', source: lines.join('\n') },
+  ]);
+  expect(result.diagnostics).toHaveLength(0);
+  const code = result.code as string;
+  return code.slice(code.indexOf('const main = {}'));
+};
+
+describe('external instance typed-array element — chained call (issue #20)', () => {
+  test('expression context: ship.bullets(0).getX() used as a return value', () => {
+    const code = compileMainWithShip([
+      'dim ship as Ship()',
+      'dim v',
+      'v = ship.bullets(0).getX()',
+    ]);
+    expect(code).toContain(
+      'main.v = _sbRequireInit(main.ship.bullets[0],"bullets(0)").getx()'
+    );
+  });
+
+  test('statement context: ship.bullets(0).explode() as a bare statement', () => {
+    const code = compileMainWithShip(['dim ship as Ship()', 'ship.bullets(0).explode()']);
+    expect(code).toContain(
+      '_sbRequireInit(main.ship.bullets[0],"bullets(0)").explode();'
+    );
+  });
+
+  test('does not affect a plain external indexed read with no chained call', () => {
+    const code = compileMainWithShip([
+      'dim ship as Ship()',
+      'dim v',
+      'v = ship.bullets(0)',
+    ]);
+    expect(code).toContain('main.v = main.ship.bullets[0]');
+  });
+});

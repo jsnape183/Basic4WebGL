@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.2 — 2026-08-05
+
+### New: chained calls on typed array elements through an instance reference
+
+- Chaining a method call onto an element read from another instance's typed array field now works (`ship.bullets(0).getX()`), matching the existing support for `self`'s own typed array fields
+
 ## v0.6.1 — 2026-08-05
 
 ### New: dictionary and array fields through `self` and instance references
