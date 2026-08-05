@@ -14,13 +14,13 @@ dim level as tilemapset("level1.stm")
 
 ## layer(name)
 
-Returns one named layer from the loaded `.stm` file, so you can position it, scroll it, or check tiles on it. The returned layer has the same `tileAt`, `widthPx`, `heightPx`, `transform`, and `setDepth` you already know from [tilemap](tilemap).
+Returns one named layer from the loaded `.stm` file, so you can position it, scroll it, or check tiles on it. See [tilemaplayer](tilemaplayer) for its full method list — it has the same `tileAt`, `widthPx`, `heightPx`, `transform`, and `setDepth` you already know from [tilemap](tilemap).
 
 | Parameter | Type   | Description |
 |-----------|--------|--------------|
 | name      | string | The layer's name, as it was saved in the `.stm` file |
 
-**Returns:** a tilemap layer object. Store it in a variable declared `as tilemaplayer` — you need the type so you can call methods on it afterwards.
+**Returns:** a [tilemaplayer](tilemaplayer). Store it in a variable declared `as tilemaplayer` — you need the type so you can call methods on it afterwards.
 
 ```bas
 dim level as tilemapset("level1.stm")
