@@ -13,7 +13,12 @@ export interface RawAsset {
   bytes: Buffer;
 }
 
-// Matches src/components/AssetPreview/getAssetType.ts's supported extensions.
+// Matches src/components/AssetPreview/getAssetType.ts's supported extensions,
+// plus .json — the same "text" bucket that module falls back to for any
+// non-image/audio extension, needed for tilemap data assets loaded via
+// tilemap.load(). Matches the MIME type the browser's own File API assigns
+// (and FileReader.readAsDataURL embeds) when a user drags a .json file into
+// the asset panel by hand.
 const MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -25,6 +30,7 @@ const MIME_TYPES: Record<string, string> = {
   '.mp3': 'audio/mpeg',
   '.wav': 'audio/wav',
   '.ogg': 'audio/ogg',
+  '.json': 'application/json',
 };
 
 function mimeTypeFor(fileName: string): string {

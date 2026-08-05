@@ -59,6 +59,14 @@ describe('packageDemo', () => {
     expect(result.assets[0].content).toBe(`data:audio/wav;base64,${bytes.toString('base64')}`);
   });
 
+  test('encodes a .json asset as a base64 application/json data URI', () => {
+    const bytes = Buffer.from('[[0,0],[0,1]]', 'utf-8');
+    const result = packageDemo('Test Demo', [{ name: 'Main.bas', source: 'x' }], [
+      { name: 'level1.json', bytes },
+    ]);
+    expect(result.assets[0].content).toBe(`data:application/json;base64,${bytes.toString('base64')}`);
+  });
+
   test('throws on an unsupported asset extension', () => {
     expect(() =>
       packageDemo('Test Demo', [{ name: 'Main.bas', source: 'x' }], [

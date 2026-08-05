@@ -68,7 +68,7 @@ demo-src/<slug>/
 ```
 
 - Every `.bas` file directly in the source folder becomes one project file, sorted alphabetically.
-- Every file in `assets/` becomes one project asset, sorted alphabetically, base64-encoded with its MIME type inferred from its extension — images (`.png .jpg .jpeg .gif .webp .svg .bmp`) and audio (`.mp3 .wav .ogg`), the same set `src/components/AssetPreview/getAssetType.ts` recognises. An unrecognised extension is a hard error, not a silent guess.
+- Every file in `assets/` becomes one project asset, sorted alphabetically, base64-encoded with its MIME type inferred from its extension — images (`.png .jpg .jpeg .gif .webp .svg .bmp`), audio (`.mp3 .wav .ogg`), and `.json` (data assets such as tilemap layouts, loaded via `tilemap.load()`) — the same "image / audio / text" split `src/components/AssetPreview/getAssetType.ts` recognises, with `.json` mapped to `application/json` (matching what the browser's own `FileReader.readAsDataURL` assigns when a `.json` file is dragged into the asset panel by hand). An unrecognised extension is still a hard error, not a silent guess — extend `MIME_TYPES` in `scripts/demoBuilder/packageDemo.ts` if a future demo needs another `getAssetType.ts`-recognised "text" extension.
 - No folder nesting in v1 — every demo so far is flat. Extend `packageDemo` in `scripts/demoBuilder/packageDemo.ts` if a future demo genuinely needs subfolders.
 
 Run: `npm run build:demo -- demo-src/<slug> <SlugName>`.
