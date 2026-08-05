@@ -16,11 +16,12 @@ import { useRunnerMessages } from '../hooks/useRunnerMessages';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { SourceLocation } from '../lib/CompilerLib/compiler/types';
 import TreePanel from '../components/TreePanel';
-import ProjectShell, { FilesIcon, ExportIcon } from '../components/ProjectShell';
+import ProjectShell, { FilesIcon, ExportIcon, TilemapIcon } from '../components/ProjectShell';
 import { exportProject } from '../features/projects/exportProject';
 import FileTabs from '../components/FileTabs';
 import BottomPanel from '../components/BottomPanel';
 import AssetPreview from '../components/AssetPreview';
+import TilemapChooserModal from '../components/TileMapEditor/TilemapChooserModal';
 
 type AssetTabEntry = { assetId: string };
 
@@ -43,6 +44,7 @@ const EditPage: React.FC = () => {
   const [activeAssetTabId, setActiveAssetTabId] = useState<string | null>(null);
   const [dirtyAssetIds, setDirtyAssetIds] = useState<string[]>([]);
   const [jumpTarget, setJumpTarget] = useState<{ line: number; col: number } | null>(null);
+  const [isTilemapModalOpen, setIsTilemapModalOpen] = useState(false);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   const { diagnostics, symbols } = useLiveAnalysis(id ?? '');
@@ -152,6 +154,7 @@ const EditPage: React.FC = () => {
   const activeAsset = activeAssetTabId ? allAssetsById[activeAssetTabId] : undefined;
 
   return (
+    <>
     <ProjectShell
       header={
         <>
@@ -220,6 +223,12 @@ const EditPage: React.FC = () => {
           ariaLabel: 'Export project',
           onAction: () => dispatch(exportProject(project.id)),
         },
+        {
+          id: 'tilemap',
+          icon: <TilemapIcon />,
+          ariaLabel: 'Tilemap editor',
+          onAction: () => setIsTilemapModalOpen(true),
+        },
       ]}
       editor={
         <ErrorBoundary
@@ -278,6 +287,13 @@ const EditPage: React.FC = () => {
         </>
       }
     />
+    <TilemapChooserModal
+      projectId={project.id}
+      isOpen={isTilemapModalOpen}
+      onClose={() => setIsTilemapModalOpen(false)}
+      onOpenAsset={handleOpenAsset}
+    />
+    </>
   );
 };
 

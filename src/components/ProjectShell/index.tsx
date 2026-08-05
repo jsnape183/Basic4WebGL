@@ -24,6 +24,15 @@ const ExportIcon = () => (
   </svg>
 );
 
+const TilemapIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1"/>
+    <rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/>
+    <rect x="14" y="14" width="7" height="7" rx="1"/>
+  </svg>
+);
+
 export type ActivitySection = {
   id: string;
   icon: React.ReactNode;
@@ -135,5 +144,5 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
   );
 };
 
-export { FilesIcon, AssetsIcon, ExportIcon };
+export { FilesIcon, AssetsIcon, ExportIcon, TilemapIcon };
 export default ProjectShell;
