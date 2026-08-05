@@ -4,7 +4,7 @@ import BuiltInType, { RegisterBuiltInType } from '@CompilerLib/builtInTypes';
 class ObjectType extends BuiltInType {
   fullName: string = '';
   constructor(fullName: string) {
-    super('Object', []);
+    super('Object', ['Variant']);
     this.fullName = fullName;
   }
 
