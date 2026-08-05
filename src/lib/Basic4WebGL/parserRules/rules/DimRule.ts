@@ -140,27 +140,34 @@ class DimRule implements IParserRule {
       }
 
       if (check(tokens.Equals, tokenStream.current())) {
-        // dim name as ClassName = new ClassName(args)
         matchAndMove(tokens.Equals, tokenStream);
-        matchAndMove(tokens.New, tokenStream);
-        matchAndMove(tokens.Variable, tokenStream);
-        const ctorName = tokenStream.prev().text;
-        const ctorClassSymbol = symbolTable.get(ctorName, symbolTypes.Class);
-        if (ctorClassSymbol.name !== classSymbol.name) {
-          throw new CompilationError(
-            `Type mismatch: '${name}' is declared as '${classSymbol.name}' but 'new ${ctorClassSymbol.name}' was assigned`
-          );
+        if (check(tokens.New, tokenStream.current())) {
+          // dim name as ClassName = new ClassName(args)
+          matchAndMove(tokens.New, tokenStream);
+          matchAndMove(tokens.Variable, tokenStream);
+          const ctorName = tokenStream.prev().text;
+          const ctorClassSymbol = symbolTable.get(ctorName, symbolTypes.Class);
+          if (ctorClassSymbol.name !== classSymbol.name) {
+            throw new CompilationError(
+              `Type mismatch: '${name}' is declared as '${classSymbol.name}' but 'new ${ctorClassSymbol.name}' was assigned`
+            );
+          }
+          let newNode: Tree;
+          if (check(tokens.OpenParen, tokenStream.current())) {
+            const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+            checkCtorArgs(ctorClassSymbol, args.children.length, ctorName);
+            newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [args], loc);
+          } else {
+            checkCtorArgs(ctorClassSymbol, 0, ctorName);
+            newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [], loc);
+          }
+          return new AssignNode(object, newNode, loc);
         }
-        let newNode: Tree;
-        if (check(tokens.OpenParen, tokenStream.current())) {
-          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
-          checkCtorArgs(ctorClassSymbol, args.children.length, ctorName);
-          newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [args], loc);
-        } else {
-          checkCtorArgs(ctorClassSymbol, 0, ctorName);
-          newNode = new NewObjectNode({ classSymbol: ctorClassSymbol, className: ctorName }, [], loc);
-        }
-        return new AssignNode(object, newNode, loc);
+        // dim name as ClassName = <expression> — e.g. a method call returning that type.
+        // Reuses the same Object/Variant compatibility already relied on by the
+        // plain two-statement form (`dim name as ClassName` then `name = <expression>`).
+        const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+        return new AssignNode(object, expr, loc);
       } else if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(
           tokenStream,
