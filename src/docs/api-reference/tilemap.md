@@ -2,6 +2,8 @@
 
 A `tilemap` renders a tile-based level on the canvas. It takes a tile sheet (a grid of equally-sized tiles) and a JSON file describing where each tile goes. Extend it using `Extends tilemap` in your class file.
 
+Need more than one layer — a background, a foreground, a collision layer? See [tilemapset](tilemapset) instead, which loads all of them from a single `.stm` file.
+
 Position is controlled through `self.transform` — see [ObjectTransform](objecttransform).
 
 ## Constructor
