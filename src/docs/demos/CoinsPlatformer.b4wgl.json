@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "project": {
+    "name": "CoinsPlatformer"
+  },
+  "folders": [],
+  "files": [
+    {
+      "id": "985e6a8e-9f30-40f7-88ed-526cd770479d",
+      "name": "Coin.bas",
+      "source": "Class\nExtends sprite\n\ndim collected\n\nConstructor(x, y)\n  super(\"coin.png\")\n  self.transform.setPosition(x, y)\n  self.collected = false\n  world.add(self)\nEndConstructor\n\nfunction collect()\n  self.collected = true\n  world.remove(self)\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Coin.bas"
+    },
+    {
+      "id": "334968e2-5665-468c-82e0-63fdc8fd80a1",
+      "name": "CoinCounter.bas",
+      "source": "Class\nExtends text\n\nConstructor()\n  super(\"Coins: 0\", 10, 10)\n  self.setStyle(16, 255, 255, 255)\nEndConstructor\n\nfunction setScore(n)\n  self.setText(\"Coins: \" + string.str(n))\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "CoinCounter.bas"
+    },
+    {
+      "id": "2c3cc511-5556-4bca-a631-4442b4e90d09",
+      "name": "Enemy.bas",
+      "source": "Class\nExtends sprite\n\ndim minX\ndim maxX\ndim dir\ndim speed\n\nConstructor(x, y, minX, maxX)\n  super(\"enemy.png\")\n  self.transform.setPosition(x, y)\n  self.minX = minX\n  self.maxX = maxX\n  self.dir = 1\n  self.speed = 20\n  world.add(self)\nEndConstructor\n\nfunction onupdate(delta)\n  dim dt\n  dim x\n  dt = delta / 1000\n  x = self.transform.x()\n  x = x + self.dir * self.speed * dt\n  if x > self.maxX then\n    x = self.maxX\n    self.dir = -1\n  endif\n  if x < self.minX then\n    x = self.minX\n    self.dir = 1\n  endif\n  self.transform.setPosition(x, self.transform.y())\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Enemy.bas"
+    },
+    {
+      "id": "78e25a80-7fa3-420f-94e9-8efda38cf66f",
+      "name": "GameData.bas",
+      "source": "Class\n\ndim score\n\nConstructor()\n  self.score = 0\nEndConstructor\n\nfunction addCoin()\n  self.score = self.score + 1\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "GameData.bas"
+    },
+    {
+      "id": "aea6aa02-4f3c-4233-841e-403a6f71822a",
+      "name": "Level1Scene.bas",
+      "source": "Class extends scene\n\ndim tilemap\ndim player\ndim enemies(0)\ndim coins(0)\ndim coinCounter\ndim game\ndim finished\n\nConstructor(gameData)\n  self.game = gameData\nEndConstructor\n\nfunction onenter()\n  self.finished = false\n\n  self.tilemap = levelhelpers.beginLevel(\"level1.json\")\n  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 52)\n\n  dim e as enemy\n  e = new Enemy(150, 48, 130, 190)\n  array.push(self.enemies, e)\n\n  self.spawnCoins()\n\n  self.coinCounter = levelhelpers.spawnCoinCounter(self.game)\nendfunction\n\nfunction spawnCoins()\n  dim c as coin\n  c = new Coin(40, 48)\n  array.push(self.coins, c)\n  c = new Coin(80, 48)\n  array.push(self.coins, c)\n  c = new Coin(110, 48)\n  array.push(self.coins, c)\n  c = new Coin(136, 48)\n  array.push(self.coins, c)\n  c = new Coin(184, 32)\n  array.push(self.coins, c)\n  c = new Coin(220, 48)\n  array.push(self.coins, c)\n  c = new Coin(300, 48)\n  array.push(self.coins, c)\nendfunction\n\nfunction onupdate(delta)\n  camera.follow(self.player, 0.1)\n\n  levelhelpers.resetOnEnemyCollision(self.player, self.enemies)\n  levelhelpers.applyDeadzone(self.player, self.tilemap)\n  levelhelpers.collectCoins(self.coins, self.player, self.game, self.coinCounter)\n\n  if not self.finished then\n    if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then\n      self.finished = true\n      scenemanager.switch(\"level2\")\n    endif\n  endif\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Level1Scene.bas"
+    },
+    {
+      "id": "eaa17f92-f7f8-4976-b930-c27c08799951",
+      "name": "Level2Scene.bas",
+      "source": "Class extends scene\n\ndim tilemap\ndim player\ndim enemies(0)\ndim coins(0)\ndim coinCounter\ndim game\ndim finished\n\nConstructor(gameData)\n  self.game = gameData\nEndConstructor\n\nfunction onenter()\n  self.finished = false\n\n  self.tilemap = levelhelpers.beginLevel(\"level2.json\")\n  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)\n\n  dim e as enemy\n  e = new Enemy(254, 40, 254, 286)\n  array.push(self.enemies, e)\n  e = new Enemy(326, 56, 326, 378)\n  array.push(self.enemies, e)\n\n  self.spawnCoins()\n\n  self.coinCounter = levelhelpers.spawnCoinCounter(self.game)\nendfunction\n\nfunction spawnCoins()\n  dim c as coin\n  c = new Coin(44, 64)\n  array.push(self.coins, c)\n  c = new Coin(124, 56)\n  array.push(self.coins, c)\n  c = new Coin(188, 40)\n  array.push(self.coins, c)\n  c = new Coin(212, 16)\n  array.push(self.coins, c)\n  c = new Coin(268, 40)\n  array.push(self.coins, c)\n  c = new Coin(348, 56)\n  array.push(self.coins, c)\n  c = new Coin(420, 64)\n  array.push(self.coins, c)\n  c = new Coin(460, 64)\n  array.push(self.coins, c)\nendfunction\n\nfunction onupdate(delta)\n  camera.follow(self.player, 0.1)\n\n  levelhelpers.resetOnEnemyCollision(self.player, self.enemies)\n  levelhelpers.applyDeadzone(self.player, self.tilemap)\n  levelhelpers.collectCoins(self.coins, self.player, self.game, self.coinCounter)\n\n  if not self.finished then\n    if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then\n      self.finished = true\n      scenemanager.switch(\"level3\")\n    endif\n  endif\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Level2Scene.bas"
+    },
+    {
+      "id": "ff0c8b65-7ac9-4b10-b2ca-5849d1fd32f9",
+      "name": "Level3Scene.bas",
+      "source": "Class extends scene\n\ndim tilemap\ndim player\ndim enemies(0)\ndim coins(0)\ndim coinCounter\ndim game\ndim finished\n\nConstructor(gameData)\n  self.game = gameData\nEndConstructor\n\nfunction onenter()\n  self.finished = false\n\n  self.tilemap = levelhelpers.beginLevel(\"level3.json\")\n  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 84)\n\n  dim e as enemy\n  e = new Enemy(172, 56, 172, 216)\n  array.push(self.enemies, e)\n  e = new Enemy(308, 40, 308, 344)\n  array.push(self.enemies, e)\n  e = new Enemy(444, 72, 444, 464)\n  array.push(self.enemies, e)\n\n  self.spawnCoins()\n\n  self.coinCounter = levelhelpers.spawnCoinCounter(self.game)\nendfunction\n\nfunction spawnCoins()\n  dim c as coin\n  c = new Coin(36, 80)\n  array.push(self.coins, c)\n  c = new Coin(116, 72)\n  array.push(self.coins, c)\n  c = new Coin(196, 56)\n  array.push(self.coins, c)\n  c = new Coin(260, 40)\n  array.push(self.coins, c)\n  c = new Coin(260, 16)\n  array.push(self.coins, c)\n  c = new Coin(324, 40)\n  array.push(self.coins, c)\n  c = new Coin(396, 56)\n  array.push(self.coins, c)\n  c = new Coin(452, 72)\n  array.push(self.coins, c)\n  c = new Coin(516, 80)\n  array.push(self.coins, c)\n  c = new Coin(540, 80)\n  array.push(self.coins, c)\nendfunction\n\nfunction onupdate(delta)\n  camera.follow(self.player, 0.1)\n\n  levelhelpers.resetOnEnemyCollision(self.player, self.enemies)\n  levelhelpers.applyDeadzone(self.player, self.tilemap)\n  levelhelpers.collectCoins(self.coins, self.player, self.game, self.coinCounter)\n\n  if not self.finished then\n    if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then\n      self.finished = true\n      scenemanager.switch(\"winscene\")\n    endif\n  endif\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Level3Scene.bas"
+    },
+    {
+      "id": "fd101145-cded-4c05-a7f9-8fc07f369f62",
+      "name": "LevelHelpers.bas",
+      "source": "function beginLevel(jsonFile)\n  world.setBackground(20, 20, 40)\n  camera.setZoom(4)\n\n  dim tm as tilemap\n  tm = new tilemap(\"tilemap_trimmed.png\", 8, 8)\n  tm.load(jsonFile)\n  world.add(tm)\n  camera.setBounds(tm.widthPx(), tm.heightPx())\n  return tm\nendfunction\n\nfunction spawnPlayer(tm as tilemap, spawnX, spawnY)\n  dim p as player\n  p = new Player(spawnX, spawnY)\n  p.setLevel(tm)\n  return p\nendfunction\n\nfunction spawnCoinCounter(game as gamedata)\n  dim counter as coincounter\n  counter = new CoinCounter()\n  counter.setScore(game.score)\n  hud.add(counter)\n  return counter\nendfunction\n\nfunction checkCoin(c as coin, player as player)\n  if not c.collected then\n    if collision.spriteCollide(player, c) then\n      c.collect()\n      return true\n    endif\n  endif\n  return false\nendfunction\n\nfunction collectCoins(coins() as coin, player as player, game as gamedata, coinCounter as coincounter)\n  dim i\n  dim gotCoin\n  for i = 0 to array.arrLength(coins) - 1\n    gotCoin = checkCoin(coins(i), player)\n    if gotCoin then\n      game.addCoin()\n      coinCounter.setScore(game.score)\n    endif\n  next i\nendfunction\n\nfunction resetOnEnemyCollision(player as player, enemies() as enemy)\n  dim i\n  for i = 0 to array.arrLength(enemies) - 1\n    if collision.spriteCollide(player, enemies(i)) then\n      player.resetToStart()\n    endif\n  next i\nendfunction\n\nfunction applyDeadzone(player as player, tm as tilemap)\n  if player.transform.y() > tm.heightPx() + 100 then\n    player.resetToStart()\n  endif\nendfunction\n\nfunction reachedLevelEnd(player as player, tm as tilemap)\n  return player.transform.x() > tm.widthPx() - 16\nendfunction\n",
+      "folderId": null,
+      "fullName": "LevelHelpers.bas"
+    },
+    {
+      "id": "bc623185-e0d3-4123-9a57-e6726169a454",
+      "name": "Main.bas",
+      "source": "function oninit()\n  world.setPixelPerfect(true)\nendfunction\n\ndim game = new GameData()\ndim level1 = new Level1Scene(game)\ndim level2 = new Level2Scene(game)\ndim level3 = new Level3Scene(game)\ndim winscene = new WinScene(game)\n\nscenemanager.register(\"level1\", level1)\nscenemanager.register(\"level2\", level2)\nscenemanager.register(\"level3\", level3)\nscenemanager.register(\"winscene\", winscene)\nscenemanager.switch(\"level1\")\n",
+      "folderId": null,
+      "fullName": "Main.bas"
+    },
+    {
+      "id": "40adde8c-baef-4d86-96c7-ce368054adb5",
+      "name": "Player.bas",
+      "source": "Class\nExtends animatedsprite\n\ndim vy\ndim grounded\ndim level\ndim startX\ndim startY\n\nConstructor(x, y)\n  super(\"player.png\", 8, 8)\n  self.addAnim(\"idle\", 0, 0, 4, true)\n  self.addAnim(\"run\", 0, 1, 8, true)\n  self.addAnim(\"jump\", 2, 2, 4, false)\n  self.addAnim(\"land\", 3, 3, 4, false)\n  self.vy = 0\n  self.grounded = false\n  self.startX = x\n  self.startY = y\n  self.transform.setPosition(x, y)\n  self.play(\"idle\")\n  world.add(self)\nEndConstructor\n\nfunction setLevel(lvl)\n  self.level = lvl\nendfunction\n\nfunction resetToStart()\n  self.transform.setPosition(self.startX, self.startY)\n  self.vy = 0\nendfunction\n\nfunction onupdate(delta)\n  dim dt\n  dim x\n  dim y\n  dim newX\n  dim dir\n  dim edgeX\n  dim topY\n  dim bottomY\n  dim moving\n  dim feetY\n  dim tileId\n  dim tileTop\n\n  dt = delta / 1000\n  x = self.transform.x()\n  y = self.transform.y()\n  moving = false\n  dir = 0\n\n  if input.getKeyDown(37) or input.getKeyDown(65) then\n    dir = -1\n    moving = true\n    self.setFlip(true, false)\n  endif\n  if input.getKeyDown(39) or input.getKeyDown(68) then\n    dir = 1\n    moving = true\n    self.setFlip(false, false)\n  endif\n\n  if dir <> 0 then\n    newX = x + dir * 50 * dt\n    edgeX = newX + dir * 4\n    topY = y - 3\n    bottomY = y + 3\n    if self.level.tileAt(edgeX, topY) = 0 and self.level.tileAt(edgeX, bottomY) = 0 then\n      x = newX\n    endif\n  endif\n\n  self.vy = self.vy + 400 * dt\n\n  if input.keyPressed(32) or input.keyPressed(38) or input.keyPressed(87) then\n    if self.grounded then\n      self.vy = -140\n      self.play(\"jump\")\n    endif\n  endif\n\n  y = y + self.vy * dt\n\n  feetY = y + 4\n  tileId = self.level.tileAt(x, feetY)\n  self.grounded = false\n  if tileId > 0 and self.vy >= 0 then\n    tileTop = math.floor(feetY / 8) * 8\n    y = tileTop - 4\n    self.vy = 0\n    self.grounded = true\n  endif\n\n  self.transform.setPosition(x, y)\n\n  if self.grounded then\n    if moving then\n      if not self.isPlaying(\"run\") then\n        self.play(\"run\")\n      endif\n    else\n      if not self.isPlaying(\"idle\") then\n        self.play(\"idle\")\n      endif\n    endif\n  endif\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "Player.bas"
+    },
+    {
+      "id": "79fc4c64-7dbb-493a-b99e-1880ec747722",
+      "name": "WinScene.bas",
+      "source": "Class extends scene\n\ndim game\ndim scores(0)\n\nConstructor(gameData)\n  self.game = gameData\nEndConstructor\n\nfunction onenter()\n  world.setBackground(20, 20, 40)\n  camera.setZoom(1)\n\n  dim finalScore\n  finalScore = self.game.score\n\n  self.loadScores()\n  self.insertScore(finalScore)\n  self.trimScores()\n  save.set(\"leaderboard\", self.scores)\n\n  self.showResults(finalScore)\nendfunction\n\nfunction loadScores()\n  if save.exists(\"leaderboard\") then\n    self.scores = save.get(\"leaderboard\")\n  else\n    dim empty(0)\n    self.scores = empty\n  endif\nendfunction\n\nfunction insertScore(score)\n  dim result(0)\n  dim i\n  dim inserted\n  inserted = false\n  for i = 0 to array.arrLength(self.scores) - 1\n    if not inserted and score >= self.scores(i) then\n      array.push(result, score)\n      inserted = true\n    endif\n    array.push(result, self.scores(i))\n  next i\n  if not inserted then\n    array.push(result, score)\n  endif\n  self.scores = result\nendfunction\n\nfunction trimScores()\n  dim top(0)\n  dim i\n  dim limit\n  limit = array.arrLength(self.scores)\n  if limit > 5 then\n    limit = 5\n  endif\n  for i = 0 to limit - 1\n    array.push(top, self.scores(i))\n  next i\n  self.scores = top\nendfunction\n\nfunction showResults(finalScore)\n  dim title as text\n  title = new text(\"You Win!\", 220, 60)\n  title.setStyle(28, 255, 215, 0)\n  hud.add(title)\n\n  dim scoreLine as text\n  scoreLine = new text(\"Coins collected: \" + string.str(finalScore), 220, 110)\n  scoreLine.setStyle(18, 255, 255, 255)\n  hud.add(scoreLine)\n\n  dim heading as text\n  heading = new text(\"Leaderboard\", 220, 150)\n  heading.setStyle(18, 255, 255, 255)\n  hud.add(heading)\n\n  dim i\n  dim y\n  dim line as text\n  y = 180\n  for i = 0 to array.arrLength(self.scores) - 1\n    line = new text(string.str(i + 1) + \". \" + string.str(self.scores(i)), 220, y)\n    line.setStyle(14, 255, 255, 255)\n    hud.add(line)\n    y = y + 22\n  next i\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "WinScene.bas"
+    }
+  ],
+  "assets": [
+    {
+      "id": "dc873292-506f-47e4-88f0-b1847359c7a2",
+      "name": "coin.png",
+      "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAACKADAAQAAAABAAAACAAAAACVhHtSAAAAPElEQVQYGWNgoBQwwgz4v5jh/5r1ZmBuSOApBsZYBrgcWHB1kNl/kCIQBrFhGplgDFw03BiCVuAygaA4AN2cFataXtKGAAAAAElFTkSuQmCC",
+      "folderId": null,
+      "fullName": "coin.png"
+    },
+    {
+      "id": "aab2b2cb-3ccf-48e6-b8bc-d7e85e626dd2",
+      "name": "enemy.png",
+      "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAACKADAAQAAAABAAAACAAAAACVhHtSAAAAN0lEQVQYGWNkAAJZ7eD/IBodPL66lpERlyRMMROMgYuGK3h09RdcDTKbilbAzcfBAHkT2atwPgBsvhCeUDvJvwAAAABJRU5ErkJggg==",
+      "folderId": null,
+      "fullName": "enemy.png"
+    },
+    {
+      "id": "18a0b878-023d-4d6d-8a1c-fef36fec8c89",
+      "name": "level1.json",
+      "content": "data:application/json;base64,W1swLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFszLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDNdLFszLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDNdLFszLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMCwzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDMsMywzLDNdXQo=",
+      "folderId": null,
+      "fullName": "level1.json"
+    },
+    {
+      "id": "4593eb16-aec1-40f0-b32e-bead18db5d95",
+      "name": "level2.json",
+      "content": "data:application/json;base64,W1swLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDMsMywzLDMsMywwLDMsMywzLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMywzLDMsMywzLDMsMywzLDAsMywzLDMsMywzLDMsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsMCwzLDMsMywzLDMsMywwLDAsMCwzLDMsMywzLDMsMywzLDMsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFszLDMsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywwLDMsMywzLDMsMywzLDAsMCwwLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywzLDMsM10sWzMsMywzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywzLDAsMywzLDMsMywzLDMsMCwwLDAsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsMywzXSxbMywzLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsMCwzLDMsMywzLDMsMywwLDAsMCwzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywzLDNdXQ==",
+      "folderId": null,
+      "fullName": "level2.json"
+    },
+    {
+      "id": "10e07832-1112-4d65-a535-1ac3d54015f3",
+      "name": "level3.json",
+      "content": "data:application/json;base64,W1swLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywwLDAsMCwzLDMsMywzLDMsMywwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDBdLFswLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMCwwLDAsMywzLDMsMywzLDMsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDAsMCwwXSxbMCwwLDAsMCwwLDAsMCwwLDAsMCwwLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDAsMCwwLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDAsMCwwLDAsMCwwLDAsMCwwLDAsMF0sWzMsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywwLDAsMCwzLDMsMywzLDMsMywwLDAsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywzLDNdLFszLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMCwwLDAsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywzXSxbMywzLDMsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMywwLDAsMywzLDMsMywzLDMsMCwwLDMsMywzLDMsMywzLDAsMCwwLDMsMywzLDMsMywzLDAsMCwzLDMsMywzLDAsMCwzLDMsMywzLDMsMywzLDMsM11d",
+      "folderId": null,
+      "fullName": "level3.json"
+    },
+    {
+      "id": "7982eab2-3639-46c7-8f28-0e52dad13f0f",
+      "name": "player.png",
+      "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAICAYAAACYhf2vAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAACAAAAABdNwY2AAAA30lEQVQ4Ea1SwQ3CMAxMUMW3XxboOLyYgTVAZY3OwItxMgVfPiXn5MgVJS0PLFU523e268S5P9jsjjM+lFL8S+mOIpzePfyWz0bkgq92HfbJDRptYxuAaRanXzvXGpg+vEw2xo20htS6O3W2MBqMsQG+6rDPqZQQDC75ikEuA4jAKS4l3SKeOZfhZHdvtP5c2BEvcjmDDX62GGOLOy/qhLhCTt/KI/7d7BbuVhu5NX0HoY/kWgHG1vJohAbgoBnNYvlRM2Yb5Jawwf6QNgCCChRTrDHFzLdO/ATeTM1wFW/x/H6NKl6UgwAAAABJRU5ErkJggg==",
+      "folderId": null,
+      "fullName": "player.png"
+    },
+    {
+      "id": "f470e9e3-45ab-404a-a79c-d42664afc0bf",
+      "name": "tilemap_trimmed.png",
+      "content": "data:image/png;base64,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",
+      "folderId": null,
+      "fullName": "tilemap_trimmed.png"
+    }
+  ],
+  "fileOrder": {
+    ":root": [
+      "985e6a8e-9f30-40f7-88ed-526cd770479d",
+      "334968e2-5665-468c-82e0-63fdc8fd80a1",
+      "2c3cc511-5556-4bca-a631-4442b4e90d09",
+      "78e25a80-7fa3-420f-94e9-8efda38cf66f",
+      "aea6aa02-4f3c-4233-841e-403a6f71822a",
+      "eaa17f92-f7f8-4976-b930-c27c08799951",
+      "ff0c8b65-7ac9-4b10-b2ca-5849d1fd32f9",
+      "fd101145-cded-4c05-a7f9-8fc07f369f62",
+      "bc623185-e0d3-4123-9a57-e6726169a454",
+      "40adde8c-baef-4d86-96c7-ce368054adb5",
+      "79fc4c64-7dbb-493a-b99e-1880ec747722"
+    ]
+  },
+  "assetOrder": {
+    ":root": [
+      "dc873292-506f-47e4-88f0-b1847359c7a2",
+      "aab2b2cb-3ccf-48e6-b8bc-d7e85e626dd2",
+      "18a0b878-023d-4d6d-8a1c-fef36fec8c89",
+      "4593eb16-aec1-40f0-b32e-bead18db5d95",
+      "10e07832-1112-4d65-a535-1ac3d54015f3",
+      "7982eab2-3639-46c7-8f28-0e52dad13f0f",
+      "f470e9e3-45ab-404a-a79c-d42664afc0bf"
+    ]
+  }
+}

@@ -122,6 +122,7 @@ export const docsManifest: DocSection[] = [
         label: 'Demos',
         topics: [
           { slug: 'raycaster', title: 'Wolfenstein-Style Raycaster', file: 'demos/raycaster.md' },
+          { slug: 'coins-platformer', title: 'Collect the Coins: A Platformer', file: 'demos/coins-platformer.md' },
         ],
       },
     ],

@@ -84,3 +84,9 @@ describe('Demo: Wolfenstein-Style Raycaster', () => {
     runDemo('demo-raycaster', 'src/docs/demos/Raycaster.b4wgl.json', 4000);
   });
 });
+
+describe('Demo: Collect the Coins: A Platformer', () => {
+  it('runs without runtime errors', () => {
+    runDemo('demo-coins-platformer', 'src/docs/demos/CoinsPlatformer.b4wgl.json', 4000);
+  });
+});
