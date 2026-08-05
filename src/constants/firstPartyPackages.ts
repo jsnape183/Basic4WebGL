@@ -12,9 +12,9 @@ export const firstPartyPackages: IPackage[] = [
   {
     id: 'softgfx',
     name: 'softGfx',
-    version: '2.2.0',
+    version: '2.3.0',
     isCore: false,
     isFirstParty: true,
-    moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'audio', 'collision', 'rayhit', 'scene', 'scenemanager', 'camera', 'world', 'hud'],
+    moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'tilemaplayer', 'tilemapset', 'audio', 'collision', 'rayhit', 'scene', 'scenemanager', 'camera', 'world', 'hud'],
   },
 ];
