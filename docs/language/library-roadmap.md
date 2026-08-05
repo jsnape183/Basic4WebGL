@@ -66,6 +66,9 @@ Lifecycle hooks: `onenter()` (wired), `onupdate()` (wired — PIXI ticker fires 
 ```js
 app.ticker.add((ticker) => _SoftBasicGfx.getInstance()._update(ticker.deltaTime));
 ```
+**Note:** this fix picked the wrong one of PIXI's two delta properties, which is the direct
+cause of Bug 4 below. The live wiring now reads `ticker.deltaMS`; the snippet above is kept
+as the historical record of what was originally shipped.
 
 ### ~~Bug 2 — Missing `this.` in `softBasicGFX.js`~~ **[FIXED]**
 `this.` bindings corrected for `_componentToHex`, `setFillColor`, `setLineColor`, `drawLine`,
@@ -87,6 +90,34 @@ otherwise an object calling `world.remove(self)` from its own `onupdate` makes a
 that frame. Gated by `tests/components/Runner/stage.test.ts` and
 `cypress/e2e/instanceUpdateRegistry.cy.ts`. Design:
 `docs/superpowers/specs/2026-08-04-instance-update-registry-aliasing-design.md`.
+
+### ~~Bug 4 — `onupdate(delta)` received frame-normalised units, not milliseconds~~ **[FIXED, 2026-08-04]**
+The direct descendant of Bug 1: that fix connected `_update` to the ticker correctly but took
+the wrong one of its two delta properties. PIXI's `deltaTime` is normalised so 1.0 means "one
+60fps frame"; `deltaMS` is the same quantity in milliseconds. `bootstrapper.html` used
+`deltaTime`, so every `onupdate(delta)` — module and instance alike — got ~1.0 per frame while
+the Language Guide, `scene.md`, and every tutorial's `speed * delta / 1000` all assume
+milliseconds. Result: **every game ran ~16.67x slower than its documented contract**, and
+tutorial 7's `if timer >= 1000` "one point per second" branch never fired at all inside the
+e2e suite's window.
+
+Confirmed by instrumenting the live frame loop: 859 real frames spanning 14318.3 ms of wall
+clock summed to a delta total of 858.99. On a fresh `PIXI.Ticker`, `deltaMS / deltaTime` was
+exactly `1000/60` on every frame — so `deltaMS` carries the identical `ticker.speed` scaling
+and `minFPS` clamp and the swap is a pure unit conversion. (`elapsedMS` was rejected: it is
+the raw unclamped measurement and would drop both.)
+
+Fixed in two places. `bootstrapper.html` now reads `ticker.deltaMS`. `camera.js`'s
+`_shakeElapsed += (delta || 0) / 60` became `/ 1000` — `camera.shake`'s `duration` is
+documented in seconds, and `/ 60` only produced seconds while delta was frame-normalised, so
+without this a 0.5s shake would have finished in 2 frames. `animatedSprite.js`'s
+`animationSpeed = fps / 60` was checked and is **not** affected: PIXI's `AnimatedSprite`
+self-drives from `PIXI.Ticker.shared`, a different ticker object from `app.ticker`.
+
+Gated by `cypress/e2e/deltaUnits.cy.ts` (4 specs, including accumulated delta compared against
+real `performance.now()` elapsed time), `tests/components/Runner/camera.test.ts`, and static
+guards in `tests/components/Runner/bootstrapper.test.ts`. Design:
+`docs/superpowers/specs/2026-08-04-delta-units-fix-design.md`.
 
 ---
 
