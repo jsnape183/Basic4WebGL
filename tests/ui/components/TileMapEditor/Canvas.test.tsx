@@ -37,4 +37,18 @@ describe('TileMapCanvas', () => {
     fireEvent.mouseEnter(screen.getByLabelText('Row 0, Column 1'));
     expect(onPaintCell).toHaveBeenCalledTimes(1);
   });
+
+  test('every cell has a visible gridline border', () => {
+    const onPaintCell = vi.fn();
+    render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={onPaintCell} />);
+    expect(screen.getByLabelText('Row 0, Column 0')).toHaveClass('border', 'border-ds-border');
+  });
+
+  test('every cell has the hover highlight classes', () => {
+    const onPaintCell = vi.fn();
+    render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={onPaintCell} />);
+    expect(screen.getByLabelText('Row 0, Column 0')).toHaveClass(
+      'hover:ring-2', 'hover:ring-inset', 'hover:ring-ds-accent'
+    );
+  });
 });

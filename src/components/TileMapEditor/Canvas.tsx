@@ -34,10 +34,10 @@ const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell }) => {
               aria-label={`Row ${row}, Column ${col}`}
               onMouseDown={() => { setIsPainting(true); onPaintCell(row, col); }}
               onMouseEnter={() => { if (isPainting) onPaintCell(row, col); }}
+              className="border border-ds-border hover:ring-2 hover:ring-inset hover:ring-ds-accent"
               style={{
                 width: CELL_SIZE,
                 height: CELL_SIZE,
-                border: '1px solid var(--ds-border)',
                 backgroundImage: tileId > 0 && slices[tileId - 1] ? `url(${slices[tileId - 1]})` : undefined,
                 backgroundSize: 'cover',
               }}
