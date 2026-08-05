@@ -1,5 +1,28 @@
 # Release Notes
 
+## v0.5.1 — 2026-08-05
+
+### New: oninit and camera zoom
+
+- New `oninit()` — the only lifecycle hook that runs before your assets finish loading, so you can configure the runtime (like pixel-art scaling) before any texture exists
+- New `world.setPixelPerfect(true)` — crisp, non-blurry scaling for pixel art; call it from `oninit()`
+- New `camera.setZoom(z)` / `camera.zoom()` — magnify the whole world uniformly around the camera, independent of any object's own position or collision
+
+### New: array.sort()
+
+- New `array.sort()` — basic alphanumeric sort, in place
+
+### Fixes
+
+- Fixed calling a method on an object stored in a local variable and using its return value in an expression (e.g. `print string.str(s.width())`) — this previously produced `undefined` at runtime with no compile error
+- Fixed reading a class's own array field by index from inside one of its own methods (`self.coins(i)`) — this previously miscompiled into a method call instead of an array lookup, crashing at runtime with no compile error
+- Fixed a bug where an object's `onupdate`, `onkeydown`, and `onkeyup` could silently stop being called after removing any object from the world or HUD, or after switching scenes — objects added afterwards were never updated again, and removed objects could keep running invisibly in the background
+- Fixed `delta` — the value passed to every `onupdate(delta)` was a frame count instead of milliseconds as documented, making every moving object in every game run about 16x slower than intended
+
+### New demo
+
+- Added "Collect the Coins: A Platformer" to the Demos page — a three-level scrolling platformer showing off scene switching, tilemap levels, hand-rolled tile collision, and a persistent save-based leaderboard
+
 ## v0.5.0 — 2026-08-03
 
 Closes out Milestone 3 (public beta readiness — save/load). Your games can now remember things between play sessions.
