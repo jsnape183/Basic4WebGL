@@ -1,5 +1,20 @@
 # Release Notes
 
+## v0.6.0 — 2026-08-05
+
+Closes out Milestone 12 (Tilemap editor).
+
+### New: visual tilemap editor
+
+- Load a tileset image, auto-split by tile width/height, and paint or erase tiles onto a grid with gridlines and a cell hover highlight
+- Manage multiple named layers — add, rename, remove, and reorder
+- Create new `.stm` tilemap assets directly from the sidebar, and open existing ones into the editor from the file tree
+- The "Collect the Coins" demo now uses `.stm`/`TileMapSet` for its level data instead of bare-array `.json`
+
+### Fixes
+
+- Fixed clicking a code file in the sidebar file tree while an asset tab (tilemap, image, audio, or text) was open — it previously left the asset editor showing instead of switching to the code file; switching via the top tab strip already worked correctly
+
 ## v0.5.1 — 2026-08-05
 
 ### New: oninit and camera zoom

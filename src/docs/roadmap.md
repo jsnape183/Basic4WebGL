@@ -10,6 +10,8 @@ The editor now feels like a real IDE. Autocomplete for softBASIC functions and c
 
 Since then, your games can now save and load progress. Whether it's a high-score table, an in-progress level, or a whole inventory, your game can save it and have it still be there the next time someone plays — no account or backend needed. This was the last missing piece for shipping a genuinely complete game.
 
+Most recently, a visual tilemap editor landed: load a tileset image, paint and erase tiles onto a grid, and manage multiple named layers — all without hand-editing JSON.
+
 ## Right now
 
 Optional accounts are next. Signing in will unlock cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.
@@ -38,7 +40,7 @@ After 1.0, the direction opens up. A few things we know are on the horizon:
 
 **Mobile** — touch input support and an editor experience that works on tablet.
 
-**Creation tools** — in-app editors for sprites, tilemaps, and basic music, so you can build more of your game without leaving softBASIC.
+**Creation tools** — in-app editors for sprites and basic music, so you can build more of your game without leaving softBASIC.
 
 **Desktop app** — the IDE itself as a native installable, with offline support and local file access.
 

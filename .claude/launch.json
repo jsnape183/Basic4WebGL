@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "Basic4WebGL Dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5174,
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": ["-ic", "npm run dev"],
+      "port": 5173,
       "autoPort": false
     }
   ]

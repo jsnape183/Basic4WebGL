@@ -216,10 +216,12 @@ Touch input in the runtime already partially exists. This milestone makes it fir
 ### Milestone 11 — Sprite editor
 In-app pixel art / sprite editor. Removes the dependency on external tools for basic sprite creation. Scope and format TBD — could range from a minimal pixel canvas to a layered editor.
 
-### Milestone 12 — Tilemap editor
-Visual tilemap editor for authoring `.stm` files: load/save from assets, load a tileset image and auto-split it by tile width/height, paint/erase tiles onto a grid per layer, and manage layers (add/remove/rename). Scope TBD beyond that core loop.
+### ~~Milestone 12 — Tilemap editor~~ **[DONE — shipped as v0.6.0, 2026-08-05]**
+Visual tilemap editor for authoring `.stm` files: load/save from assets, load a tileset image and auto-split it by tile width/height, paint/erase tiles onto a grid per layer, and manage layers (add/remove/rename).
 
-**Prerequisite engine gap — resolved 2026-08-05.** The `TileMapSet`/`TileMapLayer` runtime classes and the `.stm` multi-layer file format now exist (see known deferred issue #10, resolved). The editor's data model and export format are the `.stm` format defined there — the editor is purely the remaining UI work: no further engine-level design decisions block it.
+**Prerequisite engine gap — resolved 2026-08-05.** The `TileMapSet`/`TileMapLayer` runtime classes and the `.stm` multi-layer file format now exist (see known deferred issue #10, resolved). The editor's data model and export format are the `.stm` format defined there.
+
+**Delivered:** tileset-slicing hook, tile palette, paint/erase canvas with gridlines and hover highlight, layers panel (add/rename/remove/reorder), the `TileMapEditor` asset-preview integration, `NewTilemapDialog` for creating `.stm` assets, and a `TilemapChooserModal` sidebar entry point. Also fixed a related pre-existing bug where an open asset tab (tilemap or otherwise) didn't clear when selecting a code file from the sidebar file tree. The "Collect the Coins" demo was migrated from bare-array `.json` levels to `.stm`/`TileMapSet` as a real-world proof.
 
 ### Milestone 13 — Music editor
 Basic in-app music / sequencer tool. Scope TBD — likely tracker-style given the beginner audience. Tied to the existing audio module.
