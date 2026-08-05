@@ -43,6 +43,8 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
 | `TileMap` *(class)* | `constructor(tilesetPath, tileW, tileH)` `load(jsonPath)` `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` |
+| `TileMapSet` *(class)* | `constructor(stmPath)` — loads a multi-layer `.stm` file and auto-renders every layer; `layer(name)` returns the named layer as a `TileMapLayer` |
+| `TileMapLayer` *(class)* | `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` — same shape as `TileMap`, returned from `TileMapSet.layer(name)` rather than constructed directly |
 | `Text` *(class)* | `constructor(content,x,y)` `setText` `setPosition` `setAlpha` `setStyle(size,r,g,b)` `setFont(fontFamily)` `setAlign(align)` |
 | `Audio` *(class)* | `constructor(soundPath)` `play()` `playLoop()` `stop()` `setVolume(v)` `isPlaying()` |
 | `ObjectTransform` *(class)* | `setPosition(x,y)` `x()` `y()` — shared transform mixin used by Sprite/AnimatedSprite/TileMap |
