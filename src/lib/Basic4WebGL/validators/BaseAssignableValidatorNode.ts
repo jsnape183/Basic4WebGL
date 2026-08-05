@@ -10,10 +10,8 @@ class BaseAssignableValidatorNode extends Tree implements IValidatable {
       throw new CompilationError('Expected Variable for assignment operator');
     }
     if (!symbol.dataType?.canAccept(this.children[0].dataType)) {
-      throw new SemanticTypeError(
-        this.children[0].dataType.acceptsTypes,
-        this.children[1].dataType
-      );
+      const valueNode = this.children.length > 1 ? this.children[1] : this.children[0];
+      throw new SemanticTypeError(this.children[0].dataType.acceptsTypes, valueNode.dataType);
     }
   }
 }
