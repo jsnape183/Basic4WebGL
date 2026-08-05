@@ -1,16 +1,19 @@
 # tilemapset
 
-A `tilemapset` loads a `.stm` file — a multi-layer tile-based level, with a background layer, a foreground layer, a collision layer, or any other named layers you want. Each layer renders automatically as soon as the `tilemapset` is created, in the order the layers were saved in the file (first layer at the back, last layer at the front). Use [tilemap](tilemap) instead if your level only needs one layer.
+A `tilemapset` loads a `.stm` file — a multi-layer tile-based level, with a background layer, a foreground layer, a collision layer, or any other named layers you want. All layers render together as one unit, in the order the layers were saved in the file (first layer at the back, last layer at the front). Use [tilemap](tilemap) instead if your level only needs one layer.
 
 ## Constructor
 
 ```bas
 dim level as tilemapset("level1.stm")
+world.add(level)
 ```
 
 | Parameter | Type   | Description |
 |-----------|--------|--------------|
 | stmPath   | string | Filename of the `.stm` file in your project assets |
+
+Like [sprite](sprite) and [tilemap](tilemap), a `tilemapset` doesn't draw itself — call `world.add(level)` to show it, and `world.remove(level)` to take it off screen. Removing it removes every layer at once.
 
 ## layer(name)
 
@@ -27,6 +30,7 @@ dim level as tilemapset("level1.stm")
 dim solidGround as tilemaplayer
 
 function onenter()
+  world.add(level)
   solidGround = level.layer("collision")
 endfunction
 
@@ -39,7 +43,20 @@ function onupdate()
 endfunction
 ```
 
-Scrolling a single layer for a parallax effect:
+## transform
+
+Position is controlled through `.transform` — see [ObjectTransform](objecttransform). This moves **every layer together**, useful for placing the whole map at a world position, or scrolling it as one piece:
+
+```bas
+dim level as tilemapset("level1.stm")
+
+function onenter()
+  world.add(level)
+  level.transform.setPosition(-cameraX, 0)
+endfunction
+```
+
+To scroll layers at *different* speeds instead (a parallax effect), move an individual layer's own transform rather than the `tilemapset`'s:
 
 ```bas
 dim background as tilemaplayer

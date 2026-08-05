@@ -81,7 +81,13 @@ const _sbTilemaps = {
       }
     }
 
-    const layers = {};
+    // One wrapping container holds every layer as a child, in file order —
+    // this is the object handed back as TileMapSet's own `_handle`, so it
+    // plugs into `world.add`/`world.remove` exactly like Sprite/TileMap do
+    // (no auto-render at construction; the softBASIC caller decides when and
+    // whether to add it, same as every other renderable).
+    const handle = new PIXI.Container();
+    const layerContainers = {};
     for (const name of Object.keys(data.layers)) {
       const layerData = data.layers[name];
       const container = new PIXI.Container();
@@ -100,25 +106,18 @@ const _sbTilemaps = {
           container.addChild(sprite);
         }
       }
-      layers[name] = container;
-      // `this`, not a module-scoped `_sbStage` reference — calling sibling
-      // module functions through `this` is required here, not a style choice:
-      // `this` is `_sb` (the merged engine object) only when this function is
-      // invoked as `_sb.createTileMapSet(...)`, and `addToWorld` reads/writes
-      // `this._sbInstances`. A direct `_sbStage.addToWorld(...)` call would
-      // bind `this` to the `_sbStage` module object instead, where
-      // `_sbInstances` doesn't exist — this exact aliasing mistake was a real,
-      // previously-shipped bug (see docs/roadmap.md known issue #16).
-      this.addToWorld({ _handle: container });
+      layerContainers[name] = container;
+      handle.addChild(container);
     }
+    handle._layerContainers = layerContainers;
 
-    return { _layers: layers };
+    return handle;
   },
 
   getTileMapSetLayer(handle, name) {
-    const layer = handle._layers[name];
+    const layer = handle._layerContainers[name];
     if (!layer) {
-      const available = Object.keys(handle._layers).join(', ') || '(none)';
+      const available = Object.keys(handle._layerContainers).join(', ') || '(none)';
       throw Error(`TileMapSet: no layer named "${name}". Available layers: ${available}`);
     }
     return layer;

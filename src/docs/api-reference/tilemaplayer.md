@@ -13,6 +13,7 @@ dim level as tilemapset("level1.stm")
 dim solidGround as tilemaplayer
 
 function onenter()
+  world.add(level)
   solidGround = level.layer("collision")
 endfunction
 ```

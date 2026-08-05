@@ -3,6 +3,7 @@ dim _handle
 
 Constructor(stmPath)
     self._handle = call("_sb.createTileMapSet(constructor_stmPath)")
+    dim transform as ObjectTransform(call("this._handle"))
 EndConstructor
 
 function layer(name)

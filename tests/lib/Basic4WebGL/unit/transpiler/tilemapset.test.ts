@@ -6,10 +6,11 @@ import '@Basic4WebGL/transpilerRules';
 const transformSource    = readFileSync('src/lib/Basic4WebGL/defs/transform.bas',    'utf-8');
 const tileMapLayerSource = readFileSync('src/lib/Basic4WebGL/defs/tilemaplayer.bas', 'utf-8');
 const tileMapSetSource   = readFileSync('src/lib/Basic4WebGL/defs/tilemapset.bas',   'utf-8');
+const worldSource        = readFileSync('src/lib/Basic4WebGL/defs/world.bas',        'utf-8');
 
 const transpileWithTileMapSet = (source: string) =>
   compiler.transpile({
-    lib: [],
+    lib: [{ name: 'world', source: worldSource }],
     files: [
       { name: 'ObjectTransform.bas', source: transformSource    },
       { name: 'TileMapLayer.bas',    source: tileMapLayerSource },
@@ -91,6 +92,55 @@ describe('TileMapSet — layer() return value supports the full TileMapLayer API
   });
 });
 
+// ─── transform (whole-map, same pattern as TileMap) ────────────────────────────
+
+describe('TileMapSet — transform', () => {
+  test('setPosition compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet("level1.stm")',
+      '  tm.transform.setPosition(-100, 0)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  // "compiles without error" alone is not a real gate here — the compiler
+  // happily emits a call to a property that doesn't exist on the class
+  // (it would only fail at runtime). Assert the class body actually wires
+  // up a transform, the same way TileMapLayer's own constructor does.
+  test('TileMapSet class body actually constructs a transform', () => {
+    const result = transpileWithTileMapSet(
+      'function test()\n  dim tm as TileMapSet("level1.stm")\nendfunction'
+    );
+    const classBody = result.code.slice(result.code.indexOf('class _sb_tilemapset'));
+    expect(classBody).toContain('this.transform = new _sb_objecttransform(this._handle)');
+  });
+});
+
+// ─── world.add (TileMapSet is a normal renderable — no auto-render) ───────────
+
+describe('TileMapSet — world.add', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet("level1.stm")',
+      '  world.add(tm)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.addToWorld(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet("level1.stm")',
+      '  world.add(tm)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.addToWorld(');
+  });
+});
+
 // ─── End-to-end ───────────────────────────────────────────────────────────────
 
 describe('TileMapSet — end-to-end', () => {
@@ -101,6 +151,7 @@ describe('TileMapSet — end-to-end', () => {
       'dim background as TileMapLayer',
       '',
       'function onenter()',
+      '  world.add(tm)',
       '  solid = tm.layer("collision")',
       '  background = tm.layer("background")',
       '  background.transform.setPosition(0, 0)',
