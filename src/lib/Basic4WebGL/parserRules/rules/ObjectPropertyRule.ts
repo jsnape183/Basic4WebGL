@@ -10,6 +10,8 @@ import tokens from '../../tokens';
 import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyAssignNode from '../../nodes/PropertyAssignNode';
 import PropertyMethodCallNode from '../../nodes/PropertyMethodCallNode';
+import SelfArrayAssignNode from '../../nodes/SelfArrayAssignNode';
+import SelfDictAssignNode from '../../nodes/SelfDictAssignNode';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 import { newLines } from '../../parserConfig';
 
@@ -39,16 +41,52 @@ class ObjectPropertyRule implements IParserRule {
     matchAndMove(tokens.Variable, tokenStream);
     const memberName = tokenStream.prev().text.toLowerCase();
 
-    // If the next token is '(' this is a direct method call.
+    // obj.member["key"] = value — indexed write of a dictionary field
+    // declared on the instance's class, accessed from outside the class.
+    if (check(tokens.OpenBracket, tokenStream.current())) {
+      const chain = `${ownerFormatted}.${memberName}`;
+      matchAndMove(tokens.OpenBracket, tokenStream);
+      const keyExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+      matchAndMove(tokens.CloseBracket, tokenStream);
+      matchAndMove(tokens.Equals, tokenStream);
+      const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+      matchAndMove(newLines, tokenStream);
+      return new SelfDictAssignNode({ chain }, [keyExpr, expr], loc);
+    }
+
+    // If the next token is '(' this could be a direct method call OR an
+    // indexed write of an array field (obj.member(i) = value), disambiguated
+    // against a same-named method the same way self-field access is (issue
+    // #13): a method of that name always wins.
     // Build the chain from ownerFormatted (e.g. main.scoredisplay) so the call
     // goes through the instance, not the class constructor.
     if (check(tokens.OpenParen, tokenStream.current())) {
       const chain = `${ownerFormatted}.${memberName}`;
+      let isMethod = true;
+      try {
+        symbolTable.getInScope(memberName, symbolTypes.Function, ownerName);
+      } catch {
+        isMethod = false;
+      }
+      let arraySymbol;
+      if (!isMethod) {
+        try {
+          arraySymbol = symbolTable.getInScope(memberName, symbolTypes.Array, ownerName);
+        } catch {
+          arraySymbol = undefined;
+        }
+      }
       const args = getParserRule('ExpressionList').parse(
         tokenStream,
         symbolTable,
         undefined
       );
+      if (arraySymbol && check(tokens.Equals, tokenStream.current())) {
+        matchAndMove(tokens.Equals, tokenStream);
+        const expr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+        matchAndMove(newLines, tokenStream);
+        return new SelfArrayAssignNode({ chain }, [args, expr], loc);
+      }
       matchAndMove(newLines, tokenStream);
       return new PropertyMethodCallNode(chain, args, loc);
     }

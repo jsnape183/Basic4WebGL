@@ -10,7 +10,10 @@ import { getParserRule } from '@CompilerLib/parser/parserRuleFactory';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
 import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import SelfArrayLookupNode from '@Basic4WebGL/nodes/SelfArrayLookupNode';
+import SelfDictLookupNode from '@Basic4WebGL/nodes/SelfDictLookupNode';
+import TypedElementAccessNode from '@Basic4WebGL/nodes/TypedElementAccessNode';
 import { assertInsideClass } from '../classGuards';
+import { CompilationError } from '@CompilerLib/errors';
 import { symbolTypes } from '../../../symbolTypes';
 import resolveSelfMember from './helpers/resolveSelfMember';
 
@@ -32,6 +35,21 @@ class SelfFactorRule implements IParserRule {
     const memberName = tokenStream.prev().text.toLowerCase();
     let chain = `this.${memberName}`;
 
+    if (check(tokens.OpenBracket, tokenStream.current())) {
+      // self.member["key"] — indexed read of a class dictionary field.
+      // Unlike `(...)`, brackets are unambiguous (never a method call), so no
+      // symbol lookup is needed to decide *whether* to branch here — only to
+      // recover the field's dataType for the type checker.
+      matchAndMove(tokens.OpenBracket, tokenStream);
+      const keyExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+      matchAndMove(tokens.CloseBracket, tokenStream);
+      const dictSymbol = resolveSelfMember(symbolTable, memberName, symbolTypes.Dictionary);
+      if (!dictSymbol) {
+        throw new CompilationError(`'${memberName}' is not a declared dictionary field`);
+      }
+      return new SelfDictLookupNode({ chain, symbol: dictSymbol }, [keyExpr], loc);
+    }
+
     if (check(tokens.OpenParen, tokenStream.current())) {
       // `self.name(...)` is genuinely ambiguous: softBASIC spells array indexing
       // and method calls identically. The statement form (SelfRule) can settle it
@@ -51,6 +69,29 @@ class SelfFactorRule implements IParserRule {
       const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
 
       if (arraySymbol) {
+        // self.bullets(0).getX() — chain a method/property access onto the
+        // element read out of a TYPED array field (dim bullets(3) as Bullet).
+        // Mirrors the non-self shape already handled by TypedElementAccessNode
+        // in VariableFactorRule, reusing the same node with a pre-built
+        // `this.`-based chain instead of a formatSymbol-derived one.
+        if ((arraySymbol as any).classSymbol && check(tokens.Dot, tokenStream.current())) {
+          matchAndMove(tokens.Dot, tokenStream);
+          matchAndMove(tokens.Variable, tokenStream);
+          const innerMember = tokenStream.prev().text.toLowerCase();
+          if (check(tokens.OpenParen, tokenStream.current())) {
+            const innerArgs = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+            return new TypedElementAccessNode(
+              { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+              [args, innerArgs],
+              loc
+            );
+          }
+          return new TypedElementAccessNode(
+            { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+            [args],
+            loc
+          );
+        }
         // self.arr(i) / self.grid(i, j) — indexed read of a class array field
         return new SelfArrayLookupNode({ chain, symbol: arraySymbol }, [args], loc);
       }

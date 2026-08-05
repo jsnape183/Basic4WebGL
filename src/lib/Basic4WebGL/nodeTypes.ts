@@ -65,6 +65,8 @@ export const nodeTypes = createEnum([
   'TypedElementAccess',
   'SelfArrayAssign',
   'SelfArrayLookup',
+  'SelfDictAssign',
+  'SelfDictLookup',
 ]);
 
 export default nodeTypes;

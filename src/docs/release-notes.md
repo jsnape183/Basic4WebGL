@@ -1,5 +1,17 @@
 # Release Notes
 
+## v0.6.1 — 2026-08-05
+
+### New: dictionary and array fields through `self` and instance references
+
+- `self.scores["key"]` now works for reading and writing a class's own dictionary field, alongside the existing array field support
+- Array and dictionary fields declared on a class can now be read and written from outside the class through an instance reference (`enemy.hitpoints(0)`, `enemy.flags["stunned"]`)
+- Chaining a method call onto an element read from a class's own typed array field now works (`self.bullets(0).getX()`), matching the existing support for plain (non-`self`) typed arrays
+
+### Fixes
+
+- Fixed calling a method with a capital letter in its name (e.g. `.setPosition()`) on an element read out of a typed array or dictionary (`enemies(0).setPosition(x, y)`, `players["Alice"].setPosition(x, y)`) — this previously crashed at runtime with "is not a function" and no compile error, because the call was emitted with its original casing while the method itself is always declared lowercase
+
 ## v0.6.0 — 2026-08-05
 
 Closes out Milestone 12 (Tilemap editor).

@@ -95,7 +95,7 @@ class VariableRule implements IParserRule {
       if (dictSym.classSymbol && check(tokens.Dot, tokenStream.current())) {
         matchAndMove(tokens.Dot, tokenStream);
         matchAndMove(tokens.Variable, tokenStream);
-        const memberName = tokenStream.prev().text;
+        const memberName = tokenStream.prev().text.toLowerCase();
         if (check(tokens.OpenParen, tokenStream.current())) {
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
           matchAndMove(newLines, tokenStream);
@@ -145,7 +145,7 @@ class VariableRule implements IParserRule {
         if (check(tokens.Dot, tokenStream.current())) {
           matchAndMove(tokens.Dot, tokenStream);
           matchAndMove(tokens.Variable, tokenStream);
-          const memberName = tokenStream.prev().text;
+          const memberName = tokenStream.prev().text.toLowerCase();
           if (check(tokens.OpenParen, tokenStream.current())) {
             const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
             matchAndMove(newLines, tokenStream);

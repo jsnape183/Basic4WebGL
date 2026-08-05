@@ -10,6 +10,8 @@ import { Tree } from '@CompilerLib/tree';
 import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
 import TypedElementAccessNode from '@Basic4WebGL/nodes/TypedElementAccessNode';
 import DictionaryLookupNode from '@Basic4WebGL/nodes/DictionaryLookupNode';
+import SelfArrayLookupNode from '@Basic4WebGL/nodes/SelfArrayLookupNode';
+import SelfDictLookupNode from '@Basic4WebGL/nodes/SelfDictLookupNode';
 import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
@@ -53,6 +55,24 @@ class VariableFactorRule implements IParserRule {
       matchAndMove(tokens.Variable, tokenStream);
       const memberName = tokenStream.prev().text.toLowerCase();
 
+      // obj.member["key"] — indexed read of a dictionary field declared on
+      // the instance's class, accessed from outside the class. `clone()`
+      // (DimRule) already flattened every class member — including
+      // inherited ones — into a scope keyed by the instance's own bare name
+      // at `dim` time, so the same lookup that resolves external method
+      // calls below resolves field kind too.
+      if (check(tokens.OpenBracket, tokenStream.current())) {
+        matchAndMove(tokens.OpenBracket, tokenStream);
+        const keyExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+        matchAndMove(tokens.CloseBracket, tokenStream);
+        const dictSymbol = symbolTable.getInScope(memberName, symbolTypes.Dictionary, name);
+        return new SelfDictLookupNode(
+          { chain: `${ownerFormatted}.${memberName}`, symbol: dictSymbol },
+          [keyExpr],
+          loc
+        );
+      }
+
       // Method call: member followed by '('
       // The scope push is only so the method symbol resolves against the
       // instance's cloned members. The *emitted* receiver must come from the
@@ -62,6 +82,32 @@ class VariableFactorRule implements IParserRule {
       // this in step with the statement path in ObjectPropertyRule, which has
       // always built its call target from ownerFormatted.
       if (check(tokens.OpenParen, tokenStream.current())) {
+        // obj.member(index) — indexed read of an array field, disambiguated
+        // against a same-named method the same way self-field access is
+        // (issue #13): a method of that name always wins.
+        let isMethod = true;
+        try {
+          symbolTable.getInScope(memberName, symbolTypes.Function, name);
+        } catch {
+          isMethod = false;
+        }
+        let arraySymbol: Symbol | undefined;
+        if (!isMethod) {
+          try {
+            arraySymbol = symbolTable.getInScope(memberName, symbolTypes.Array, name);
+          } catch {
+            arraySymbol = undefined;
+          }
+        }
+        if (arraySymbol) {
+          const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
+          return new SelfArrayLookupNode(
+            { chain: `${ownerFormatted}.${memberName}`, symbol: arraySymbol },
+            [args],
+            loc
+          );
+        }
+
         symbolTable.setScope(name);
         let node: Tree;
         try {
@@ -113,7 +159,7 @@ class VariableFactorRule implements IParserRule {
       if (dictSym.classSymbol && check(tokens.Dot, tokenStream.current())) {
         matchAndMove(tokens.Dot, tokenStream);
         matchAndMove(tokens.Variable, tokenStream);
-        const memberName = tokenStream.prev().text;
+        const memberName = tokenStream.prev().text.toLowerCase();
         if (check(tokens.OpenParen, tokenStream.current())) {
           const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
           return new TypedElementAccessNode(
@@ -169,7 +215,7 @@ class VariableFactorRule implements IParserRule {
     if (arraySym.classSymbol && check(tokens.Dot, tokenStream.current())) {
       matchAndMove(tokens.Dot, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
-      const memberName = tokenStream.prev().text;
+      const memberName = tokenStream.prev().text.toLowerCase();
       if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
         return new TypedElementAccessNode(

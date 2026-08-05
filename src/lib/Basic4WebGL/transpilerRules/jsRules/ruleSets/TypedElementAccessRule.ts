@@ -7,9 +7,13 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.TypedElementAccess)
 class TypedElementAccessRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
-    const { collectionSymbol, memberName, kind, isStatement } = node.data;
-    const name = collectionSymbol.name;
-    const formatted = formatSymbol(collectionSymbol);
+    const { collectionSymbol, chain, memberName, kind, isStatement } = node.data;
+    // `chain` is a pre-built JS receiver expression (e.g. "this.bullets"),
+    // used by the self-field path (SelfFactorRule/SelfRule) where there is
+    // no symbol whose formatSymbol() would produce "this.x". The ordinary
+    // non-self path still derives its receiver from collectionSymbol.
+    const name = chain ? node.data.name : collectionSymbol.name;
+    const formatted = chain ?? formatSymbol(collectionSymbol);
     const idx = doChild(node, 0, table);
 
     let ref: string;

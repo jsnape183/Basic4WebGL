@@ -275,7 +275,7 @@ describe('typed dict — element assignment', () => {
 // ─── typed dict — member access ─────────────────────────────────────────────
 
 describe('typed dict — member access', () => {
-  test('players["Alice"].setPosition(0,0) emits _sbRequireInit(_sbDictGet(...)).setPosition(0,0)', () => {
+  test('players["Alice"].setPosition(0,0) emits _sbRequireInit(_sbDictGet(...)).setposition(0,0)', () => {
     const result = transpileWith(
       [spriteFile],
       [
@@ -284,8 +284,14 @@ describe('typed dict — member access', () => {
       ].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
+    // Method names are always lowercased at declaration (FunctionRule), so
+    // the call-site member name must be lowercased to match the real
+    // prototype method — the original assertion here checked for the
+    // preserved-case string, which never actually existed on the prototype
+    // and would have thrown "setPosition is not a function" at runtime.
+    // See roadmap.md issue #14's resolution note.
     expect(result.code).toContain(
-      '_sbRequireInit(_sbDictGet(main.players,"Alice"),"players[Alice]").setPosition(0,0)'
+      '_sbRequireInit(_sbDictGet(main.players,"Alice"),"players[Alice]").setposition(0,0)'
     );
   });
 });
