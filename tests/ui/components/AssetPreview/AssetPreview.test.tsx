@@ -22,6 +22,12 @@ const textAsset: IAsset = {
   projectId: 'p1', folderId: null, fullName: 'config.json',
 };
 
+const tilemapAsset: IAsset = {
+  id: 'a3', name: 'level1.stm',
+  content: 'data:application/json;base64,' + btoa(JSON.stringify({ tileWidth: 8, tileHeight: 8, tileImage: '', layers: {} })),
+  projectId: 'p1', folderId: null, fullName: 'level1.stm',
+};
+
 describe('AssetPreview', () => {
   test('renders ImagePreview for image assets', () => {
     render(
@@ -39,5 +45,14 @@ describe('AssetPreview', () => {
       </Provider>
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  test('renders TileMapEditor for .stm assets', () => {
+    render(
+      <Provider store={makeStore()}>
+        <AssetPreview asset={tilemapAsset} onDirtyChange={vi.fn()} />
+      </Provider>
+    );
+    expect(screen.getByLabelText('Tilemap canvas')).toBeInTheDocument();
   });
 });

@@ -25,4 +25,13 @@ describe('getAssetType', () => {
   test('uppercase audio extension → audio', () => {
     expect(getAssetType('sound.MP3')).toBe('audio');
   });
+
+  test.each(['.stm'])(
+    'extension %s → tilemap',
+    (ext) => expect(getAssetType(`level1${ext}`)).toBe('tilemap')
+  );
+
+  test('uppercase tilemap extension → tilemap', () => {
+    expect(getAssetType('level1.STM')).toBe('tilemap');
+  });
 });
