@@ -11,4 +11,8 @@ function layer(name)
     return result
 endfunction
 
+function tileAt(name, x, y)
+    return call("_sb.tileAtInSet(this._handle, tileat_name, tileat_x, tileat_y)")
+endfunction
+
 EndClass

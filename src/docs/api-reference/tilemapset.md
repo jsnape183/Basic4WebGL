@@ -43,9 +43,39 @@ function onupdate()
 endfunction
 ```
 
+## tileAt(name, x, y)
+
+Returns the tile ID at a given world position on the named layer — a shortcut for calling `layer(name)` and then `tileAt(x, y)` on the result, when you just want a quick lookup and don't need to keep the layer around.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| name      | string | The layer's name, as it was saved in the `.stm` file |
+| x         | number | Horizontal world position in pixels |
+| y         | number | Vertical world position in pixels |
+
+**Returns:** number — the tile ID at that position, or 0 if the position is empty.
+
+Correctly accounts for the `tilemapset`'s own `.transform` (see below) as well as the layer's — if you've moved the whole map, this still checks the right tile.
+
+```bas
+dim level as tilemapset("level1.stm")
+
+function onenter()
+  world.add(level)
+endfunction
+
+function onupdate()
+  dim tile
+  tile = level.tileAt("collision", player.transform.x(), player.transform.y())
+  if tile > 0 then
+    print "standing on solid ground"
+  endif
+endfunction
+```
+
 ## transform
 
-Position is controlled through `.transform` — see [ObjectTransform](objecttransform). This moves **every layer together**, useful for placing the whole map at a world position, or scrolling it as one piece:
+Position is controlled through `.transform` — see [ObjectTransform](objecttransform). This moves **every layer together**, useful for placing the whole map at a world position, or scrolling it as one piece. `tileAt` — both `tilemapset.tileAt(name, x, y)` above and `tilemaplayer.tileAt(x, y)` on a layer from `layer(name)` — always accounts for this offset, so tile lookups stay correct after moving the map.
 
 ```bas
 dim level as tilemapset("level1.stm")

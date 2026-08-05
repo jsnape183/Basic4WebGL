@@ -61,6 +61,31 @@ describe('TileMapSet — layer', () => {
   });
 });
 
+// ─── tileAt(name, x, y) — convenience method, no need to call layer() first ───
+
+describe('TileMapSet — tileAt(name, x, y)', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet("level1.stm")',
+      '  dim t',
+      '  t = tm.tileAt("background", 100, 200)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.tileAtInSet(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet("level1.stm")',
+      '  dim t',
+      '  t = tm.tileAt("background", 100, 200)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.tileAtInSet(');
+  });
+});
+
 // ─── layer() return value usable exactly like TileMapLayer ────────────────────
 //
 // Note: `dim bg as TileMapLayer` (explicit type) then a separate `bg = tm.layer(...)`

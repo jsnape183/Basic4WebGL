@@ -42,9 +42,26 @@ const _sbTilemaps = {
   },
 
   tileAt(handle, worldX, worldY) {
-    // handle.x / handle.y reflect the scroll offset applied by ObjectTransform.setPosition
-    const col = Math.floor((Number(worldX) - handle.x) / handle._tileW);
-    const row = Math.floor((Number(worldY) - handle.y) / handle._tileH);
+    // Sum this handle's own local offset (set by ObjectTransform.setPosition)
+    // plus every ancestor's, up to but not including the world/hud container.
+    // A plain TileMap/TileMapLayer added directly to the world has no
+    // ancestor besides worldContainer, so this is identical to just reading
+    // handle.x/handle.y. A TileMapLayer nested inside a TileMapSet's wrapping
+    // container additionally picks up the set's own transform, so moving the
+    // whole set (tm.transform.setPosition) is correctly reflected in tileAt
+    // on any of its layers. worldContainer/hudContainer's own position
+    // (camera pan) is deliberately excluded — tileAt's contract has always
+    // been in world space, not camera-relative screen space.
+    let offsetX = 0;
+    let offsetY = 0;
+    let node = handle;
+    while (node && node !== worldContainer && node !== hudContainer) {
+      offsetX += node.x;
+      offsetY += node.y;
+      node = node.parent;
+    }
+    const col = Math.floor((Number(worldX) - offsetX) / handle._tileW);
+    const row = Math.floor((Number(worldY) - offsetY) / handle._tileH);
     if (row < 0 || row >= handle._map.length) return 0;
     if (col < 0 || col >= (handle._map[0]?.length ?? 0)) return 0;
     return handle._map[row][col] ?? 0;
@@ -121,5 +138,13 @@ const _sbTilemaps = {
       throw Error(`TileMapSet: no layer named "${name}". Available layers: ${available}`);
     }
     return layer;
+  },
+
+  // Convenience method for `TileMapSet.tileAt(name, x, y)` — looks up the
+  // named layer and delegates to the same `tileAt` used everywhere else, so
+  // there is exactly one offset-accumulation implementation, not two.
+  tileAtInSet(setHandle, name, worldX, worldY) {
+    const layer = this.getTileMapSetLayer(setHandle, name);
+    return this.tileAt(layer, worldX, worldY);
   },
 };
