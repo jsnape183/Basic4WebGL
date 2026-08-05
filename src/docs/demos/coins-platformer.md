@@ -6,11 +6,11 @@ A three-level scrolling platformer: run, jump, dodge patrolling enemies, and col
 
 ## How it works
 
-Each level is its own `Class extends scene` (`Level1Scene`, `Level2Scene`, `Level3Scene`), built from a shared tilemap loaded via `tilemap.load()`. The player is a `Class extends animatedsprite` with four animations (idle, run, jump, land) driven by simple polling of `input.getKeyDown()` and `input.keyPressed()` each frame.
+Each level is its own `Class extends scene` (`Level1Scene`, `Level2Scene`, `Level3Scene`), built from a `tilemapset` loaded from a `.stm` file — a single "ground" layer per level in this demo, though `.stm` supports any number of named layers. The player is a `Class extends animatedsprite` with four animations (idle, run, jump, land) driven by simple polling of `input.getKeyDown()` and `input.keyPressed()` each frame.
 
-softBASIC's `Extends` only supports single-level inheritance — a class that already extends `scene` can't itself be extended again — so the three level scenes can't share a common base class. Instead, the logic that's identical across all three (building the tilemap and camera, spawning the player and coin counter, checking coin pickups, resetting on enemy contact, the fall-through deadzone, and the level-end check) lives in **`LevelHelpers.bas`**, a plain module (no `Class` keyword) called from each scene as `levelhelpers.someFunction(...)`. Each scene keeps only what's genuinely level-specific: its tilemap file, spawn point, enemy patrol routes, and coin layout.
+softBASIC's `Extends` only supports single-level inheritance — a class that already extends `scene` can't itself be extended again — so the three level scenes can't share a common base class. Instead, the logic that's identical across all three (building the tilemap and camera, spawning the player and coin counter, checking coin pickups, resetting on enemy contact, the fall-through deadzone, and the level-end check) lives in **`LevelHelpers.bas`**, a plain module (no `Class` keyword) called from each scene as `levelhelpers.someFunction(...)`. Each scene keeps only what's genuinely level-specific: its `.stm` level file, spawn point, enemy patrol routes, and coin layout.
 
-**Collision** is hand-rolled from the tilemap's `tileAt(x, y)` point-sampling — the vertical (ground) check samples just below the player's feet and snaps to the tile's top surface; the horizontal (wall) check samples the leading edge at two heights before applying movement, blocking the player rather than letting them clip into a solid block from the side.
+**Collision** is hand-rolled from the ground layer's `tileAt(x, y)` point-sampling — the vertical (ground) check samples just below the player's feet and snaps to the tile's top surface; the horizontal (wall) check samples the leading edge at two heights before applying movement, blocking the player rather than letting them clip into a solid block from the side.
 
 **A deadzone** (`levelhelpers.applyDeadzone`) resets the player to the level's start if they fall more than 100px below the map — otherwise a missed jump over a gap just falls forever.
 
@@ -26,7 +26,7 @@ Reaching the right edge of a level calls `scenemanager.switch(...)` to the next 
 | `enemy.png` | 8×8 static sprite |
 | `coin.png` | 8×8 static sprite |
 | `tilemap_trimmed.png` | 8×8 tileset — tile ID `3` is solid ground |
-| `level1.json` / `level2.json` / `level3.json` | Tilemap layout data for each level, loaded via `tilemap.load()` |
+| `level1.stm` / `level2.stm` / `level3.stm` | Multi-layer tilemap data for each level (a single "ground" layer here), loaded by `tilemapset`'s constructor |
 
 ---
 
@@ -261,19 +261,21 @@ EndClass
 A plain module (no `Class` keyword) — logic shared by all three level scenes.
 
 ```bas
-function beginLevel(jsonFile)
+function beginLevel(stmFile)
   world.setBackground(20, 20, 40)
   camera.setZoom(4)
 
-  dim tm as tilemap
-  tm = new tilemap("tilemap_trimmed.png", 8, 8)
-  tm.load(jsonFile)
+  dim tm as tilemapset
+  tm = new tilemapset(stmFile)
   world.add(tm)
-  camera.setBounds(tm.widthPx(), tm.heightPx())
-  return tm
+
+  dim ground as tilemaplayer
+  ground = tm.layer("ground")
+  camera.setBounds(ground.widthPx(), ground.heightPx())
+  return ground
 endfunction
 
-function spawnPlayer(tm as tilemap, spawnX, spawnY)
+function spawnPlayer(tm as tilemaplayer, spawnX, spawnY)
   dim p as player
   p = new Player(spawnX, spawnY)
   p.setLevel(tm)
@@ -319,13 +321,13 @@ function resetOnEnemyCollision(player as player, enemies() as enemy)
   next i
 endfunction
 
-function applyDeadzone(player as player, tm as tilemap)
+function applyDeadzone(player as player, tm as tilemaplayer)
   if player.transform.y() > tm.heightPx() + 100 then
     player.resetToStart()
   endif
 endfunction
 
-function reachedLevelEnd(player as player, tm as tilemap)
+function reachedLevelEnd(player as player, tm as tilemaplayer)
   return player.transform.x() > tm.widthPx() - 16
 endfunction
 ```
@@ -350,7 +352,7 @@ EndConstructor
 function onenter()
   self.finished = false
 
-  self.tilemap = levelhelpers.beginLevel("level1.json")
+  self.tilemap = levelhelpers.beginLevel("level1.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 52)
 
   dim e as enemy
@@ -418,7 +420,7 @@ EndConstructor
 function onenter()
   self.finished = false
 
-  self.tilemap = levelhelpers.beginLevel("level2.json")
+  self.tilemap = levelhelpers.beginLevel("level2.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)
 
   dim e as enemy
@@ -490,7 +492,7 @@ EndConstructor
 function onenter()
   self.finished = false
 
-  self.tilemap = levelhelpers.beginLevel("level3.json")
+  self.tilemap = levelhelpers.beginLevel("level3.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 84)
 
   dim e as enemy

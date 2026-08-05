@@ -1,16 +1,18 @@
-function beginLevel(jsonFile)
+function beginLevel(stmFile)
   world.setBackground(20, 20, 40)
   camera.setZoom(4)
 
-  dim tm as tilemap
-  tm = new tilemap("tilemap_trimmed.png", 8, 8)
-  tm.load(jsonFile)
+  dim tm as tilemapset
+  tm = new tilemapset(stmFile)
   world.add(tm)
-  camera.setBounds(tm.widthPx(), tm.heightPx())
-  return tm
+
+  dim ground as tilemaplayer
+  ground = tm.layer("ground")
+  camera.setBounds(ground.widthPx(), ground.heightPx())
+  return ground
 endfunction
 
-function spawnPlayer(tm as tilemap, spawnX, spawnY)
+function spawnPlayer(tm as tilemaplayer, spawnX, spawnY)
   dim p as player
   p = new Player(spawnX, spawnY)
   p.setLevel(tm)
@@ -56,12 +58,12 @@ function resetOnEnemyCollision(player as player, enemies() as enemy)
   next i
 endfunction
 
-function applyDeadzone(player as player, tm as tilemap)
+function applyDeadzone(player as player, tm as tilemaplayer)
   if player.transform.y() > tm.heightPx() + 100 then
     player.resetToStart()
   endif
 endfunction
 
-function reachedLevelEnd(player as player, tm as tilemap)
+function reachedLevelEnd(player as player, tm as tilemaplayer)
   return player.transform.x() > tm.widthPx() - 16
 endfunction

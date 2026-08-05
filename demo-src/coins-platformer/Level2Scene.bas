@@ -15,7 +15,7 @@ EndConstructor
 function onenter()
   self.finished = false
 
-  self.tilemap = levelhelpers.beginLevel("level2.json")
+  self.tilemap = levelhelpers.beginLevel("level2.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)
 
   dim e as enemy
