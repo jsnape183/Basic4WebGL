@@ -64,7 +64,12 @@ const _sbCamera = {
     let shakeX = 0;
     let shakeY = 0;
     if (this._shakeElapsed < this._shakeDuration) {
-      this._shakeElapsed += (delta || 0) / 60;
+      // `delta` is milliseconds (the same value onupdate receives) and
+      // cameraShake's `duration` is documented in seconds, so convert with
+      // /1000. This read `/ 60` back when the frame loop was wired to PIXI's
+      // frame-normalised ticker.deltaTime, where 1.0 per frame / 60 happened to
+      // come out in seconds.
+      this._shakeElapsed += (delta || 0) / 1000;
       const remaining = Math.max(0, 1 - this._shakeElapsed / this._shakeDuration);
       const magnitude = this._shakeIntensity * remaining;
       shakeX = (Math.random() * 2 - 1) * magnitude;

@@ -176,7 +176,13 @@
             _sb._sbInstances.slice().forEach((inst) => { if (inst.onkeyup) inst.onkeyup(e.keyCode); });
           });
 
-          app.ticker.add((ticker) => _sb._update(ticker.deltaTime));
+          // `deltaMS`, not `deltaTime`. PIXI exposes both: `deltaTime` is
+          // normalised to a 60fps frame count (~1.0 per frame), `deltaMS` is the
+          // same quantity in milliseconds (exactly deltaTime * 1000/60, carrying
+          // the identical ticker.speed scaling and minFPS clamp). softBASIC's
+          // contract — the Language Guide, and every tutorial that writes
+          // `speed * delta / 1000` — is milliseconds, so this must be deltaMS.
+          app.ticker.add((ticker) => _sb._update(ticker.deltaMS));
 
           _sb._sbClasses.forEach((c) => {
             if (c.symbol.onenter) {

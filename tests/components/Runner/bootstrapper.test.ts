@@ -55,6 +55,40 @@ describe('boot sequence order', () => {
   });
 });
 
+// The language contract is that `delta` is elapsed **milliseconds**: the
+// Language Guide says so outright, and every tutorial doing frame-rate
+// independent movement writes `speed * delta / 1000`. PIXI's ticker exposes two
+// different numbers — `deltaTime` is frame-count-normalised (~1.0 per frame at
+// 60fps) and `deltaMS` is the millisecond value — and the frame loop was
+// originally wired to the former, making every game run ~16.7x slow.
+//
+// Vitest cannot drive a real PIXI.Ticker, so cypress/e2e/deltaUnits.cy.ts owns
+// the behavioural proof. This is the cheap static guard that fails the moment
+// the wiring is edited back, without waiting for a browser run.
+describe('per-frame ticker wiring', () => {
+  const html = readFileSync('src/components/Runner/bootstrapper.html', 'utf-8');
+  // The wiring statement itself, with comments excluded — the surrounding
+  // explanation deliberately names `deltaTime` to say why it is wrong, so the
+  // assertions have to look at code rather than at the whole file.
+  const wiring = html
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('//'))
+    .find((line) => line.includes('app.ticker.add'));
+
+  test('registers exactly one per-frame ticker callback', () => {
+    expect(wiring, 'bootstrapper.html no longer wires app.ticker.add').toBeDefined();
+    expect(html.match(/app\.ticker\.add/g)).toHaveLength(1);
+  });
+
+  test('drives _sb._update from the millisecond delta, not the normalised one', () => {
+    expect(wiring).toContain('_sb._update(ticker.deltaMS)');
+  });
+
+  test('never reads the frame-normalised ticker.deltaTime', () => {
+    expect(wiring).not.toContain('deltaTime');
+  });
+});
+
 describe('checked dict/array runtime accessors', () => {
   test('_sbCheckedDictGet reads a Map value', () => {
     const { _sbCheckedDictGet } = loadRuntimeHelpers();
