@@ -9,7 +9,7 @@ import sessionReducer, { addLog } from '../../../src/features/session/sessionSli
 import filesReducer, { addFile } from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
 import packagesReducer from '../../../src/features/packages/packagesSlice';
-import assetsReducer from '../../../src/features/assets/assetsSlice';
+import assetsReducer, { addAsset } from '../../../src/features/assets/assetsSlice';
 import uiReducer, { selectFile } from '../../../src/features/ui/uiSlice';
 import foldersReducer from '../../../src/features/folders/foldersSlice';
 import EditPage from '../../../src/pages/EditPage';
@@ -24,6 +24,13 @@ vi.mock('@monaco-editor/react', () => ({
 vi.mock('../../../src/components/Runner/index', () => ({
   default: () => null,
 }));
+
+// TileMapEditor's LayersPanel uses @dnd-kit, which needs ResizeObserver under jsdom.
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 const makeStore = (projectId: string) => {
   const store = configureStore({
@@ -98,4 +105,36 @@ test('clicking a BottomPanel error entry with a loc switches the selected file a
   await user.click(screen.getByText('Other:4 undefined variable'));
 
   expect(store.getState().ui.selectedFileByProject[projectId]).toBe('file-other');
+});
+
+test('clicking a file in the file tree switches back to the code editor when an asset tab is open', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-3';
+  const store = makeStore(projectId);
+
+  store.dispatch(addFile({ id: 'file-main', name: 'Main', source: '', projectId }));
+  store.dispatch(selectFile({ projectId, fileId: 'file-main' }));
+
+  const stmDoc = { tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png', layers: {} };
+  const stmContent =
+    'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(stmDoc))));
+  store.dispatch(addAsset({
+    id: 'asset-level',
+    name: 'level.stm',
+    content: stmContent,
+    projectId,
+    folderId: null,
+    fullName: 'level.stm',
+  }));
+
+  renderEditPage(projectId, store);
+
+  // Open the tilemap asset tab (double-click, matching AssetTree's own interaction).
+  await user.dblClick(screen.getByText('level.stm'));
+  expect(screen.getByLabelText('Eraser')).toBeInTheDocument();
+
+  // Clicking a file in the FILE tree (not the top tab strip) should switch the
+  // main pane back to the code editor, not leave the tilemap editor showing.
+  await user.click(screen.getByRole('option', { name: /Main/ }));
+  expect(screen.queryByLabelText('Eraser')).not.toBeInTheDocument();
 });

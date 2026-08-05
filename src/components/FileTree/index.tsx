@@ -28,6 +28,7 @@ import AddPackageModal from '../AddPackageModal';
 
 type FileTreeProps = {
   projectId: string;
+  onSelectFile?: (fileId: string) => void;
 };
 
 function countFiles(folderId: string, folders: IFolder[], allFiles: IFile[]): number {
@@ -36,7 +37,7 @@ function countFiles(folderId: string, folders: IFolder[], allFiles: IFile[]): nu
   return directFiles + childFolders.reduce((sum, cf) => sum + countFiles(cf.id, folders, allFiles), 0);
 }
 
-const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
+const FileTree: React.FC<FileTreeProps> = ({ projectId, onSelectFile }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   // ALL files for the project (not just root)
@@ -83,6 +84,7 @@ const FileTree: React.FC<FileTreeProps> = ({ projectId }) => {
 
   const handleFileSelected = (id: string) => {
     dispatch(selectFile({ projectId, fileId: id }));
+    onSelectFile?.(id);
   };
 
   // Auto-select first file when none selected

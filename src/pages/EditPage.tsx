@@ -215,7 +215,13 @@ const EditPage: React.FC = () => {
           id: 'files',
           icon: <FilesIcon />,
           ariaLabel: 'Files',
-          content: <TreePanel projectId={project.id} onOpenAsset={handleOpenAsset} />,
+          content: (
+            <TreePanel
+              projectId={project.id}
+              onOpenAsset={handleOpenAsset}
+              onSelectFile={handleTabSelect}
+            />
+          ),
         },
         {
           id: 'export',
