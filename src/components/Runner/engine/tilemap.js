@@ -59,7 +59,11 @@ const _sbTilemaps = {
   },
 
   createTileMapSet(stmPath) {
-    const data = _sbAssets.get(stmPath);
+    // PIXI's asset loader recognizes `.json` and auto-parses it, but has no
+    // parser registered for the custom `.stm` extension, so it loads as a raw
+    // string instead of a parsed object — parse it ourselves.
+    const raw = _sbAssets.get(stmPath);
+    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const tileW = Number(data.tileWidth);
     const tileH = Number(data.tileHeight);
     const base = _sbAssets.get(data.tileImage);
