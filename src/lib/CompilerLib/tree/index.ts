@@ -1,6 +1,18 @@
 import BuiltInType from '../builtInTypes';
 import { SourceLocation } from '../compiler/types';
 
+/**
+ * Roadmap issue #4: this constructor does not accept or set `loc` — a
+ * `new Tree(...)` call leaves `.loc` `undefined` until something sets it
+ * afterward. Every node subclass in this codebase follows the same
+ * convention to compensate (`super(...); this.loc = loc;` in the
+ * subclass's own constructor — see any file under `Basic4WebGL/nodes/`),
+ * which is why the pattern is safe in practice today. But it *is* an easy
+ * mistake for a direct `new Tree(...)` call site (rather than a subclass)
+ * to silently drop `loc` by forgetting that extra assignment, with no
+ * compiler warning. Prefer the `node()` factory below for ad-hoc tree
+ * construction — it takes `loc` as a parameter and sets it for you.
+ */
 export class Tree {
   public type: number;
   public data: string | Symbol | any;

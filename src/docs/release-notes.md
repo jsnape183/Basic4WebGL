@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.7 — 2026-08-06
+
+### Fixes
+
+- Fixed a typo and a stray character in the message shown for an unexpected internal compiler error
+
 ## v0.6.6 — 2026-08-06
 
 ### Fixes

@@ -22,8 +22,8 @@ export class SymbolError extends Error {
 export class UnexpectedError extends Error {
   public innerError: Error;
   constructor(error: Error) {
-    super(`An unexpected error occured with the message ${error.name} "${error.message}"
-      Stack Trace ${error?.stack}}`);
+    super(`An unexpected error occurred with the message ${error.name} "${error.message}"
+      Stack Trace ${error?.stack}`);
     this.name = 'UnexpectedError';
     this.innerError = error;
   }
