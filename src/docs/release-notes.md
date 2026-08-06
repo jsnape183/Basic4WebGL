@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.3 — 2026-08-06
+
+### New: assetmanager.defineRegion
+
+- New `assetmanager.defineRegion(newName, sourceName, x, y, width, height)` — crop a named region out of an already-loaded image (or out of another region you defined earlier) and use it anywhere a filename is expected, including `sprite`, `tilemap`, and `animatedsprite` constructors. Lets a single combined spritesheet (tiles, character frames, icons all in one file) be used as-is instead of requiring it to be manually split into separate files first
+
 ## v0.6.2 — 2026-08-05
 
 ### New: chained calls on typed array elements through an instance reference

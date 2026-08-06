@@ -52,5 +52,26 @@ const _sbAssets = (() => {
     tryGet(name) {
       return _cache.get(name);
     },
+
+    // Registers a new, named texture cropped from an already-loaded image
+    // (or from another previously-defined region) into this same cache, so
+    // sprite/tilemap/animatedsprite need no changes at all — they already
+    // just call get(name) and use whatever texture comes back. `x`/`y` are
+    // relative to `sourceName`'s own frame, not the underlying image, so
+    // defining a region of a region composes intuitively rather than
+    // silently re-basing to the original image's coordinate space.
+    defineRegion(newName, sourceName, x, y, width, height) {
+      const source = this.get(sourceName);
+      if (_cache.has(newName)) {
+        throw Error(`Asset "${newName}" already exists. Choose a different name for this region.`);
+      }
+      const frame = new PIXI.Rectangle(
+        source.frame.x + Number(x),
+        source.frame.y + Number(y),
+        Number(width),
+        Number(height)
+      );
+      _cache.set(newName, new PIXI.Texture({ source: source.source, frame }));
+    },
   };
 })();
