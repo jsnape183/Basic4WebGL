@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.5 — 2026-08-06
+
+### Fixes
+
+- A class declaring an array or dictionary field with the same name as one of its methods (e.g. `dim items(3)` and `function items()` in the same class) now fails to compile with a clear error, instead of compiling silently and crashing at runtime the first time the member was used. This also applies across inheritance — a subclass field/method colliding with a same-named method/field on a parent class is caught too. Overriding a parent method with a same-named method in a subclass is unaffected
+
 ## v0.6.4 — 2026-08-06
 
 ### Fixes

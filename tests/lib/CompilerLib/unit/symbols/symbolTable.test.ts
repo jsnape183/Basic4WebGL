@@ -161,3 +161,88 @@ describe('getSnapshot', () => {
     expect(snap.find((s) => s.name === 'enemy')?.parentClassName).toBe('basemonster');
   });
 });
+
+// ─── findAnyInScope — kind-agnostic lookup ─────────────────────────────────
+//
+// Roadmap issue #15: a class declaring an array field and a method of the
+// same name got no diagnostic at either declaration site, because every
+// existing duplicate-declaration check (add/addTyped's own check, and
+// getInScope) filters by kind — 'Array' and 'Function' are never considered
+// the same kind, so they never collide. findAnyInScope is the new
+// kind-agnostic primitive the cross-kind collision hook (see below) needs:
+// it answers "does *anything* exist under this name in this scope",
+// regardless of what kind it is.
+
+describe('findAnyInScope', () => {
+  test('finds a symbol regardless of the kind it was declared as', () => {
+    const table = new Symbols(variant);
+    table.setScope('enemy', 'Class');
+    table.add('items', symbolTypes.Function);
+    const found = table.findAnyInScope('items', 'enemy');
+    expect(found?.type).toBe('Function');
+  });
+
+  test('is case-insensitive, matching every other lookup in this table', () => {
+    const table = new Symbols(variant);
+    table.setScope('enemy', 'Class');
+    table.add('Items', symbolTypes.Function);
+    expect(table.findAnyInScope('items', 'enemy')?.name).toBe('Items');
+  });
+
+  test('returns undefined when nothing exists under that name in that scope', () => {
+    const table = new Symbols(variant);
+    table.setScope('enemy', 'Class');
+    table.add('items', symbolTypes.Function);
+    expect(table.findAnyInScope('items', 'otherclass')).toBeUndefined();
+    expect(table.findAnyInScope('nope', 'enemy')).toBeUndefined();
+  });
+});
+
+// ─── Injected cross-kind collision hook ────────────────────────────────────
+//
+// Symbols itself stays generic — it has no notion of "class inheritance".
+// The hook is optional, constructor-injected (mirroring how isMatchingType
+// already is), and consulted by add()/addTyped() after the existing
+// same-kind check passes. This block tests the generic injection mechanism
+// only; the real walk-the-inheritance-chain policy is Basic4WebGL-specific
+// and tested separately against the full compiler.
+
+describe('constructor-injected findCrossKindCollision hook', () => {
+  test('add() throws when the hook reports a collision', () => {
+    const table = new Symbols(variant, undefined, (_symbols, name) => {
+      if (name === 'items') {
+        // Simulate an existing Function symbol with this name.
+        return { name: 'items', type: 'Function', scope: { name: 'enemy' } } as any;
+      }
+      return undefined;
+    });
+    table.setScope('enemy', 'Class');
+    expect(() => table.add('items', symbolTypes.Array)).toThrow(/items/);
+  });
+
+  test('addTyped() also consults the hook', () => {
+    const table = new Symbols(variant, undefined, () => ({ name: 'items', type: 'Function', scope: { name: 'enemy' } } as any));
+    table.setScope('enemy', 'Class');
+    const arr = new ArraySymbol('items', symbolTypes.Array, table.getScope(), table.getFullScopeName(), 1);
+    expect(() => table.addTyped(arr)).toThrow(/items/);
+  });
+
+  test('does not throw when the hook finds no collision', () => {
+    const table = new Symbols(variant, undefined, () => undefined);
+    table.setScope('enemy', 'Class');
+    expect(() => table.add('items', symbolTypes.Array)).not.toThrow();
+  });
+
+  test('is not consulted at all when no hook is provided — existing behavior unchanged', () => {
+    const table = new Symbols(variant);
+    table.setScope('enemy', 'Class');
+    expect(() => table.add('items', symbolTypes.Array)).not.toThrow();
+  });
+
+  test('the existing same-kind duplicate check still fires independently of the hook', () => {
+    const table = new Symbols(variant, undefined, () => undefined);
+    table.setScope('enemy', 'Class');
+    table.add('items', symbolTypes.Variable);
+    expect(() => table.add('items', symbolTypes.Variable)).toThrow();
+  });
+});

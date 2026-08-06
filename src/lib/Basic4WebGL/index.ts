@@ -7,7 +7,7 @@ import Transpiler from '@CompilerLib/transpiler';
 import Symbols, { SymbolScope } from '@CompilerLib/symbols';
 import './parserRules';
 import './builtInTypes';
-import { isMatchingType } from './transpilerRules/symbolRules';
+import { isMatchingType, findCrossKindCollision } from './transpilerRules/symbolRules';
 import { getBuiltInType } from '@CompilerLib/builtInTypes/builtInTypeFactory';
 import builtInTypes from './builtInTypes';
 
@@ -16,7 +16,7 @@ const lexOnly = (project: CompilerProject) => lexer.lex(project, TokenResolver);
 const parse = (project: CompilerProject) => {
   const result = parser(
     lexOnly(project),
-    new Symbols(getBuiltInType(builtInTypes.Variant), isMatchingType)
+    new Symbols(getBuiltInType(builtInTypes.Variant), isMatchingType, findCrossKindCollision)
   );
   return result;
 };

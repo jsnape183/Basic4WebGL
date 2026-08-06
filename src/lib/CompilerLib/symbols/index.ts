@@ -67,18 +67,51 @@ class Symbols {
   private scopes: Array<SymbolScope> = [];
   private currentScope: SymbolScope;
   private defaultType: BuiltInType;
+  /**
+   * Optional, language-specific extra collision check consulted by add()/
+   * addTyped() after the existing same-kind check passes. Symbols itself has
+   * no notion of "class inheritance" — this hook is how a language layered on
+   * top (e.g. Basic4WebGL) can reject a *cross-kind* collision (an array
+   * field and a method sharing a name) without that concept leaking into
+   * this generic class. Mirrors how isMatchingType is already injected.
+   */
+  private findCrossKindCollision?: (
+    symbols: Symbols,
+    name: string,
+    type: string,
+    scope: SymbolScope
+  ) => Symbol | undefined;
 
   constructor(
     defaultType: BuiltInType,
     isMatchingType: (expected: string, actual: string) => Boolean = (
       expected: string,
       actual: string
-    ) => expected === actual
+    ) => expected === actual,
+    findCrossKindCollision?: (
+      symbols: Symbols,
+      name: string,
+      type: string,
+      scope: SymbolScope
+    ) => Symbol | undefined
   ) {
     this.isMatchingType = isMatchingType;
+    this.findCrossKindCollision = findCrossKindCollision;
     this.currentScope = new SymbolScope('', '');
     this.scopes.push({ ...this.currentScope });
     this.defaultType = defaultType;
+  }
+
+  private checkCrossKindCollision(name: string, type: string, scope: SymbolScope): void {
+    if (!this.findCrossKindCollision) return;
+    const collision = this.findCrossKindCollision(this, name, type, scope);
+    if (collision) {
+      throw new SymbolError(
+        `'${name}' is already declared as a ${collision.type.toLowerCase()}` +
+          (collision.scope.name !== scope.name ? ` in '${collision.scope.name}'` : '') +
+          ` — it cannot also be a ${type.toLowerCase()}.`
+      );
+    }
   }
 
   private indexKey(name: string, scopeName: string, fullScope: string): string {
@@ -175,6 +208,7 @@ class Symbols {
         `${symbol.type} ${symbol.name} in ${symbol.scope.name} already exists.`
       );
     }
+    this.checkCrossKindCollision(symbol.name, symbol.type, symbol.scope);
     this.table.push(symbol);
     this.indexSymbol(symbol);
     return symbol;
@@ -197,6 +231,7 @@ class Symbols {
     if (this.retrieveSymbol(name, type, scope, fullScope)) {
       throw new SymbolError(`${type} ${name} in ${scope.name} already exists.`);
     }
+    this.checkCrossKindCollision(name, type, scope);
 
     const symbol = new Symbol(name, type, scope, fullScope, dataType);
     this.table.push(symbol);
@@ -305,6 +340,17 @@ class Symbols {
       );
     }
     return match;
+  }
+  /** Kind-agnostic lookup by name within a specific scope name — unlike
+   *  getInScope, this ignores `type`/isMatchingType entirely, so it finds a
+   *  match regardless of what kind it was declared as. Used by
+   *  findCrossKindCollision hooks, which need to ask "does *anything* exist
+   *  under this name here" rather than "does this exact kind exist". */
+  findAnyInScope(name: string, scopeName: string): Symbol | undefined {
+    const formattedName = name.toLowerCase();
+    return this.table.find(
+      (s) => s.name.toLowerCase() === formattedName && s.scope.name === scopeName
+    );
   }
   check(
     name: string,
