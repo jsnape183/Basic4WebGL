@@ -1,5 +1,6 @@
 const _sbAssets = (() => {
   const _cache = new Map();
+  const _sliceCache = new Map();
   let _ready = false;
 
   return {
@@ -72,6 +73,45 @@ const _sbAssets = (() => {
         Number(height)
       );
       _cache.set(newName, new PIXI.Texture({ source: source.source, frame }));
+    },
+
+    // Slices `name`'s texture into a uniform grid of cellW x cellH cell
+    // textures, memoized by (name, cellW, cellH) so createTileMap/
+    // createAnimatedSprite/createTileMapSet share one derived array instead
+    // of each re-deriving an identical one — see roadmap issue #21. `name`
+    // may be a real loaded file or a defineRegion result; either way the
+    // grid is offset by the base texture's own frame origin (base.frame.x/y)
+    // rather than assumed to start at (0,0) of the underlying pixel source —
+    // otherwise slicing a defineRegion'd sub-image would silently slice from
+    // the wrong part of the original file.
+    getSlices(name, cellW, cellH) {
+      cellW = Number(cellW);
+      cellH = Number(cellH);
+      const key = `${name}|${cellW}x${cellH}`;
+      if (_sliceCache.has(key)) {
+        return _sliceCache.get(key);
+      }
+      const base = this.get(name);
+      const cols = Math.floor(base.width / cellW);
+      const rows = Math.floor(base.height / cellH);
+      const frames = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          frames.push(
+            new PIXI.Texture({
+              source: base.source,
+              frame: new PIXI.Rectangle(
+                base.frame.x + c * cellW,
+                base.frame.y + r * cellH,
+                cellW,
+                cellH
+              ),
+            })
+          );
+        }
+      }
+      _sliceCache.set(key, frames);
+      return frames;
     },
   };
 })();

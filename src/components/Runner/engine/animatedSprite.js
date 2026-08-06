@@ -1,19 +1,6 @@
 const _sbAnimatedSprites = {
   createAnimatedSprite(imagePath, frameW, frameH) {
-    const base = _sbAssets.get(imagePath);
-    const cols = Math.floor(base.width / frameW);
-    const rows = Math.floor(base.height / frameH);
-    const frames = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        frames.push(
-          new PIXI.Texture({
-            source: base.source,
-            frame: new PIXI.Rectangle(c * frameW, r * frameH, frameW, frameH),
-          })
-        );
-      }
-    }
+    const frames = _sbAssets.getSlices(imagePath, frameW, frameH);
     const pixi = new PIXI.AnimatedSprite(frames);
     pixi.anchor.set(0.5);
     pixi._allFrames = frames;
@@ -59,20 +46,7 @@ const _sbAnimatedSprites = {
   },
 
   setAnimSpriteSheet(handle, imagePath, frameW, frameH) {
-    const base = _sbAssets.get(imagePath);
-    const cols = Math.floor(base.width / frameW);
-    const rows = Math.floor(base.height / frameH);
-    const frames = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        frames.push(
-          new PIXI.Texture({
-            source: base.source,
-            frame: new PIXI.Rectangle(c * frameW, r * frameH, frameW, frameH),
-          })
-        );
-      }
-    }
+    const frames = _sbAssets.getSlices(imagePath, frameW, frameH);
     handle._allFrames = frames;
     handle._animations = new Map();
     handle._sbCurrentAnim = null;

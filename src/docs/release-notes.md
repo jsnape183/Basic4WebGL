@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.6.4 — 2026-08-06
+
+### Fixes
+
+- `tilemap`, `animatedsprite`, and `TileMapSet` no longer re-slice their spritesheet into a fresh set of frames on every single object created — instances that share the same image and cell size now reuse the same slices, reducing unnecessary work when spawning many objects off one spritesheet
+- Fixed cropping a region with `assetmanager.defineRegion` and passing it into `tilemap`/`animatedsprite` — the resulting tiles/frames were previously sliced from the wrong part of the original image, ignoring where the region itself was cropped from
+
 ## v0.6.3 — 2026-08-06
 
 ### New: assetmanager.defineRegion

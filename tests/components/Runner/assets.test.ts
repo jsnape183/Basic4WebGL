@@ -144,3 +144,56 @@ describe('defineRegion — deriving a named crop from an already-loaded image', 
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Roadmap issue #21: createTileMap/createAnimatedSprite re-sliced their full
+// cell grid from scratch on every construction, even when multiple instances
+// share the identical (name, cellW, cellH). getSlices memoizes the derived
+// frame array so repeat callers get back the SAME array/texture objects
+// instead of independently re-deriving them — cheap to verify with
+// reference equality, since nothing downstream mutates the array in place.
+// ---------------------------------------------------------------------------
+
+describe('getSlices — memoized frame slicing', () => {
+  test('slices the base image into the expected grid of textures', async () => {
+    const { assets, texture } = await preloadedAssets();
+    const frames = assets.getSlices('sheet.png', 32, 32);
+    expect(frames).toHaveLength(64); // 256/32 = 8 cols x 8 rows
+    expect(frames[0].frame).toEqual({ x: 0, y: 0, width: 32, height: 32 });
+    expect(frames[1].frame).toEqual({ x: 32, y: 0, width: 32, height: 32 });
+    expect(frames[8].frame).toEqual({ x: 0, y: 32, width: 32, height: 32 });
+    frames.forEach((f: FakeTexture) => expect(f.source).toBe(texture.source));
+  });
+
+  test('returns the SAME array on a repeat call with identical (name, cellW, cellH)', async () => {
+    const { assets } = await preloadedAssets();
+    const first = assets.getSlices('sheet.png', 32, 32);
+    const second = assets.getSlices('sheet.png', 32, 32);
+    expect(second).toBe(first);
+  });
+
+  test('a different cell size for the same name produces an independent array', async () => {
+    const { assets } = await preloadedAssets();
+    const at32 = assets.getSlices('sheet.png', 32, 32);
+    const at64 = assets.getSlices('sheet.png', 64, 64);
+    expect(at64).not.toBe(at32);
+    expect(at64).toHaveLength(16); // 256/64 = 4 cols x 4 rows
+  });
+
+  test('the same cell size for a different name produces an independent array', async () => {
+    const { assets } = await preloadedAssets();
+    assets.defineRegion('crop', 'sheet.png', 0, 0, 128, 128);
+    const sheetSlices = assets.getSlices('sheet.png', 32, 32);
+    const cropSlices = assets.getSlices('crop', 32, 32);
+    expect(cropSlices).not.toBe(sheetSlices);
+    expect(cropSlices).toHaveLength(16); // 128/32 = 4 cols x 4 rows
+  });
+
+  test('works on a defineRegion-derived name, offsetting frames by the region\'s own origin', async () => {
+    const { assets } = await preloadedAssets();
+    assets.defineRegion('crop', 'sheet.png', 64, 64, 64, 64);
+    const frames = assets.getSlices('crop', 32, 32);
+    expect(frames).toHaveLength(4); // 64/32 = 2 cols x 2 rows
+    expect(frames[0].frame).toEqual({ x: 64, y: 64, width: 32, height: 32 });
+  });
+});

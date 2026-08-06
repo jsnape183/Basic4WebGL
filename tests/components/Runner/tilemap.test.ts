@@ -19,6 +19,56 @@ function loadTilemap(worldContainer: unknown = {}, hudContainer: unknown = {}) {
   return factory(worldContainer, hudContainer);
 }
 
+// createTileMap/createTileMapSet actually need real `_sbAssets`/`PIXI` in
+// scope (issue #21's frame-slice cache), unlike the offset-math-only tests
+// above — concatenate assets.js + tilemap.js together, the same technique
+// stage.test.ts uses for cross-module engine wiring, with a minimal PIXI
+// stub (Container/Texture/Rectangle) rather than the real library.
+class FakeRectangle {
+  x: number; y: number; width: number; height: number;
+  constructor(x: number, y: number, width: number, height: number) {
+    this.x = x; this.y = y; this.width = width; this.height = height;
+  }
+}
+class FakeTexture {
+  source: unknown; frame: FakeRectangle; width: number; height: number;
+  constructor({ source, frame }: { source: unknown; frame: FakeRectangle }) {
+    this.source = source; this.frame = frame; this.width = frame.width; this.height = frame.height;
+  }
+}
+class FakeContainer {
+  children: unknown[] = [];
+  x = 0; y = 0; parent: unknown = null;
+  addChild(c: unknown) { this.children.push(c); }
+  removeChildren() { this.children = []; }
+}
+
+/** loadResults maps asset name -> what the stubbed PIXI.Assets.load() resolves to. */
+function loadTilemapWithAssets(loadResults: Record<string, unknown>) {
+  const assetsSrc = readFileSync('src/components/Runner/engine/assets.js', 'utf-8');
+  const tilemapSrc = readFileSync('src/components/Runner/engine/tilemap.js', 'utf-8');
+  const PIXI = {
+    Container: FakeContainer,
+    Texture: FakeTexture,
+    Rectangle: FakeRectangle,
+    Sprite: FakeContainer,
+    Assets: { add() {}, async load(name: string) { return loadResults[name]; } },
+  };
+  const factory = new Function(
+    'PIXI', 'worldContainer', 'hudContainer',
+    `${assetsSrc}\n${tilemapSrc}\n return { _sbAssets, _sbTilemaps };`
+  );
+  return factory(PIXI, {}, {});
+}
+
+/** A preloaded tilemap engine whose 'sheet.png' asset is a real-shaped base texture. */
+async function withLoadedSheet(width = 256, height = 256) {
+  const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, width, height) });
+  const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture });
+  await _sbAssets.preload([{ name: 'sheet.png', src: 'sheet.png' }]);
+  return { _sbAssets, _sbTilemaps, texture };
+}
+
 // A minimal stand-in for a PIXI.Container as built by createTileMap/
 // createTileMapSet — just the fields tileAt actually reads.
 function makeLayerHandle(overrides: Record<string, unknown> = {}) {
@@ -136,5 +186,50 @@ describe('tileAtInSet — TileMapSet.tileAt(name, x, y) convenience method', () 
     const tilemap = loadTilemap();
     const setHandle = { _layerContainers: { background: makeLayerHandle() } };
     expect(() => tilemap.tileAtInSet(setHandle, 'nope', 0, 0)).toThrow(/no layer named "nope"/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Roadmap issue #21: createTileMap/createTileMapSet used to re-slice their
+// tileset into a fresh frames array on every single construction, even for
+// two TileMaps built from the identical (tileset, tileW, tileH). They now
+// route through _sbAssets.getSlices, which memoizes by that key — verified
+// here by reference equality on the underlying frames array.
+// ---------------------------------------------------------------------------
+
+describe('createTileMap — reuses the shared frame-slice cache (issue #21)', () => {
+  test('two TileMaps built from the same tileset+size share the same frames array', async () => {
+    const { _sbTilemaps } = await withLoadedSheet();
+    const first = _sbTilemaps.createTileMap('sheet.png', 32, 32);
+    const second = _sbTilemaps.createTileMap('sheet.png', 32, 32);
+    expect(second._frames).toBe(first._frames);
+    expect(first._frames).toHaveLength(64); // 256/32 = 8x8
+  });
+
+  test('a different tile size produces an independent frames array', async () => {
+    const { _sbTilemaps } = await withLoadedSheet();
+    const at32 = _sbTilemaps.createTileMap('sheet.png', 32, 32);
+    const at64 = _sbTilemaps.createTileMap('sheet.png', 64, 64);
+    expect(at64._frames).not.toBe(at32._frames);
+  });
+});
+
+describe('createTileMapSet — layers share the same frame-slice cache as createTileMap (issue #21)', () => {
+  test('a TileMapSet built from the same tileset+size as a TileMap shares frames with it', async () => {
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 256, 256) });
+    const stm = { tileWidth: 32, tileHeight: 32, tileImage: 'sheet.png', layers: { bg: [[1]] } };
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({
+      'sheet.png': texture,
+      'level.stm': stm,
+    });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const tileMap = _sbTilemaps.createTileMap('sheet.png', 32, 32);
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(set._layerContainers.bg._frames).toBe(tileMap._frames);
   });
 });

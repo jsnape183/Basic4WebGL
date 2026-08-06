@@ -2,20 +2,7 @@ const _sbTilemaps = {
   createTileMap(tilesetPath, tileW, tileH) {
     tileW = Number(tileW);
     tileH = Number(tileH);
-    const base = _sbAssets.get(tilesetPath);
-    const cols = Math.floor(base.width / tileW);
-    const rows = Math.floor(base.height / tileH);
-    const frames = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        frames.push(
-          new PIXI.Texture({
-            source: base.source,
-            frame: new PIXI.Rectangle(c * tileW, r * tileH, tileW, tileH),
-          })
-        );
-      }
-    }
+    const frames = _sbAssets.getSlices(tilesetPath, tileW, tileH);
     const container = new PIXI.Container();
     container._tileW = tileW;
     container._tileH = tileH;
@@ -83,20 +70,7 @@ const _sbTilemaps = {
     const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const tileW = Number(data.tileWidth);
     const tileH = Number(data.tileHeight);
-    const base = _sbAssets.get(data.tileImage);
-    const cols = Math.floor(base.width / tileW);
-    const rows = Math.floor(base.height / tileH);
-    const frames = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        frames.push(
-          new PIXI.Texture({
-            source: base.source,
-            frame: new PIXI.Rectangle(c * tileW, r * tileH, tileW, tileH),
-          })
-        );
-      }
-    }
+    const frames = _sbAssets.getSlices(data.tileImage, tileW, tileH);
 
     // One wrapping container holds every layer as a child, in file order —
     // this is the object handed back as TileMapSet's own `_handle`, so it
