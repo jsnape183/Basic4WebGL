@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.6 — 2026-08-06
+
+### Fixes
+
+- The same fix from v0.6.5 now also applies at the top level of a file — declaring a module-level array/dictionary field with the same name as a module-level function (e.g. `dim items(3)` and `function items()` both outside any class, in the same file) now fails to compile with a clear error instead of crashing at runtime
+
 ## v0.6.5 — 2026-08-06
 
 ### Fixes

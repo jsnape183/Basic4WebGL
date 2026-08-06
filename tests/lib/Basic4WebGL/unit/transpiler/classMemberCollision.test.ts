@@ -128,12 +128,52 @@ describe('class member cross-kind collision — does not affect legitimate progr
     expect(result.diagnostics).toHaveLength(0);
   });
 
-  test('a module-level (non-class) function and array of the same name still compile — out of scope for this fix', () => {
-    // Module scope has the identical deferred-init clobbering bug (tracked
-    // as a separate follow-up), but this fix is deliberately scoped to
-    // class members only, matching how issue #15 was reported.
+});
+
+// ---------------------------------------------------------------------------
+// Roadmap issue #22: the identical deferred-init clobbering bug fixed for
+// class members in #15 also exists at module scope — RootRule's two-phase
+// init split (inline FunctionDecl vs. deferred everything-else) applies
+// uniformly to a module root, not just a class root, so a file declaring
+// both a module-level `function items()` and a module-level `dim items(3)`
+// hits the same "field's deferred initializer clobbers the already-assigned
+// main.items slot" crash. Closed by broadening findCrossKindCollision's
+// gate to also cover the module/global root scope, alongside Class — no
+// inheritance walk needed there, so the check is just the local same-scope
+// lookup (the first iteration of the same loop used for classes).
+// ---------------------------------------------------------------------------
+
+describe('module member cross-kind collision', () => {
+  test('a module-level array field declared before a same-named function is rejected', () => {
+    const result = compile(
+      ['dim items(3)', '', 'function items()', '  print "hi"', 'endfunction'].join('\n')
+    );
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/items/i);
+  });
+
+  test('a module-level function declared before a same-named array field is rejected', () => {
     const result = compile(
       ['function items()', '  print "hi"', 'endfunction', '', 'dim items(3)'].join('\n')
+    );
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(errMessages(result)).toMatch(/items/i);
+  });
+
+  test('two unrelated modules (files) each using the same member name do not collide', () => {
+    const result = compileMulti([
+      { name: 'Enemy.bas', source: 'dim items(3)' },
+      {
+        name: 'Shop.bas',
+        source: ['function items()', '  print "hi"', 'endfunction'].join('\n'),
+      },
+    ]);
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('a module with distinctly-named top-level members compiles normally', () => {
+    const result = compile(
+      ['dim coins(3)', '', 'function attack()', '  print "hi"', 'endfunction'].join('\n')
     );
     expect(result.diagnostics).toHaveLength(0);
   });

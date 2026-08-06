@@ -6,26 +6,29 @@ export const isMatchingType = (expected: string, actual: string): boolean =>
   expected === actual || (expected === "Variable" && actual === "Parameter");
 
 /**
- * Roadmap issue #15: a class could declare an array field and a method of
- * the same name with no diagnostic at either declaration site — every
- * existing duplicate check is scoped per symbol *kind*, so 'Array' and
- * 'Function' never collide. At runtime the class body's inline method
- * assignment and the field's deferred initializer both write to the same
- * prototype property; the deferred one (always the field, per RootRule's
- * two-phase init split) always runs last and silently clobbers the method,
- * so the method is gone by the time anything calls it — "X is not a
- * function" with no compile-time warning.
+ * Roadmap issues #15/#22: a class (or a module — a plain .bas file's own
+ * top-level scope) could declare an array field and a function of the same
+ * name with no diagnostic at either declaration site — every existing
+ * duplicate check is scoped per symbol *kind*, so 'Array' and 'Function'
+ * never collide. At runtime the root's inline function assignment and the
+ * field's deferred initializer both write to the same property (a class
+ * prototype, or the module's own object); the deferred one (always the
+ * field, per RootRule's two-phase init split) always runs last and silently
+ * clobbers the function, so it's gone by the time anything calls it — "X is
+ * not a function" with no compile-time warning.
  *
  * Injected into Symbols (see its constructor) so this Basic4WebGL-specific
  * "class inheritance" concept doesn't leak into the generic compiler layer.
- * Only fires for scope.type === Class — a `dim` inside a function body, or a
- * module-level declaration, isn't part of this two-phase split and isn't at
- * risk of this bug.
+ * Only fires for a Class or module/global root scope — a `dim` inside a
+ * function body isn't part of this two-phase split and isn't at risk of
+ * this bug.
  *
- * Walks from the class currently being declared into, up through
- * parentClassName, checking each level (starting with the class itself, so
- * same-class collisions are caught too) for an existing symbol of the same
- * name but a *different* kind. A same-kind match (a child class overriding a
+ * Walks from the class (or module) currently being declared into, up
+ * through parentClassName, checking each level (starting with the
+ * class/module itself, so same-scope collisions are caught too) for an
+ * existing symbol of the same name but a *different* kind. A module has no
+ * parentClassName, so for module scope this is just the local check — the
+ * loop's first iteration. A same-kind match (a child class overriding a
  * parent's method, or shadowing a parent's field) is not a collision and is
  * deliberately allowed through unchanged.
  */
@@ -35,7 +38,7 @@ export const findCrossKindCollision = (
   type: string,
   scope: SymbolScope
 ): Symbol | undefined => {
-  if (scope.type !== scopeTypes.Class) return undefined;
+  if (scope.type !== scopeTypes.Class && scope.type !== scopeTypes.Globals) return undefined;
 
   let className: string | undefined = scope.name;
   const visited = new Set<string>();
