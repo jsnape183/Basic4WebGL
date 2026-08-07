@@ -2,6 +2,8 @@
 
 The `pathfinding` module lets sprites navigate around obstacles defined by a `TileMapSet`'s layers, using pathfinding to route around walls instead of moving in a straight line. Include the **softGfx** package to use it.
 
+See [tilemapset](tilemapset) to learn about creating a multi-layer map and its layers.
+
 Call `setup` once before using `navigateTo`, `isNavigating`, or `stopNavigating` — calling any of those first gives a runtime error.
 
 ## setup(tileMapSet, blockingLayers)
@@ -48,13 +50,12 @@ If `(x, y)` lands on a blocked or off-grid tile, the sprite paths to the nearest
 | speed     | number | Movement speed in pixels per second |
 
 ```bas
-class Enemy
-  dim sprite
+Class
+Extends sprite
 
-  function onupdate(delta)
-    pathfinding.navigateTo(self.sprite, player.x(), player.y(), 120)
-  endfunction
-endclass
+function onupdate(delta)
+  pathfinding.navigateTo(self, player.transform.x(), player.transform.y(), 120)
+endfunction
 ```
 
 ## isNavigating(sprite)
@@ -68,7 +69,7 @@ Checks whether a sprite is currently following a path.
 **Returns:** `true` if the sprite is still moving toward its target, `false` if it has arrived, was never given a target, or no path could be found.
 
 ```bas
-if pathfinding.isNavigating(enemy.sprite) = false then
+if pathfinding.isNavigating(enemy) = false then
   playAttackAnimation()
 endif
 ```
@@ -82,5 +83,5 @@ Immediately stops a sprite's navigation. The sprite stops where it is — call `
 | sprite    | object | The sprite to stop |
 
 ```bas
-pathfinding.stopNavigating(enemy.sprite)
+pathfinding.stopNavigating(enemy)
 ```
