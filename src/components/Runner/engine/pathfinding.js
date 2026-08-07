@@ -288,4 +288,34 @@ const _sbPathfinding = {
     }
     this._navState.delete(spriteObj);
   },
+
+  _pathfindingUpdate(delta) {
+    if (this._navState.size === 0) return;
+    for (const [spriteObj, state] of this._navState) {
+      if (!this._sbInstances.includes(spriteObj)) {
+        this._navState.delete(spriteObj);
+        continue;
+      }
+      if (state.waypointIndex >= state.path.length) {
+        this._navState.delete(spriteObj);
+        continue;
+      }
+      const waypoint = state.path[state.waypointIndex];
+      const target = this._cellCenterWorld(waypoint.row, waypoint.col);
+      const handle = spriteObj._handle;
+      const dx = target.x - handle.position.x;
+      const dy = target.y - handle.position.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const step = state.speed * (delta / 1000);
+
+      if (dist <= step || dist === 0) {
+        handle.position.x = target.x;
+        handle.position.y = target.y;
+        state.waypointIndex += 1;
+      } else {
+        handle.position.x += (dx / dist) * step;
+        handle.position.y += (dy / dist) * step;
+      }
+    }
+  },
 };

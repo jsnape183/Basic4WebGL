@@ -441,3 +441,65 @@ describe('setRecomputeInterval', () => {
     expect(findPathSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('_pathfindingUpdate', () => {
+  test('moves a navigating sprite toward its next waypoint by speed * delta (speed is px/sec, delta is ms)', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5); // row 0, col 0
+    pf._sbInstances = [sprite];
+    pf.navigateTo(sprite, 25, 5, 100); // target row 0, col 2; speed 100px/s
+
+    pf._pathfindingUpdate(100); // 100ms = 0.1s -> 10px step
+
+    expect(sprite._handle.position.x).toBeCloseTo(15, 5);
+    expect(sprite._handle.position.y).toBeCloseTo(5, 5);
+  });
+
+  test('snaps to the waypoint and advances when within one step of it', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+    pf._sbInstances = [sprite];
+    pf.navigateTo(sprite, 25, 5, 1000); // fast enough to overshoot the first waypoint this frame
+
+    pf._pathfindingUpdate(100);
+
+    expect(pf._navState.get(sprite)?.waypointIndex).toBeGreaterThanOrEqual(1);
+  });
+
+  test('clears nav state and stops isNavigating once the final waypoint is reached', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+    pf._sbInstances = [sprite];
+    pf.navigateTo(sprite, 25, 5, 1000);
+
+    for (let i = 0; i < 10; i++) pf._pathfindingUpdate(1000);
+
+    expect(pf.isNavigating(sprite)).toBe(false);
+    expect(sprite._handle.position.x).toBeCloseTo(25, 5);
+    expect(sprite._handle.position.y).toBeCloseTo(5, 5);
+  });
+
+  test('drops nav state for a sprite no longer registered in _sbInstances, without moving it', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+    pf._sbInstances = [sprite];
+    pf.navigateTo(sprite, 25, 5, 100);
+    pf._sbInstances = []; // simulate world.remove(sprite)
+
+    pf._pathfindingUpdate(100);
+
+    expect(sprite._handle.position.x).toBe(5);
+    expect(pf._navState.has(sprite)).toBe(false);
+  });
+
+  test('does nothing when no sprite is navigating', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    pf._sbInstances = [];
+    expect(() => pf._pathfindingUpdate(16)).not.toThrow();
+  });
+});
