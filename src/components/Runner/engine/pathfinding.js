@@ -103,6 +103,11 @@ const _sbPathfinding = {
     return grid.blocked[row * grid.cols + col] === 1;
   },
 
+  _pathfindingReset() {
+    this._navGrid = null;
+    this._navState.clear();
+  },
+
   _gridOffset() {
     let offsetX = 0;
     let offsetY = 0;

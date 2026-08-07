@@ -335,3 +335,26 @@ describe('class-level onupdate is unaffected', () => {
     expect(onupdate).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('clear() resets pathfinding state alongside the camera', () => {
+  function loadStageOnly() {
+    const src = readFileSync('src/components/Runner/engine/stage.js', 'utf-8');
+    const PIXI = { Container: FakeContainer };
+    const app = { stage: new FakeContainer(), renderer: { width: 640, height: 360, background: { color: 0 } } };
+    const factory = new Function('PIXI', 'app', `${src}\n return _sbStage;`);
+    const stage = factory(PIXI, app);
+    stage._sbInstances = [];
+    stage._initStage();
+    return stage;
+  }
+
+  test('calls _pathfindingReset()', () => {
+    const stage = loadStageOnly();
+    stage._cameraReset = vi.fn();
+    stage._pathfindingReset = vi.fn();
+
+    stage.clear();
+
+    expect(stage._pathfindingReset).toHaveBeenCalledTimes(1);
+  });
+});

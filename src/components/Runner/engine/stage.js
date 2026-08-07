@@ -60,6 +60,7 @@ const _sbStage = {
     // Emptied in place, never replaced — see _retainInstances in lifecycle.js.
     this._sbInstances.length = 0;
     this._cameraReset();
+    this._pathfindingReset();
   },
 
   // ── canvas info ───────────────────────────────────────────────────────────

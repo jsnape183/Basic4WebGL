@@ -503,3 +503,16 @@ describe('_pathfindingUpdate', () => {
     expect(() => pf._pathfindingUpdate(16)).not.toThrow();
   });
 });
+
+describe('_pathfindingReset', () => {
+  test('clears the active grid and all nav state', () => {
+    const pf = loadPathfinding();
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[0]]) }), ['walls']);
+    pf._navState.set({}, { path: [], waypointIndex: 0 });
+
+    pf._pathfindingReset();
+
+    expect(pf._navGrid).toBe(null);
+    expect(pf._navState.size).toBe(0);
+  });
+});
