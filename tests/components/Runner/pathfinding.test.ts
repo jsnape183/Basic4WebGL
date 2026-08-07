@@ -161,6 +161,26 @@ describe('_nearestWalkable', () => {
     pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[1, 1], [1, 1]]) }), ['walls']);
     expect(pf._nearestWalkable(0, 0)).toBe(null);
   });
+
+  test('expands past radius 1 when the whole first ring is blocked too', () => {
+    const pf = loadPathfinding();
+    const map = [
+      [0, 0, 0, 0, 0],
+      [0, 1, 1, 1, 0],
+      [0, 1, 1, 1, 0],
+      [0, 1, 1, 1, 0],
+      [0, 0, 0, 0, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+
+    const result = pf._nearestWalkable(2, 2);
+
+    expect(pf._isBlocked(result.row, result.col)).toBe(false);
+    // the radius-1 ring around (2,2) is entirely blocked, so the nearest
+    // walkable cell must be found on the radius-2 ring, exercising the
+    // loop's radius-advancement path.
+    expect(Math.max(Math.abs(result.row - 2), Math.abs(result.col - 2))).toBe(2);
+  });
 });
 
 describe('_resolveTargetCell', () => {

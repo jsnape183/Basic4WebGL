@@ -90,12 +90,23 @@ const _sbPathfinding = {
     if (!this._isBlocked(row, col)) return { row, col };
     const maxRadius = Math.max(grid.rows, grid.cols);
     for (let radius = 1; radius <= maxRadius; radius++) {
-      for (let dr = -radius; dr <= radius; dr++) {
+      // Top and bottom edges of the ring (full width, includes corners).
+      for (const dr of [-radius, radius]) {
+        const r = row + dr;
+        if (r < 0 || r >= grid.rows) continue;
         for (let dc = -radius; dc <= radius; dc++) {
-          if (Math.max(Math.abs(dr), Math.abs(dc)) !== radius) continue;
-          const r = row + dr;
           const c = col + dc;
-          if (r < 0 || r >= grid.rows || c < 0 || c >= grid.cols) continue;
+          if (c < 0 || c >= grid.cols) continue;
+          if (!this._isBlocked(r, c)) return { row: r, col: c };
+        }
+      }
+      // Left and right edges of the ring, excluding corners already visited above.
+      for (const dc of [-radius, radius]) {
+        const c = col + dc;
+        if (c < 0 || c >= grid.cols) continue;
+        for (let dr = -radius + 1; dr <= radius - 1; dr++) {
+          const r = row + dr;
+          if (r < 0 || r >= grid.rows) continue;
           if (!this._isBlocked(r, c)) return { row: r, col: c };
         }
       }
