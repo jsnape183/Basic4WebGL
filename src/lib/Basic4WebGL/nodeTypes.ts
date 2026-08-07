@@ -28,6 +28,7 @@ export const nodeTypes = createEnum([
   'VariableList',
   'ExpressionList',
   'ArrayList',
+  'ArrayLiteral',
   'ArrayLookup',
   'Assign',
   'ArrayAssign',
