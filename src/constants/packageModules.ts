@@ -19,6 +19,7 @@ import tilemaplayer from '../lib/Basic4WebGL/defs/tilemaplayer.bas?raw';
 import tilemapset from '../lib/Basic4WebGL/defs/tilemapset.bas?raw';
 import audio from '../lib/Basic4WebGL/defs/audio.bas?raw';
 import collision from '../lib/Basic4WebGL/defs/collision.bas?raw';
+import pathfinding from '../lib/Basic4WebGL/defs/pathfinding.bas?raw';
 import rayhit from '../lib/Basic4WebGL/defs/rayhit.bas?raw';
 import scene from '../lib/Basic4WebGL/defs/Scene.bas?raw';
 import scenemanager from '../lib/Basic4WebGL/defs/SceneManager.bas?raw';
@@ -48,6 +49,7 @@ export const packageModules: Record<string, string> = {
   tilemapset,
   audio,
   collision,
+  pathfinding,
   rayhit,
   scene,
   scenemanager,
