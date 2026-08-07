@@ -20,7 +20,7 @@ The upcoming bullet-hell demo needs enemies that path around walls/obstacles tow
 - **Blocking granularity**: whole-layer. Any non-zero tile in a flagged layer blocks that cell; there's no per-tile-ID solid/non-solid distinction within a layer in this iteration.
 - **Grid resolution**: 1:1 with the TileMapSet's tile size — one nav-grid cell per tile, no separate resolution.
 - **Movement**: the module drives movement itself (auto-stepping the sprite each frame via its own `onupdate`), not just returning waypoints for the caller to consume.
-- **Target tracking**: no separate "track this moving sprite" function. `navigateTo(sprite, x, y, speed)` is designed to be called every frame (e.g. from the caller's own `onupdate`, passing `player.x(), player.y()` for chase behavior); internally it's cheap unless the target has actually moved to a new cell.
+- **Target tracking**: no separate "track this moving sprite" function. `navigateTo(sprite, x, y, speed)` is designed to be called every frame (e.g. from the caller's own `onupdate`, passing `player.transform.x(), player.transform.y()` for chase behavior); internally it's cheap unless the target has actually moved to a new cell.
 - **Diagonal movement**: 8-directional, with corner-cutting prevented (a diagonal step is invalid if either flanking orthogonal cell is blocked).
 - **Unreachable/off-grid targets**: `navigateTo` snaps to the nearest walkable cell to the given target rather than failing outright.
 - **Misuse before setup**: calling `navigateTo`/`isNavigating`/`stopNavigating` before `pathfinding.setup()` throws a runtime error (`throw new Error(...)`, matching `audio.js`/`save.js`/`scene.js`'s existing convention), rather than silently no-op'ing.
@@ -47,7 +47,7 @@ pathfinding.setup(tileMapSet, layers)
 pathfinding.setRecomputeInterval(200)
 
 ' Per-sprite navigation — call every frame, e.g. from an enemy's onupdate
-pathfinding.navigateTo(enemy, player.x(), player.y(), 120)
+pathfinding.navigateTo(enemy, player.transform.x(), player.transform.y(), 120)
 pathfinding.isNavigating(enemy)      ' true/false
 pathfinding.stopNavigating(enemy)    ' cancel, sprite stops in place
 ```

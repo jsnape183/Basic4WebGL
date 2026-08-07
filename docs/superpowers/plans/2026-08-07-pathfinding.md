@@ -1603,13 +1603,12 @@ If `(x, y)` lands on a blocked or off-grid tile, the sprite paths to the nearest
 | speed     | number | Movement speed in pixels per second |
 
 ```bas
-class Enemy
-  dim sprite
+Class
+Extends sprite
 
-  function onupdate(delta)
-    pathfinding.navigateTo(self.sprite, player.x(), player.y(), 120)
-  endfunction
-endclass
+function onupdate(delta)
+  pathfinding.navigateTo(self, player.transform.x(), player.transform.y(), 120)
+endfunction
 ```
 
 ## isNavigating(sprite)
@@ -1623,7 +1622,7 @@ Checks whether a sprite is currently following a path.
 **Returns:** `true` if the sprite is still moving toward its target, `false` if it has arrived, was never given a target, or no path could be found.
 
 ```bas
-if pathfinding.isNavigating(enemy.sprite) = false then
+if pathfinding.isNavigating(enemy) = false then
   playAttackAnimation()
 endif
 ```
@@ -1637,7 +1636,7 @@ Immediately stops a sprite's navigation. The sprite stops where it is — call `
 | sprite    | object | The sprite to stop |
 
 ```bas
-pathfinding.stopNavigating(enemy.sprite)
+pathfinding.stopNavigating(enemy)
 ```
 ```
 
@@ -1695,7 +1694,7 @@ Under `## Priorities`, after the `~~P12 — Pixel-art texture filtering~~` entry
 ### ~~P13 — Pathfinding~~ **[DONE]**
 Shipped as the `pathfinding` module (`pathfinding.bas` + `src/components/Runner/engine/pathfinding.js`). Built to unblock the upcoming bullet-hell shooter demo's enemy AI. A* over a flat precomputed walkability grid built from a `TileMapSet`'s named layers (`pathfinding.setup(tileMapSet, blockingLayers)` — any non-zero tile in a listed layer blocks that cell; unlisted layers, like decorative floors, are ignored), 8-directional with corner-cut prevention, octile-distance heuristic.
 
-`navigateTo(sprite, x, y, speed)` is designed to be called every frame with the target's current position (e.g. `player.x()`, `player.y()` from an enemy's `onupdate`) — cheap to call repeatedly, since a fresh path is only computed when the target has moved to a new grid cell **and** `setRecomputeInterval`'s cooldown (default 200ms) has elapsed since the last computation. A target on a blocked or off-grid tile snaps to the nearest walkable tile rather than failing.
+`navigateTo(sprite, x, y, speed)` is designed to be called every frame with the target's current position (e.g. `player.transform.x()`, `player.transform.y()` from an enemy's `onupdate`) — cheap to call repeatedly, since a fresh path is only computed when the target has moved to a new grid cell **and** `setRecomputeInterval`'s cooldown (default 200ms) has elapsed since the last computation. A target on a blocked or off-grid tile snaps to the nearest walkable tile rather than failing.
 
 Movement itself is driven by a hardcoded per-frame call from `scene.js`'s `_update` (`this._pathfindingUpdate(delta)`, alongside the existing `this._cameraUpdate(delta)`) — **not** the generic `_sbClasses`/`onupdate` auto-dispatch mechanism, which only ever receives entries from transpiled user-authored softBASIC modules/classes, never from built-in engine JS files. This was discovered during implementation planning: the original design spec assumed collision/world-style modules got an automatic per-frame hook "the same mechanism `collision`/`world` already rely on" — neither of those actually has one, so the assumption was wrong. `camera.follow`'s existing hardcoded-call pattern turned out to be the real precedent to follow instead.
 
@@ -1737,7 +1736,7 @@ There's no published tutorial or demo using `pathfinding` yet, so there's no exi
 pathfinding.setup(tm, layers)
 
 function onupdate(delta)
-  pathfinding.navigateTo(enemy, player.x(), player.y(), 100)
+  pathfinding.navigateTo(enemy, player.transform.x(), player.transform.y(), 100)
 endfunction
 ```
 
