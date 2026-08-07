@@ -2,6 +2,8 @@
 
 A `tilemapset` loads a `.stm` file — a multi-layer tile-based level, with a background layer, a foreground layer, a collision layer, or any other named layers you want. All layers render together as one unit, in the order the layers were saved in the file (first layer at the back, last layer at the front). Use [tilemap](tilemap) instead if your level only needs one layer.
 
+For pathfinding around a `TileMapSet`'s obstacle layers, see [pathfinding](pathfinding).
+
 ## Constructor
 
 ```bas
