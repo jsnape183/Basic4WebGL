@@ -1,4 +1,4 @@
-function _createNavMinHeap() {
+function _pathfindingCreateMinHeap() {
   const items = [];
 
   function push(key, f) {
@@ -39,7 +39,7 @@ function _createNavMinHeap() {
   return { size: () => items.length, push, pop };
 }
 
-function _octileDistance(r1, c1, r2, c2) {
+function _pathfindingOctileDistance(r1, c1, r2, c2) {
   const dr = Math.abs(r1 - r2);
   const dc = Math.abs(c1 - c2);
   return Math.max(dr, dc) + (Math.SQRT2 - 1) * Math.min(dr, dc);
@@ -176,11 +176,11 @@ const _sbPathfinding = {
     const goalKey = key(goalRow, goalCol);
     const startKey = key(startRow, startCol);
 
-    const open = _createNavMinHeap();
+    const open = _pathfindingCreateMinHeap();
     const gScore = new Map([[startKey, 0]]);
     const cameFrom = new Map();
     const visited = new Set();
-    open.push(startKey, _octileDistance(startRow, startCol, goalRow, goalCol));
+    open.push(startKey, _pathfindingOctileDistance(startRow, startCol, goalRow, goalCol));
 
     const neighbors = [
       [-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1],
@@ -210,7 +210,7 @@ const _sbPathfinding = {
         if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
           gScore.set(nKey, tentativeG);
           cameFrom.set(nKey, currentKey);
-          open.push(nKey, tentativeG + _octileDistance(nr, nc, goalRow, goalCol));
+          open.push(nKey, tentativeG + _pathfindingOctileDistance(nr, nc, goalRow, goalCol));
         }
       }
     }
