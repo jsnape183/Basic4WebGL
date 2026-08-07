@@ -23,6 +23,7 @@ const ENGINE_MODULES = [
   'animatedSprite',
   'tilemap',
   'collision',
+  'pathfinding',
   'scene',
   'camera',
 ];

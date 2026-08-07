@@ -13,4 +13,5 @@ const _sb = {
   ..._sbAnimatedSprites,
   ..._sbTilemaps,
   ..._sbCollision,
+  ..._sbPathfinding,
 };
