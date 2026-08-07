@@ -159,3 +159,9 @@ Per project convention (TDD, tests first):
 ## Open Questions for Implementation
 
 None outstanding — all scope questions were resolved during brainstorming (see "Scope decisions" above). Any transpiler-syntax specifics (exact `.bas` call-emission mangling) will be confirmed against the live transpiler during implementation, as is standard for this kind of spec.
+
+---
+
+## Amendments (found during implementation planning)
+
+**2026-08-07 — Movement is not "auto-invoked by `_sbLifecycle`"; it's a hardcoded call from `scene.js`, same as camera.** This spec's "Engine Implementation" section originally claimed the module-level `onupdate` driving sprite movement would be auto-invoked "the same mechanism `collision`/`world` already rely on." That's wrong on inspection: neither `collision` nor `world` has any per-frame hook at all, and `_sbLifecycle._update`'s generic `_sbClasses`/`_sbInstances` dispatch loop only ever receives entries from *transpiled user-authored* softBASIC modules/classes — no built-in engine JS file registers itself there. The actual precedent is `camera`: `_cameraUpdate(delta)` is called by a hardcoded line inside `scene.js`'s own `_update(delta)`, driven by the PIXI ticker (`app.ticker.add((ticker) => _sb._update(ticker.deltaMS))` in `bootstrapper.html`). `pathfinding._pathfindingUpdate(delta)` follows the identical pattern — one hardcoded line in `scene.js`, right next to the `_cameraUpdate` call. See the implementation plan (`docs/superpowers/plans/2026-08-07-pathfinding.md`, Task 6) for the exact change. This also means `delta` there is milliseconds (matching `camera`'s documented convention), so `speed` in `navigateTo(sprite, x, y, speed)` is pixels **per second**, converted via `speed * (delta / 1000)` per frame — not stated explicitly in the original spec text above, now confirmed here.
