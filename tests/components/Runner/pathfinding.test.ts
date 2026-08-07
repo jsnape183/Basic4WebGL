@@ -198,3 +198,67 @@ describe('_resolveTargetCell', () => {
     expect(pf._resolveTargetCell(5, 5)).toEqual({ row: 0, col: 1 });
   });
 });
+
+describe('_findPath', () => {
+  test('returns an empty path when start and goal are the same cell', () => {
+    const pf = loadPathfinding();
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[0, 0], [0, 0]]) }), ['walls']);
+    expect(pf._findPath(0, 0, 0, 0)).toEqual([]);
+  });
+
+  test('finds a straight orthogonal path across an open grid', () => {
+    const pf = loadPathfinding();
+    const open = Array.from({ length: 3 }, () => [0, 0, 0]);
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(open) }), ['walls']);
+
+    expect(pf._findPath(0, 0, 0, 2)).toEqual([{ row: 0, col: 1 }, { row: 0, col: 2 }]);
+  });
+
+  test('takes a diagonal shortcut across an open grid rather than a longer orthogonal route', () => {
+    const pf = loadPathfinding();
+    const open = Array.from({ length: 3 }, () => [0, 0, 0]);
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(open) }), ['walls']);
+
+    expect(pf._findPath(0, 0, 2, 2)).toEqual([{ row: 1, col: 1 }, { row: 2, col: 2 }]);
+  });
+
+  test('routes around a wall', () => {
+    const pf = loadPathfinding();
+    const map = [
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 0, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+
+    const path = pf._findPath(0, 0, 0, 2);
+
+    expect(path.some((p: { row: number; col: number }) => p.row === 0 && p.col === 1)).toBe(false);
+    expect(path[path.length - 1]).toEqual({ row: 0, col: 2 });
+  });
+
+  test('prevents cutting diagonally across a wall corner', () => {
+    const pf = loadPathfinding();
+    // (0,1) and (1,0) both blocked — a diagonal step from (0,0) to (1,1) must
+    // not be allowed to cut between them, so the goal becomes unreachable.
+    const map = [
+      [0, 1],
+      [1, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+
+    expect(pf._findPath(0, 0, 1, 1)).toBe(null);
+  });
+
+  test('returns null when the goal is unreachable', () => {
+    const pf = loadPathfinding();
+    const map = [
+      [0, 1, 0],
+      [1, 1, 0],
+      [0, 1, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+
+    expect(pf._findPath(0, 0, 0, 2)).toBe(null);
+  });
+});

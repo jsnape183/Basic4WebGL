@@ -1,3 +1,50 @@
+function _createNavMinHeap() {
+  const items = [];
+
+  function push(key, f) {
+    items.push({ key, f });
+    let i = items.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (items[parent].f <= items[i].f) break;
+      const tmp = items[parent];
+      items[parent] = items[i];
+      items[i] = tmp;
+      i = parent;
+    }
+  }
+
+  function pop() {
+    const top = items[0];
+    const last = items.pop();
+    if (items.length > 0) {
+      items[0] = last;
+      let i = 0;
+      for (;;) {
+        const left = i * 2 + 1;
+        const right = i * 2 + 2;
+        let smallest = i;
+        if (left < items.length && items[left].f < items[smallest].f) smallest = left;
+        if (right < items.length && items[right].f < items[smallest].f) smallest = right;
+        if (smallest === i) break;
+        const tmp = items[smallest];
+        items[smallest] = items[i];
+        items[i] = tmp;
+        i = smallest;
+      }
+    }
+    return top.key;
+  }
+
+  return { size: () => items.length, push, pop };
+}
+
+function _octileDistance(r1, c1, r2, c2) {
+  const dr = Math.abs(r1 - r2);
+  const dc = Math.abs(c1 - c2);
+  return Math.max(dr, dc) + (Math.SQRT2 - 1) * Math.min(dr, dc);
+}
+
 const _sbPathfinding = {
   _navGrid: null,
   _navState: new Map(),
@@ -118,5 +165,66 @@ const _sbPathfinding = {
     const cell = this._worldToCell(worldX, worldY);
     if (!this._isBlocked(cell.row, cell.col)) return cell;
     return this._nearestWalkable(cell.row, cell.col);
+  },
+
+  _findPath(startRow, startCol, goalRow, goalCol) {
+    if (this._isBlocked(goalRow, goalCol)) return null;
+    if (startRow === goalRow && startCol === goalCol) return [];
+
+    const cols = this._navGrid.cols;
+    const key = (r, c) => r * cols + c;
+    const goalKey = key(goalRow, goalCol);
+    const startKey = key(startRow, startCol);
+
+    const open = _createNavMinHeap();
+    const gScore = new Map([[startKey, 0]]);
+    const cameFrom = new Map();
+    const visited = new Set();
+    open.push(startKey, _octileDistance(startRow, startCol, goalRow, goalCol));
+
+    const neighbors = [
+      [-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1],
+      [-1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [1, 1, Math.SQRT2],
+    ];
+
+    while (open.size() > 0) {
+      const currentKey = open.pop();
+      if (visited.has(currentKey)) continue;
+      visited.add(currentKey);
+      if (currentKey === goalKey) {
+        return this._reconstructPath(cameFrom, currentKey, cols);
+      }
+
+      const row = Math.floor(currentKey / cols);
+      const col = currentKey % cols;
+
+      for (const [dr, dc, cost] of neighbors) {
+        const nr = row + dr;
+        const nc = col + dc;
+        if (this._isBlocked(nr, nc)) continue;
+        if (dr !== 0 && dc !== 0 && (this._isBlocked(row + dr, col) || this._isBlocked(row, col + dc))) {
+          continue;
+        }
+        const nKey = key(nr, nc);
+        const tentativeG = gScore.get(currentKey) + cost;
+        if (tentativeG < (gScore.get(nKey) ?? Infinity)) {
+          gScore.set(nKey, tentativeG);
+          cameFrom.set(nKey, currentKey);
+          open.push(nKey, tentativeG + _octileDistance(nr, nc, goalRow, goalCol));
+        }
+      }
+    }
+    return null;
+  },
+
+  _reconstructPath(cameFrom, currentKey, cols) {
+    const path = [];
+    let k = currentKey;
+    while (cameFrom.has(k)) {
+      path.push({ row: Math.floor(k / cols), col: k % cols });
+      k = cameFrom.get(k);
+    }
+    path.reverse();
+    return path;
   },
 };
