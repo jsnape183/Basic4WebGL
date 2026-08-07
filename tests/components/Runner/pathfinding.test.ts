@@ -90,3 +90,45 @@ describe('setupNavGrid', () => {
     expect(pf._navState.size).toBe(0);
   });
 });
+
+describe('_worldToCell / _gridOffset / _cellCenterWorld', () => {
+  test('converts world coordinates to grid cell using only the reference layer\'s own offset', () => {
+    const pf = loadPathfinding();
+    const walls = makeLayer([[0, 0], [0, 0]], { x: 20, y: 0 });
+    pf.setupNavGrid(makeTileMapSet({ walls }), ['walls']);
+
+    // world (25, 5) minus offset (20, 0) = local (5, 5) -> col 0, row 0
+    expect(pf._worldToCell(25, 5)).toEqual({ row: 0, col: 0 });
+    // world (35, 5) minus offset (20, 0) = local (15, 5) -> col 1, row 0
+    expect(pf._worldToCell(35, 5)).toEqual({ row: 0, col: 1 });
+  });
+
+  test('accumulates offset through an ancestor (e.g. a wrapping TileMapSet transform)', () => {
+    const worldContainer = {};
+    const pf = loadPathfinding(worldContainer);
+    const setHandle = { x: 30, y: 0, parent: worldContainer };
+    const walls = makeLayer([[0, 0], [0, 0]], { x: 0, y: 0, parent: setHandle });
+    pf.setupNavGrid(makeTileMapSet({ walls }), ['walls']);
+
+    // combined offset = 30, world 35 -> local 5 -> col 0
+    expect(pf._worldToCell(35, 5)).toEqual({ row: 0, col: 0 });
+  });
+
+  test('stops accumulating at worldContainer — camera pan is not included', () => {
+    const worldContainer = { x: 500, y: 500 };
+    const pf = loadPathfinding(worldContainer);
+    const walls = makeLayer([[0, 0]], { x: 20, y: 0, parent: worldContainer });
+    pf.setupNavGrid(makeTileMapSet({ walls }), ['walls']);
+
+    expect(pf._worldToCell(25, 5)).toEqual({ row: 0, col: 0 });
+  });
+
+  test('_cellCenterWorld returns the pixel-space center point of a cell, offset-aware', () => {
+    const pf = loadPathfinding();
+    const walls = makeLayer([[0, 0], [0, 0]], { x: 20, y: 0 });
+    pf.setupNavGrid(makeTileMapSet({ walls }), ['walls']);
+
+    // col 1, row 0 -> local center (15, 5) -> world (35, 5)
+    expect(pf._cellCenterWorld(0, 1)).toEqual({ x: 35, y: 5 });
+  });
+});

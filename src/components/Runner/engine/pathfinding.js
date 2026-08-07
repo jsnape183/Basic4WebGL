@@ -55,4 +55,33 @@ const _sbPathfinding = {
     if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return true;
     return grid.blocked[row * grid.cols + col] === 1;
   },
+
+  _gridOffset() {
+    let offsetX = 0;
+    let offsetY = 0;
+    let node = this._navGrid.reference;
+    while (node && node !== worldContainer && node !== hudContainer) {
+      offsetX += node.x;
+      offsetY += node.y;
+      node = node.parent;
+    }
+    return { offsetX, offsetY };
+  },
+
+  _worldToCell(worldX, worldY) {
+    const grid = this._navGrid;
+    const { offsetX, offsetY } = this._gridOffset();
+    const col = Math.floor((Number(worldX) - offsetX) / grid.tileW);
+    const row = Math.floor((Number(worldY) - offsetY) / grid.tileH);
+    return { row, col };
+  },
+
+  _cellCenterWorld(row, col) {
+    const grid = this._navGrid;
+    const { offsetX, offsetY } = this._gridOffset();
+    return {
+      x: offsetX + col * grid.tileW + grid.tileW / 2,
+      y: offsetY + row * grid.tileH + grid.tileH / 2,
+    };
+  },
 };
