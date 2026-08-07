@@ -39,6 +39,13 @@ class FactorRule implements IParserRule {
       matchAndMove(tokens.CloseParen, tokenStream);
       return new ParenNode(null, expr, loc);
     }
+    if (check(tokens.OpenBrace, tokenStream.current())) {
+      return getParserRule('ArrayLiteral').parse(
+        tokenStream,
+        symbolTable,
+        undefined
+      );
+    }
     if (check(tokens.Call, tokenStream.current())) {
       return getParserRule('CallFactor').parse(
         tokenStream,
