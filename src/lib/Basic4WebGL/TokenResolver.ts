@@ -94,6 +94,18 @@ export const tokenResolver: Array<TokenResolverRule> = [
   },
   {
     isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchChar(input, '{'),
+      token: tokens.OpenBrace,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
+      ...matchChar(input, '}'),
+      token: tokens.CloseBrace,
+    }),
+  },
+  {
+    isMatch: (input: string): TokenResolverRuleResult => ({
       ...matchString(input, '=='),
       token: tokens.Equals,
     }),

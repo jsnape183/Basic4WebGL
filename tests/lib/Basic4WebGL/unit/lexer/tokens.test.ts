@@ -55,6 +55,8 @@ describe('operators', () => {
     [')',  tokens.CloseParen.name],
     ['.',  tokens.Dot.name],
     [',',  tokens.Comma.name],
+    ['{',  tokens.OpenBrace.name],
+    ['}',  tokens.CloseBrace.name],
   ])('"%s" produces a %s token', (source, expectedName) => {
     expect(lex(source)[0].token.name).toBe(expectedName);
   });

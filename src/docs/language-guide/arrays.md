@@ -8,6 +8,30 @@ Arrays store ordered collections of values.
 dim scores(10)   ' array of 10 elements, indices 0–9
 ```
 
+## Array Literals
+
+You can also build an array directly with a literal — a comma-separated list of values wrapped in curly braces — instead of declaring a sized array and pushing values in one at a time:
+
+```bas
+dim enemyTypes = {"goblin", "orc", "troll"}
+print enemyTypes(0)   ' goblin
+```
+
+Literals can hold numbers, strings, `true`/`false`, or other literals nested inside them:
+
+```bas
+dim grid = {{0, 0}, {1, 0}, {0, 1}}
+print grid(1, 0)   ' 1
+```
+
+An empty literal `{}` creates an array with no elements — the same as `dim arr(0)`.
+
+Array literals work anywhere an expression is allowed, including as a function argument, so you don't need to declare a temporary array just to pass one in:
+
+```bas
+setupLevel({"walls", "obstacles"})
+```
+
 ## Access
 
 ```bas
