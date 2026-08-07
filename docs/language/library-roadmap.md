@@ -39,6 +39,7 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `drawing` | `drawLine(x,y,x2,y2)` `drawRect(x,y,w,h)` `drawCircle(x,y,r)` `clear()` `drawImageStrip(imageName,srcX,destX,destY,destWidth,destHeight)` |
 | `pen` | `setFillColor(r,g,b)` `setLineColor(r,g,b)` `setLineWidth(n)` |
 | `collision` | `spriteCollide(a,b)` `boxCollide(...)` `circleCollide(a,rA,b,rB)` `pointInBox(x,y,sprite)` `raycast(x,y,angle,dist,sprites)` `raycastAll(...)` |
+| `pathfinding` | `setup(tileMapSet,blockingLayers)` `setRecomputeInterval(ms)` `navigateTo(sprite,x,y,speed)` `isNavigating(sprite)` `stopNavigating(sprite)` |
 | `input` | `getKeyDown(keycode)` `mouseX()` `mouseY()` `mouseDown()` |
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
@@ -220,6 +221,19 @@ Tests: `tests/lib/Basic4WebGL/unit/transpiler/oninit.test.ts`, `tests/components
 Shipped as `world.setPixelPerfect(v)` — sets `PIXI.TextureStyle.defaultOptions.scaleMode` to `'nearest'`/`'linear'`. Called from `oninit`, before any texture loads, this is the whole implementation — no retroactive per-texture cache-walk needed, since PIXI's default only affects textures created *after* the call, and `oninit` now guarantees nothing has loaded yet. That simplicity is a direct payoff of shipping P11 (`oninit`) as a real mechanism rather than working around the timing problem.
 
 Shipped alongside it: `camera.setZoom(z)` / `camera.zoom()` — the companion feature needed to actually make small pixel-art tiles/sprites visible on a full-size canvas. Zooms `worldContainer` as a whole (matching Godot's `Camera2D.zoom` — verified against Godot's own docs before implementing), so every world object (tilemap, sprites, enemies) magnifies together with no per-object scale bookkeeping; `tileAt()`, `transform.x()`/`y()`, and all other position/collision math are completely unaffected, since they operate in the same shared logical coordinate space regardless of how that space is rendered. `camera.follow`/`setBounds`'s existing pan math was made zoom-aware (visible world width/height divides by zoom); default zoom is `1`, so every existing project is unaffected. Tests: `tests/lib/Basic4WebGL/unit/transpiler/camera.test.ts`. Docs: `src/docs/api-reference/camera.md`, `src/docs/api-reference/world.md`.
+
+### ~~P13 — Pathfinding~~ **[DONE]**
+Shipped as the `pathfinding` module (`pathfinding.bas` + `src/components/Runner/engine/pathfinding.js`). Built to unblock the upcoming bullet-hell shooter demo's enemy AI. A* over a flat precomputed walkability grid built from a `TileMapSet`'s named layers (`pathfinding.setup(tileMapSet, blockingLayers)` — any non-zero tile in a listed layer blocks that cell; unlisted layers, like decorative floors, are ignored), 8-directional with corner-cut prevention, octile-distance heuristic.
+
+`navigateTo(sprite, x, y, speed)` is designed to be called every frame with the target's current position (e.g. `player.transform.x()`, `player.transform.y()` from an enemy's `onupdate`) — cheap to call repeatedly, since a fresh path is only computed when the target has moved to a new grid cell **and** `setRecomputeInterval`'s cooldown (default 200ms) has elapsed since the last computation. A target on a blocked or off-grid tile snaps to the nearest walkable tile rather than failing.
+
+Movement itself is driven by a hardcoded per-frame call from `scene.js`'s `_update` (`this._pathfindingUpdate(delta)`, alongside the existing `this._cameraUpdate(delta)`) — **not** the generic `_sbClasses`/`onupdate` auto-dispatch mechanism, which only ever receives entries from transpiled user-authored softBASIC modules/classes, never from built-in engine JS files. This was discovered during implementation planning: the original design spec assumed collision/world-style modules got an automatic per-frame hook "the same mechanism `collision`/`world` already rely on" — neither of those actually has one, so the assumption was wrong. `camera.follow`'s existing hardcoded-call pattern turned out to be the real precedent to follow instead.
+
+Nav state resets alongside camera state in `stage.js`'s `clear()` (`this._pathfindingReset()`), so a scene switch can't leave a stale grid from the previous scene silently active.
+
+**Not built:** shared flow-field/Dijkstra-map optimization for many-agents-to-one-target (every sprite computes its own path independently, bounded by the recompute cooldown); dynamic obstacle avoidance (other sprites don't block computed paths, only the tilemap does); per-tile-ID blocking within a flagged layer (whole-layer only).
+
+Design spec: `docs/superpowers/specs/2026-08-07-pathfinding-design.md`. Tests: `tests/components/Runner/pathfinding.test.ts`, `tests/components/Runner/scene.test.ts`, `tests/components/Runner/stage.test.ts`, `tests/lib/Basic4WebGL/unit/transpiler/pathfinding.test.ts`. Docs: `src/docs/api-reference/pathfinding.md`.
 
 ## Lower Priority / Future
 
