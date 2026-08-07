@@ -227,4 +227,65 @@ const _sbPathfinding = {
     path.reverse();
     return path;
   },
+
+  setRecomputeInterval(ms) {
+    this._recomputeInterval = Number(ms);
+  },
+
+  navigateTo(spriteObj, worldX, worldY, speed) {
+    if (!this._navGrid) {
+      throw new Error('pathfinding.navigateTo: call pathfinding.setup() before navigateTo()');
+    }
+    if (!spriteObj || !spriteObj._handle) return;
+
+    const targetCell = this._resolveTargetCell(worldX, worldY);
+    if (!targetCell) {
+      this._navState.delete(spriteObj);
+      return;
+    }
+
+    const state = this._navState.get(spriteObj);
+    const now = performance.now();
+
+    if (state) {
+      state.speed = Number(speed);
+      const targetChanged = state.targetRow !== targetCell.row || state.targetCol !== targetCell.col;
+      const cooldownElapsed = now - state.lastRecomputeTime >= this._recomputeInterval;
+      if (!targetChanged || !cooldownElapsed) {
+        return;
+      }
+    }
+
+    const startCell = this._worldToCell(spriteObj._handle.position.x, spriteObj._handle.position.y);
+    const path = this._findPath(startCell.row, startCell.col, targetCell.row, targetCell.col);
+
+    if (!path) {
+      this._navState.delete(spriteObj);
+      return;
+    }
+
+    this._navState.set(spriteObj, {
+      path,
+      waypointIndex: 0,
+      speed: Number(speed),
+      targetRow: targetCell.row,
+      targetCol: targetCell.col,
+      lastRecomputeTime: now,
+    });
+  },
+
+  isNavigating(spriteObj) {
+    if (!this._navGrid) {
+      throw new Error('pathfinding.isNavigating: call pathfinding.setup() before isNavigating()');
+    }
+    const state = this._navState.get(spriteObj);
+    return !!(state && state.waypointIndex < state.path.length);
+  },
+
+  stopNavigating(spriteObj) {
+    if (!this._navGrid) {
+      throw new Error('pathfinding.stopNavigating: call pathfinding.setup() before stopNavigating()');
+    }
+    this._navState.delete(spriteObj);
+  },
 };

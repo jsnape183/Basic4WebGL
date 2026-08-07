@@ -262,3 +262,182 @@ describe('_findPath', () => {
     expect(pf._findPath(0, 0, 0, 2)).toBe(null);
   });
 });
+
+// A minimal stand-in for a softBASIC sprite instance — navigateTo receives
+// the instance itself (per the .bas call convention) and reads
+// `._handle.position` internally, matching how sprites.js's setPosition/
+// getPositionX/getPositionY operate on `obj.position`.
+function makeSprite(x: number, y: number) {
+  return { _handle: { position: { x, y } } };
+}
+
+function setupOpenGrid(pf: ReturnType<typeof loadPathfinding>, size = 3) {
+  const open = Array.from({ length: size }, () => Array(size).fill(0));
+  pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(open) }), ['walls']);
+}
+
+describe('navigateTo / isNavigating / stopNavigating', () => {
+  test('throws if called before setupNavGrid', () => {
+    const pf = loadPathfinding();
+    expect(() => pf.navigateTo(makeSprite(0, 0), 10, 10, 100)).toThrow(/call pathfinding\.setup\(\)/);
+  });
+
+  test('isNavigating throws if called before setupNavGrid', () => {
+    const pf = loadPathfinding();
+    expect(() => pf.isNavigating(makeSprite(0, 0))).toThrow(/call pathfinding\.setup\(\)/);
+  });
+
+  test('stopNavigating throws if called before setupNavGrid', () => {
+    const pf = loadPathfinding();
+    expect(() => pf.stopNavigating(makeSprite(0, 0))).toThrow(/call pathfinding\.setup\(\)/);
+  });
+
+  test('isNavigating is false before any navigateTo call', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    expect(pf.isNavigating(makeSprite(0, 0))).toBe(false);
+  });
+
+  test('computes a path and reports isNavigating true', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5); // row 0, col 0
+
+    pf.navigateTo(sprite, 25, 5, 100); // target row 0, col 2
+
+    expect(pf.isNavigating(sprite)).toBe(true);
+  });
+
+  test('isNavigating is false when start and target are the same cell', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+
+    pf.navigateTo(sprite, 5, 5, 100);
+
+    expect(pf.isNavigating(sprite)).toBe(false);
+  });
+
+  test('isNavigating is false when the target is unreachable', () => {
+    const pf = loadPathfinding();
+    const map = [
+      [0, 1, 0],
+      [1, 1, 0],
+      [0, 1, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+    const sprite = makeSprite(5, 5);
+
+    pf.navigateTo(sprite, 25, 5, 100);
+
+    expect(pf.isNavigating(sprite)).toBe(false);
+  });
+
+  test('stopNavigating clears nav state immediately', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+    pf.navigateTo(sprite, 25, 5, 100);
+
+    pf.stopNavigating(sprite);
+
+    expect(pf.isNavigating(sprite)).toBe(false);
+  });
+
+  test('does not throw when the target lands on a blocked/off-grid cell — snaps instead', () => {
+    const pf = loadPathfinding();
+    const map = [[1, 0, 0]];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+    const sprite = makeSprite(15, 5); // row 0, col 1
+
+    expect(() => pf.navigateTo(sprite, 5, 5, 100)).not.toThrow();
+  });
+});
+
+describe('navigateTo recompute cooldown', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('a repeated call with the same target cell does not recompute the path', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    pf.navigateTo(sprite, 25, 5, 100);
+    const findPathSpy = vi.spyOn(pf, '_findPath');
+
+    pf.navigateTo(sprite, 25, 5, 200); // same target cell, different speed
+
+    expect(findPathSpy).not.toHaveBeenCalled();
+  });
+
+  test('updates speed even when the path is not recomputed', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+
+    pf.navigateTo(sprite, 25, 5, 100);
+    pf.navigateTo(sprite, 25, 5, 250);
+
+    expect(pf._navState.get(sprite).speed).toBe(250);
+  });
+
+  test('a target-cell change before the cooldown elapses does not recompute', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    pf.navigateTo(sprite, 25, 5, 100); // target row 0, col 2
+
+    vi.spyOn(performance, 'now').mockReturnValue(1050); // 50ms later; default cooldown is 200ms
+    const findPathSpy = vi.spyOn(pf, '_findPath');
+    pf.navigateTo(sprite, 5, 25, 100); // different target: row 2, col 0
+
+    expect(findPathSpy).not.toHaveBeenCalled();
+  });
+
+  test('a target-cell change after the cooldown elapses recomputes the path', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    const sprite = makeSprite(5, 5);
+
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    pf.navigateTo(sprite, 25, 5, 100); // target row 0, col 2
+
+    vi.spyOn(performance, 'now').mockReturnValue(1300); // 300ms later
+    pf.navigateTo(sprite, 5, 25, 100); // different target: row 2, col 0
+
+    expect(pf._navState.get(sprite).targetRow).toBe(2);
+    expect(pf._navState.get(sprite).targetCol).toBe(0);
+  });
+});
+
+describe('setRecomputeInterval', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('defaults to 200ms', () => {
+    const pf = loadPathfinding();
+    expect(pf._recomputeInterval).toBe(200);
+  });
+
+  test('changes the cooldown used by navigateTo', () => {
+    const pf = loadPathfinding();
+    setupOpenGrid(pf);
+    pf.setRecomputeInterval(1000);
+    const sprite = makeSprite(5, 5);
+
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    pf.navigateTo(sprite, 25, 5, 100);
+
+    vi.spyOn(performance, 'now').mockReturnValue(1500); // 500ms later — under the new 1000ms cooldown
+    const findPathSpy = vi.spyOn(pf, '_findPath');
+    pf.navigateTo(sprite, 5, 25, 100); // different target
+
+    expect(findPathSpy).not.toHaveBeenCalled();
+  });
+});
