@@ -132,3 +132,49 @@ describe('_worldToCell / _gridOffset / _cellCenterWorld', () => {
     expect(pf._cellCenterWorld(0, 1)).toEqual({ x: 35, y: 5 });
   });
 });
+
+describe('_nearestWalkable', () => {
+  test('returns the same cell unchanged if it is already walkable', () => {
+    const pf = loadPathfinding();
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[0, 0], [0, 0]]) }), ['walls']);
+    expect(pf._nearestWalkable(0, 0)).toEqual({ row: 0, col: 0 });
+  });
+
+  test('finds the closest walkable cell by expanding rings outward', () => {
+    const pf = loadPathfinding();
+    const map = [
+      [0, 0, 0],
+      [0, 1, 0],
+      [0, 0, 0],
+    ];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+
+    const result = pf._nearestWalkable(1, 1);
+
+    expect(pf._isBlocked(result.row, result.col)).toBe(false);
+    // must be on the distance-1 ring around (1,1) — the nearest possible ring
+    expect(Math.max(Math.abs(result.row - 1), Math.abs(result.col - 1))).toBe(1);
+  });
+
+  test('returns null when the entire grid is blocked', () => {
+    const pf = loadPathfinding();
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[1, 1], [1, 1]]) }), ['walls']);
+    expect(pf._nearestWalkable(0, 0)).toBe(null);
+  });
+});
+
+describe('_resolveTargetCell', () => {
+  test('returns the target cell directly when walkable', () => {
+    const pf = loadPathfinding();
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer([[0, 0], [0, 0]]) }), ['walls']);
+    expect(pf._resolveTargetCell(5, 5)).toEqual({ row: 0, col: 0 });
+  });
+
+  test('snaps to the nearest walkable cell when the target is blocked', () => {
+    const pf = loadPathfinding();
+    const map = [[1, 0]];
+    pf.setupNavGrid(makeTileMapSet({ walls: makeLayer(map) }), ['walls']);
+    // world (5,5) -> col 0, row 0, which is blocked -> should snap to col 1
+    expect(pf._resolveTargetCell(5, 5)).toEqual({ row: 0, col: 1 });
+  });
+});

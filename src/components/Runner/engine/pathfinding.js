@@ -84,4 +84,28 @@ const _sbPathfinding = {
       y: offsetY + row * grid.tileH + grid.tileH / 2,
     };
   },
+
+  _nearestWalkable(row, col) {
+    const grid = this._navGrid;
+    if (!this._isBlocked(row, col)) return { row, col };
+    const maxRadius = Math.max(grid.rows, grid.cols);
+    for (let radius = 1; radius <= maxRadius; radius++) {
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          if (Math.max(Math.abs(dr), Math.abs(dc)) !== radius) continue;
+          const r = row + dr;
+          const c = col + dc;
+          if (r < 0 || r >= grid.rows || c < 0 || c >= grid.cols) continue;
+          if (!this._isBlocked(r, c)) return { row: r, col: c };
+        }
+      }
+    }
+    return null;
+  },
+
+  _resolveTargetCell(worldX, worldY) {
+    const cell = this._worldToCell(worldX, worldY);
+    if (!this._isBlocked(cell.row, cell.col)) return cell;
+    return this._nearestWalkable(cell.row, cell.col);
+  },
 };
