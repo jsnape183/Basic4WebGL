@@ -109,3 +109,68 @@ describe('TileMapEditor', () => {
     expect(onDirtyChange).toHaveBeenLastCalledWith('m1', false);
   });
 });
+
+describe('TileMapEditor — marker layers', () => {
+  test('adding a marker layer and painting a tag saves it in the new format', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'spawn' }] });
+  });
+
+  test('adding a marker layer does not disturb existing tile layer data on save', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.background).toEqual([[1, 1], [1, 1]]);
+    expect(decoded.layers.foreground).toEqual([[0, 0], [0, 0]]);
+  });
+
+  test('switching to a marker layer shows the tag picker instead of the tile palette', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    expect(screen.getByLabelText('New tag name')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tile 1')).not.toBeInTheDocument();
+  });
+
+  test('switching back to a tile layer shows the tile palette again', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.click(screen.getByText('background'));
+    expect(screen.getByLabelText('Eraser')).toBeInTheDocument();
+    expect(screen.queryByLabelText('New tag name')).not.toBeInTheDocument();
+  });
+
+  test('placing an eraser click on an already-marked cell removes the marker', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByLabelText('Eraser'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [] });
+  });
+
+  test('placing a second marker on an already-marked cell replaces the tag', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'pickup{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'pickup' }] });
+  });
+});
