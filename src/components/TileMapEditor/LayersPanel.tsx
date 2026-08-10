@@ -11,7 +11,7 @@ type Props = {
   layers: EditorLayer[];
   activeIndex: number;
   onSelect: (index: number) => void;
-  onAdd: (name: string) => void;
+  onAdd: (name: string, kind: 'tile' | 'marker') => void;
   onRename: (index: number, name: string) => void;
   onRemove: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
@@ -61,6 +61,11 @@ const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, onSelect, onR
       >
         ⠿
       </button>
+      {layer.kind === 'marker' && (
+        <span className="text-[9px] px-1 rounded bg-ds-surface-2 text-ds-text-dim uppercase tracking-wide mr-1 flex-shrink-0">
+          tag
+        </span>
+      )}
       {renaming ? (
         <input
           autoFocus
@@ -104,20 +109,34 @@ const LayersPanel: React.FC<Props> = ({ layers, activeIndex, onSelect, onAdd, on
     if (fromIndex !== -1 && toIndex !== -1) onReorder(fromIndex, toIndex);
   };
 
-  const handleAdd = () => {
+  const handleAdd = (kind: 'tile' | 'marker') => {
+    const prefix = kind === 'tile' ? 'layer' : 'markers';
     let n = 1;
-    let name = `layer${layers.length + n}`;
-    while (layers.some((l) => l.name === name)) { n += 1; name = `layer${layers.length + n}`; }
-    onAdd(name);
+    let name = `${prefix}${layers.length + n}`;
+    while (layers.some((l) => l.name === name)) { n += 1; name = `${prefix}${layers.length + n}`; }
+    onAdd(name, kind);
   };
 
   return (
     <div className="flex flex-col h-full p-2 gap-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-ds-text-dim">Layers</span>
-        <button onClick={handleAdd} aria-label="Add layer" className="text-ds-text-muted hover:text-ds-text transition text-sm leading-none">
-          +
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={() => handleAdd('tile')}
+            aria-label="Add tile layer"
+            className="text-ds-text-muted hover:text-ds-text transition text-sm leading-none px-1"
+          >
+            +
+          </button>
+          <button
+            onClick={() => handleAdd('marker')}
+            aria-label="Add marker layer"
+            className="text-ds-text-muted hover:text-ds-text transition text-[10px] leading-none px-1 border border-ds-border rounded"
+          >
+            +tag
+          </button>
+        </div>
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={layers.map((l) => l.key)} strategy={verticalListSortingStrategy}>
