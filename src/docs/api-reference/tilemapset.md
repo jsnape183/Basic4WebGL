@@ -93,7 +93,7 @@ Each `Marker` has two properties:
 | y        | number | World y position of the marker |
 
 ```bas
-dim spawnPoints = tileMapSet.markersByTag("spawn")
+dim spawnPoints = level.markersByTag("spawn")
 dim i
 for i = 0 to array.arrLength(spawnPoints) - 1
   dim point as Marker
