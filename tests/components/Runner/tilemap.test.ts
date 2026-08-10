@@ -233,3 +233,103 @@ describe('createTileMapSet — layers share the same frame-slice cache as create
     expect(set._layerContainers.bg._frames).toBe(tileMap._frames);
   });
 });
+
+describe('createTileMapSet — marker layers (no rendering, accumulated into handle._markers)', () => {
+  test('a marker layer produces no layer container and no rendered sprites', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: {
+        background: [[1, 1]],
+        spawns: { type: 'markers', markers: [{ row: 0, col: 1, tag: 'spawn' }] },
+      },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 256, 256) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(Object.keys(set._layerContainers)).toEqual(['background']);
+    expect(set._markers).toEqual([{ row: 0, col: 1, tag: 'spawn' }]);
+  });
+
+  test('an old-format file with only bare-array tile layers is completely unaffected', async () => {
+    const stm = { tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png', layers: { background: [[1, 0]] } };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 256, 256) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(Object.keys(set._layerContainers)).toEqual(['background']);
+    expect(set._markers).toEqual([]);
+  });
+
+  test('a file with multiple marker layers accumulates markers from all of them', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: {
+        spawns: { type: 'markers', markers: [{ row: 0, col: 0, tag: 'spawn' }] },
+        pickups: { type: 'markers', markers: [{ row: 1, col: 1, tag: 'pickup' }] },
+      },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 256, 256) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(set._markers).toEqual([
+      { row: 0, col: 0, tag: 'spawn' },
+      { row: 1, col: 1, tag: 'pickup' },
+    ]);
+  });
+});
+
+describe('markersByTag', () => {
+  test('returns world-space cell-center positions for every marker matching the tag', () => {
+    const { tileAt, markersByTag } = loadTilemap();
+    const handle = {
+      x: 0, y: 0, parent: null,
+      _tileW: 10, _tileH: 10,
+      _markers: [
+        { row: 0, col: 1, tag: 'spawn' },
+        { row: 2, col: 0, tag: 'spawn' },
+        { row: 1, col: 1, tag: 'pickup' },
+      ],
+    };
+    void tileAt; // unused in this describe block, imported for symmetry with other tests in this file
+
+    const results = markersByTag(handle, 'spawn');
+
+    expect(results).toEqual([
+      { x: 15, y: 5 },  // col 1, row 0 -> local center (15, 5)
+      { x: 5, y: 25 },  // col 0, row 2 -> local center (5, 25)
+    ]);
+  });
+
+  test('returns an empty array when no marker matches the tag', () => {
+    const { markersByTag } = loadTilemap();
+    const handle = { x: 0, y: 0, parent: null, _tileW: 10, _tileH: 10, _markers: [{ row: 0, col: 0, tag: 'spawn' }] };
+
+    expect(markersByTag(handle, 'nope')).toEqual([]);
+  });
+
+  test('accounts for the TileMapSet handle\'s own offset, same as tileAt', () => {
+    const worldContainer = {};
+    const { markersByTag } = loadTilemap(worldContainer);
+    const handle = { x: 20, y: 0, parent: worldContainer, _tileW: 10, _tileH: 10, _markers: [{ row: 0, col: 0, tag: 'spawn' }] };
+
+    // local center (5, 5) + offset (20, 0) = world (25, 5)
+    expect(markersByTag(handle, 'spawn')).toEqual([{ x: 25, y: 5 }]);
+  });
+});

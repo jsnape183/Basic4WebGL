@@ -72,15 +72,27 @@ const _sbTilemaps = {
     const tileH = Number(data.tileHeight);
     const frames = _sbAssets.getSlices(data.tileImage, tileW, tileH);
 
-    // One wrapping container holds every layer as a child, in file order —
-    // this is the object handed back as TileMapSet's own `_handle`, so it
-    // plugs into `world.add`/`world.remove` exactly like Sprite/TileMap do
-    // (no auto-render at construction; the softBASIC caller decides when and
-    // whether to add it, same as every other renderable).
+    // One wrapping container holds every tile layer as a child, in file
+    // order — this is the object handed back as TileMapSet's own `_handle`,
+    // so it plugs into `world.add`/`world.remove` exactly like Sprite/TileMap
+    // do (no auto-render at construction; the softBASIC caller decides when
+    // and whether to add it, same as every other renderable).
     const handle = new PIXI.Container();
     const layerContainers = {};
+    const markers = [];
     for (const name of Object.keys(data.layers)) {
-      const layerData = data.layers[name];
+      const layerValue = data.layers[name];
+      if (!Array.isArray(layerValue)) {
+        // Marker layer: never rendered, no PIXI.Container child — just
+        // accumulate its entries into the set-level marker list, which
+        // markersByTag searches across every marker layer at once (not
+        // scoped to one named layer).
+        for (const m of layerValue.markers) {
+          markers.push({ row: m.row, col: m.col, tag: m.tag });
+        }
+        continue;
+      }
+      const layerData = layerValue;
       const container = new PIXI.Container();
       container._tileW = tileW;
       container._tileH = tileH;
@@ -101,6 +113,9 @@ const _sbTilemaps = {
       handle.addChild(container);
     }
     handle._layerContainers = layerContainers;
+    handle._markers = markers;
+    handle._tileW = tileW;
+    handle._tileH = tileH;
 
     return handle;
   },
@@ -120,5 +135,31 @@ const _sbTilemaps = {
   tileAtInSet(setHandle, name, worldX, worldY) {
     const layer = this.getTileMapSetLayer(setHandle, name);
     return this.tileAt(layer, worldX, worldY);
+  },
+
+  // Searches every marker layer in the set at once (markers aren't
+  // partitioned by which named layer they came from — that's a level-
+  // authoring organization detail, not a query dimension). Reuses the exact
+  // same ancestor-offset-walking technique tileAt already uses, so if the
+  // TileMapSet's own .transform moves the whole map, returned positions move
+  // with it, matching tileAt's existing offset contract.
+  markersByTag(setHandle, tag) {
+    let offsetX = 0;
+    let offsetY = 0;
+    let node = setHandle;
+    while (node && node !== worldContainer && node !== hudContainer) {
+      offsetX += node.x;
+      offsetY += node.y;
+      node = node.parent;
+    }
+    const results = [];
+    for (const m of setHandle._markers) {
+      if (m.tag !== tag) continue;
+      results.push({
+        x: offsetX + m.col * setHandle._tileW + setHandle._tileW / 2,
+        y: offsetY + m.row * setHandle._tileH + setHandle._tileH / 2,
+      });
+    }
+    return results;
   },
 };
