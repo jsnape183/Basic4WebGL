@@ -75,6 +75,34 @@ function onupdate()
 endfunction
 ```
 
+## markersByTag(tag)
+
+Finds every marker with the given tag, painted anywhere in this tilemap using the Tilemap Editor's marker tool. Useful for placing things like enemy spawn points or item pickups visually while designing a level, instead of hardcoding their positions in code.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| tag       | string | The tag to search for |
+
+**Returns:** Array of `Marker` objects. Returns an empty array (length 0) if no marker has that tag.
+
+Each `Marker` has two properties:
+
+| Property | Type   | Description |
+|----------|--------|-------------|
+| x        | number | World x position of the marker |
+| y        | number | World y position of the marker |
+
+```bas
+dim spawnPoints = tileMapSet.markersByTag("spawn")
+dim i
+for i = 0 to array.arrLength(spawnPoints) - 1
+  dim point as Marker
+  point = spawnPoints(i)
+  dim enemy = new Enemy(point.x, point.y)
+  world.add(enemy)
+next i
+```
+
 ## transform
 
 Position is controlled through `.transform` — see [ObjectTransform](objecttransform). This moves **every layer together**, useful for placing the whole map at a world position, or scrolling it as one piece. `tileAt` — both `tilemapset.tileAt(name, x, y)` above and `tilemaplayer.tileAt(x, y)` on a layer from `layer(name)` — always accounts for this offset, so tile lookups stay correct after moving the map.
