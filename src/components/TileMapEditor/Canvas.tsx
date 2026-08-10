@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { CELL_SIZE } from './constants';
+import { usePaintDrag } from './usePaintDrag';
 
 type Props = {
   layerData: number[][];
@@ -9,14 +10,7 @@ type Props = {
 };
 
 const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell }) => {
-  const [isPainting, setIsPainting] = useState(false);
-
-  useEffect(() => {
-    const stop = () => setIsPainting(false);
-    window.addEventListener('mouseup', stop);
-    return () => window.removeEventListener('mouseup', stop);
-  }, []);
-
+  const { startPaint, continuePaint } = usePaintDrag(onPaintCell);
   const cols = layerData[0]?.length ?? 0;
 
   return (
@@ -32,8 +26,8 @@ const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell }) => {
               key={`${row}-${col}`}
               role="gridcell"
               aria-label={`Row ${row}, Column ${col}`}
-              onMouseDown={() => { setIsPainting(true); onPaintCell(row, col); }}
-              onMouseEnter={() => { if (isPainting) onPaintCell(row, col); }}
+              onMouseDown={() => startPaint(row, col)}
+              onMouseEnter={() => continuePaint(row, col)}
               className="border border-ds-border hover:ring-2 hover:ring-inset hover:ring-ds-accent"
               style={{
                 width: CELL_SIZE,
