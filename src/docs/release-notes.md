@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.6.8 — 2026-08-10
+
+### New: pathfinding
+
+- New `pathfinding` module lets sprites navigate around obstacles instead of moving in a straight line. `pathfinding.setup(tileMapSet, blockingLayers)` builds a navigation grid from whichever layers you flag as solid; `pathfinding.navigateTo(sprite, x, y, speed)` moves a sprite toward a target while routing around walls — safe and cheap to call every frame, even with a moving target like a chasing player. `isNavigating(sprite)` and `stopNavigating(sprite)` round out the API
+
+### New: array literals
+
+- Arrays can now be written inline as `{1, 2, 3}` (or `{"walls", "obstacles"}`) directly in an expression, including as a function-call argument — no need to declare with `dim arr(N)` and build it up with repeated `array.push` calls first
+
 ## v0.6.7 — 2026-08-06
 
 ### Fixes
