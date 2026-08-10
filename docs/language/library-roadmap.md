@@ -44,7 +44,7 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
 | `TileMap` *(class)* | `constructor(tilesetPath, tileW, tileH)` `load(jsonPath)` `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` |
-| `TileMapSet` *(class)* | `constructor(stmPath)` — loads a multi-layer `.stm` file (does not render on its own — call `world.add(tm)`, same as `Sprite`/`TileMap`); `layer(name)` returns the named layer as a `TileMapLayer`; `tileAt(name,x,y)` looks up a layer and queries it in one call; `transform` moves every layer together as one unit and is correctly accounted for by `tileAt` on either the set or an individual layer |
+| `TileMapSet` *(class)* | `constructor(stmPath)` — loads a multi-layer `.stm` file (does not render on its own — call `world.add(tm)`, same as `Sprite`/`TileMap`); `layer(name)` returns the named layer as a `TileMapLayer`; `tileAt(name,x,y)` looks up a layer and queries it in one call; `markersByTag(tag)` returns every `Marker` painted with that tag anywhere in the set, as an array of `{x,y}` positions; `transform` moves every layer together as one unit and is correctly accounted for by `tileAt`/`markersByTag` on either the set or an individual layer |
 | `TileMapLayer` *(class)* | `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` — same shape as `TileMap`, returned from `TileMapSet.layer(name)` rather than constructed directly |
 | `Text` *(class)* | `constructor(content,x,y)` `setText` `setPosition` `setAlpha` `setStyle(size,r,g,b)` `setFont(fontFamily)` `setAlign(align)` |
 | `Audio` *(class)* | `constructor(soundPath)` `play()` `playLoop()` `stop()` `setVolume(v)` `isPlaying()` |
@@ -234,6 +234,19 @@ Nav state resets alongside camera state in `stage.js`'s `clear()` (`this._pathfi
 **Not built:** shared flow-field/Dijkstra-map optimization for many-agents-to-one-target (every sprite computes its own path independently, bounded by the recompute cooldown); dynamic obstacle avoidance (other sprites don't block computed paths, only the tilemap does); per-tile-ID blocking within a flagged layer (whole-layer only).
 
 Design spec: `docs/superpowers/specs/2026-08-07-pathfinding-design.md`. Tests: `tests/components/Runner/pathfinding.test.ts`, `tests/components/Runner/scene.test.ts`, `tests/components/Runner/stage.test.ts`, `tests/lib/Basic4WebGL/unit/transpiler/pathfinding.test.ts`. Docs: `src/docs/api-reference/pathfinding.md`.
+
+### ~~P14 — Tilemap markers~~ **[DONE]**
+Shipped as a new `.stm` layer kind (`{ type: "markers", markers: [{row, col, tag}] }`, additive and fully backward-compatible with every existing bare-array tile layer) plus a new `TileMapSet.markersByTag(tag)` query and `Marker` class (`marker.bas`, mirroring `rayhit`'s existing bare-data-class pattern). Built to unblock the upcoming bullet-hell shooter demo's mob-spawn-point and weapon-pickup-point level authoring — the whole point is that a level designer places these visually in the Tilemap Editor rather than scanning tile IDs by convention or hardcoding coordinates in `.bas` files.
+
+A marker layer never renders (`createTileMapSet` skips it entirely in the sprite-placement loop) and isn't wrapped in a `TileMapLayer`-style class, since markers aren't tile-lookup-shaped — `markersByTag` searches across every marker layer in the set at once, not scoped to one named layer, keeping the softBASIC-facing API to a single new method. Marker positions correctly account for the `TileMapSet`'s own `.transform` offset, reusing the same ancestor-walk `tileAt` already uses.
+
+The Tilemap Editor's `EditorLayer` type became a discriminated union (`kind: 'tile' | 'marker'`) so marker layers show up in the existing Layers panel — same add/rename/remove/reorder UI, no new panel built from scratch. A new `MarkerCanvas`/`TagPicker` component pair swaps in for the tile `Canvas`/`Palette` when a marker layer is active (full-cell colour tint per tag, chip-list tag picker with a free-text new-tag input); both canvases now share a `usePaintDrag` hook rather than duplicating the drag-paint interaction.
+
+This is a deliberate, scoped re-opening of the tile-metadata non-goal recorded when `TileMapSet` and the Tilemap Editor originally shipped (Milestone 12) — "`.stm` stores tile IDs only" / "no tile-property metadata" — not a silent scope change.
+
+**Not built:** per-marker structured data beyond the tag string (no key/value payloads); marker-layer-scoped queries (`markersByTag` always searches the whole set); runtime marker mutation (markers are level-authoring-time data baked into the `.stm` file, not a live game-state concept — a game tracking "this spawn point is destroyed" does so in its own game logic).
+
+Design spec: `docs/superpowers/specs/2026-08-10-tilemap-markers-design.md`. Tests: `tests/components/Runner/tilemap.test.ts`, `tests/lib/Basic4WebGL/unit/transpiler/tilemapset.test.ts`, `tests/ui/components/TileMapEditor/` (`stmCodec`, `usePaintDrag`, `tagColor`, `MarkerCanvas`, `TagPicker`, `LayersPanel`, `TileMapEditor`). Docs: `src/docs/api-reference/tilemapset.md`.
 
 ## Lower Priority / Future
 
