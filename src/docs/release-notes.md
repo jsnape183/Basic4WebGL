@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.9 — 2026-08-10
+
+### New: tilemap markers
+
+- The Tilemap Editor can now paint tagged position markers (like "spawn" or "pickup") directly onto a level, as a new kind of layer alongside your regular tile layers. Query them from your game with `tileMapSet.markersByTag(tag)`, which returns every matching marker as an array of `Marker` objects with `x`/`y` positions — perfect for placing enemy spawn points or item pickups visually instead of hardcoding coordinates in code
+
 ## v0.6.8 — 2026-08-10
 
 ### New: pathfinding
