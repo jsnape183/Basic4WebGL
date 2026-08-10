@@ -6,24 +6,20 @@ import { AppDispatch, RootState } from '../../store';
 import { useTilesetSlices } from './useTilesetSlices';
 import Palette from './Palette';
 import TileMapCanvas from './Canvas';
-import LayersPanel, { EditorLayer } from './LayersPanel';
+import LayersPanel from './LayersPanel';
+import { StmDoc, EditorLayer, MarkerEntry } from './types';
 
 type Props = {
   asset: IAsset;
   onDirtyChange?: (assetId: string, dirty: boolean) => void;
 };
 
-type StmDoc = {
-  tileWidth: number;
-  tileHeight: number;
-  tileImage: string;
-  layers: EditorLayer[];
-};
+type StmLayerValue = number[][] | { type: 'markers'; markers: MarkerEntry[] };
 
-function decodeStmContent(content: string): StmDoc {
+export function decodeStmContent(content: string): StmDoc {
   const comma = content.indexOf(',');
   const raw = comma === -1 ? '{}' : decodeURIComponent(escape(atob(content.slice(comma + 1))));
-  let parsed: { tileWidth?: number; tileHeight?: number; tileImage?: string; layers?: Record<string, number[][]> };
+  let parsed: { tileWidth?: number; tileHeight?: number; tileImage?: string; layers?: Record<string, StmLayerValue> };
   try {
     parsed = JSON.parse(raw);
   } catch {
@@ -34,16 +30,22 @@ function decodeStmContent(content: string): StmDoc {
     tileWidth: parsed.tileWidth ?? 16,
     tileHeight: parsed.tileHeight ?? 16,
     tileImage: parsed.tileImage ?? '',
-    layers: layerEntries.map(([name, data]) => ({ key: crypto.randomUUID(), name, data })),
+    layers: layerEntries.map(([name, value]): EditorLayer =>
+      Array.isArray(value)
+        ? { key: crypto.randomUUID(), name, kind: 'tile', data: value }
+        : { key: crypto.randomUUID(), name, kind: 'marker', markers: value.markers }
+    ),
   };
 }
 
-function encodeStmContent(doc: StmDoc, originalContent: string): string {
+export function encodeStmContent(doc: StmDoc, originalContent: string): string {
   const mime = originalContent.startsWith('data:')
     ? originalContent.slice(5, originalContent.indexOf(';'))
     : 'application/json';
-  const layers: Record<string, number[][]> = {};
-  doc.layers.forEach((l) => { layers[l.name] = l.data; });
+  const layers: Record<string, StmLayerValue> = {};
+  doc.layers.forEach((l) => {
+    layers[l.name] = l.kind === 'tile' ? l.data : { type: 'markers', markers: l.markers };
+  });
   const json = JSON.stringify({
     tileWidth: doc.tileWidth,
     tileHeight: doc.tileHeight,
@@ -82,12 +84,12 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const activeLayer = draftDoc.layers[activeIndex];
 
   const handlePaintCell = (row: number, col: number) => {
-    if (!activeLayer) return;
+    if (!activeLayer || activeLayer.kind !== 'tile') return;
     const tileId = selectedTile ?? 0;
     setDraftDoc((prev) => ({
       ...prev,
       layers: prev.layers.map((l, i) => {
-        if (i !== activeIndex) return l;
+        if (i !== activeIndex || l.kind !== 'tile') return l;
         const newData = l.data.map((r) => r.slice());
         newData[row][col] = tileId;
         return { ...l, data: newData };
@@ -97,10 +99,10 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   };
 
   const handleAddLayer = (name: string) => {
-    const rows = activeLayer?.data.length ?? 1;
-    const cols = activeLayer?.data[0]?.length ?? 1;
+    const rows = activeLayer?.kind === 'tile' ? activeLayer.data.length : 1;
+    const cols = activeLayer?.kind === 'tile' ? activeLayer.data[0]?.length ?? 1 : 1;
     const data = Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
-    setDraftDoc((prev) => ({ ...prev, layers: [...prev.layers, { key: crypto.randomUUID(), name, data }] }));
+    setDraftDoc((prev) => ({ ...prev, layers: [...prev.layers, { key: crypto.randomUUID(), name, kind: 'tile', data }] }));
   };
 
   const handleRenameLayer = (index: number, name: string) => {
@@ -156,7 +158,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           </button>
         </div>
         <div className="flex-1 min-h-0">
-          <TileMapCanvas layerData={activeLayer?.data ?? []} slices={slices} onPaintCell={handlePaintCell} />
+          <TileMapCanvas layerData={activeLayer?.kind === 'tile' ? activeLayer.data : []} slices={slices} onPaintCell={handlePaintCell} />
         </div>
       </div>
       <div className="w-48 flex-shrink-0 border-l border-ds-border">

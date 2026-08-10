@@ -3,7 +3,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, vi } from 'vitest';
-import LayersPanel, { EditorLayer } from '../../../../src/components/TileMapEditor/LayersPanel';
+import LayersPanel from '../../../../src/components/TileMapEditor/LayersPanel';
+import { EditorLayer } from '../../../../src/components/TileMapEditor/types';
 
 // dnd-kit uses ResizeObserver internally — polyfill for jsdom
 global.ResizeObserver = class ResizeObserver {
@@ -13,8 +14,8 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 const makeLayers = (): EditorLayer[] => [
-  { key: 'k1', name: 'background', data: [[0]] },
-  { key: 'k2', name: 'foreground', data: [[0]] },
+  { key: 'k1', name: 'background', kind: 'tile', data: [[0]] },
+  { key: 'k2', name: 'foreground', kind: 'tile', data: [[0]] },
 ];
 
 describe('LayersPanel', () => {

@@ -5,8 +5,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-export type EditorLayer = { key: string; name: string; data: number[][] };
+import { EditorLayer } from './types';
 
 type Props = {
   layers: EditorLayer[];
