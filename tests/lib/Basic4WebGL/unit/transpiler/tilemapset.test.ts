@@ -7,6 +7,7 @@ const transformSource    = readFileSync('src/lib/Basic4WebGL/defs/transform.bas'
 const tileMapLayerSource = readFileSync('src/lib/Basic4WebGL/defs/tilemaplayer.bas', 'utf-8');
 const tileMapSetSource   = readFileSync('src/lib/Basic4WebGL/defs/tilemapset.bas',   'utf-8');
 const worldSource        = readFileSync('src/lib/Basic4WebGL/defs/world.bas',        'utf-8');
+const markerSource       = readFileSync('src/lib/Basic4WebGL/defs/marker.bas',       'utf-8');
 
 const transpileWithTileMapSet = (source: string) =>
   compiler.transpile({
@@ -15,6 +16,7 @@ const transpileWithTileMapSet = (source: string) =>
       { name: 'ObjectTransform.bas', source: transformSource    },
       { name: 'TileMapLayer.bas',    source: tileMapLayerSource },
       { name: 'TileMapSet.bas',      source: tileMapSetSource   },
+      { name: 'Marker.bas',          source: markerSource       },
       { name: 'Main.bas',            source                     },
     ],
   });
@@ -193,6 +195,47 @@ describe('TileMapSet — end-to-end', () => {
     if (result.diagnostics.length > 0) {
       console.log('DIAGNOSTICS:', JSON.stringify(result.diagnostics, null, 2));
     }
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});
+
+// ─── markersByTag ───────────────────────────────────────────────────────────
+
+describe('TileMapSet — markersByTag', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim spawnPoints',
+      '  spawnPoints = tm.markersByTag("spawn")',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.markersByTag(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim spawnPoints',
+      '  spawnPoints = tm.markersByTag("spawn")',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.markersByTag(');
+  });
+});
+
+describe('Marker — field access', () => {
+  test('m.x and m.y property access compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim m as Marker',
+      '  dim px',
+      '  dim py',
+      '  px = m.x',
+      '  py = m.y',
+      'endfunction',
+    ].join('\n'));
     expect(result.diagnostics).toHaveLength(0);
   });
 });
