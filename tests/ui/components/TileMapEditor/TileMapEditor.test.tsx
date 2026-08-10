@@ -1,6 +1,6 @@
 // tests/ui/components/TileMapEditor/TileMapEditor.test.tsx
 // @vitest-environment jsdom
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { Provider } from 'react-redux';
@@ -172,5 +172,57 @@ describe('TileMapEditor — marker layers', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
     const decoded = decodeContent(store.getState().assets.byId['m1'].content);
     expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'pickup' }] });
+  });
+
+  test('a saved marker layer survives closing and reopening the asset, and stays editable', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    const saved = store.getState().assets.byId['m1'];
+    expect(decodeContent(saved.content).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [{ row: 0, col: 1, tag: 'spawn' }],
+    });
+
+    // Simulate closing and reopening the asset: unmount the current editor
+    // entirely and mount a fresh TileMapEditor instance whose `asset` prop is
+    // the just-saved asset object read back from the store. This forces a
+    // real decode -> render cycle from the saved content (the component's
+    // lazy useState initializer re-runs decodeStmContent on the new asset),
+    // rather than continuing to edit the same in-memory draft state.
+    cleanup();
+    render(
+      <Provider store={store}>
+        <TileMapEditor asset={saved} onDirtyChange={vi.fn()} />
+      </Provider>
+    );
+
+    // The marker layer survived the round trip and shows up in the Layers panel.
+    expect(screen.getByText('markers3')).toBeInTheDocument();
+
+    // Selecting it re-derives the tag picker from the decoded markers, and
+    // the previously-saved marker is still painted at the correct cell.
+    await userEvent.click(screen.getByText('markers3'));
+    expect(screen.getByLabelText('Tag spawn')).toBeInTheDocument();
+    expect(screen.getByLabelText('Row 0, Column 1')).toHaveAttribute('title', 'spawn');
+
+    // It's genuinely editable, not a frozen snapshot: painting an additional
+    // marker and saving again works and preserves the reloaded one.
+    await userEvent.type(screen.getByLabelText('New tag name'), 'pickup{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 1, Column 0'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.markers3).toEqual({
+      type: 'markers',
+      markers: [
+        { row: 0, col: 1, tag: 'spawn' },
+        { row: 1, col: 0, tag: 'pickup' },
+      ],
+    });
   });
 });
