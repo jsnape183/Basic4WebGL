@@ -90,3 +90,9 @@ describe('Demo: Collect the Coins: A Platformer', () => {
     runDemo('demo-coins-platformer', 'src/docs/demos/CoinsPlatformer.b4wgl.json', 4000);
   });
 });
+
+describe('Demo: Bullet-Hell Shooter', () => {
+  it('runs without runtime errors', () => {
+    runDemo('demo-bullet-hell-shooter', 'src/docs/demos/BulletHellShooter.b4wgl.json', 4000);
+  });
+});
