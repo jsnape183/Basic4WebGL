@@ -18,18 +18,20 @@ Constructor(x, y, targetRef as sprite)
 EndConstructor
 
 function onupdate(delta)
-  dim dt
-  dt = delta / 1000
-  pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
+  if not self.dead then
+    dim dt
+    dt = delta / 1000
+    pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
 
-  if self.damageCooldown > 0 then
-    self.damageCooldown = self.damageCooldown - dt
-  endif
+    if self.damageCooldown > 0 then
+      self.damageCooldown = self.damageCooldown - dt
+    endif
 
-  if collision.spriteCollide(self, self.chaseTarget) then
-    if self.damageCooldown <= 0 then
-      self.chaseTarget.takeDamage(10)
-      self.damageCooldown = 0.5
+    if collision.spriteCollide(self, self.chaseTarget) then
+      if self.damageCooldown <= 0 then
+        self.chaseTarget.takeDamage(10)
+        self.damageCooldown = 0.5
+      endif
     endif
   endif
 endfunction
