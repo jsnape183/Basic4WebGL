@@ -132,8 +132,8 @@ function onupdate(delta)
 
   self.transform.setPosition(x, y)
 
-  mouseWorldX = input.mouseX() + camera.x()
-  mouseWorldY = input.mouseY() + camera.y()
+  mouseWorldX = input.mouseX() / camera.zoom() + camera.x()
+  mouseWorldY = input.mouseY() / camera.zoom() + camera.y()
   aimAngle = math.atan2(mouseWorldY - y, mouseWorldX - x)
   self.setAngle(aimAngle * 180 / math.pi())
 
