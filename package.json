@@ -13,6 +13,7 @@
     "test:ci": "vitest run --coverage",
     "generate:library": "vite-node scripts/generateLibrary.ts",
     "build:demo": "vite-node scripts/buildDemo.ts",
+    "check:demo": "vite-node scripts/demoBuilder/checkCompile.ts",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
