@@ -1,5 +1,5 @@
 Class
-Extends sprite
+Extends animatedsprite
 
 dim hp
 dim level
@@ -12,8 +12,13 @@ dim flickerTimer
 dim visibleFlag
 
 Constructor(x, y)
-  super("player.png")
+  super("player.png", 16, 16)
   self.transform.setPosition(x, y)
+  self.addAnim("stand", 0, 0, 1, true)
+  self.addAnim("pistol", 1, 1, 1, true)
+  self.addAnim("machinegun", 2, 2, 1, true)
+  self.addAnim("shotgun", 3, 3, 1, true)
+  self.play("stand")
   self.hp = 100
   self.currentWeapon = "pistol"
   self.fireCooldown = 0
@@ -90,6 +95,8 @@ function onupdate(delta)
   dim mouseWorldY
   dim aimAngle
   dim firing
+  dim moving
+  dim animName
 
   dt = delta / 1000
   x = self.transform.x()
@@ -155,6 +162,24 @@ function onupdate(delta)
   if firing and self.fireCooldown <= 0 then
     self.doFire(aimAngle)
     self.fireCooldown = self.fireCooldownFor(self.currentWeapon)
+  endif
+
+  moving = (moveX <> 0) or (moveY <> 0)
+
+  if moving or firing then
+    if self.currentWeapon = "shotgun" then
+      animName = "shotgun"
+    elseif self.currentWeapon = "smg" then
+      animName = "machinegun"
+    else
+      animName = "pistol"
+    endif
+  else
+    animName = "stand"
+  endif
+
+  if not self.isPlaying(animName) then
+    self.play(animName)
   endif
 endfunction
 
