@@ -57,14 +57,14 @@ endfunction
 function setupHud()
   dim bg as sprite
   bg = new sprite("healthbar_bg.png")
-  bg.setPosition(20, 20)
+  bg.transform.setPosition(20, 20)
   bg.setScale(100, 14)
   hud.add(bg)
   self.hpBg = bg
 
   dim fill as sprite
   fill = new sprite("healthbar_fill.png")
-  fill.setPosition(20, 20)
+  fill.transform.setPosition(20, 20)
   fill.setScale(100, 14)
   hud.add(fill)
   self.hpFill = fill
@@ -102,6 +102,9 @@ function onupdate(delta)
   gamedata.setLevelTime(0, t)
 
   self.hpFill.setScale(100 * (self.player.getHp() / 100), 14)
+  self.weaponLabel.setText(self.player.getCurrentWeapon())
+  self.spawnLabel.setText("Spawns: " + string.str(levelhelpers.spawnPointsRemaining(self.spawnPoints)))
+  self.timerLabel.setText(levelhelpers.formatTime(t))
 
   levelhelpers.checkPickupCollisions(self.player, self.pickups)
 

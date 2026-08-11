@@ -53,3 +53,27 @@ function checkPickupCollisions(player as player, pickups() as weaponpickup)
     endif
   next i
 endfunction
+
+function spawnPointsRemaining(spawnPoints() as spawnpoint)
+  dim i
+  dim count
+  count = 0
+  for i = 0 to array.arrLength(spawnPoints) - 1
+    if not spawnPoints(i).destroyed then
+      count = count + 1
+    endif
+  next i
+  return count
+endfunction
+
+function formatTime(totalSeconds)
+  dim minutes
+  dim secs
+  dim minStr
+  dim secStr
+  minutes = math.floor(totalSeconds / 60)
+  secs = math.floor(totalSeconds - minutes * 60)
+  minStr = string.padstart(string.str(minutes), 2, "0")
+  secStr = string.padstart(string.str(secs), 2, "0")
+  return minStr + ":" + secStr
+endfunction

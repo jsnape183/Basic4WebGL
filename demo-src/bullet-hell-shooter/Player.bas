@@ -32,6 +32,10 @@ function getHp()
   return self.hp
 endfunction
 
+function getCurrentWeapon()
+  return self.currentWeapon
+endfunction
+
 function takeDamage(amount)
   if self.invincibleTime <= 0 then
     self.hp = self.hp - amount
