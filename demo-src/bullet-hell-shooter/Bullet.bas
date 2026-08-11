@@ -10,7 +10,7 @@ dim level as tilemapset
 dim spawnPoints() as spawnpoint
 dim mobs() as mob
 
-Constructor(x, y, angle, weaponType, levelRef as tilemapset, spawnPointsRef() as spawnpoint, mobsRef() as mob)
+Constructor(x, y, angle, weaponType, levelRef, spawnPointsRef, mobsRef)
   super("bullet.png")
   self.transform.setPosition(x, y)
   self.setAngle(angle * 180 / math.pi())

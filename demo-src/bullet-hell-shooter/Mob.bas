@@ -7,7 +7,7 @@ dim chaseTarget as sprite
 dim damageCooldown
 dim speed
 
-Constructor(x, y, targetRef as sprite)
+Constructor(x, y, targetRef)
   super("mob.png")
   self.transform.setPosition(x, y)
   self.hp = 20
