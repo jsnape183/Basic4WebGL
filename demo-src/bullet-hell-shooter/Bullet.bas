@@ -10,6 +10,9 @@ dim level as tilemapset
 dim spawnPoints() as spawnpoint
 dim mobs() as mob
 
+' Do not type levelRef/spawnPointsRef/mobsRef here -- a typed Constructor
+' parameter compiles clean but emits invalid JS (this.paramName as a param
+' name). The fields' own typing above is enough for dotted access below.
 Constructor(x, y, angle, weaponType, levelRef, spawnPointsRef, mobsRef)
   super("bullet.png")
   self.transform.setPosition(x, y)
