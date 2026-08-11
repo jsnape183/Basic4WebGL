@@ -692,6 +692,7 @@ function onenter()
 
   p.setLevel(tm, self.spawnPoints, self.mobs)
 
+  camera.setZoom(2)
   camera.follow(p, 0.1)
 
   self.setupHud()
@@ -824,6 +825,7 @@ function onenter()
 
   p.setLevel(tm, self.spawnPoints, self.mobs)
 
+  camera.setZoom(2)
   camera.follow(p, 0.1)
 
   self.setupHud()
@@ -956,6 +958,7 @@ function onenter()
 
   p.setLevel(tm, self.spawnPoints, self.mobs)
 
+  camera.setZoom(2)
   camera.follow(p, 0.1)
 
   self.setupHud()
