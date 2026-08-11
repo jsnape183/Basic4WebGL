@@ -8,6 +8,7 @@ Constructor()
 EndConstructor
 
 function onenter()
+  gamedata.loadBestTime()
   world.setBackground(10, 10, 20)
   dim t1 as text
   t1 = new text("BULLET HELL", 300, 200)

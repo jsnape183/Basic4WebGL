@@ -10,11 +10,11 @@ Each level (`Level1Scene`, `Level2Scene`, `Level3Scene`) loads its own `.stm` ti
 
 Mobs are **pathfinding-driven**: each level calls `pathfinding.setup(tilemapset, wallLayers)` once in `onenter()`, and every `Mob` then calls `pathfinding.navigateTo(self, targetX, targetY, speed)` every frame, so mobs route around walls to chase the player instead of walking straight through them. Spawn points periodically create new mobs until destroyed; each hit from a bullet reduces a spawn point's HP, and at zero it swaps its texture to `spawnpoint_destroyed.png` and stops spawning.
 
-The player aims with the mouse — `math.atan2` between the player's world position and the mouse's world position (`input.mouseX() + camera.x()`, accounting for camera scroll) gives the aim angle, which also drives the sprite's rotation via `setAngle()`. Firing (left click or spacebar) is gated by a per-weapon cooldown. There are three weapons, picked up via `WeaponPickup` markers: **pistol** (moderate rate, single shot), **shotgun** (slow rate, five-bullet spread fired in a fan), and **SMG** (fast rate, single shot). Each spawned `Bullet` carries its own damage, speed, and lifetime based on which weapon fired it, and despawns on hitting a wall, a spawn point, a mob, or timing out.
+The player aims with the mouse — `math.atan2` between the player's world position and the mouse's world position (`input.mouseX() / camera.zoom() + camera.x()`, accounting for both camera scroll and zoom) gives the aim angle, which also drives the sprite's rotation via `setAngle()`. Firing (left click or spacebar) is gated by a per-weapon cooldown. There are three weapons, picked up via `WeaponPickup` markers: **pistol** (moderate rate, single shot), **shotgun** (slow rate, five-bullet spread fired in a fan), and **SMG** (fast rate, single shot). Each spawned `Bullet` carries its own damage, speed, and lifetime based on which weapon fired it, and despawns on hitting a wall, a spawn point, a mob, or timing out.
 
 The HUD (health bar, current weapon, spawns remaining, level timer) is built from `sprite` and `text` instances added with `hud.add()` — deliberately not `drawing`, which draws into camera-relative world space and would scroll off screen as the player moves. Each level tracks its own clear time in a shared `GameData` module; on reaching `WinScene`, the three times are summed and compared against a **personal best** persisted with `save.set(...)`, so it survives a page reload. Taking damage down to zero HP at any point switches to `GameOverScene`, which resets the level times and sends the player back to level 1.
 
-A couple of language quirks around typed Constructor parameters and Constructor-scope locals were found and worked around during development — see the code comments in `Mob.bas` and `Bullet.bas` below for the specifics.
+A few language and engine quirks were found and worked around during development — around typed Constructor parameters, Constructor-scope locals, and when it's safe to set module-level state from `oninit()` — see the code comments in `Mob.bas`, `Bullet.bas`, and `Main.bas`/`TitleScene.bas` below for the specifics.
 
 **Key techniques:** `pathfinding.navigateTo` for obstacle-avoiding enemy movement, `tileMapSet.markersByTag` for visually-authored spawn/pickup placement, per-weapon `Bullet` parameterization, HUD built from `sprite`/`text` instances added via `hud.add()`.
 
@@ -623,6 +623,7 @@ Constructor()
 EndConstructor
 
 function onenter()
+  gamedata.loadBestTime()
   world.setBackground(10, 10, 20)
   dim t1 as text
   t1 = new text("BULLET HELL", 300, 200)
@@ -1111,9 +1112,14 @@ EndClass
 
 ```bas
 ' demo-src/bullet-hell-shooter/Main.bas
+' Do not call gamedata.loadBestTime() from here -- oninit() runs before
+' every module's own deferred top-level statements (see bootstrapper.html),
+' so GameData.bas's own "dim bestTime" initializer would run right after
+' this and silently reset gamedata.bestTime back to undefined, clobbering
+' whatever loadBestTime() just set. It's called from TitleScene.onenter()
+' instead, which is guaranteed to run after that deferred init completes.
 function oninit()
   world.setPixelPerfect(true)
-  gamedata.loadBestTime()
 endfunction
 
 dim titlescene = new TitleScene()

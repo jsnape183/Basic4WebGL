@@ -1,7 +1,12 @@
 ' demo-src/bullet-hell-shooter/Main.bas
+' Do not call gamedata.loadBestTime() from here -- oninit() runs before
+' every module's own deferred top-level statements (see bootstrapper.html),
+' so GameData.bas's own "dim bestTime" initializer would run right after
+' this and silently reset gamedata.bestTime back to undefined, clobbering
+' whatever loadBestTime() just set. It's called from TitleScene.onenter()
+' instead, which is guaranteed to run after that deferred init completes.
 function oninit()
   world.setPixelPerfect(true)
-  gamedata.loadBestTime()
 endfunction
 
 dim titlescene = new TitleScene()
