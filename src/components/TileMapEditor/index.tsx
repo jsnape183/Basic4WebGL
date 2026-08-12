@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { IAsset, updateAsset } from '../../features/assets/assetsSlice';
 import { AppDispatch, RootState } from '../../store';
 import { useTilesetSlices } from './useTilesetSlices';
+import { CELL_SIZE } from './constants';
 import Palette from './Palette';
 import TileMapCanvas from './Canvas';
 import MarkerCanvas from './MarkerCanvas';
@@ -87,11 +88,13 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [hiddenLayerKeys, setHiddenLayerKeys] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     setDraftDoc(decodeStmContent(asset.content));
     setActiveIndex(0);
     setIsDirty(false);
+    setHiddenLayerKeys(new Set());
   }, [asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tilesetAsset = useSelector((state: RootState) =>
@@ -189,6 +192,29 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     });
   };
 
+  const handleToggleLayerVisibility = (index: number) => {
+    const layer = draftDoc.layers[index];
+    if (!layer) return;
+    setHiddenLayerKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(layer.key)) next.delete(layer.key); else next.add(layer.key);
+      return next;
+    });
+  };
+
+  const handleSelectLayer = (index: number) => {
+    setActiveIndex(index);
+    const layer = draftDoc.layers[index];
+    if (layer) {
+      setHiddenLayerKeys((prev) => {
+        if (!prev.has(layer.key)) return prev;
+        const next = new Set(prev);
+        next.delete(layer.key);
+        return next;
+      });
+    }
+  };
+
   const handleSave = () => {
     dispatch(updateAsset({ ...asset, content: encodeStmContent(draftDoc, asset.content) }));
     setIsDirty(false);
@@ -229,23 +255,55 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
             Save
           </button>
         </div>
-        <div className="flex-1 min-h-0">
-          {activeLayer?.kind === 'marker' ? (
-            <MarkerCanvas rows={gridRows} cols={gridCols} markers={activeLayer.markers} onPaintCell={handlePaintCell} />
-          ) : (
-            <TileMapCanvas layerData={activeLayer?.kind === 'tile' ? activeLayer.data : []} slices={slices} onPaintCell={handlePaintCell} />
-          )}
+        <div className="flex-1 min-h-0 overflow-auto p-2">
+          <div style={{ position: 'relative', width: gridCols * CELL_SIZE, height: gridRows * CELL_SIZE }}>
+            {draftDoc.layers.map((layer, index) => {
+              if (hiddenLayerKeys.has(layer.key)) return null;
+              const isActive = index === activeIndex;
+              return (
+                <div
+                  key={layer.key}
+                  aria-label={`Layer ${layer.name}`}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: isActive ? 1 : 0.35,
+                    pointerEvents: isActive ? 'auto' : 'none',
+                  }}
+                >
+                  {layer.kind === 'marker' ? (
+                    <MarkerCanvas
+                      rows={gridRows}
+                      cols={gridCols}
+                      markers={layer.markers}
+                      onPaintCell={handlePaintCell}
+                      interactive={isActive}
+                    />
+                  ) : (
+                    <TileMapCanvas
+                      layerData={layer.data}
+                      slices={slices}
+                      onPaintCell={handlePaintCell}
+                      interactive={isActive}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div className="w-48 flex-shrink-0 border-l border-ds-border">
         <LayersPanel
           layers={draftDoc.layers}
           activeIndex={activeIndex}
-          onSelect={setActiveIndex}
+          hiddenKeys={hiddenLayerKeys}
+          onSelect={handleSelectLayer}
           onAdd={handleAddLayer}
           onRename={handleRenameLayer}
           onRemove={handleRemoveLayer}
           onReorder={handleReorderLayers}
+          onToggleVisibility={handleToggleLayerVisibility}
         />
       </div>
     </div>

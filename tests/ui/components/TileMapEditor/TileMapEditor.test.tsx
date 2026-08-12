@@ -133,6 +133,46 @@ describe('TileMapEditor', () => {
     clickSpy.mockRestore();
     vi.unstubAllGlobals();
   });
+
+  test('a non-active, visible layer renders dimmed and non-interactive alongside the active layer', () => {
+    renderEditor();
+    // Active layer ("background", index 0 by default) is interactive: its cells are labeled.
+    expect(screen.getByLabelText('Row 0, Column 0')).toBeInTheDocument();
+    // The non-active "foreground" layer is present (visible) but not labeled/interactive —
+    // its wrapper is queryable by the layer-scoped aria-label instead.
+    const foregroundWrapper = screen.getByLabelText('Layer foreground');
+    expect(foregroundWrapper).toHaveStyle({ opacity: '0.35', pointerEvents: 'none' });
+    const activeWrapper = screen.getByLabelText('Layer background');
+    expect(activeWrapper).toHaveStyle({ opacity: '1', pointerEvents: 'auto' });
+  });
+
+  test('a hidden layer is not rendered at all', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'Hide layer foreground' }));
+    expect(screen.queryByLabelText('Layer foreground')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Layer background')).toBeInTheDocument();
+  });
+
+  test('selecting a hidden layer makes it active and un-hides it', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'Hide layer foreground' }));
+    expect(screen.queryByLabelText('Layer foreground')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('foreground'));
+
+    const foregroundWrapper = screen.getByLabelText('Layer foreground');
+    expect(foregroundWrapper).toHaveStyle({ opacity: '1', pointerEvents: 'auto' });
+    expect(screen.getByRole('button', { name: 'Hide layer foreground' })).toBeInTheDocument();
+  });
+
+  test('painting still only affects the active layer with multiple layers composited on screen', async () => {
+    const { store } = renderEditor();
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.background[0][1]).toBe(1);
+    expect(decoded.layers.foreground).toEqual([[0, 0], [0, 0]]);
+  });
 });
 
 describe('TileMapEditor — marker layers', () => {
