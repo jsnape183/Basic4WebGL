@@ -195,9 +195,13 @@ Public content requires at minimum a report + takedown mechanism. Even a simple 
 ### Deliverables
 - A higher-level helper (e.g. a `tilemap`/`collision` function) that resolves a moving AABB against solid tiles on all four sides in one call, removing the whole class of mistake the coins-platformer hit.
 
-### Open questions
-- API shape: a method on `tilemap`/`TileMapLayer` (`tilemap.resolveCollision(x, y, w, h, dx, dy)`?), or a new `collision` module function taking a tilemap handle? Needs a design pass before implementation — no design work done yet.
-- How is "solid" defined — by tile ID (a designated solid range/list), or a per-tile flag in the `.stm`/tileset data? Affects both the runtime API and the tilemap editor UI (marking tiles solid).
+### Design status, 2026-08-12: partially resolved, then blocked on a bigger prerequisite
+
+Brainstormed further after bullet-hell-shooter playtesting hit the same class of bug (`Bullet.bas`/`Mob.bas` check collision with a single **center-point** sample, no width/height at all — worse than coins-platformer's original issue). Root-caused, not assumed. Full trail: `docs/superpowers/specs/2026-08-12-tile-collision-design.md` (parked, not an approved spec).
+
+**Original open question 2 (how is "solid" defined) — resolved:** a dedicated, paintable collision layer in the Tilemap Editor (boolean solid/not-solid grid, reusing the layer system shipped `v0.6.12`) — not a per-tile-ID flag. Decouples solidity from visual art and is already compatible with `pathfinding.setup(tileMapSet, blockingLayers)` as-is (it already treats "any non-zero cell in a named layer" as blocking) — point it at the new collision layer instead of a visual walls layer, zero pathfinding-side changes needed.
+
+**Original open question 1 (API shape) — reopened by a bigger question, not resolved:** making tile collision genuinely invisible to the author (not just a helper you still have to call correctly) requires sprites to have a **velocity-based movement model** to push back against — `setPosition()` teleports and has no notion of "was blocked." This reframes the feature as two pieces: (1) a velocity-based movement primitive (`sprite.velocity`, applied by the engine each frame — independently useful, e.g. for sprite-vs-sprite collision *response*, which `collision.spriteCollide` today only detects, doesn't resolve), and (2) tile collision resolving against that. **Unresolved:** whether a full velocity/movement model is a genuine prerequisite, or whether a lighter "attach and forget" mechanism exists that doesn't require rethinking how every sprite moves. Needs its own dedicated brainstorm before this item can be designed further — it's more foundational than a tile-collision helper alone.
 
 ---
 
