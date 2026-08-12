@@ -108,6 +108,28 @@ describe('TileMapEditor', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
     expect(onDirtyChange).toHaveBeenLastCalledWith('m1', false);
   });
+
+  test('clicking Export downloads the current draft as a plain-JSON .stm file named after the asset', async () => {
+    const createObjectURL = vi.fn(() => 'blob:mock-url');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    renderEditor();
+    await userEvent.click(screen.getByRole('button', { name: /export/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blobArg = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blobArg.type).toBe('application/json');
+    const text = await blobArg.text();
+    expect(text.startsWith('data:')).toBe(false);
+    expect(JSON.parse(text)).toMatchObject({ tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png' });
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('TileMapEditor — marker layers', () => {

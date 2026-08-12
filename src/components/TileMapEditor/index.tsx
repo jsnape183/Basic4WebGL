@@ -57,6 +57,18 @@ export function exportStmDoc(doc: StmDoc): string {
   });
 }
 
+function downloadStmFile(doc: StmDoc, filename: string): void {
+  const blob = new Blob([exportStmDoc(doc)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function encodeStmContent(doc: StmDoc, originalContent: string): string {
   const mime = originalContent.startsWith('data:')
     ? originalContent.slice(5, originalContent.indexOf(';'))
@@ -197,7 +209,14 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         )}
       </div>
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex justify-end p-2 border-b border-ds-border">
+        <div className="flex justify-end gap-2 p-2 border-b border-ds-border">
+          <button
+            type="button"
+            onClick={() => downloadStmFile(draftDoc, asset.name)}
+            className="border border-ds-border text-ds-text text-sm px-4 py-1.5 rounded hover:bg-ds-surface transition"
+          >
+            Export
+          </button>
           <button
             type="button"
             disabled={!isDirty}
