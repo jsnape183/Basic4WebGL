@@ -40,21 +40,28 @@ export function decodeStmContent(content: string): StmDoc {
   };
 }
 
-export function encodeStmContent(doc: StmDoc, originalContent: string): string {
-  const mime = originalContent.startsWith('data:')
-    ? originalContent.slice(5, originalContent.indexOf(';'))
-    : 'application/json';
+function buildStmLayers(doc: StmDoc): Record<string, StmLayerValue> {
   const layers: Record<string, StmLayerValue> = {};
   doc.layers.forEach((l) => {
     layers[l.name] = l.kind === 'tile' ? l.data : { type: 'markers', markers: l.markers };
   });
-  const json = JSON.stringify({
+  return layers;
+}
+
+export function exportStmDoc(doc: StmDoc): string {
+  return JSON.stringify({
     tileWidth: doc.tileWidth,
     tileHeight: doc.tileHeight,
     tileImage: doc.tileImage,
-    layers,
+    layers: buildStmLayers(doc),
   });
-  return `data:${mime};base64,` + btoa(unescape(encodeURIComponent(json)));
+}
+
+export function encodeStmContent(doc: StmDoc, originalContent: string): string {
+  const mime = originalContent.startsWith('data:')
+    ? originalContent.slice(5, originalContent.indexOf(';'))
+    : 'application/json';
+  return `data:${mime};base64,` + btoa(unescape(encodeURIComponent(exportStmDoc(doc))));
 }
 
 const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
