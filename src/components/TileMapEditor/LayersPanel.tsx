@@ -12,7 +12,7 @@ type Props = {
   activeIndex: number;
   hiddenKeys: Set<string>;
   onSelect: (index: number) => void;
-  onAdd: (name: string, kind: 'tile' | 'marker') => void;
+  onAdd: (name: string, kind: 'tile' | 'marker' | 'collision') => void;
   onRename: (index: number, name: string) => void;
   onRemove: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
@@ -80,6 +80,11 @@ const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, isHidden, onS
           tag
         </span>
       )}
+      {layer.kind === 'collision' && (
+        <span className="text-[9px] px-1 rounded bg-ds-surface-2 text-ds-text-dim uppercase tracking-wide mr-1 flex-shrink-0">
+          solid
+        </span>
+      )}
       {renaming ? (
         <input
           autoFocus
@@ -123,8 +128,8 @@ const LayersPanel: React.FC<Props> = ({ layers, activeIndex, hiddenKeys, onSelec
     if (fromIndex !== -1 && toIndex !== -1) onReorder(fromIndex, toIndex);
   };
 
-  const handleAdd = (kind: 'tile' | 'marker') => {
-    const prefix = kind === 'tile' ? 'layer' : 'markers';
+  const handleAdd = (kind: 'tile' | 'marker' | 'collision') => {
+    const prefix = kind === 'tile' ? 'layer' : kind === 'marker' ? 'markers' : 'collision';
     let n = 1;
     let name = `${prefix}${layers.length + n}`;
     while (layers.some((l) => l.name === name)) { n += 1; name = `${prefix}${layers.length + n}`; }
@@ -149,6 +154,13 @@ const LayersPanel: React.FC<Props> = ({ layers, activeIndex, hiddenKeys, onSelec
             className="text-ds-text-muted hover:text-ds-text transition text-[10px] leading-none px-1 border border-ds-border rounded"
           >
             +tag
+          </button>
+          <button
+            onClick={() => handleAdd('collision')}
+            aria-label="Add collision layer"
+            className="text-ds-text-muted hover:text-ds-text transition text-[10px] leading-none px-1 border border-ds-border rounded"
+          >
+            +solid
           </button>
         </div>
       </div>

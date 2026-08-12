@@ -93,4 +93,20 @@ describe('LayersPanel', () => {
     expect(onToggleVisibility).toHaveBeenCalledWith(1);
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  test('clicking "Add collision layer" calls onAdd with a unique default name and kind "collision"', async () => {
+    const onAdd = vi.fn();
+    render(<LayersPanel layers={makeLayers()} activeIndex={0} hiddenKeys={noHidden} onSelect={vi.fn()} onAdd={onAdd} onRename={vi.fn()} onRemove={vi.fn()} onReorder={vi.fn()} onToggleVisibility={vi.fn()} />);
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    expect(onAdd).toHaveBeenCalledWith('collision3', 'collision');
+  });
+
+  test('a collision layer shows a distinguishing badge in the list', () => {
+    const layers: EditorLayer[] = [
+      { key: 'k1', name: 'background', kind: 'tile', data: [[0]] },
+      { key: 'k2', name: 'solidmask', kind: 'collision', data: [[0]] },
+    ];
+    render(<LayersPanel layers={layers} activeIndex={0} hiddenKeys={noHidden} onSelect={vi.fn()} onAdd={vi.fn()} onRename={vi.fn()} onRemove={vi.fn()} onReorder={vi.fn()} onToggleVisibility={vi.fn()} />);
+    expect(screen.getByText('solid')).toBeInTheDocument();
+  });
 });
