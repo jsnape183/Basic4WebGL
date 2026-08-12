@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.6.12 — 2026-08-12
+
+### New: layer visibility in the Tilemap Editor
+
+- Every visible layer now composites on screen at once — the layer you're actively painting on shows at full opacity, and every other visible layer is dimmed underneath for reference, so you can see how a spawn marker lines up with the walls beneath it without switching back and forth
+- Each layer in the Layers panel gets a hide/show toggle to remove it from view entirely; selecting a hidden layer to edit automatically shows it again
+
 ## v0.6.11 — 2026-08-12
 
 ### New: export a single tilemap
