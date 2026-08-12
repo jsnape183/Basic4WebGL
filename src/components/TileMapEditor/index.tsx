@@ -8,6 +8,7 @@ import { CELL_SIZE } from './constants';
 import Palette from './Palette';
 import TileMapCanvas from './Canvas';
 import MarkerCanvas from './MarkerCanvas';
+import CollisionCanvas from './CollisionCanvas';
 import TagPicker from './TagPicker';
 import LayersPanel from './LayersPanel';
 import { StmDoc, EditorLayer, MarkerEntry } from './types';
@@ -126,6 +127,12 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const gridRows = firstTileLayer?.data.length ?? 1;
   const gridCols = firstTileLayer?.data[0]?.length ?? 1;
 
+  function setGridCell(data: number[][], row: number, col: number, value: number): number[][] {
+    const newData = data.map((r) => r.slice());
+    newData[row][col] = value;
+    return newData;
+  }
+
   const handlePaintCell = (row: number, col: number) => {
     if (!activeLayer) return;
     if (activeLayer.kind === 'tile') {
@@ -134,9 +141,15 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         ...prev,
         layers: prev.layers.map((l, i) => {
           if (i !== activeIndex || l.kind !== 'tile') return l;
-          const newData = l.data.map((r) => r.slice());
-          newData[row][col] = tileId;
-          return { ...l, data: newData };
+          return { ...l, data: setGridCell(l.data, row, col, tileId) };
+        }),
+      }));
+    } else if (activeLayer.kind === 'collision') {
+      setDraftDoc((prev) => ({
+        ...prev,
+        layers: prev.layers.map((l, i) => {
+          if (i !== activeIndex || l.kind !== 'collision') return l;
+          return { ...l, data: setGridCell(l.data, row, col, 1) };
         }),
       }));
     } else {
@@ -153,16 +166,12 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(true);
   };
 
-  const handleAddLayer = (name: string, kind: 'tile' | 'marker') => {
-    const newLayer: EditorLayer =
-      kind === 'tile'
-        ? {
-            key: crypto.randomUUID(),
-            name,
-            kind: 'tile',
-            data: Array.from({ length: gridRows }, () => Array.from({ length: gridCols }, () => 0)),
-          }
-        : { key: crypto.randomUUID(), name, kind: 'marker', markers: [] };
+  const handleAddLayer = (name: string, kind: 'tile' | 'marker' | 'collision') => {
+    const emptyGrid = () => Array.from({ length: gridRows }, () => Array.from({ length: gridCols }, () => 0));
+    let newLayer: EditorLayer;
+    if (kind === 'tile') newLayer = { key: crypto.randomUUID(), name, kind: 'tile', data: emptyGrid() };
+    else if (kind === 'collision') newLayer = { key: crypto.randomUUID(), name, kind: 'collision', data: emptyGrid() };
+    else newLayer = { key: crypto.randomUUID(), name, kind: 'marker', markers: [] };
     setDraftDoc((prev) => ({ ...prev, layers: [...prev.layers, newLayer] }));
   };
 
@@ -287,6 +296,14 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
                       rows={gridRows}
                       cols={gridCols}
                       markers={layer.markers}
+                      onPaintCell={handlePaintCell}
+                      interactive={isActive}
+                    />
+                  ) : layer.kind === 'collision' ? (
+                    <CollisionCanvas
+                      rows={gridRows}
+                      cols={gridCols}
+                      data={layer.data}
                       onPaintCell={handlePaintCell}
                       interactive={isActive}
                     />

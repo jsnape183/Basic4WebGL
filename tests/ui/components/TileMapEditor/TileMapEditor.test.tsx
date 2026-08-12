@@ -324,3 +324,34 @@ describe('TileMapEditor — marker layers', () => {
     });
   });
 });
+
+describe('TileMapEditor — collision layers', () => {
+  test('adding a collision layer and painting solid cells saves it in the new format', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.collision3).toEqual({ type: 'collision', data: [[0, 1], [0, 0]] });
+  });
+
+  test('a collision layer composites on top of dimmed tile layers when active', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+
+    expect(screen.getByLabelText('Collision canvas')).toBeInTheDocument();
+    const backgroundWrapper = screen.getByLabelText('Layer background');
+    expect(backgroundWrapper).toHaveStyle({ opacity: '0.35', pointerEvents: 'none' });
+  });
+
+  test('adding a collision layer does not disturb existing tile layer data on save', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.background).toEqual([[1, 1], [1, 1]]);
+    expect(decoded.layers.foreground).toEqual([[0, 0], [0, 0]]);
+  });
+});
