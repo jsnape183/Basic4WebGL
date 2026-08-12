@@ -257,6 +257,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         </div>
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div style={{ position: 'relative', width: gridCols * CELL_SIZE, height: gridRows * CELL_SIZE }}>
+            {draftDoc.layers.length === 0 && (
+              <TileMapCanvas layerData={[]} slices={slices} onPaintCell={handlePaintCell} />
+            )}
             {draftDoc.layers.map((layer, index) => {
               if (hiddenLayerKeys.has(layer.key)) return null;
               const isActive = index === activeIndex;
