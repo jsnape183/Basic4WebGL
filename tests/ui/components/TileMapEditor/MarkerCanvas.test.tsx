@@ -48,8 +48,16 @@ describe('MarkerCanvas', () => {
     expect(screen.queryByRole('gridcell')).not.toBeInTheDocument();
   });
 
+  test('interactive=false also drops the outer grid role/label, so a dimmed layer never duplicates the active layer\'s "Marker canvas" label', () => {
+    const onPaintCell = vi.fn();
+    render(<MarkerCanvas rows={2} cols={2} markers={[]} onPaintCell={onPaintCell} interactive={false} />);
+    expect(screen.queryByLabelText('Marker canvas')).not.toBeInTheDocument();
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
   test('interactive defaults to true when the prop is omitted', () => {
     render(<MarkerCanvas rows={2} cols={2} markers={[]} onPaintCell={vi.fn()} />);
     expect(screen.getByLabelText('Row 0, Column 0')).toBeInTheDocument();
+    expect(screen.getByLabelText('Marker canvas')).toBeInTheDocument();
   });
 });

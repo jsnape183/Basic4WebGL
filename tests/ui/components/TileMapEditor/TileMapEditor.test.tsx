@@ -173,9 +173,42 @@ describe('TileMapEditor', () => {
     expect(decoded.layers.background[0][1]).toBe(1);
     expect(decoded.layers.foreground).toEqual([[0, 0], [0, 0]]);
   });
+
+  test('clicking the hide toggle on the currently active layer is a no-op', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'Hide layer background' }));
+    expect(screen.getByLabelText('Layer background')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide layer background' })).toBeInTheDocument();
+  });
+
+  test('removing every layer falls back to a blank grid instead of an empty pane', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Remove layer background'));
+    await userEvent.click(screen.getByLabelText('Remove layer foreground'));
+    expect(screen.queryByLabelText('Layer background')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Layer foreground')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Tilemap canvas')).toBeInTheDocument();
+  });
 });
 
 describe('TileMapEditor — marker layers', () => {
+  test('a marker layer composites on top of dimmed tile layers when active', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+
+    // The new marker layer is active: its cells are interactive/labeled.
+    expect(screen.getByLabelText('Marker canvas')).toBeInTheDocument();
+    // Both original tile layers are still present, dimmed underneath it.
+    const backgroundWrapper = screen.getByLabelText('Layer background');
+    const foregroundWrapper = screen.getByLabelText('Layer foreground');
+    expect(backgroundWrapper).toHaveStyle({ opacity: '0.35', pointerEvents: 'none' });
+    expect(foregroundWrapper).toHaveStyle({ opacity: '0.35', pointerEvents: 'none' });
+    // Only the marker layer's own tile-canvas label is absent from the dimmed
+    // tile layers -- they never claim "Tilemap canvas" while non-interactive.
+    expect(screen.queryAllByLabelText('Tilemap canvas')).toHaveLength(0);
+  });
+
   test('adding a marker layer and painting a tag saves it in the new format', async () => {
     const { store } = renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));

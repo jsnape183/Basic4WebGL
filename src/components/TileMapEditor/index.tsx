@@ -195,6 +195,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const handleToggleLayerVisibility = (index: number) => {
     const layer = draftDoc.layers[index];
     if (!layer) return;
+    // Hiding the layer you're actively editing would leave you painting
+    // blind with no way back except re-selecting it by name -- disallow it.
+    if (index === activeIndex && !hiddenLayerKeys.has(layer.key)) return;
     setHiddenLayerKeys((prev) => {
       const next = new Set(prev);
       if (next.has(layer.key)) next.delete(layer.key); else next.add(layer.key);

@@ -44,7 +44,11 @@ const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell, inter
   }
 
   return (
-    <div role="grid" aria-label="Marker canvas" style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}>
+    <div
+      role={interactive ? 'grid' : undefined}
+      aria-label={interactive ? 'Marker canvas' : undefined}
+      style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}
+    >
       {cells}
     </div>
   );

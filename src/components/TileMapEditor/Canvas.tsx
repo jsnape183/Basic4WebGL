@@ -17,8 +17,8 @@ const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell, intera
 
   return (
     <div
-      role="grid"
-      aria-label="Tilemap canvas"
+      role={interactive ? 'grid' : undefined}
+      aria-label={interactive ? 'Tilemap canvas' : undefined}
       style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}
     >
       {layerData.map((rowData, row) =>

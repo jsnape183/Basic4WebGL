@@ -59,8 +59,16 @@ describe('TileMapCanvas', () => {
     expect(screen.queryByRole('gridcell')).not.toBeInTheDocument();
   });
 
+  test('interactive=false also drops the outer grid role/label, so a dimmed layer never duplicates the active layer\'s "Tilemap canvas" label', () => {
+    const onPaintCell = vi.fn();
+    render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={onPaintCell} interactive={false} />);
+    expect(screen.queryByLabelText('Tilemap canvas')).not.toBeInTheDocument();
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+  });
+
   test('interactive defaults to true when the prop is omitted', () => {
     render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={vi.fn()} />);
     expect(screen.getByLabelText('Row 0, Column 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Tilemap canvas')).toBeInTheDocument();
   });
 });
