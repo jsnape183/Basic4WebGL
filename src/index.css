@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * The app's root wrapper (App.tsx) is a fixed h-screen box, so its own
+ * background only paints within one viewport's height. Pages taller than
+ * the viewport (e.g. Demos) render past that box with overflow: visible,
+ * and without this, html/body's default white background shows through
+ * below the fold. Match the app shell's own background color so scrolling
+ * past one screen doesn't flash white.
+ */
+html,
+body {
+  background-color: #111827;
+}
+
 .text-gradient-accent {
   background: linear-gradient(90deg, #f093fb, #f5576c);
   -webkit-background-clip: text;

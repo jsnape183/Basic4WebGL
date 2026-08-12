@@ -45,7 +45,7 @@ A browser-based IDE for writing 2D games in **softBASIC**, a custom BASIC-like l
 
 **When explicitly told to push**, update `src/docs/release-notes.md` with a summary of the changes and bump the `version` field in `package.json`. Commit both together with a `chore: bump version to x.y.z` message, then push. Do not update release notes or version unless the user asks you to push.
 
-**Exception:** internal `chore:` commits (tooling, repo conventions, config — nothing that changes what softBASIC does or what a user of the app sees) don't need a release-notes entry or version bump, even when pushed. When in doubt whether a change is user-facing, bump; only skip it for changes that are purely internal to how the repo/tooling works.
+**Exception:** a change doesn't need a release-notes entry or version bump if it doesn't affect the editor UI, the runtime/engine, or the softBASIC language/library — this covers internal `chore:` commits (tooling, repo conventions, config) as well as things like docs-only fixes, roadmap/plan updates, and test-only changes. When in doubt whether a change is user-facing, bump; only skip it when you're confident nothing an editor user or a running game could observe has changed.
 
 **Versioning model (see `docs/roadmap.md` for full detail):** patch bump (`0.x.Y`) for fixes, docs, and small independent features — this is the default for nearly everything. Minor bump (`0.X.0`) is reserved for closing out a whole roadmap milestone (see `docs/roadmap.md`), not for shipping one new function or module. When in doubt, patch.
 

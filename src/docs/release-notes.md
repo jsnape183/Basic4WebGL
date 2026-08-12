@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.6.11 — 2026-08-12
+
+### New: export a single tilemap
+
+- The Tilemap Editor now has an **Export** button next to Save, which downloads just the tilemap you're currently editing as a standalone `.stm` file — no need to export the whole project to grab one updated map
+
+### Fixes
+
+- Fixed a white background showing below the first screen's worth of content on pages taller than one viewport (e.g. the Demos page once it had enough demos to scroll)
+
 ## v0.6.10 — 2026-08-12
 
 ### New demo
