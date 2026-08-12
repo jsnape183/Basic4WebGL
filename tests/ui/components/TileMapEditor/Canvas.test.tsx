@@ -51,4 +51,16 @@ describe('TileMapCanvas', () => {
       'hover:ring-2', 'hover:ring-inset', 'hover:ring-ds-accent'
     );
   });
+
+  test('interactive=false renders cell content but no aria-label, role, or mouse handlers', () => {
+    const onPaintCell = vi.fn();
+    render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={onPaintCell} interactive={false} />);
+    expect(screen.queryByLabelText('Row 0, Column 1')).not.toBeInTheDocument();
+    expect(screen.queryByRole('gridcell')).not.toBeInTheDocument();
+  });
+
+  test('interactive defaults to true when the prop is omitted', () => {
+    render(<TileMapCanvas layerData={[[0, 0], [0, 0]]} slices={[]} onPaintCell={vi.fn()} />);
+    expect(screen.getByLabelText('Row 0, Column 1')).toBeInTheDocument();
+  });
 });

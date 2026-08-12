@@ -40,4 +40,16 @@ describe('MarkerCanvas', () => {
     fireEvent.mouseEnter(screen.getByLabelText('Row 0, Column 1'));
     expect(onPaintCell).toHaveBeenCalledTimes(2);
   });
+
+  test('interactive=false renders marker content but no aria-label, role, or mouse handlers', () => {
+    const onPaintCell = vi.fn();
+    render(<MarkerCanvas rows={2} cols={2} markers={[{ row: 0, col: 1, tag: 'spawn' }]} onPaintCell={onPaintCell} interactive={false} />);
+    expect(screen.queryByLabelText('Row 0, Column 1')).not.toBeInTheDocument();
+    expect(screen.queryByRole('gridcell')).not.toBeInTheDocument();
+  });
+
+  test('interactive defaults to true when the prop is omitted', () => {
+    render(<MarkerCanvas rows={2} cols={2} markers={[]} onPaintCell={vi.fn()} />);
+    expect(screen.getByLabelText('Row 0, Column 0')).toBeInTheDocument();
+  });
 });

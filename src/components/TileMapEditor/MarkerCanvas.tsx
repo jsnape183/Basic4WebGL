@@ -9,9 +9,11 @@ type Props = {
   cols: number;
   markers: MarkerEntry[];
   onPaintCell: (row: number, col: number) => void;
+  /** When false, renders the same marker chips with no aria-label/role/mouse handlers — used for dimmed, non-active reference layers so their cells never collide with the active layer's "Row X, Column Y" labels. Defaults to true. */
+  interactive?: boolean;
 };
 
-const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell }) => {
+const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell, interactive = true }) => {
   const { startPaint, continuePaint } = usePaintDrag(onPaintCell);
 
   const markerAt = (row: number, col: number) => markers.find((m) => m.row === row && m.col === col);
@@ -23,12 +25,12 @@ const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell }) => 
       cells.push(
         <div
           key={`${row}-${col}`}
-          role="gridcell"
-          aria-label={`Row ${row}, Column ${col}`}
+          role={interactive ? 'gridcell' : undefined}
+          aria-label={interactive ? `Row ${row}, Column ${col}` : undefined}
           title={marker?.tag}
-          onMouseDown={() => startPaint(row, col)}
-          onMouseEnter={() => continuePaint(row, col)}
-          className="border border-ds-border hover:ring-2 hover:ring-inset hover:ring-ds-accent flex items-center justify-center text-[10px] font-bold text-white"
+          onMouseDown={interactive ? () => startPaint(row, col) : undefined}
+          onMouseEnter={interactive ? () => continuePaint(row, col) : undefined}
+          className={`border border-ds-border flex items-center justify-center text-[10px] font-bold text-white ${interactive ? 'hover:ring-2 hover:ring-inset hover:ring-ds-accent' : ''}`}
           style={{
             width: CELL_SIZE,
             height: CELL_SIZE,
@@ -42,10 +44,8 @@ const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell }) => 
   }
 
   return (
-    <div className="h-full overflow-auto p-2">
-      <div role="grid" aria-label="Marker canvas" style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}>
-        {cells}
-      </div>
+    <div role="grid" aria-label="Marker canvas" style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}>
+      {cells}
     </div>
   );
 };
