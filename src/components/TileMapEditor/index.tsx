@@ -58,7 +58,10 @@ export function exportStmDoc(doc: StmDoc): string {
 }
 
 function downloadStmFile(doc: StmDoc, filename: string): void {
-  const blob = new Blob([exportStmDoc(doc)], { type: 'application/json' });
+  // application/octet-stream, not application/json -- a MIME type the
+  // browser associates with .json can override or hide the .stm extension
+  // in the download attribute's suggested filename.
+  const blob = new Blob([exportStmDoc(doc)], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

@@ -120,7 +120,10 @@ describe('TileMapEditor', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     const blobArg = createObjectURL.mock.calls[0][0] as Blob;
-    expect(blobArg.type).toBe('application/json');
+    // application/octet-stream, not application/json -- a MIME type the
+    // browser's Save dialog associates with .json would otherwise override
+    // or hide the .stm extension in the "download" attribute's filename.
+    expect(blobArg.type).toBe('application/octet-stream');
     const text = await blobArg.text();
     expect(text.startsWith('data:')).toBe(false);
     expect(JSON.parse(text)).toMatchObject({ tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png' });
