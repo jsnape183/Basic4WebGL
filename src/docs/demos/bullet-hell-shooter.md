@@ -14,7 +14,7 @@ The player aims with the mouse — `math.atan2` between the player's world posit
 
 The HUD (health bar, current weapon, spawns remaining, level timer) is built from `sprite` and `text` instances added with `hud.add()` — deliberately not `drawing`, which draws into camera-relative world space and would scroll off screen as the player moves. Each level tracks its own clear time in a shared `GameData` module; on reaching `WinScene`, the three times are summed and compared against a **personal best** persisted with `save.set(...)`, so it survives a page reload. Taking damage down to zero HP at any point switches to `GameOverScene`, which resets the level times and sends the player back to level 1.
 
-A few language and engine quirks were found and worked around during development — around typed Constructor parameters, Constructor-scope locals, and when it's safe to set module-level state from `oninit()` — see the code comments in `Mob.bas`, `Bullet.bas`, and `Main.bas`/`TitleScene.bas` below for the specifics.
+A couple of engine quirks were found during development and have since been fixed at the source rather than worked around: typed Constructor parameters and Constructor-scope locals now compile to correct JavaScript, and `Main.bas`/`TitleScene.bas` show the right way to set module-level state from `oninit()` — see the code comments in `Main.bas`/`TitleScene.bas` below for that last one.
 
 **Key techniques:** `pathfinding.navigateTo` for obstacle-avoiding enemy movement, `tileMapSet.markersByTag` for visually-authored spawn/pickup placement, per-weapon `Bullet` parameterization, HUD built from `sprite`/`text` instances added via `hud.add()`.
 
@@ -329,10 +329,7 @@ dim chaseTarget as sprite
 dim damageCooldown
 dim speed
 
-' Do not type targetRef "as sprite" here -- a typed Constructor parameter
-' compiles clean but emits invalid JS (this.targetRef as a param name).
-' self.chaseTarget's own "as sprite" typing is enough for dotted access below.
-Constructor(x, y, targetRef)
+Constructor(x, y, targetRef as sprite)
   super("mob.png")
   self.transform.setPosition(x, y)
   self.hp = 20
@@ -441,17 +438,8 @@ dim level as tilemapset
 dim spawnPoints() as spawnpoint
 dim mobs() as mob
 
-' Do not type levelRef/spawnPointsRef/mobsRef here -- a typed Constructor
-' parameter compiles clean but emits invalid JS (this.paramName as a param
-' name). The fields' own typing above is enough for dotted access below.
-' Also do not add a "dim" local back into this Constructor's body (e.g. a
-' shared "speed" local) -- a Constructor-scope dim used across multiple
-' statements compiles clean but emits invalid JS too (a bare, undeclared
-' "constructor_speed = undefined" assignment, then "constructor.speed" --
-' literally the word "constructor" as an object -- on every later read),
-' throwing "constructor_speed is not defined" the instant a Bullet is
-' constructed. Each branch below sets self.vx/self.vy directly instead.
-Constructor(x, y, angle, weaponType, levelRef, spawnPointsRef, mobsRef)
+Constructor(x, y, angle, weaponType, levelRef as tilemapset, spawnPointsRef() as spawnpoint, mobsRef() as mob)
+  dim speed
   super("bullet.png")
   self.transform.setPosition(x, y)
   self.setAngle(angle * 180 / math.pi())
@@ -463,19 +451,19 @@ Constructor(x, y, angle, weaponType, levelRef, spawnPointsRef, mobsRef)
   if weaponType = "shotgun" then
     self.damage = 8
     self.lifetime = 0.6
-    self.vx = math.cos(angle) * 220
-    self.vy = math.sin(angle) * 220
+    speed = 220
   elseif weaponType = "smg" then
     self.damage = 5
     self.lifetime = 0.8
-    self.vx = math.cos(angle) * 320
-    self.vy = math.sin(angle) * 320
+    speed = 320
   else
     self.damage = 10
     self.lifetime = 1
-    self.vx = math.cos(angle) * 260
-    self.vy = math.sin(angle) * 260
+    speed = 260
   endif
+
+  self.vx = math.cos(angle) * speed
+  self.vy = math.sin(angle) * speed
 EndConstructor
 
 function onupdate(delta)

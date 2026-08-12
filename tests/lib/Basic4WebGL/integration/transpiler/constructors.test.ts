@@ -146,6 +146,55 @@ describe('end-to-end: constructor + instance method', () => {
   });
 });
 
+describe('typed/array Constructor parameters and Constructor-scope locals (issues #23/#24)', () => {
+  test('typed scalar Constructor parameter emits a real parameter, not this.name', () => {
+    const targetSrc = ['Class', 'dim val'].join('\n');
+    const src = [
+      'Class',
+      'dim targetRef as Target',
+      'Constructor(t as Target)',
+      '    self.targetRef = t',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({
+      lib: [],
+      files: [
+        { name: 'Target', source: targetSrc },
+        { name: 'Chaser', source: src },
+      ],
+    });
+    expect(result).toContain('constructor(constructor_t)');
+    expect(result).toContain('this.targetref=constructor_t');
+  });
+
+  test('array-typed Constructor parameter emits a real parameter', () => {
+    const src = [
+      'Class',
+      'dim total',
+      'Constructor(nums())',
+      '    self.total = nums(0)',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Summer', source: src }] });
+    expect(result).toContain('constructor(constructor_nums)');
+  });
+
+  test('untyped dim local inside Constructor body emits a declared local', () => {
+    const src = [
+      'Class',
+      'dim x',
+      'Constructor(startX)',
+      '    dim doubled',
+      '    doubled = startX * 2',
+      '    self.x = doubled',
+      'EndConstructor',
+    ].join('\n');
+    const result = compileOk({ lib: [], files: [{ name: 'Doubler', source: src }] });
+    expect(result).toContain('letconstructor_doubled=undefined');
+    expect(result).toContain('constructor_doubled=constructor_startX*2');
+  });
+});
+
 describe('self array element assignment — self.arr(i) = value', () => {
   test('compiles without error', () => {
     const src = [

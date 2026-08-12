@@ -7,10 +7,7 @@ dim chaseTarget as sprite
 dim damageCooldown
 dim speed
 
-' Do not type targetRef "as sprite" here -- a typed Constructor parameter
-' compiles clean but emits invalid JS (this.targetRef as a param name).
-' self.chaseTarget's own "as sprite" typing is enough for dotted access below.
-Constructor(x, y, targetRef)
+Constructor(x, y, targetRef as sprite)
   super("mob.png")
   self.transform.setPosition(x, y)
   self.hp = 20

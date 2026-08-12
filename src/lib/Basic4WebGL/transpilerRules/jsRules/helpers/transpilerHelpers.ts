@@ -36,6 +36,13 @@ export const formatSymbol = (data: Symbol) => {
     return `${data.scope.name}_${data.name}`;
   }
 
+  // Parameters are always plain local identifiers, regardless of their
+  // declared type (typed object / array / dict) — this must be checked
+  // before the type-based branches below, which are for fields and locals.
+  if (data.isParam) {
+    return `${data.scope.name}_${data.name}`;
+  }
+
   // Object instances: formatting depends on where they were declared
   if (data.type === symbolTypes.Object) {
     if (data.scope.type === scopeTypes.Function) {
@@ -50,7 +57,10 @@ export const formatSymbol = (data: Symbol) => {
     return `${data.scope.name}.${data.name}`;
   }
 
-  if (data.scope.type === scopeTypes.Function) {
+  if (
+    data.scope.type === scopeTypes.Function ||
+    data.scope.type === scopeTypes.Constructor
+  ) {
     return `${data.scope.name}_${data.name}`;
   }
 

@@ -5,7 +5,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { prefixClass } from '../helpers/transpilerHelpers';
+import { formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.VariableDim)
 class VariableDimRule implements IGeneratable {
@@ -18,10 +18,10 @@ class VariableDimRule implements IGeneratable {
       node.data.scope.type === scopeTypes.Function ||
       node.data.scope.type === scopeTypes.Constructor
     ) {
-      return `${node.data.scope.name}_${node.data.name} = undefined;`;
+      return `let ${formatSymbol(node.data)} = undefined;`;
     }
 
-    return `${node.data.scope.name}.${node.data.name} = undefined;`;
+    return `${formatSymbol(node.data)} = undefined;`;
   }
 }
 

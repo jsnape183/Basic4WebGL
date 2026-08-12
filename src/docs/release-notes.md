@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.6.10 — 2026-08-12
+
+### New demo
+
+- Added "Bullet-Hell Shooter" to the Demos page — a three-level top-down shooter with pathfinding-driven mobs that route around walls to chase the player, weapon pickups placed via tagged tilemap markers, and a persistent best-time leaderboard
+
+### Fixes
+
+- A typed parameter in a `Constructor(...)` signature (`Constructor(x, y, target as sprite)`) — or an array/dict-typed one (`Constructor(items() as Item)`) — now compiles to a real parameter, instead of emitting a JavaScript syntax error (`this.target`/`constructor.items` as the literal parameter name) that only surfaced when the game actually ran in a browser
+- A plain `dim` local declared inside a `Constructor(...)` body now compiles to a properly declared variable, instead of an undeclared assignment that threw a runtime error the moment the object was constructed
+
 ## v0.6.9 — 2026-08-10
 
 ### New: tilemap markers
