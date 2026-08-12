@@ -17,7 +17,10 @@ type Props = {
   onDirtyChange?: (assetId: string, dirty: boolean) => void;
 };
 
-type StmLayerValue = number[][] | { type: 'markers'; markers: MarkerEntry[] };
+type StmLayerValue =
+  | number[][]
+  | { type: 'markers'; markers: MarkerEntry[] }
+  | { type: 'collision'; data: number[][] };
 
 export function decodeStmContent(content: string): StmDoc {
   const comma = content.indexOf(',');
@@ -33,18 +36,20 @@ export function decodeStmContent(content: string): StmDoc {
     tileWidth: parsed.tileWidth ?? 16,
     tileHeight: parsed.tileHeight ?? 16,
     tileImage: parsed.tileImage ?? '',
-    layers: layerEntries.map(([name, value]): EditorLayer =>
-      Array.isArray(value)
-        ? { key: crypto.randomUUID(), name, kind: 'tile', data: value }
-        : { key: crypto.randomUUID(), name, kind: 'marker', markers: value.markers }
-    ),
+    layers: layerEntries.map(([name, value]): EditorLayer => {
+      if (Array.isArray(value)) return { key: crypto.randomUUID(), name, kind: 'tile', data: value };
+      if (value.type === 'collision') return { key: crypto.randomUUID(), name, kind: 'collision', data: value.data };
+      return { key: crypto.randomUUID(), name, kind: 'marker', markers: value.markers };
+    }),
   };
 }
 
 function buildStmLayers(doc: StmDoc): Record<string, StmLayerValue> {
   const layers: Record<string, StmLayerValue> = {};
   doc.layers.forEach((l) => {
-    layers[l.name] = l.kind === 'tile' ? l.data : { type: 'markers', markers: l.markers };
+    if (l.kind === 'tile') layers[l.name] = l.data;
+    else if (l.kind === 'collision') layers[l.name] = { type: 'collision', data: l.data };
+    else layers[l.name] = { type: 'markers', markers: l.markers };
   });
   return layers;
 }
