@@ -295,6 +295,72 @@ describe('createTileMapSet — marker layers (no rendering, accumulated into han
   });
 });
 
+describe('createTileMapSet — collision layers (no rendering, no tile-art parsing)', () => {
+  test('a collision layer produces a layer container with no rendered sprites', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: {
+        background: [[1, 1]],
+        solidmask: { type: 'collision', data: [[1, 0]] },
+      },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 256, 256) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(Object.keys(set._layerContainers)).toEqual(['background', 'solidmask']);
+    expect(set._layerContainers.solidmask.children).toEqual([]);
+    expect(set._layerContainers.solidmask._map).toEqual([[1, 0]]);
+  });
+
+  test('a collision layer with a tile-id-like value (e.g. 5) does not attempt to render tile art', async () => {
+    // The collision grid's values are opaque booleans (0/non-zero), not tile
+    // indices into `frames` -- confirms the loader never treats collision
+    // data as tile art, even if a value happens to look like a valid tile id.
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: { solidmask: { type: 'collision', data: [[5]] } },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 16, 16) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(set._layerContainers.solidmask.children).toEqual([]);
+  });
+
+  test('a file mixing tile, marker, and collision layers accumulates each correctly', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: {
+        background: [[1]],
+        spawns: { type: 'markers', markers: [{ row: 0, col: 0, tag: 'spawn' }] },
+        solidmask: { type: 'collision', data: [[1]] },
+      },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 16, 16) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(Object.keys(set._layerContainers)).toEqual(['background', 'solidmask']);
+    expect(set._markers).toEqual([{ row: 0, col: 0, tag: 'spawn' }]);
+  });
+});
+
 describe('markersByTag', () => {
   test('returns world-space cell-center positions for every marker matching the tag', () => {
     const { tileAt, markersByTag } = loadTilemap();

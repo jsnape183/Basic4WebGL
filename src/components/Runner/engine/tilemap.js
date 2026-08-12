@@ -83,6 +83,18 @@ const _sbTilemaps = {
     for (const name of Object.keys(data.layers)) {
       const layerValue = data.layers[name];
       if (!Array.isArray(layerValue)) {
+        if (layerValue.type === 'collision') {
+          // Collision layer: data-only, no tile art, no PIXI sprite
+          // children -- but stored in `layerContainers` with a `_map` the
+          // same shape a tile layer's is, so `pathfinding.setup()` can
+          // treat it as a blocking layer with zero changes on that side.
+          const container = new PIXI.Container();
+          container._tileW = tileW;
+          container._tileH = tileH;
+          container._map = layerValue.data;
+          layerContainers[name] = container;
+          continue;
+        }
         // Marker layer: never rendered, no PIXI.Container child — just
         // accumulate its entries into the set-level marker list, which
         // markersByTag searches across every marker layer at once (not

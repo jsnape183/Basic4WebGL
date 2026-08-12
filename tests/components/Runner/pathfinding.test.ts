@@ -516,3 +516,79 @@ describe('_pathfindingReset', () => {
     expect(pf._navState.size).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A collision layer is directly usable by pathfinding.setup with zero
+// pathfinding-side changes -- proved empirically by loading tilemap.js's
+// real createTileMapSet loader (rather than trusting the makeLayer/
+// makeTileMapSet stand-ins above) and handing its real output to
+// setupNavGrid. Minimal PIXI/asset stubs replicated here rather than shared
+// with tilemap.test.ts, since these are two separate test files.
+// ---------------------------------------------------------------------------
+
+class FakeRectangle {
+  x: number; y: number; width: number; height: number;
+  constructor(x: number, y: number, width: number, height: number) {
+    this.x = x; this.y = y; this.width = width; this.height = height;
+  }
+}
+class FakeTexture {
+  source: unknown; frame: FakeRectangle; width: number; height: number;
+  constructor({ source, frame }: { source: unknown; frame: FakeRectangle }) {
+    this.source = source; this.frame = frame; this.width = frame.width; this.height = frame.height;
+  }
+}
+class FakeContainer {
+  children: unknown[] = [];
+  x = 0; y = 0; parent: unknown = null;
+  addChild(c: unknown) { this.children.push(c); }
+  removeChildren() { this.children = []; }
+}
+
+/** loadResults maps asset name -> what the stubbed PIXI.Assets.load() resolves to. */
+function loadTilemapWithAssets(loadResults: Record<string, unknown>) {
+  const assetsSrc = readFileSync('src/components/Runner/engine/assets.js', 'utf-8');
+  const tilemapSrc = readFileSync('src/components/Runner/engine/tilemap.js', 'utf-8');
+  const PIXI = {
+    Container: FakeContainer,
+    Texture: FakeTexture,
+    Rectangle: FakeRectangle,
+    Sprite: FakeContainer,
+    Assets: { add() {}, async load(name: string) { return loadResults[name]; } },
+  };
+  const factory = new Function(
+    'PIXI', 'worldContainer', 'hudContainer',
+    `${assetsSrc}\n${tilemapSrc}\n return { _sbAssets, _sbTilemaps };`
+  );
+  return factory(PIXI, {}, {});
+}
+
+describe('createTileMapSet — a collision layer is directly usable by pathfinding.setup with zero pathfinding-side changes', () => {
+  test('pathfinding.setupNavGrid treats a real, loader-parsed collision layer as a blocking layer', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: { solidmask: { type: 'collision', data: [[0, 1], [0, 0]] } },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 16, 16) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const setHandle = _sbTilemaps.createTileMapSet('level.stm');
+
+    // Hand the real tilemap.js-loader-built object to the real pathfinding
+    // module -- proving compatibility empirically, not by assumption.
+    // setupNavGrid receives a softBASIC TileMapSet *instance* shape
+    // (`{ _handle: ... }`), matching the .bas call convention.
+    const pf = loadPathfinding();
+
+    pf.setupNavGrid({ _handle: setHandle }, ['solidmask']);
+
+    expect(pf._isBlocked(0, 0)).toBe(false);
+    expect(pf._isBlocked(0, 1)).toBe(true);
+    expect(pf._navGrid.tileW).toBe(16);
+    expect(pf._navGrid.tileH).toBe(16);
+  });
+});
