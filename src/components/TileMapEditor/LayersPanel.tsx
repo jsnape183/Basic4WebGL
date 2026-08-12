@@ -10,22 +10,26 @@ import { EditorLayer } from './types';
 type Props = {
   layers: EditorLayer[];
   activeIndex: number;
+  hiddenKeys: Set<string>;
   onSelect: (index: number) => void;
   onAdd: (name: string, kind: 'tile' | 'marker') => void;
   onRename: (index: number, name: string) => void;
   onRemove: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  onToggleVisibility: (index: number) => void;
 };
 
 type ItemProps = {
   layer: EditorLayer;
   isActive: boolean;
+  isHidden: boolean;
   onSelect: () => void;
   onRename: (name: string) => void;
   onRemove: () => void;
+  onToggleVisibility: () => void;
 };
 
-const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, onSelect, onRename, onRemove }) => {
+const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, isHidden, onSelect, onRename, onRemove, onToggleVisibility }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: layer.key });
   const [renaming, setRenaming] = useState(false);
   const [draftName, setDraftName] = useState(layer.name);
@@ -60,6 +64,16 @@ const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, onSelect, onR
         onClick={(e) => e.stopPropagation()}
       >
         ⠿
+      </button>
+      {/* Always visible (unlike drag/remove below) -- hidden-state is something
+          you want to scan at a glance across the whole layer list, not something
+          you only discover by hovering one row at a time. */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleVisibility(); }}
+        aria-label={isHidden ? `Show layer ${layer.name}` : `Hide layer ${layer.name}`}
+        className={`leading-none flex-shrink-0 mr-1 ${isHidden ? 'opacity-60' : ''}`}
+      >
+        {isHidden ? '🚫' : '👁'}
       </button>
       {layer.kind === 'marker' && (
         <span className="text-[9px] px-1 rounded bg-ds-surface-2 text-ds-text-dim uppercase tracking-wide mr-1 flex-shrink-0">
@@ -98,7 +112,7 @@ const SortableLayerItem: React.FC<ItemProps> = ({ layer, isActive, onSelect, onR
   );
 };
 
-const LayersPanel: React.FC<Props> = ({ layers, activeIndex, onSelect, onAdd, onRename, onRemove, onReorder }) => {
+const LayersPanel: React.FC<Props> = ({ layers, activeIndex, hiddenKeys, onSelect, onAdd, onRename, onRemove, onReorder, onToggleVisibility }) => {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -146,9 +160,11 @@ const LayersPanel: React.FC<Props> = ({ layers, activeIndex, onSelect, onAdd, on
                 key={layer.key}
                 layer={layer}
                 isActive={index === activeIndex}
+                isHidden={hiddenKeys.has(layer.key)}
                 onSelect={() => onSelect(index)}
                 onRename={(name) => onRename(index, name)}
                 onRemove={() => onRemove(index)}
+                onToggleVisibility={() => onToggleVisibility(index)}
               />
             ))}
           </ul>
