@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.14 — 2026-08-14
+
+### Fixes
+
+- Fixed kinematic tile collision (`setVelocity` + `collision.setupTileCollision`) breaking entirely for any sprite that rotates or sits under a zoomed/panning camera — the sprite could pass straight through walls, or its movement could stutter as it neared one. The collision check was using the sprite's on-screen bounding box, which grows with rotation and shifts with camera zoom/pan; it now uses the sprite's stable, unrotated size and position instead, matching how the tile grid is measured
+
 ## v0.6.13 — 2026-08-14
 
 ### New: tile collision layers
