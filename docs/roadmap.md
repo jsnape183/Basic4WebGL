@@ -186,7 +186,7 @@ Public content requires at minimum a report + takedown mechanism. Even a simple 
 
 ---
 
-## ~~Next up — Tile collision helper~~ **[DONE — shipped as v0.6.12, 2026-08-14]**
+## ~~Next up — Tile collision helper~~ **[DONE, 2026-08-14]**
 
 **Goal:** A built-in solid-tile/platformer collision primitive, so authors stop having to hand-roll AABB-vs-tilemap collision themselves.
 
