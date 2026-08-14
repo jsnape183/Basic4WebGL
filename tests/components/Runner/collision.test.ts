@@ -213,4 +213,37 @@ describe('_applyKinematics', () => {
     c._applyKinematics(handle, 100); // no movement this frame -> early return, flags untouched
     expect(c.isBlockedRight(handle)).toBe(true);
   });
+
+  // Regression coverage for the swept-tile-scan fix: _resolveAxis must check
+  // every tile the leading edge sweeps through along the movement axis, not
+  // just the single tile it lands in. A naive "check only the destination
+  // tile" implementation passes every other test in this file (they only
+  // ever cross a single tile boundary in one frame) but fails these two.
+  test('a multi-tile jump stops at an intermediate solid tile even though the destination tile is open (tunneling regression)', () => {
+    const c = loadCollision();
+    // col0 open (start), col1 solid, col2-4 open (including the destination).
+    c._tileCollisionGrid = makeGridFixture(['.#...']);
+    const handle = makeHandle(0, 0, 8, 8); // bounds x:0-8, entirely within col0
+    handle._sbVelocityX = 270; // dx = 27 -> destination bounds x:27-35 (col3, open) but sweeps through col1 (solid)
+    c._applyKinematics(handle, 100);
+
+    // A naive destination-only check would see col3 is open and let the
+    // sprite sail through to x=27. The correct swept check clips it at
+    // col1's boundary instead.
+    expect(handle.position.x).toBe(2);
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
+
+  test('when the swept range contains multiple solid tiles, the sprite stops at the nearest one, not a farther one', () => {
+    const c = loadCollision();
+    // col0-1 open (start), col2 solid (near wall), col3 open, col4 solid (far wall).
+    c._tileCollisionGrid = makeGridFixture(['..#.#']);
+    const handle = makeHandle(0, 0, 8, 8); // bounds x:0-8, within col0
+    handle._sbVelocityX = 450; // dx = 45 -> would reach past col4 if unblocked
+    c._applyKinematics(handle, 100);
+
+    // Stops at the near wall (col2), never reaches the far wall (col4).
+    expect(handle.position.x).toBe(12);
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
 });
