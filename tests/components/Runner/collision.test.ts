@@ -77,8 +77,41 @@ describe('setupTileCollision', () => {
 function makeHandle(x: number, y: number, w: number, h: number) {
   const handle: Record<string, unknown> & { position: { x: number; y: number } } = {
     position: { x, y },
+    width: w,
+    height: h,
+    anchor: { x: 0, y: 0 },
     getBounds() {
       return { x: handle.position.x, y: handle.position.y, width: w, height: h };
+    },
+  };
+  return handle;
+}
+
+// Models the real bug: getBounds() returns global/rotated bounds (like a
+// zoomed camera + rotated sprite would produce), wildly different from the
+// sprite's true local size/position -- exactly the scenario that broke
+// collision in the bullet-hell-shooter demo (Player rotates to aim, camera
+// zoom is active). A correct _applyKinematics must ignore getBounds()
+// entirely and use position/width/height/anchor instead.
+function makeHandleWithMisleadingGetBounds(x: number, y: number, w: number, h: number) {
+  const handle: Record<string, unknown> & { position: { x: number; y: number } } = {
+    position: { x, y },
+    width: w,
+    height: h,
+    anchor: { x: 0, y: 0 },
+    getBounds() {
+      // Deliberately wrong: as if under 2x camera zoom AND 45-degree
+      // rotation (~1.41x AABB inflation) -- the real failure mode.
+      const zoom = 2;
+      const rotationInflation = 1.41;
+      const globalW = w * zoom * rotationInflation;
+      const globalH = h * zoom * rotationInflation;
+      return {
+        x: handle.position.x * zoom + 9999, // also offset into a totally different space
+        y: handle.position.y * zoom + 9999,
+        width: globalW,
+        height: globalH,
+      };
     },
   };
   return handle;
@@ -293,5 +326,28 @@ describe('_applyKinematics', () => {
     // Must stay clipped at the boundary, not penetrate into col 1.
     expect(handle.position.x).toBe(20);
     expect(c.isBlockedLeft(handle)).toBe(true);
+  });
+
+  // Models the real bug reported in the bullet-hell-shooter demo: Player
+  // rotates every frame to aim at the mouse AND the demo's camera is zoomed
+  // (camera.setZoom(2)). getBounds() returns GLOBAL stage-space bounds,
+  // inflated by both ancestor scaling and the sprite's own rotation -- a
+  // coordinate space entirely different from the grid's plain local/world
+  // math. _applyKinematics must ignore getBounds() and derive its AABB from
+  // position/width/height/anchor instead, the same space the grid uses.
+  test('_applyKinematics ignores a misleading getBounds() and resolves collision using true local position/size', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    const handle = makeHandleWithMisleadingGetBounds(5, 0, 8, 8); // true bounds x:5-13
+    handle._sbVelocityX = 100; // dx = 10 -> true bounds would land x:15-23, crossing col 2
+
+    c._applyKinematics(handle, 100);
+
+    // Must resolve using the TRUE local bounds (x:5-13, not the misleading
+    // global/rotated ones getBounds() reports) -- clipped so the true right
+    // edge sits exactly at x=20, matching every other single-tile-crossing
+    // test in this file.
+    expect(handle.position.x).toBe(12);
+    expect(c.isBlockedRight(handle)).toBe(true);
   });
 });

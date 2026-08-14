@@ -261,6 +261,35 @@ const _sbCollision = (() => {
       return { delta, blocked: false };
     },
 
+    // A stable, axis-aligned bounding box in the SAME coordinate space as
+    // handle.position and the tile grid (grid.tileW/tileH, offsets from
+    // _tileGridOffset) -- i.e. local/world space, unscaled by any ancestor
+    // container transform and unrotated by the sprite's own angle.
+    //
+    // getBounds() cannot be used here: it returns bounds in GLOBAL stage
+    // space, inflated by (a) ancestor scaling -- e.g. camera.setZoom()
+    // scales worldContainer directly -- and (b) the sprite's own rotation,
+    // since a rotated rectangle's axis-aligned bounding box is larger than
+    // the unrotated shape (up to sqrt(2) wider/taller at 45 degrees). A
+    // sprite that both rotates (e.g. aiming at the mouse) and lives under a
+    // zoomed camera -- both real, common cases -- produces bounds wildly
+    // mismatched against the grid's plain coordinate space, breaking
+    // collision resolution entirely. handle.width/height, in contrast, are
+    // PIXI's local size in the PARENT's coordinate space: stable across
+    // rotation, unaffected by ancestor transforms -- exactly what's needed.
+    _localAabb(handle) {
+      const w = handle.width;
+      const h = handle.height;
+      const ax = handle.anchor ? handle.anchor.x : 0;
+      const ay = handle.anchor ? handle.anchor.y : 0;
+      return {
+        x: handle.position.x - ax * w,
+        y: handle.position.y - ay * h,
+        width: w,
+        height: h,
+      };
+    },
+
     // Applies a sprite's stored velocity for one frame, resolving against
     // the active tile-collision grid (if any). Called once per instance per
     // frame from lifecycle.js, immediately after the instance's own
@@ -287,7 +316,7 @@ const _sbCollision = (() => {
       }
 
       // X resolves first, using the bounds as of frame start.
-      let bounds = handle.getBounds();
+      let bounds = this._localAabb(handle);
       const xResult = this._resolveAxis(grid, bounds, dx, 'x');
       handle.position.x += xResult.delta;
       if (xResult.blocked) {
@@ -298,7 +327,7 @@ const _sbCollision = (() => {
       // Y resolves second, against bounds updated by the X move -- this
       // ordering is what makes a diagonal approach into a wall slide along
       // it instead of stopping dead.
-      bounds = handle.getBounds();
+      bounds = this._localAabb(handle);
       const yResult = this._resolveAxis(grid, bounds, dy, 'y');
       handle.position.y += yResult.delta;
       if (yResult.blocked) {
