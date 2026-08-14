@@ -246,4 +246,28 @@ describe('_applyKinematics', () => {
     expect(handle.position.x).toBe(12);
     expect(c.isBlockedRight(handle)).toBe(true);
   });
+
+  // Regression coverage for a second, distinct tunneling bug: when the
+  // sprite's leading edge is resting EXACTLY on a solid tile's near boundary
+  // (as it is immediately after being clipped there) and velocity still
+  // points into the wall, `Math.floor()` of an exact-multiple boundary value
+  // resolves to the solid tile's OWN column, not the tile behind it. The
+  // swept scan then starts at `startCol + dir`, skipping the solid tile
+  // entirely, and the sprite drifts into it frame after frame. This is
+  // different from the multi-tile-jump regressions above, which cover fast
+  // motion clearing a tile in one frame -- this covers a slow/stationary
+  // sprite parked flush against a wall that never gets re-checked.
+  test('does not tunnel when resting exactly on a solid tile boundary with velocity still pointing into it', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    // Right edge (12 + 8 = 20) sits exactly on col 2's near boundary, exactly
+    // as it would immediately after being clipped there on a prior frame.
+    const handle = makeHandle(12, 0, 8, 8);
+    handle._sbVelocityX = 50; // dx = 5 -> still pointing into the wall, dx < tileW
+    c._applyKinematics(handle, 100);
+
+    // Must stay clipped at the boundary, not penetrate into col 2.
+    expect(handle.position.x).toBe(12);
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
 });

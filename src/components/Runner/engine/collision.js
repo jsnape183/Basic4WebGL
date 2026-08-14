@@ -205,7 +205,17 @@ const _sbCollision = (() => {
     // frame) can tunnel through a solid tile that its final position
     // happens to clear. The nearest solid tile to the sprite's starting
     // position wins, since that's the first one actually reached.
+    // Small backward nudge applied to the scan's *starting* edge before
+    // flooring it into a tile index. Without this, a leading edge resting
+    // EXACTLY on a tile boundary (e.g. right after being clipped there the
+    // previous frame) floors into the tile AHEAD rather than the tile it's
+    // flush against, so the scan starts one tile too far ahead and skips
+    // re-checking the solid tile the sprite is still pushing into -- letting
+    // it tunnel in a little further every subsequent frame. Small enough to
+    // never matter for any real sprite/tile size in this engine, large
+    // enough to clear floating-point rounding noise.
     _resolveAxis(grid, bounds, delta, axis) {
+      const TILE_EPSILON = 0.01;
       if (delta === 0) return { delta: 0, blocked: false };
       const { offsetX, offsetY } = this._tileGridOffset(grid.reference);
       const { tileW, tileH } = grid;
@@ -214,7 +224,7 @@ const _sbCollision = (() => {
       if (axis === 'x') {
         const frontBefore = delta > 0 ? bounds.x + bounds.width : bounds.x;
         const frontAfter = frontBefore + delta;
-        const startCol = Math.floor((frontBefore - offsetX) / tileW);
+        const startCol = Math.floor((frontBefore - dir * TILE_EPSILON - offsetX) / tileW);
         const endCol = Math.floor((frontAfter - offsetX) / tileW);
         const topRow = Math.floor((bounds.y - offsetY) / tileH);
         const bottomRow = Math.floor((bounds.y + bounds.height - 1 - offsetY) / tileH);
@@ -234,7 +244,7 @@ const _sbCollision = (() => {
       // axis === 'y'
       const frontBefore = delta > 0 ? bounds.y + bounds.height : bounds.y;
       const frontAfter = frontBefore + delta;
-      const startRow = Math.floor((frontBefore - offsetY) / tileH);
+      const startRow = Math.floor((frontBefore - dir * TILE_EPSILON - offsetY) / tileH);
       const endRow = Math.floor((frontAfter - offsetY) / tileH);
       const leftCol = Math.floor((bounds.x - offsetX) / tileW);
       const rightCol = Math.floor((bounds.x + bounds.width - 1 - offsetX) / tileW);
