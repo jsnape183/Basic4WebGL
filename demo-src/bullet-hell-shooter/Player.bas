@@ -89,8 +89,8 @@ function onupdate(delta)
   dim y
   dim moveX
   dim moveY
-  dim newX
-  dim newY
+  dim nx
+  dim ny
   dim mouseWorldX
   dim mouseWorldY
   dim aimAngle
@@ -117,20 +117,9 @@ function onupdate(delta)
     moveX = 1
   endif
 
-  if moveX <> 0 then
-    newX = x + moveX * 150 * dt
-    if self.level.tileAt("walls", newX, y) = 0 then
-      x = newX
-    endif
-  endif
-  if moveY <> 0 then
-    newY = y + moveY * 150 * dt
-    if self.level.tileAt("walls", x, newY) = 0 then
-      y = newY
-    endif
-  endif
-
-  self.transform.setPosition(x, y)
+  nx = math.normalizeX(moveX, moveY)
+  ny = math.normalizeY(moveX, moveY)
+  self.setVelocity(nx * 150, ny * 150)
 
   mouseWorldX = input.mouseX() / camera.zoom() + camera.x()
   mouseWorldY = input.mouseY() / camera.zoom() + camera.y()
