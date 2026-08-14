@@ -57,5 +57,40 @@ export const spriteDescriptor: ClassDescriptor = {
       params: ['n'],
       body: (p, self) => `_sb.setDepth(${self._handle}, ${p.n})`,
     },
+    {
+      name: 'setVelocity',
+      params: ['vx', 'vy'],
+      body: (p, self) => `_sb.setVelocity(${self._handle}, ${p.vx}, ${p.vy})`,
+    },
+    {
+      name: 'velocityX',
+      params: [],
+      returns: (_p, self) => `_sb.getVelocityX(${self._handle})`,
+    },
+    {
+      name: 'velocityY',
+      params: [],
+      returns: (_p, self) => `_sb.getVelocityY(${self._handle})`,
+    },
+    {
+      name: 'isBlockedUp',
+      params: [],
+      returns: (_p, self) => `_sb.isBlockedUp(${self._handle})`,
+    },
+    {
+      name: 'isBlockedDown',
+      params: [],
+      returns: (_p, self) => `_sb.isBlockedDown(${self._handle})`,
+    },
+    {
+      name: 'isBlockedLeft',
+      params: [],
+      returns: (_p, self) => `_sb.isBlockedLeft(${self._handle})`,
+    },
+    {
+      name: 'isBlockedRight',
+      params: [],
+      returns: (_p, self) => `_sb.isBlockedRight(${self._handle})`,
+    },
   ],
 };

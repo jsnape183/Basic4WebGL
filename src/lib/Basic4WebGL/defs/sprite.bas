@@ -42,4 +42,32 @@ function setDepth(n)
     call("_sb.setDepth(this._handle, setdepth_n)")
 endfunction
 
+function setVelocity(vx, vy)
+    call("_sb.setVelocity(this._handle, setvelocity_vx, setvelocity_vy)")
+endfunction
+
+function velocityX()
+    return call("_sb.getVelocityX(this._handle)")
+endfunction
+
+function velocityY()
+    return call("_sb.getVelocityY(this._handle)")
+endfunction
+
+function isBlockedUp()
+    return call("_sb.isBlockedUp(this._handle)")
+endfunction
+
+function isBlockedDown()
+    return call("_sb.isBlockedDown(this._handle)")
+endfunction
+
+function isBlockedLeft()
+    return call("_sb.isBlockedLeft(this._handle)")
+endfunction
+
+function isBlockedRight()
+    return call("_sb.isBlockedRight(this._handle)")
+endfunction
+
 EndClass
