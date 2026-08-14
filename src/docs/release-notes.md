@@ -1,5 +1,22 @@
 # Release Notes
 
+## v0.6.13 — 2026-08-14
+
+### New: tile collision layers
+
+- The Tilemap Editor can now paint a dedicated "collision" layer kind, alongside your regular tile layers — a simple solid/not-solid grid, independent from what's rendered. Every collision layer in a tilemap merges automatically, so there's no separate name or list to keep track of
+
+### New: kinematic sprite movement
+
+- `sprite` and `animatedsprite` now support velocity-driven movement: `setVelocity(vx, vy)` sets a sprite's speed in pixels per second, and the engine moves it automatically every frame — no need to update its position by hand
+- Call `collision.setupTileCollision(tileMapSet)` once (typically when a level loads) and every sprite using `setVelocity` will automatically slide to a stop against solid tiles instead of passing through them, sliding along a wall approached at an angle rather than stopping dead
+- `isBlockedUp()`, `isBlockedDown()`, `isBlockedLeft()`, `isBlockedRight()` report which side (if any) a sprite's movement was stopped on the most recent frame — useful for detecting "standing on the ground" in a platformer or "hit a wall" in any top-down game
+- New `math.normalizeX(x, y)` and `math.normalizeY(x, y)` scale a direction vector to length 1, making it easy to keep movement speed the same in every direction, including diagonally
+
+### Updated: Bullet-Hell Shooter demo
+
+- The player's movement now uses the new kinematic movement system instead of hand-rolled collision checks — smoother wall sliding, correctly capped diagonal speed, and one shared source of truth for walls between the player and the enemies' pathfinding
+
 ## v0.6.12 — 2026-08-12
 
 ### New: layer visibility in the Tilemap Editor
