@@ -5,10 +5,15 @@ import { describe, test, expect, vi } from 'vitest';
 // bare `const _sbLifecycle` that the runner concatenates into the sandboxed
 // iframe. Evaluate it in a Function context with the globals it expects, the
 // same technique bootstrapper.test.ts uses for the inline runtime helpers.
-function loadLifecycle(throwError: (e: Error) => void = () => {}) {
+function loadLifecycle(
+  throwError: (e: Error) => void = () => {},
+  applyKinematics: (handle: unknown, delta: number) => void = () => {}
+) {
   const src = readFileSync('src/components/Runner/engine/lifecycle.js', 'utf-8');
   const factory = new Function('_throwError', `${src}\n return _sbLifecycle;`);
-  return factory(throwError);
+  const lifecycle = factory(throwError);
+  lifecycle._applyKinematics = applyKinematics;
+  return lifecycle;
 }
 
 describe('_deferModuleBody / _runModuleBodies', () => {
@@ -81,5 +86,59 @@ describe('_fireInit', () => {
 
     expect(() => lifecycle._fireInit()).not.toThrow();
     expect(thrown.map((e) => e.message)).toEqual(['bad init']);
+  });
+});
+
+describe('_update — kinematics hook', () => {
+  test('calls _applyKinematics once per instance with a _handle, after its own onupdate', () => {
+    const calls: string[] = [];
+    const lifecycle = loadLifecycle(() => {}, (handle) => {
+      calls.push(`kinematics:${(handle as { id: string }).id}`);
+    });
+    const player = {
+      _handle: { id: 'player' },
+      onupdate: () => calls.push('onupdate:player'),
+    };
+    lifecycle._sbInstances = [player];
+
+    lifecycle._update(16);
+
+    expect(calls).toEqual(['onupdate:player', 'kinematics:player']);
+  });
+
+  test('applies kinematics even for an instance with no onupdate of its own', () => {
+    const calls: string[] = [];
+    const lifecycle = loadLifecycle(() => {}, (handle) => {
+      calls.push((handle as { id: string }).id);
+    });
+    lifecycle._sbInstances = [{ _handle: { id: 'static' } }];
+
+    expect(() => lifecycle._update(16)).not.toThrow();
+    expect(calls).toEqual(['static']);
+  });
+
+  test('skips instances with no _handle without throwing', () => {
+    const lifecycle = loadLifecycle();
+    lifecycle._sbInstances = [{ onupdate: () => {} }];
+    expect(() => lifecycle._update(16)).not.toThrow();
+  });
+
+  test('an instance removing itself from _sbInstances during onupdate still gets its own kinematics applied this frame', () => {
+    const calls: string[] = [];
+    const lifecycle = loadLifecycle(() => {}, (handle) => {
+      calls.push((handle as { id: string }).id);
+    });
+    const self: { _handle: { id: string }; onupdate: () => void } = {
+      _handle: { id: 'dying' },
+      onupdate: () => {
+        lifecycle._retainInstances((i: unknown) => i !== self);
+      },
+    };
+    lifecycle._sbInstances = [self];
+
+    lifecycle._update(16);
+
+    expect(calls).toEqual(['dying']);
+    expect(lifecycle._sbInstances).toEqual([]);
   });
 });

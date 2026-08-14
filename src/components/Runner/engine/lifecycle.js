@@ -89,6 +89,12 @@ const _sbLifecycle = {
           _throwError(e);
         }
       }
+      // Applies stored velocity (if any) and resolves it against the active
+      // tile-collision grid (if any) -- both are no-ops when unset, so a
+      // sprite that never calls setVelocity is completely unaffected.
+      if (inst._handle) {
+        this._applyKinematics(inst._handle, delta);
+      }
     });
   },
 };

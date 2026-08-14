@@ -61,6 +61,7 @@ const _sbStage = {
     this._sbInstances.length = 0;
     this._cameraReset();
     this._pathfindingReset();
+    this._tileCollisionReset();
   },
 
   // ── canvas info ───────────────────────────────────────────────────────────

@@ -352,9 +352,22 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     const stage = loadStageOnly();
     stage._cameraReset = vi.fn();
     stage._pathfindingReset = vi.fn();
+    stage._tileCollisionReset = vi.fn();
 
     stage.clear();
 
     expect(stage._pathfindingReset).toHaveBeenCalledTimes(1);
+  });
+
+  test('clear() also resets the active tile-collision grid', () => {
+    const stage = loadStageOnly();
+    stage._cameraReset = vi.fn();
+    stage._pathfindingReset = vi.fn();
+    const resetCalls: string[] = [];
+    stage._tileCollisionReset = () => resetCalls.push('reset');
+
+    stage.clear();
+
+    expect(resetCalls).toEqual(['reset']);
   });
 });
