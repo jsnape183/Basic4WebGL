@@ -123,16 +123,22 @@ function onupdate(delta)
 endfunction
 `.trim();
 
-    run('kinematic01', 'Kinematic Free Move', [{ name: 'Main', source }], ['dot.png']);
+    run('kinematic01', 'Kinematic Free Move', [{ name: 'Main', source }], ['dot.png'], 4000);
     cy.get('span').contains('ERR').should('not.exist');
     consoleLines().then((lines) => {
       const line = findLine(lines, 'x=');
       expect(line, 'x= checkpoint reported after 30 frames').to.be.a('string');
       const x = Number(/x=([0-9.eE+-]+)/.exec(line as string)?.[1]);
-      // 30 real frames at ~100px/s: exact value depends on real frame timing,
-      // but it must have moved meaningfully to the right and stayed well
-      // short of an unbounded runaway value.
-      expect(x, 'sprite x after 30 frames of vx=100').to.be.within(1, 100);
+      // This assertion's job is only "moved right, not runaway" -- not
+      // precise frame timing (that's deltaUnits.cy.ts's job). Bound it
+      // against real per-frame timing variance rather than an assumed
+      // ~60fps: deltaUnits.cy.ts documents PIXI's real observed frame time
+      // as 5-100ms/frame (bounded above by the ticker's default minFPS
+      // clamp). Over 30 frames at vx=100px/s that puts x anywhere from
+      // ~15 (30 * 5ms) to ~300 (30 * 100ms) under legitimate real-world
+      // timing variance (e.g. CI load) -- wide enough to only rule out "did
+      // not move" or "runaway/wrong units", with margin on both ends.
+      expect(x, 'sprite x after 30 frames of vx=100').to.be.within(5, 350);
     });
   });
 
@@ -187,6 +193,9 @@ endfunction
     iframeWindow().then((win) => {
       win.eval(`
         (() => {
+          // This game only ever creates the one sprite ("s"), so it's the
+          // sole entry in _sbInstances -- ".length - 1" just means "the
+          // sprite", not "the most recent of several".
           const inst = _sb._sbInstances[_sb._sbInstances.length - 1];
           inst._handle.position.set(0, 0);
           _sb.setupTileCollision({
