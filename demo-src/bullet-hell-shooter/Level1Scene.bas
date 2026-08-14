@@ -28,6 +28,8 @@ function onenter()
   world.add(tm)
   self.tilemapset = tm
 
+  collision.setupTileCollision(tm)
+
   pathfinding.setup(tm, self.wallLayers())
 
   dim p as player
@@ -51,7 +53,7 @@ endfunction
 
 function wallLayers()
   dim layers(0)
-  array.push(layers, "walls")
+  array.push(layers, "collision")
   return layers
 endfunction
 
