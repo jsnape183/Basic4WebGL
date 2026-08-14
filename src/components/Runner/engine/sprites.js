@@ -12,6 +12,16 @@ const _sbSprites = {
   getPositionY(obj) {
     return obj.position.y;
   },
+  setVelocity(obj, vx, vy) {
+    obj._sbVelocityX = Number(vx);
+    obj._sbVelocityY = Number(vy);
+  },
+  getVelocityX(obj) {
+    return obj._sbVelocityX || 0;
+  },
+  getVelocityY(obj) {
+    return obj._sbVelocityY || 0;
+  },
   setAngle(obj, angle) {
     obj.angle = angle;
   },
