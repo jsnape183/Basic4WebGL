@@ -1,6 +1,6 @@
 # collision
 
-The `collision` module provides six functions for detecting overlaps, proximity, and line-of-sight between sprites. Include the **softGfx** package to use it.
+The `collision` module provides seven functions for detecting overlaps, proximity, and line-of-sight between sprites, plus one for setting up automatic tilemap collision. Include the **softGfx** package to use it.
 
 ## spriteCollide(a, b)
 
@@ -137,6 +137,31 @@ for i = 0 to array.arrLength(hits) - 1
     h.sprite.destroy()
   endif
 next i
+```
+
+## setupTileCollision(tileMapSet)
+
+Turns on automatic collision between every sprite with a velocity (set via `setVelocity`) and the solid tiles painted into the given tilemap's collision layer. Call this once — typically in a scene's `onenter()`, right after loading the tilemap — and every sprite moving with `setVelocity` will automatically stop at solid tiles from then on, until the next scene switch or the next call to `setupTileCollision`.
+
+Only one tilemap's collision can be active at a time — calling this again replaces the previous one.
+
+| Parameter  | Type   | Description |
+|------------|--------|-------------|
+| tileMapSet | object | A `TileMapSet` loaded from a `.stm` file containing at least one collision layer (painted in the Tilemap Editor) |
+
+```bas
+Class
+Extends scenemanager.scene
+
+dim level
+
+function onenter()
+  self.level = new TileMapSet("level1.stm")
+  world.add(self.level)
+  collision.setupTileCollision(self.level)
+endfunction
+
+EndClass
 ```
 
 ## Note: gfx.boxCollide (deprecated)

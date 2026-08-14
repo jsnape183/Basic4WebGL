@@ -195,3 +195,87 @@ shadow.setDepth(1)
 world.add(hero)
 world.add(shadow)
 ```
+
+## setVelocity(vx, vy)
+
+Sets the sprite's speed, in pixels per second, along each axis. Once set, the engine moves the sprite automatically every frame — you don't need to update its position yourself. If `collision.setupTileCollision` has been called for the current tilemap, the sprite automatically stops at solid tiles instead of passing through them.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| vx        | number | Horizontal speed in pixels per second. Positive moves right, negative moves left |
+| vy        | number | Vertical speed in pixels per second. Positive moves down, negative moves up |
+
+```bas
+' Move right at 150 pixels per second
+self.setVelocity(150, 0)
+```
+
+## velocityX()
+
+Returns the sprite's current horizontal speed, as set by `setVelocity`.
+
+**Returns:** number
+
+```bas
+dim vx
+vx = self.velocityX()
+```
+
+## velocityY()
+
+Returns the sprite's current vertical speed, as set by `setVelocity`.
+
+**Returns:** number
+
+```bas
+dim vy
+vy = self.velocityY()
+```
+
+## isBlockedUp()
+
+Returns `true` if the sprite's movement was stopped by a solid tile above it on the most recent frame. Only meaningful after `collision.setupTileCollision` has been called and the sprite has a non-zero velocity.
+
+**Returns:** `true` or `false`
+
+```bas
+if self.isBlockedUp() then
+  self.setVelocity(self.velocityX(), 0)
+endif
+```
+
+## isBlockedDown()
+
+Returns `true` if the sprite's movement was stopped by a solid tile below it on the most recent frame — useful for detecting "standing on the ground" in a platformer.
+
+**Returns:** `true` or `false`
+
+```bas
+if self.isBlockedDown() then
+  isGrounded = true
+endif
+```
+
+## isBlockedLeft()
+
+Returns `true` if the sprite's movement was stopped by a solid tile to its left on the most recent frame.
+
+**Returns:** `true` or `false`
+
+```bas
+if self.isBlockedLeft() then
+  self.setVelocity(0, self.velocityY())
+endif
+```
+
+## isBlockedRight()
+
+Returns `true` if the sprite's movement was stopped by a solid tile to its right on the most recent frame.
+
+**Returns:** `true` or `false`
+
+```bas
+if self.isBlockedRight() then
+  self.setVelocity(0, self.velocityY())
+endif
+```
