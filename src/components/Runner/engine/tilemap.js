@@ -92,6 +92,10 @@ const _sbTilemaps = {
           container._tileW = tileW;
           container._tileH = tileH;
           container._map = layerValue.data;
+          // Distinguishes this from a tile-art layer (which also has a
+          // _map) for collision.setupTileCollision, which merges every
+          // collision-kind layer and must not also merge in tile art.
+          container._isCollisionLayer = true;
           layerContainers[name] = container;
           continue;
         }

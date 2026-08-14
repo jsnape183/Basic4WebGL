@@ -338,6 +338,27 @@ describe('createTileMapSet — collision layers (no rendering, no tile-art parsi
     expect(set._layerContainers.solidmask.children).toEqual([]);
   });
 
+  test('tags collision layer containers with _isCollisionLayer, leaving tile-art layers untagged', async () => {
+    const stm = {
+      tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
+      layers: {
+        floor: [[1, 1], [1, 1]],
+        walls: { type: 'collision', data: [[0, 1], [0, 0]] },
+      },
+    };
+    const texture = new FakeTexture({ source: { fake: 'pixels' }, frame: new FakeRectangle(0, 0, 16, 16) });
+    const { _sbAssets, _sbTilemaps } = loadTilemapWithAssets({ 'sheet.png': texture, 'level.stm': stm });
+    await _sbAssets.preload([
+      { name: 'sheet.png', src: 'sheet.png' },
+      { name: 'level.stm', src: 'level.stm' },
+    ]);
+
+    const set = _sbTilemaps.createTileMapSet('level.stm');
+
+    expect(set._layerContainers.floor._isCollisionLayer).toBeUndefined();
+    expect(set._layerContainers.walls._isCollisionLayer).toBe(true);
+  });
+
   test('a file mixing tile, marker, and collision layers accumulates each correctly', async () => {
     const stm = {
       tileWidth: 16, tileHeight: 16, tileImage: 'sheet.png',
