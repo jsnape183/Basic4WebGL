@@ -68,3 +68,149 @@ describe('setupTileCollision', () => {
     expect(c._tileCollisionGrid.reference).toBe(tileMapSet._handle);
   });
 });
+
+// A fake PIXI handle: position is the top-left corner (matches plain
+// `sprite`'s default anchor(0,0) — see sprites.js/createSprite, which never
+// calls anchor.set), and getBounds() recomputes from the *current* position
+// so it reflects in-progress moves during axis-separated resolution, exactly
+// like a real PIXI display object's getBounds() would.
+function makeHandle(x: number, y: number, w: number, h: number) {
+  const handle: Record<string, unknown> & { position: { x: number; y: number } } = {
+    position: { x, y },
+    getBounds() {
+      return { x: handle.position.x, y: handle.position.y, width: w, height: h };
+    },
+  };
+  return handle;
+}
+
+// Builds a _tileCollisionGrid fixture directly (bypassing setupTileCollision)
+// from an array of row-strings, '#' = solid, '.' = open. tileSize defaults to
+// 10px per cell on both axes.
+function makeGridFixture(rowStrings: string[], tileSize = 10) {
+  const rows = rowStrings.length;
+  const cols = rowStrings[0].length;
+  const solid = new Uint8Array(rows * cols);
+  rowStrings.forEach((rowStr, row) => {
+    for (let col = 0; col < cols; col++) {
+      if (rowStr[col] === '#') solid[row * cols + col] = 1;
+    }
+  });
+  return { solid, rows, cols, tileW: tileSize, tileH: tileSize, reference: { x: 0, y: 0, parent: null } };
+}
+
+describe('_applyKinematics', () => {
+  test('a sprite with zero velocity never moves', () => {
+    const c = loadCollision();
+    const handle = makeHandle(5, 5, 8, 8);
+    c._applyKinematics(handle, 16);
+    expect(handle.position).toEqual({ x: 5, y: 5 });
+  });
+
+  test('applies velocity * dt with no active collision grid', () => {
+    const c = loadCollision();
+    const handle = makeHandle(0, 0, 8, 8);
+    handle._sbVelocityX = 100;
+    handle._sbVelocityY = 50;
+    c._applyKinematics(handle, 100); // dt = 0.1s
+    expect(handle.position.x).toBeCloseTo(10);
+    expect(handle.position.y).toBeCloseTo(5);
+  });
+
+  test('clips rightward movement at a solid tile and sets isBlockedRight', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    const handle = makeHandle(5, 0, 8, 8); // bounds x:5-13
+    handle._sbVelocityX = 100; // dx = 10 -> would land bounds x:15-23, crossing col 2 (x>=20)
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.x).toBe(12); // clipped so right edge sits exactly at x=20
+    expect(c.isBlockedRight(handle)).toBe(true);
+    expect(c.isBlockedLeft(handle)).toBe(false);
+  });
+
+  test('clips leftward movement at a solid tile and sets isBlockedLeft', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['.#..']); // solid at col 1, x:10-20
+    const handle = makeHandle(25, 0, 8, 8); // bounds x:25-33
+    handle._sbVelocityX = -200; // dx = -20 -> would land bounds x:5-13, crossing col 1 (x<20)
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.x).toBe(20); // clipped so left edge sits exactly at x=20
+    expect(c.isBlockedLeft(handle)).toBe(true);
+    expect(c.isBlockedRight(handle)).toBe(false);
+  });
+
+  test('clips downward movement at a solid tile and sets isBlockedDown', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['.', '.', '#', '.']); // solid at row 2, y:20-30
+    const handle = makeHandle(0, 5, 8, 8); // bounds y:5-13
+    handle._sbVelocityY = 100; // dy = 10 -> would land bounds y:15-23, crossing row 2
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.y).toBe(12);
+    expect(c.isBlockedDown(handle)).toBe(true);
+    expect(c.isBlockedUp(handle)).toBe(false);
+  });
+
+  test('clips upward movement at a solid tile and sets isBlockedUp', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['.', '#', '.', '.']); // solid at row 1, y:10-20
+    const handle = makeHandle(0, 25, 8, 8); // bounds y:25-33
+    handle._sbVelocityY = -200; // dy = -20 -> would land bounds y:5-13, crossing row 1
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.y).toBe(20);
+    expect(c.isBlockedUp(handle)).toBe(true);
+    expect(c.isBlockedDown(handle)).toBe(false);
+  });
+
+  test('scans every row the sprite spans, not just its top row', () => {
+    const c = loadCollision();
+    // Solid only in row 1, column 2. A 15px-tall sprite spans rows 0-1.
+    c._tileCollisionGrid = makeGridFixture(['...', '..#', '...']);
+    const handle = makeHandle(5, 0, 8, 15); // bounds y:0-15 -> spans row 0 and row 1
+    handle._sbVelocityX = 100;
+    c._applyKinematics(handle, 100); // dx=10, would cross col 2 -> blocked via row 1's solid cell
+
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
+
+  test('diagonal movement into a wall slides along the unblocked axis', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.', '....']); // solid at row 0, col 2
+    const handle = makeHandle(5, 0, 8, 8); // bounds x:5-13, y:0-8, entirely within row 0
+    handle._sbVelocityX = 100; // dx=10 -> blocked (same as the rightward test above)
+    handle._sbVelocityY = 100; // dy=10 -> row 0 has no solid cell in the sprite's column range, unblocked
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.x).toBe(12); // X clipped
+    expect(handle.position.y).toBe(10); // Y applied in full, unaffected by the X block
+    expect(c.isBlockedRight(handle)).toBe(true);
+    expect(c.isBlockedDown(handle)).toBe(false);
+  });
+
+  test('a sprite can move past the edge of the grid (out of range is never solid)', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..']);
+    const handle = makeHandle(15, 0, 8, 8); // bounds x:15-23, already at/past the 2-col (20px) grid edge
+    handle._sbVelocityX = 100;
+    c._applyKinematics(handle, 100);
+
+    expect(handle.position.x).toBe(25); // moved freely, no clip
+    expect(c.isBlockedRight(handle)).toBe(false);
+  });
+
+  test('blocked flags persist across a frame with zero velocity (reflect the last-resolved frame)', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']);
+    const handle = makeHandle(5, 0, 8, 8);
+    handle._sbVelocityX = 100;
+    c._applyKinematics(handle, 100);
+    expect(c.isBlockedRight(handle)).toBe(true);
+
+    handle._sbVelocityX = 0;
+    c._applyKinematics(handle, 100); // no movement this frame -> early return, flags untouched
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
+});

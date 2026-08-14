@@ -182,5 +182,124 @@ const _sbCollision = (() => {
       if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return false;
       return grid.solid[row * grid.cols + col] === 1;
     },
+
+    _tileGridOffset(reference) {
+      let offsetX = 0;
+      let offsetY = 0;
+      let node = reference;
+      while (node && node !== worldContainer && node !== hudContainer) {
+        offsetX += node.x;
+        offsetY += node.y;
+        node = node.parent;
+      }
+      return { offsetX, offsetY };
+    },
+
+    // Moves an AABB by `delta` along one axis, clipping to the boundary of
+    // the first solid tile it would otherwise cross. `axis` is 'x' or 'y'.
+    // Scans every row (for 'x') or column (for 'y') the AABB's *other* axis
+    // spans, so a sprite taller/wider than one tile is still checked fully.
+    // Also scans every tile the AABB's *leading edge* sweeps through along
+    // the movement axis itself (not just the single tile it lands in) --
+    // otherwise a fast-moving sprite (delta spanning more than one tile in a
+    // frame) can tunnel through a solid tile that its final position
+    // happens to clear. The nearest solid tile to the sprite's starting
+    // position wins, since that's the first one actually reached.
+    _resolveAxis(grid, bounds, delta, axis) {
+      if (delta === 0) return { delta: 0, blocked: false };
+      const { offsetX, offsetY } = this._tileGridOffset(grid.reference);
+      const { tileW, tileH } = grid;
+      const dir = delta > 0 ? 1 : -1;
+
+      if (axis === 'x') {
+        const frontBefore = delta > 0 ? bounds.x + bounds.width : bounds.x;
+        const frontAfter = frontBefore + delta;
+        const startCol = Math.floor((frontBefore - offsetX) / tileW);
+        const endCol = Math.floor((frontAfter - offsetX) / tileW);
+        const topRow = Math.floor((bounds.y - offsetY) / tileH);
+        const bottomRow = Math.floor((bounds.y + bounds.height - 1 - offsetY) / tileH);
+        for (let col = startCol + dir; dir > 0 ? col <= endCol : col >= endCol; col += dir) {
+          for (let row = topRow; row <= bottomRow; row++) {
+            if (this._isSolidCell(grid, row, col)) {
+              const boundary = delta > 0
+                ? offsetX + col * tileW - bounds.width
+                : offsetX + (col + 1) * tileW;
+              return { delta: boundary - bounds.x, blocked: true };
+            }
+          }
+        }
+        return { delta, blocked: false };
+      }
+
+      // axis === 'y'
+      const frontBefore = delta > 0 ? bounds.y + bounds.height : bounds.y;
+      const frontAfter = frontBefore + delta;
+      const startRow = Math.floor((frontBefore - offsetY) / tileH);
+      const endRow = Math.floor((frontAfter - offsetY) / tileH);
+      const leftCol = Math.floor((bounds.x - offsetX) / tileW);
+      const rightCol = Math.floor((bounds.x + bounds.width - 1 - offsetX) / tileW);
+      for (let row = startRow + dir; dir > 0 ? row <= endRow : row >= endRow; row += dir) {
+        for (let col = leftCol; col <= rightCol; col++) {
+          if (this._isSolidCell(grid, row, col)) {
+            const boundary = delta > 0
+              ? offsetY + row * tileH - bounds.height
+              : offsetY + (row + 1) * tileH;
+            return { delta: boundary - bounds.y, blocked: true };
+          }
+        }
+      }
+      return { delta, blocked: false };
+    },
+
+    // Applies a sprite's stored velocity for one frame, resolving against
+    // the active tile-collision grid (if any). Called once per instance per
+    // frame from lifecycle.js, immediately after the instance's own
+    // onupdate — see that file for the call site.
+    _applyKinematics(handle, delta) {
+      const vx = handle._sbVelocityX || 0;
+      const vy = handle._sbVelocityY || 0;
+      if (vx === 0 && vy === 0) return;
+
+      const dt = delta / 1000;
+      const dx = vx * dt;
+      const dy = vy * dt;
+
+      handle._sbBlockedLeft = false;
+      handle._sbBlockedRight = false;
+      handle._sbBlockedUp = false;
+      handle._sbBlockedDown = false;
+
+      const grid = this._tileCollisionGrid;
+      if (!grid) {
+        handle.position.x += dx;
+        handle.position.y += dy;
+        return;
+      }
+
+      // X resolves first, using the bounds as of frame start.
+      let bounds = handle.getBounds();
+      const xResult = this._resolveAxis(grid, bounds, dx, 'x');
+      handle.position.x += xResult.delta;
+      if (xResult.blocked) {
+        if (dx > 0) handle._sbBlockedRight = true;
+        else handle._sbBlockedLeft = true;
+      }
+
+      // Y resolves second, against bounds updated by the X move -- this
+      // ordering is what makes a diagonal approach into a wall slide along
+      // it instead of stopping dead.
+      bounds = handle.getBounds();
+      const yResult = this._resolveAxis(grid, bounds, dy, 'y');
+      handle.position.y += yResult.delta;
+      if (yResult.blocked) {
+        if (dy > 0) handle._sbBlockedDown = true;
+        else handle._sbBlockedUp = true;
+      }
+    },
+
+    isBlockedUp(handle) { return !!handle._sbBlockedUp; },
+    isBlockedDown(handle) { return !!handle._sbBlockedDown; },
+    isBlockedLeft(handle) { return !!handle._sbBlockedLeft; },
+    isBlockedRight(handle) { return !!handle._sbBlockedRight; },
   };
 })();
