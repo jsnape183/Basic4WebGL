@@ -12,7 +12,7 @@ Since then, your games can now save and load progress. Whether it's a high-score
 
 After that, a visual tilemap editor landed: load a tileset image, paint and erase tiles onto a grid, and manage multiple named layers — all without hand-editing JSON.
 
-Most recently, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the core of platformers and top-down movement — jumping, gravity, running into walls — built in rather than something every game has to hand-roll from scratch.
+Most recently, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the foundation platformers and top-down movement are built on, without every game having to hand-roll its own wall-collision checks. (Gravity and jumping are still just velocity math you write yourself — the engine doesn't add gravity for you.)
 
 ## Right now
 
