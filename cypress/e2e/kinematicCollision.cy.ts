@@ -144,18 +144,15 @@ endfunction
 
   it('stops a sprite at a solid tile and reports isBlockedRight()', () => {
     // Reacts to isBlockedRight() by zeroing velocity, exactly the pattern a
-    // real game uses. Without this reaction, collision.js's per-frame tile
-    // resolution clips the sprite's leading edge to precisely the tile
-    // boundary (col * tileW) on the blocking frame -- so on the *next*
-    // frame, with velocity still nonzero, the leading edge's own floor()
-    // division lands exactly on the solid column's own index (not the one
-    // before it), and the scan (which only checks columns strictly ahead of
-    // the current one) no longer sees the solid tile it is flush against.
-    // The sprite would then tunnel through on that single frame. That is a
-    // property of the engine's resolution algorithm being exercised here,
-    // not something this additive spec should paper over by disabling
-    // gravity/velocity checks -- reacting to the collision, as any real game
-    // must, is what actually keeps the sprite pinned.
+    // real game uses -- this is the ordinary "stop when blocked" gameplay
+    // pattern, not a workaround for an engine limitation. As of commit
+    // a03ba21 ("fix: prevent tunneling when a sprite rests exactly on a tile
+    // boundary with unchanged velocity"), collision.js's _resolveAxis()
+    // applies a small backward nudge (TILE_EPSILON) to the scan's starting
+    // edge specifically so that a leading edge resting exactly on a tile
+    // boundary keeps re-checking the solid tile it's flush against, even
+    // with velocity left unchanged frame after frame -- see the next test,
+    // which exercises that exact scenario in this same real browser.
     const source = `
 dim s as sprite
 dim reportedBlocked = false
@@ -233,6 +230,87 @@ endfunction
         _sb._sbInstances[_sb._sbInstances.length - 1]._handle.position.x
       `) as number;
       expect(finalX, 'sprite remained stopped at/before the wall after reacting to the block').to.be.lessThan(40);
+    });
+  });
+
+  it('stays pinned at the wall over many frames when resting exactly on the boundary with velocity never reacted to', () => {
+    // Regression coverage, in a real browser, for commit a03ba21 ("fix:
+    // prevent tunneling when a sprite rests exactly on a tile boundary with
+    // unchanged velocity"). Unlike the previous test, onupdate() here never
+    // reacts to isBlockedRight() -- velocity is left pointing into the wall
+    // for the entire run. Before a03ba21, once the sprite's leading edge
+    // came to rest exactly on the solid tile's near boundary, the next
+    // frame's floor() division of that exact boundary value landed on the
+    // solid column's own index rather than the tile behind it, so the scan
+    // (which starts one column past that index) stopped seeing the solid
+    // tile it was flush against -- letting the sprite creep a little further
+    // into the wall every subsequent frame. With the fix, _resolveAxis()'s
+    // TILE_EPSILON nudge keeps re-detecting that same tile every frame, so
+    // the sprite must stay pinned at/before the boundary indefinitely, not
+    // just at the instant it was first reported blocked.
+    const source = `
+dim s as sprite
+
+function onenter()
+  s = new sprite("dot.png")
+  s.transform.setPosition(0, 0)
+  s.setVelocity(50, 0)
+  world.add(s)
+endfunction
+
+function onupdate(delta)
+endfunction
+`.trim();
+
+    run('kinematic03', 'Kinematic Boundary Rest', [{ name: 'Main', source }], ['dot.png']);
+    cy.get('span').contains('ERR').should('not.exist');
+
+    // Same synthetic wall shape as the previous test (solid tile at col 2,
+    // x:40-60, tileW=20). Velocity is deliberately kept low (50px/s) so a
+    // single frame's movement never spans a whole tile even under the
+    // worst-case ~100ms frame time documented in deltaUnits.cy.ts (dx <= 5px
+    // << tileW). That isolates the boundary-rest fix under test from the
+    // separate multi-tile-jump fix that already covers fast motion clearing
+    // a tile in one frame.
+    iframeWindow().then((win) => {
+      win.eval(`
+        (() => {
+          const inst = _sb._sbInstances[_sb._sbInstances.length - 1];
+          inst._handle.position.set(0, 0);
+          _sb.setupTileCollision({
+            _handle: {
+              x: 0,
+              y: 0,
+              parent: worldContainer,
+              _layerContainers: {
+                walls: { _isCollisionLayer: true, _map: [[0, 0, 1, 0, 0]], _tileW: 20, _tileH: 20 },
+              },
+            },
+          });
+        })();
+      `);
+    });
+
+    // Let dozens of real frames elapse -- long enough to first reach the
+    // wall and then keep pushing into it repeatedly -- entirely without any
+    // script-level reaction to being blocked.
+    cy.wait(3000);
+
+    cy.get('span').contains('ERR').should('not.exist');
+    iframeWindow().then((win) => {
+      const finalX = win.eval(`
+        _sb._sbInstances[_sb._sbInstances.length - 1]._handle.position.x
+      `) as number;
+      const stillBlocked = win.eval(`
+        _sb.isBlockedRight(_sb._sbInstances[_sb._sbInstances.length - 1]._handle)
+      `) as boolean;
+      // Wall starts at tile col 2 * 20px = x:40. If the pre-a03ba21 bug were
+      // still present, the sprite would have crept past this boundary a
+      // little further every frame once resting flush against it; with the
+      // fix it must still be at/before it, and still reported blocked, after
+      // many unreacted frames.
+      expect(finalX, 'sprite stayed pinned at/before the wall after many frames with velocity never zeroed').to.be.lessThan(40);
+      expect(stillBlocked, 'still reports blocked against the wall on the final frame, not having slipped past it').to.equal(true);
     });
   });
 });
