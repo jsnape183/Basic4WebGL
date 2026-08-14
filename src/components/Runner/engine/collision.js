@@ -124,5 +124,63 @@ const _sbCollision = (() => {
       hits.sort((a, b) => a.distance - b.distance);
       return hits;
     },
+
+    _tileCollisionGrid: null,
+
+    // Merges every `'collision'`-kind layer in the given TileMapSet into one
+    // solid-cell grid (OR'd — a cell is solid if ANY collision layer marks
+    // it solid). Implicit and unnamed by design: a collision layer's only
+    // purpose is being collision data, so there's nothing to disambiguate
+    // (see docs/superpowers/specs/2026-08-12-kinematic-tile-collision-design.md).
+    setupTileCollision(tileMapSetObj) {
+      if (!tileMapSetObj || !tileMapSetObj._handle) {
+        throw new Error('collision.setupTileCollision: expected a TileMapSet instance');
+      }
+      const handle = tileMapSetObj._handle;
+      const layerContainers = handle._layerContainers || {};
+      const collisionLayers = Object.values(layerContainers).filter((l) => l._isCollisionLayer);
+      if (collisionLayers.length === 0) {
+        throw new Error('collision.setupTileCollision: TileMapSet has no collision layer');
+      }
+
+      const first = collisionLayers[0];
+      const rows = first._map.length;
+      const cols = first._map[0] ? first._map[0].length : 0;
+      const solid = new Uint8Array(rows * cols);
+
+      for (const layer of collisionLayers) {
+        for (let row = 0; row < rows; row++) {
+          const layerRow = layer._map[row];
+          if (!layerRow) continue;
+          for (let col = 0; col < cols; col++) {
+            if (layerRow[col]) solid[row * cols + col] = 1;
+          }
+        }
+      }
+
+      this._tileCollisionGrid = {
+        solid,
+        rows,
+        cols,
+        tileW: first._tileW,
+        tileH: first._tileH,
+        // The TileMapSet's own wrapping container, not a per-layer
+        // container: collision layers are never added to the scene graph
+        // (no tile art to render), so a per-layer container's .parent walk
+        // would stop dead at null. Every layer shares this same effective
+        // world position, so this is correct for all of them, not just a
+        // fallback. See this plan's header note for the full reasoning.
+        reference: handle,
+      };
+    },
+
+    _tileCollisionReset() {
+      this._tileCollisionGrid = null;
+    },
+
+    _isSolidCell(grid, row, col) {
+      if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return false;
+      return grid.solid[row * grid.cols + col] === 1;
+    },
   };
 })();
