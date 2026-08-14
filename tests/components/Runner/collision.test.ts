@@ -270,4 +270,28 @@ describe('_applyKinematics', () => {
     expect(handle.position.x).toBe(12);
     expect(c.isBlockedRight(handle)).toBe(true);
   });
+
+  // Mirror of the above for the opposite direction. Math.floor()'s
+  // round-toward-negative-infinity behavior already resolves an
+  // exact-boundary frontBefore correctly when delta < 0, so this case never
+  // had the tunneling bug -- but the epsilon nudge (`-dir * TILE_EPSILON`,
+  // which becomes `+TILE_EPSILON` here) still runs on this path, and its
+  // only-reasoned-about-not-tested claim was that it's harmless (at most a
+  // redundant recheck of the sprite's own currently-occupied tile, which by
+  // invariant is never solid). This test verifies that in practice: resting
+  // exactly on a wall to the left, still pushing left, must stay clipped and
+  // blocked, not held back further than the boundary and not tunneled into.
+  test('does not tunnel or get incorrectly held back when resting exactly on a solid tile boundary to the left with velocity still pointing into it', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['.#..']); // solid at col 1, x:10-20
+    // Left edge (20) sits exactly on col 1's far (right) boundary, exactly as
+    // it would immediately after being clipped there on a prior frame.
+    const handle = makeHandle(20, 0, 8, 8);
+    handle._sbVelocityX = -50; // dx = -5 -> still pointing into the wall, |dx| < tileW
+    c._applyKinematics(handle, 100);
+
+    // Must stay clipped at the boundary, not penetrate into col 1.
+    expect(handle.position.x).toBe(20);
+    expect(c.isBlockedLeft(handle)).toBe(true);
+  });
 });
