@@ -38,6 +38,12 @@ describe('math — new utility functions compile', () => {
   test('distance compiles', () => {
     expect(fn('x = math.distance(0, 0, 3, 4)').diagnostics).toHaveLength(0);
   });
+  test('normalizeX compiles', () => {
+    expect(fn('x = math.normalizeX(3, 4)').diagnostics).toHaveLength(0);
+  });
+  test('normalizeY compiles', () => {
+    expect(fn('x = math.normalizeY(3, 4)').diagnostics).toHaveLength(0);
+  });
 });
 
 describe('math — output correctness', () => {
@@ -67,5 +73,15 @@ describe('math — output correctness', () => {
   test('distance emits Math.sqrt(Math.pow(...))', () => {
     const result = fn('x = math.distance(0, 0, 3, 4)');
     expect(result.code).toContain('Math.sqrt(Math.pow(');
+  });
+  test('normalizeX emits Math.sqrt(...) and a zero-vector guard', () => {
+    const result = fn('x = math.normalizeX(3, 4)');
+    expect(result.code).toContain('Math.sqrt(');
+    expect(result.code).toContain('=== 0');
+  });
+  test('normalizeY emits Math.sqrt(...) and a zero-vector guard', () => {
+    const result = fn('x = math.normalizeY(3, 4)');
+    expect(result.code).toContain('Math.sqrt(');
+    expect(result.code).toContain('=== 0');
   });
 });

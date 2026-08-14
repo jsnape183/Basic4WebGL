@@ -26,6 +26,8 @@ function max(a, b):return call("Math.max(max_a,max_b)"):endfunction
 function clamp(v, lo, hi):return call("Math.min(Math.max(clamp_v,clamp_lo),clamp_hi)"):endfunction
 function lerp(a, b, t):return call("lerp_a+(lerp_b-lerp_a)*lerp_t"):endfunction
 function distance(x1, y1, x2, y2):return call("Math.sqrt(Math.pow(distance_x2-distance_x1,2)+Math.pow(distance_y2-distance_y1,2))"):endfunction
+function normalizeX(x, y):return call("(normalizex_x === 0 && normalizex_y === 0) ? 0 : normalizex_x / Math.sqrt(normalizex_x*normalizex_x + normalizex_y*normalizex_y)"):endfunction
+function normalizeY(x, y):return call("(normalizey_x === 0 && normalizey_y === 0) ? 0 : normalizey_y / Math.sqrt(normalizey_x*normalizey_x + normalizey_y*normalizey_y)"):endfunction
 function round(n):return call("Math.round(round_n)"):endfunction
 function sign(n):return call("Math.sign(sign_n)"):endfunction
 function sin(n):return call("Math.sin(sin_n)"):endfunction

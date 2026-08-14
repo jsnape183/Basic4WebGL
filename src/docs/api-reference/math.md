@@ -259,6 +259,36 @@ dim smoothX
 smoothX = math.lerp(currentX, targetX, 0.1)   ' moves 10% closer each frame
 ```
 
+### normalizeX(x, y)
+
+Returns the x component of the direction `(x, y)` scaled to length 1 — useful for making movement speed the same in every direction, even diagonally. Returns 0 if both `x` and `y` are 0.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | X component of the direction |
+| y         | number | Y component of the direction |
+
+**Returns:** number
+
+```bas
+dim nx
+dim ny
+nx = math.normalizeX(moveX, moveY)
+ny = math.normalizeY(moveX, moveY)
+self.setVelocity(nx * 150, ny * 150)   ' always 150 pixels per second, even moving diagonally
+```
+
+### normalizeY(x, y)
+
+Returns the y component of the direction `(x, y)` scaled to length 1. See `normalizeX` for the full example — the two are always called together.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | X component of the direction |
+| y         | number | Y component of the direction |
+
+**Returns:** number
+
 ## Trigonometry
 
 ### sin(angle)
