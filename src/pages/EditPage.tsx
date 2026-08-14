@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateFile } from '../features/files/filesSlice';
@@ -23,6 +23,18 @@ import BottomPanel from '../components/BottomPanel';
 import AssetPreview from '../components/AssetPreview';
 import TilemapChooserModal from '../components/TileMapEditor/TilemapChooserModal';
 
+const EnterFullscreenIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+  </svg>
+);
+
+const ExitFullscreenIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+  </svg>
+);
+
 type AssetTabEntry = { assetId: string };
 
 const EditPage: React.FC = () => {
@@ -45,6 +57,8 @@ const EditPage: React.FC = () => {
   const [dirtyAssetIds, setDirtyAssetIds] = useState<string[]>([]);
   const [jumpTarget, setJumpTarget] = useState<{ line: number; col: number } | null>(null);
   const [isTilemapModalOpen, setIsTilemapModalOpen] = useState(false);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   const { diagnostics, symbols } = useLiveAnalysis(id ?? '');
@@ -76,6 +90,14 @@ const EditPage: React.FC = () => {
     }
   }, [project, navigate, location]);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsPreviewFullscreen(document.fullscreenElement === previewIframeRef.current);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   if (!project) {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center text-ds-error text-sm">
@@ -96,6 +118,14 @@ const EditPage: React.FC = () => {
     setActiveAssetTabId(null);
     dispatch(selectFile({ projectId: project.id, fileId: target.id }));
     setJumpTarget({ line: loc.line, col: loc.col });
+  };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement === previewIframeRef.current) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      previewIframeRef.current?.requestFullscreen().catch(() => {});
+    }
   };
 
   const handleTabSelect = (fileId: string) => {
@@ -281,8 +311,20 @@ const EditPage: React.FC = () => {
             key={project.id}
             fallback={<p className="p-4 text-ds-error text-sm">Preview failed to load.</p>}
           >
-            <Preview transpiled={transpiled} projectId={project.id} />
+            <Preview ref={previewIframeRef} transpiled={transpiled} projectId={project.id} />
           </ErrorBoundary>
+        ) : undefined
+      }
+      previewHeaderActions={
+        isRunning ? (
+          <button
+            onClick={toggleFullscreen}
+            className="text-ds-text-dim hover:text-ds-text transition-colors focus:outline-none focus:ring-2 focus:ring-ds-accent rounded"
+            aria-label={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            title={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {isPreviewFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+          </button>
         ) : undefined
       }
       panel={<BottomPanel logs={logs} onJumpToLoc={handleJumpToLoc} />}
