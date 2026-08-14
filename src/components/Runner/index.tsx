@@ -25,16 +25,17 @@ type RunnerProps = {
   assets?: Array<{ name: string; src: string }>;
 };
 
-const Runner: React.FC<RunnerProps> = ({
+const Runner = React.forwardRef<HTMLIFrameElement, RunnerProps>(({
   transpiled,
   projectId,
   width = '100%',
   height = '100%',
   assets,
-}) => {
+}, ref) => {
   return (
     <div style={{ width: width, height: height }}>
       <iframe
+        ref={ref}
         style={{ width: width, height: height }}
         sandbox="allow-scripts allow-same-origin"
         scrolling="no"
@@ -52,6 +53,8 @@ const Runner: React.FC<RunnerProps> = ({
       ></iframe>
     </div>
   );
-};
+});
+
+Runner.displayName = 'Runner';
 
 export default Runner;

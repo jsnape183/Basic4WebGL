@@ -6,8 +6,10 @@ type PreviewProps = {
   projectId: string;
 };
 
-const Preview: React.FC<PreviewProps> = ({ transpiled, projectId }) => (
-  <Runner transpiled={transpiled} projectId={projectId} width="100%" height="100%" />
-);
+const Preview = React.forwardRef<HTMLIFrameElement, PreviewProps>(({ transpiled, projectId }, ref) => (
+  <Runner ref={ref} transpiled={transpiled} projectId={projectId} width="100%" height="100%" />
+));
+
+Preview.displayName = 'Preview';
 
 export default Preview;
