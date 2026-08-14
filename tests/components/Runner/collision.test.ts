@@ -117,6 +117,35 @@ function makeHandleWithMisleadingGetBounds(x: number, y: number, w: number, h: n
   return handle;
 }
 
+// Models the pan-only variant of the same bug: cameraFollow/cameraSetPosition
+// translate worldContainer.position directly, at any zoom (including 1) and
+// with no rotation involved. That translation is baked into getBounds()'s
+// GLOBAL result but invisible to _tileGridOffset's local-only offset walk
+// (which stops at worldContainer) -- so before the fix, any tile-collision
+// game panning/following the camera had broken collision too, not just the
+// zoom+rotation combination that first surfaced the bug.
+function makeHandleWithPannedGetBounds(x: number, y: number, w: number, h: number) {
+  const handle: Record<string, unknown> & { position: { x: number; y: number } } = {
+    position: { x, y },
+    width: w,
+    height: h,
+    anchor: { x: 0, y: 0 },
+    getBounds() {
+      // Deliberately wrong: as if the camera panned +200 on both axes, with
+      // no scaling and no rotation -- an ordinary cameraFollow in a
+      // side-scroller.
+      const pan = 200;
+      return {
+        x: handle.position.x + pan,
+        y: handle.position.y + pan,
+        width: w,
+        height: h,
+      };
+    },
+  };
+  return handle;
+}
+
 // Builds a _tileCollisionGrid fixture directly (bypassing setupTileCollision)
 // from an array of row-strings, '#' = solid, '.' = open. tileSize defaults to
 // 10px per cell on both axes.
@@ -347,6 +376,30 @@ describe('_applyKinematics', () => {
     // global/rotated ones getBounds() reports) -- clipped so the true right
     // edge sits exactly at x=20, matching every other single-tile-crossing
     // test in this file.
+    expect(handle.position.x).toBe(12);
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
+
+  // Documents the true blast radius of the getBounds()-vs-local-space
+  // mismatch: it wasn't limited to the zoom+rotation combination that first
+  // surfaced it. Plain camera panning/following (cameraFollow/
+  // cameraSetPosition), at any zoom and with no rotation, hit the exact same
+  // mismatch -- worldContainer's translated position is baked into
+  // getBounds()'s global result but invisible to _tileGridOffset's
+  // local-only walk. Any side-scroller-style game using cameraFollow had
+  // broken collision resolution before this fix.
+  test('_applyKinematics ignores a camera-panned getBounds() and resolves collision using true local position/size', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    const handle = makeHandleWithPannedGetBounds(5, 0, 8, 8); // true bounds x:5-13
+    handle._sbVelocityX = 100; // dx = 10 -> true bounds would land x:15-23, crossing col 2
+
+    c._applyKinematics(handle, 100);
+
+    // Must resolve using the TRUE local bounds (x:5-13, not the panned
+    // getBounds() values offset by +200) -- clipped so the true right edge
+    // sits exactly at x=20, matching every other single-tile-crossing test
+    // in this file.
     expect(handle.position.x).toBe(12);
     expect(c.isBlockedRight(handle)).toBe(true);
   });

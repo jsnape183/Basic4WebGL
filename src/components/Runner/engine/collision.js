@@ -277,6 +277,18 @@ const _sbCollision = (() => {
     // collision resolution entirely. handle.width/height, in contrast, are
     // PIXI's local size in the PARENT's coordinate space: stable across
     // rotation, unaffected by ancestor transforms -- exactly what's needed.
+    //
+    // Zoom and rotation are not the only ways this broke: plain camera
+    // panning/following (cameraFollow/cameraSetPosition), at ANY zoom
+    // (including 1) and with NO rotation, was equally broken by the same
+    // mismatch. Those calls translate worldContainer.position directly, and
+    // that translation is baked into getBounds()'s global result -- but
+    // _tileGridOffset's local-only offset walk explicitly stops at
+    // worldContainer, so it never sees that translation. Any tile-collision
+    // game using cameraFollow (e.g. any side-scroller keeping the camera on
+    // the player) had broken collision resolution too, not just the
+    // rotate+zoom combination that first surfaced the bug. _localAabb fixes
+    // this case as well, since it never reads any ancestor transform at all.
     _localAabb(handle) {
       const w = handle.width;
       const h = handle.height;
