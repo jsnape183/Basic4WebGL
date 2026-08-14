@@ -1,6 +1,6 @@
 # collision
 
-The `collision` module provides seven functions for detecting overlaps, proximity, and line-of-sight between sprites, plus one for setting up automatic tilemap collision. Include the **softGfx** package to use it.
+The `collision` module provides six functions for detecting overlaps, proximity, and line-of-sight between sprites, plus one for setting up automatic tilemap collision. Include the **softGfx** package to use it.
 
 ## spriteCollide(a, b)
 
