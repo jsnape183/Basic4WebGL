@@ -186,22 +186,21 @@ Public content requires at minimum a report + takedown mechanism. Even a simple 
 
 ---
 
-## Next up — Tile collision helper (patch bump)
+## ~~Next up — Tile collision helper~~ **[DONE — shipped as v0.6.12, 2026-08-14]**
 
-**Goal:** A built-in solid-tile/platformer collision primitive, so authors stop having to hand-roll AABB-vs-tilemap collision themselves. Small, independent, and self-contained — doesn't block or depend on Milestone 4's account work, so it ships on its own patch-versioned timeline rather than waiting in the M1–6/M7–14 sequence.
+**Goal:** A built-in solid-tile/platformer collision primitive, so authors stop having to hand-roll AABB-vs-tilemap collision themselves.
 
-**Why this is next:** `tilemap` currently only exposes single-point `tileAt(x, y)` sampling. Discovered 2026-08-04 while playtesting the coins-platformer demo: `Player.bas`'s ground collision only ever sampled one point just below the feet to snap vertically, and applied horizontal movement with **no collision check at all** — so the player could walk into the side of a solid multi-tile-thick ground block after falling past a gap, and the vertical snap would then plant them on whichever interior tile row their feet happened to land inside, visually sinking them into the floor. Not an engine defect — `tileAt(x, y)` is a sufficient primitive, and this specific instance was fixed directly in the demo's own collision code (sampling the leading edge before applying horizontal movement, mirroring the existing vertical check) — but given the product's target audience is beginners with no prior coding experience, requiring every author to correctly hand-roll multi-point AABB tile collision (and silently produce this exact bug if they miss one direction, as happened here) is a real usability gap. Directly follows Milestone 12 (Tilemap editor, shipped `v0.6.0`) and the tile-collision-adjacent fixes already made this cycle (issues #9/#20/#21 — region cropping, typed-element chaining, frame-slice caching, all touching this same corner of the engine).
+**Resolved, in full:** both open questions from the design phase are now shipped code, not proposals.
 
-### Deliverables
-- A higher-level helper (e.g. a `tilemap`/`collision` function) that resolves a moving AABB against solid tiles on all four sides in one call, removing the whole class of mistake the coins-platformer hit.
+- **"How is solid defined" (resolved 2026-08-12):** a dedicated, paintable `'collision'` layer kind in the Tilemap Editor (boolean solid/not-solid grid) — not a per-tile-ID flag. Every collision layer in a `TileMapSet` merges automatically (OR'd), no layer name needed. Already compatible with `pathfinding.setup` unchanged.
+- **"API shape" (resolved 2026-08-13):** reframed as a three-tier movement model — `setPosition` (unchanged), a new **kinematic** tier (`setVelocity(vx, vy)`, engine-applied every frame, axis-separated tile clipping, `isBlockedUp/Down/Left/Right()`), and a **rigid body** tier (full physics — deliberately parked, not designed, no physics library in `package.json`). Full design: `docs/superpowers/specs/2026-08-12-kinematic-tile-collision-design.md`. Implementation: `docs/superpowers/plans/2026-08-12-tilemap-collision-layer-plan.md` (collision layer) and `docs/superpowers/plans/2026-08-13-kinematic-movement-plan.md` (kinematic movement).
 
-### Design status, 2026-08-12: partially resolved, then blocked on a bigger prerequisite
-
-Brainstormed further after bullet-hell-shooter playtesting hit the same class of bug (`Bullet.bas`/`Mob.bas` check collision with a single **center-point** sample, no width/height at all — worse than coins-platformer's original issue). Root-caused, not assumed. Full trail: `docs/superpowers/specs/2026-08-12-tile-collision-design.md` (parked, not an approved spec).
-
-**Original open question 2 (how is "solid" defined) — resolved:** a dedicated, paintable collision layer in the Tilemap Editor (boolean solid/not-solid grid, reusing the layer system shipped `v0.6.12`) — not a per-tile-ID flag. Decouples solidity from visual art and is already compatible with `pathfinding.setup(tileMapSet, blockingLayers)` as-is (it already treats "any non-zero cell in a named layer" as blocking) — point it at the new collision layer instead of a visual walls layer, zero pathfinding-side changes needed.
-
-**Original open question 1 (API shape) — reopened by a bigger question, not resolved:** making tile collision genuinely invisible to the author (not just a helper you still have to call correctly) requires sprites to have a **velocity-based movement model** to push back against — `setPosition()` teleports and has no notion of "was blocked." This reframes the feature as two pieces: (1) a velocity-based movement primitive (`sprite.velocity`, applied by the engine each frame — independently useful, e.g. for sprite-vs-sprite collision *response*, which `collision.spriteCollide` today only detects, doesn't resolve), and (2) tile collision resolving against that. **Unresolved:** whether a full velocity/movement model is a genuine prerequisite, or whether a lighter "attach and forget" mechanism exists that doesn't require rethinking how every sprite moves. Needs its own dedicated brainstorm before this item can be designed further — it's more foundational than a tile-collision helper alone.
+**Deliberately deferred, not dropped (tracked as future work, not this item):**
+- Sprite-vs-sprite kinematic collision *response* — needs a collision-mask/category concept first (which sprites should collide with which).
+- Rigid-body / full physics (mass, forces, impulses) — tier 3 above, parked indefinitely, revisit only if a real game needs it.
+- Pixel-perfect / shaped collision masks beyond per-cell solid/not-solid.
+- Tooling to auto-derive a collision layer from existing tile layers (a second-iteration editor convenience).
+- Multiple simultaneous active tile-collision maps (`setupTileCollision` mirrors `pathfinding.setup`'s single-active-map model).
 
 ---
 
