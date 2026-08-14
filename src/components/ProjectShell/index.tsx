@@ -46,6 +46,7 @@ type ProjectShellProps = {
   activitySections: ActivitySection[];
   editor: React.ReactNode;
   preview?: React.ReactNode;
+  previewHeaderActions?: React.ReactNode;
   panel: React.ReactNode;
   footer?: React.ReactNode;
 };
@@ -55,6 +56,7 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
   activitySections,
   editor,
   preview,
+  previewHeaderActions,
   panel,
   footer,
 }) => {
@@ -121,8 +123,9 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
         {/* Preview pane */}
         {preview && (
           <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
-            <div className="px-3 py-1 text-[10px] text-ds-text-dim uppercase tracking-wider bg-ds-surface border-b border-ds-border flex-shrink-0">
-              Preview
+            <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
+              <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
+              {previewHeaderActions}
             </div>
             <div className="flex-1 overflow-hidden">
               {preview}
