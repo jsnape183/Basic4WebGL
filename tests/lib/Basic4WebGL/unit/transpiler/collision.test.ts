@@ -177,6 +177,30 @@ describe('collision — raycastAll', () => {
   });
 });
 
+// ─── setupTileCollision ───────────────────────────────────────────────────────
+
+describe('collision — setupTileCollision', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  dim level',
+      '  collision.setupTileCollision(level)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.setupTileCollision(', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  dim level',
+      '  collision.setupTileCollision(level)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setupTileCollision(');
+  });
+});
+
 // ─── RayHit property access ───────────────────────────────────────────────────
 
 describe('collision — RayHit property access', () => {

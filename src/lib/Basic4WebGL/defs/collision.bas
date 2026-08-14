@@ -21,3 +21,7 @@ endfunction
 function raycastAll(x, y, angle, distance, sprites)
     return call("_sb.raycastAll(raycastall_x, raycastall_y, raycastall_angle, raycastall_distance, raycastall_sprites)")
 endfunction
+
+function setupTileCollision(tileMapSet)
+    call("_sb.setupTileCollision(setuptilecollision_tileMapSet)")
+endfunction
