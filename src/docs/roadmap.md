@@ -10,7 +10,9 @@ The editor now feels like a real IDE. Autocomplete for softBASIC functions and c
 
 Since then, your games can now save and load progress. Whether it's a high-score table, an in-progress level, or a whole inventory, your game can save it and have it still be there the next time someone plays — no account or backend needed. This was the last missing piece for shipping a genuinely complete game.
 
-Most recently, a visual tilemap editor landed: load a tileset image, paint and erase tiles onto a grid, and manage multiple named layers — all without hand-editing JSON.
+After that, a visual tilemap editor landed: load a tileset image, paint and erase tiles onto a grid, and manage multiple named layers — all without hand-editing JSON.
+
+Most recently, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the core of platformers and top-down movement — jumping, gravity, running into walls — built in rather than something every game has to hand-roll from scratch.
 
 ## Right now
 
