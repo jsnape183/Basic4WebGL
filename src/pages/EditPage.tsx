@@ -122,9 +122,13 @@ const EditPage: React.FC = () => {
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement === previewIframeRef.current) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch((err) => {
+        console.warn('Failed to exit fullscreen:', err);
+      });
     } else {
-      previewIframeRef.current?.requestFullscreen().catch(() => {});
+      previewIframeRef.current?.requestFullscreen().catch((err) => {
+        console.warn('Failed to enter fullscreen:', err);
+      });
     }
   };
 
