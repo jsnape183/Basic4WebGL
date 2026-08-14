@@ -255,3 +255,88 @@ describe('AnimatedSprite — setDepth', () => {
     expect(result.code).toContain('_sb.setDepth(');
   });
 });
+
+// ─── setVelocity ──────────────────────────────────────────────────────────────
+
+describe('AnimatedSprite — setVelocity', () => {
+  test('compiles without error', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  s.setVelocity(100, -50)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setVelocity(', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  s.setVelocity(100, -50)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setVelocity(');
+  });
+});
+
+// ─── velocityX / velocityY ────────────────────────────────────────────────────
+
+describe('AnimatedSprite — velocityX / velocityY', () => {
+  test('compiles without error', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim vx',
+      '  vx = s.velocityX()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.getVelocityX( and _sb.getVelocityY(', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim vx',
+      '  dim vy',
+      '  vx = s.velocityX()',
+      '  vy = s.velocityY()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.getVelocityX(');
+    expect(result.code).toContain('_sb.getVelocityY(');
+  });
+});
+
+// ─── isBlockedUp / isBlockedDown / isBlockedLeft / isBlockedRight ────────────
+
+describe('AnimatedSprite — isBlockedUp / isBlockedDown / isBlockedLeft / isBlockedRight', () => {
+  test('compiles without error', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim a',
+      '  a = s.isBlockedDown()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.isBlockedUp( / Down / Left / Right', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim s as AnimatedSprite("hero.png", 48, 48)',
+      '  dim a',
+      '  dim b',
+      '  dim c',
+      '  dim d',
+      '  a = s.isBlockedUp()',
+      '  b = s.isBlockedDown()',
+      '  c = s.isBlockedLeft()',
+      '  d = s.isBlockedRight()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.isBlockedUp(');
+    expect(result.code).toContain('_sb.isBlockedDown(');
+    expect(result.code).toContain('_sb.isBlockedLeft(');
+    expect(result.code).toContain('_sb.isBlockedRight(');
+  });
+});
