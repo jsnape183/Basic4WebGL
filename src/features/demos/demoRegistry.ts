@@ -50,14 +50,14 @@ Reaching the end of a level switches to the next via \`scenemanager.switch(...)\
   {
     slug: 'bullet-hell-shooter',
     name: 'Bullet-Hell Shooter',
-    tags: ['Scenes', 'Pathfinding', 'Tilemap Markers', 'Collision'],
+    tags: ['Scenes', 'Pathfinding', 'Tilemap Markers', 'Kinematic Movement', 'Collision'],
     description: `A three-level top-down shooter: destroy every spawn point in a level as fast as you can, before its mobs overwhelm you.
 
-Mobs are **pathfinding-driven** — they route around walls to chase the player instead of moving in a straight line. Spawn points and weapon pickups are placed visually in the Tilemap Editor using **tagged markers**, queried at runtime with \`tileMapSet.markersByTag(tag)\`, instead of being hardcoded in the level's \`.bas\` file.
+The player moves with \`setVelocity\`, sliding cleanly to a stop against walls instead of passing through them — the engine handles collision automatically once \`collision.setupTileCollision\` is called on the level's tilemap, using a dedicated collision layer painted in the Tilemap Editor. Mobs are **pathfinding-driven** — they route around the same walls to chase the player instead of moving in a straight line. Spawn points and weapon pickups are placed visually in the Tilemap Editor using **tagged markers**, queried at runtime with \`tileMapSet.markersByTag(tag)\`, instead of being hardcoded in the level's \`.bas\` file.
 
 The player aims with the mouse, fires with the left click or spacebar, and can pick up one of three weapons (pistol, shotgun, SMG) with different fire rates and spread patterns. Each level's clear time is tracked, and a completed run's total time is compared against a **personal best**, persisted with \`save.set(...)\` so it survives a page reload.
 
-**Key techniques:** \`pathfinding.navigateTo\` for obstacle-avoiding enemy movement, \`tileMapSet.markersByTag\` for visually-authored spawn/pickup placement, per-weapon \`Bullet\` parameterization, HUD built from \`sprite\`/\`text\` instances added via \`hud.add()\` (not \`drawing\`, which draws into camera-relative world space).
+**Key techniques:** \`sprite.setVelocity\` + \`collision.setupTileCollision\` for automatic kinematic tile collision, \`pathfinding.navigateTo\` for obstacle-avoiding enemy movement, \`tileMapSet.markersByTag\` for visually-authored spawn/pickup placement, per-weapon \`Bullet\` parameterization, HUD built from \`sprite\`/\`text\` instances added via \`hud.add()\` (not \`drawing\`, which draws into camera-relative world space).
 
 **Assets required:** \`player.png\`, \`mob.png\`, \`spawnpoint.png\`, \`spawnpoint_destroyed.png\`, \`pickup.png\`, \`bullet.png\`, a tileset image, three tilemaps — **Controls:** WASD to move, mouse to aim, left click or Space to fire`,
     docsSlug: 'bullet-hell-shooter',
