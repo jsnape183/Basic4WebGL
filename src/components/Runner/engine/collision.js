@@ -178,6 +178,39 @@ const _sbCollision = (() => {
       this._tileCollisionGrid = null;
     },
 
+    // Flips whichever cell of the ACTIVE collision grid the world position
+    // (x, y) falls in. Out-of-range coordinates are a safe no-op -- matches
+    // _isSolidCell's existing lenient out-of-range handling, not an error.
+    // This is what makes a .stm file's collision layer only the *starting*
+    // state: a locked door tile can start solid and be opened later by
+    // calling this once the player has the key, with no need to re-run
+    // setupTileCollision or touch the tilemap's own stored layer data.
+    setTileSolid(x, y, solid) {
+      const grid = this._tileCollisionGrid;
+      if (!grid) {
+        throw new Error('collision.setTileSolid: call collision.setupTileCollision() first');
+      }
+      const { offsetX, offsetY } = this._tileGridOffset(grid.reference);
+      const col = Math.floor((Number(x) - offsetX) / grid.tileW);
+      const row = Math.floor((Number(y) - offsetY) / grid.tileH);
+      if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return;
+      grid.solid[row * grid.cols + col] = solid ? 1 : 0;
+    },
+
+    // Reads the ACTIVE grid, not the tilemap's original static data --
+    // reflects any prior setTileSolid calls, unlike tileMapSet.tileAt()
+    // which only ever sees the .stm file's unmodified starting layout.
+    isTileSolid(x, y) {
+      const grid = this._tileCollisionGrid;
+      if (!grid) {
+        throw new Error('collision.isTileSolid: call collision.setupTileCollision() first');
+      }
+      const { offsetX, offsetY } = this._tileGridOffset(grid.reference);
+      const col = Math.floor((Number(x) - offsetX) / grid.tileW);
+      const row = Math.floor((Number(y) - offsetY) / grid.tileH);
+      return this._isSolidCell(grid, row, col);
+    },
+
     _isSolidCell(grid, row, col) {
       if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return false;
       return grid.solid[row * grid.cols + col] === 1;

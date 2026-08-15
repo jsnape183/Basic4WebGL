@@ -69,6 +69,74 @@ describe('setupTileCollision', () => {
   });
 });
 
+describe('setTileSolid / isTileSolid', () => {
+  test('setTileSolid flips a not-solid cell to solid', () => {
+    const c = loadCollision();
+    const walls = makeCollisionLayer([[0, 0], [0, 0]]);
+    c.setupTileCollision(makeTileMapSet({ walls }));
+
+    expect(c.isTileSolid(5, 5)).toBe(false); // world (5,5) -> row 0, col 0
+    c.setTileSolid(5, 5, true);
+    expect(c.isTileSolid(5, 5)).toBe(true);
+    expect(c._isSolidCell(c._tileCollisionGrid, 0, 0)).toBe(true);
+  });
+
+  test('setTileSolid flips a solid cell to not-solid', () => {
+    const c = loadCollision();
+    const walls = makeCollisionLayer([[1, 1], [1, 1]]);
+    c.setupTileCollision(makeTileMapSet({ walls }));
+
+    expect(c.isTileSolid(5, 5)).toBe(true);
+    c.setTileSolid(5, 5, false);
+    expect(c.isTileSolid(5, 5)).toBe(false);
+  });
+
+  test('setTileSolid on out-of-range coordinates is a safe no-op, not an error', () => {
+    const c = loadCollision();
+    const walls = makeCollisionLayer([[0, 0], [0, 0]]);
+    c.setupTileCollision(makeTileMapSet({ walls }));
+
+    expect(() => c.setTileSolid(-500, -500, true)).not.toThrow();
+    expect(() => c.setTileSolid(5000, 5000, true)).not.toThrow();
+  });
+
+  test('isTileSolid on out-of-range coordinates returns false, not an error', () => {
+    const c = loadCollision();
+    const walls = makeCollisionLayer([[1, 1], [1, 1]]);
+    c.setupTileCollision(makeTileMapSet({ walls }));
+
+    expect(c.isTileSolid(-500, -500)).toBe(false);
+    expect(c.isTileSolid(5000, 5000)).toBe(false);
+  });
+
+  test('setTileSolid throws if setupTileCollision was never called', () => {
+    const c = loadCollision();
+    expect(() => c.setTileSolid(5, 5, true)).toThrow(/setupTileCollision/);
+  });
+
+  test('isTileSolid throws if setupTileCollision was never called', () => {
+    const c = loadCollision();
+    expect(() => c.isTileSolid(5, 5)).toThrow(/setupTileCollision/);
+  });
+
+  test('a sprite that was blocked by a tile can pass through it after setTileSolid unlocks it', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    const handle = makeHandle(5, 0, 8, 8); // bounds x:5-13
+    handle._sbVelocityX = 100; // dx = 10 per 100ms frame
+
+    c._applyKinematics(handle, 100);
+    expect(handle.position.x).toBe(12); // clipped at the wall, as in the existing directional tests
+    expect(c.isBlockedRight(handle)).toBe(true);
+
+    c.setTileSolid(25, 0, false); // world (25, 0) falls in the solid column -> open it
+
+    c._applyKinematics(handle, 100);
+    expect(handle.position.x).toBe(22); // moved the full 10px this time, wall is gone
+    expect(c.isBlockedRight(handle)).toBe(false);
+  });
+});
+
 // A fake PIXI handle: position is the top-left corner (matches plain
 // `sprite`'s default anchor(0,0) — see sprites.js/createSprite, which never
 // calls anchor.set), and getBounds() recomputes from the *current* position
