@@ -1,6 +1,6 @@
 # collision
 
-The `collision` module provides six functions for detecting overlaps, proximity, and line-of-sight between sprites, plus one for setting up automatic tilemap collision. Include the **softGfx** package to use it.
+The `collision` module provides six functions for detecting overlaps, proximity, and line-of-sight between sprites, one for setting up automatic tilemap collision, and two for changing which tiles are solid while the game is running. Include the **softGfx** package to use it.
 
 ## spriteCollide(a, b)
 
@@ -162,6 +162,41 @@ function onenter()
 endfunction
 
 EndClass
+```
+
+## setTileSolid(x, y, solid)
+
+Changes whether the tile at a position blocks movement, while the game is running — the tilemap's collision layer only sets the *starting* state; this changes it. Use this for things like a locked door that becomes passable once the player has picked up a key.
+
+| Parameter | Type              | Description |
+|-----------|-------------------|-------------|
+| x         | number            | X position, in pixels, of a point inside the tile to change |
+| y         | number            | Y position, in pixels, of a point inside the tile to change |
+| solid     | `true` or `false` | `true` to block movement through this tile, `false` to allow it |
+
+A position outside the tilemap is silently ignored. `collision.setupTileCollision` must have been called first.
+
+```bas
+if player.hasKey then
+  collision.setTileSolid(doorX, doorY, false)
+endif
+```
+
+## isTileSolid(x, y)
+
+Returns whether the tile at a position currently blocks movement — reflects any changes already made with `setTileSolid`, not just the tilemap's original collision layer.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| x         | number | X position, in pixels, of a point inside the tile to check |
+| y         | number | Y position, in pixels, of a point inside the tile to check |
+
+**Returns:** `true` or `false`. A position outside the tilemap returns `false`. `collision.setupTileCollision` must have been called first.
+
+```bas
+if not collision.isTileSolid(doorX, doorY) then
+  self.showText("The door is open.")
+endif
 ```
 
 ## Note: gfx.boxCollide (deprecated)
