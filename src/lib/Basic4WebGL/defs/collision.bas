@@ -25,3 +25,11 @@ endfunction
 function setupTileCollision(tileMapSet)
     call("_sb.setupTileCollision(setuptilecollision_tileMapSet)")
 endfunction
+
+function setTileSolid(x, y, solid)
+    call("_sb.setTileSolid(settilesolid_x, settilesolid_y, settilesolid_solid)")
+endfunction
+
+function isTileSolid(x, y)
+    return call("_sb.isTileSolid(istilesolid_x, istilesolid_y)")
+endfunction

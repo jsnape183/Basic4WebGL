@@ -201,6 +201,52 @@ describe('collision — setupTileCollision', () => {
   });
 });
 
+// ─── setTileSolid ──────────────────────────────────────────────────────────
+
+describe('collision — setTileSolid', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  collision.setTileSolid(160, 112, true)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.setTileSolid(', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  collision.setTileSolid(160, 112, false)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setTileSolid(');
+  });
+});
+
+// ─── isTileSolid ───────────────────────────────────────────────────────────
+
+describe('collision — isTileSolid', () => {
+  test('compiles without error', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  dim solid',
+      '  solid = collision.isTileSolid(160, 112)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.isTileSolid(', () => {
+    const result = transpileWithCollision([
+      'function test()',
+      '  dim solid',
+      '  solid = collision.isTileSolid(160, 112)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.isTileSolid(');
+  });
+});
+
 // ─── RayHit property access ───────────────────────────────────────────────────
 
 describe('collision — RayHit property access', () => {
