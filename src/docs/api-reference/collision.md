@@ -174,7 +174,9 @@ Changes whether the tile at a position blocks movement, while the game is runnin
 | y         | number            | Y position, in pixels, of a point inside the tile to change |
 | solid     | `true` or `false` | `true` to block movement through this tile, `false` to allow it |
 
-A position outside the tilemap is silently ignored. `collision.setupTileCollision` must have been called first.
+A position outside the tilemap is silently ignored.
+
+> **Note:** Throws an error if `collision.setupTileCollision` hasn't been called yet.
 
 ```bas
 if player.hasKey then
@@ -191,7 +193,9 @@ Returns whether the tile at a position currently blocks movement — reflects an
 | x         | number | X position, in pixels, of a point inside the tile to check |
 | y         | number | Y position, in pixels, of a point inside the tile to check |
 
-**Returns:** `true` or `false`. A position outside the tilemap returns `false`. `collision.setupTileCollision` must have been called first.
+**Returns:** `true` or `false`. A position outside the tilemap returns `false`.
+
+> **Note:** Throws an error if `collision.setupTileCollision` hasn't been called yet.
 
 ```bas
 if not collision.isTileSolid(doorX, doorY) then
