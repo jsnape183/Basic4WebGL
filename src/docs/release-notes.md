@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.15 — 2026-08-15
+
+### New: change collision at runtime
+
+- `collision.setTileSolid(x, y, solid)` lets a game change whether a tile blocks movement while it's running — a tilemap's collision layer is now just the *starting* state. `collision.isTileSolid(x, y)` reads it back, reflecting any changes already made. The classic use case: a locked door tile that becomes passable once the player picks up a key
+
 ## v0.6.14 — 2026-08-14
 
 ### Fixes
