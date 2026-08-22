@@ -16,6 +16,7 @@ function loadScene() {
   const scene = factory(lifecycle);
   scene._cameraUpdate = vi.fn();
   scene._pathfindingUpdate = vi.fn();
+  scene._tweenUpdate = vi.fn();
   scene._resetFrameInput = vi.fn();
   return scene;
 }
@@ -27,6 +28,17 @@ describe('_sbScene._update — pathfinding movement wiring', () => {
     scene._update(16.67);
 
     expect(scene._pathfindingUpdate).toHaveBeenCalledWith(16.67);
+    expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
+  });
+});
+
+describe('_sbScene._update — tween animation wiring', () => {
+  test('calls _tweenUpdate(delta) every frame, alongside _cameraUpdate', () => {
+    const scene = loadScene();
+
+    scene._update(16.67);
+
+    expect(scene._tweenUpdate).toHaveBeenCalledWith(16.67);
     expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
   });
 });

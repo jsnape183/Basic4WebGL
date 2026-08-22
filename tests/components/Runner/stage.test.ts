@@ -24,6 +24,7 @@ const ENGINE_MODULES = [
   'tilemap',
   'collision',
   'pathfinding',
+  'tween',
   'scene',
   'camera',
 ];

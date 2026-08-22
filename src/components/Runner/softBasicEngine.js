@@ -14,4 +14,5 @@ const _sb = {
   ..._sbTilemaps,
   ..._sbCollision,
   ..._sbPathfinding,
+  ..._sbTween,
 };
