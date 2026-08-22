@@ -2,6 +2,7 @@ import { ProjectExportJson } from '../projects/exportProject';
 import raycasterJson from '../../docs/demos/Raycaster.b4wgl.json';
 import coinsPlatformerJson from '../../docs/demos/CoinsPlatformer.b4wgl.json';
 import bulletHellShooterJson from '../../docs/demos/BulletHellShooter.b4wgl.json';
+import dungeonExplorerJson from '../../docs/demos/DungeonExplorer.b4wgl.json';
 
 export interface DemoEntry {
   slug: string;
@@ -62,5 +63,21 @@ The player aims with the mouse, fires with the left click or spacebar, and can p
 **Assets required:** \`player.png\`, \`mob.png\`, \`spawnpoint.png\`, \`spawnpoint_destroyed.png\`, \`pickup.png\`, \`bullet.png\`, a tileset image, three tilemaps — **Controls:** WASD to move, mouse to aim, left click or Space to fire`,
     docsSlug: 'bullet-hell-shooter',
     json: bulletHellShooterJson as ProjectExportJson,
+  },
+  {
+    slug: 'dungeon-explorer',
+    name: 'Dungeon Explorer',
+    tags: ['Scenes', 'Kinematic Movement', 'Runtime Collision', 'Tilemap Markers', 'Pathfinding'],
+    description: `A room-by-room dungeon crawl: fight through two branches of enemies, find the key, and defeat the boss guarding the treasure room.
+
+The whole dungeon is one tilemap, but the camera treats it as discrete rooms — walking off one room's edge hard-cuts the view to the next, classic-adventure-game style, instead of scrolling continuously. The boss room's door is a real \`collision\` tile, solid until \`collision.setTileSolid(x, y, false)\` opens it once the player has the key — the tilemap's collision layer is only the *starting* state, not a fixed layout.
+
+The player moves with \`setVelocity\` (sliding cleanly along walls, automatic tile collision, no hand-rolled checks) and attacks with a short-range melee swing in whichever direction they last moved. Enemies and the boss both chase via \`pathfinding.navigateTo\`; the boss adds a periodic speed-boosted lunge on top of that. Losing all 3 hearts ends the run; defeating the boss wins it.
+
+**Key techniques:** \`collision.setTileSolid\`/\`isTileSolid\` for a runtime-unlockable door, \`camera.setPosition\` for discrete room-snap transitions instead of continuous scrolling, \`sprite.setVelocity\` + \`collision.setupTileCollision\` for kinematic movement, \`tileMapSet.markersByTag\` for visually-placed enemies/key/boss, \`pathfinding.navigateTo\` for chase AI.
+
+**Assets required:** \`player.png\`, \`enemy.png\`, \`boss.png\`, \`key.png\`, \`heart_full.png\`, \`heart_empty.png\`, a tileset image, one tilemap — **Controls:** WASD to move, J to attack`,
+    docsSlug: 'dungeon-explorer',
+    json: dungeonExplorerJson as ProjectExportJson,
   },
 ];

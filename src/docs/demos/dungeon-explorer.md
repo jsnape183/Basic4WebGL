@@ -1,0 +1,626 @@
+# Dungeon Explorer
+
+A room-by-room dungeon crawl: fight through two branches of enemies, find the key, and defeat the boss guarding the treasure room.
+
+---
+
+## How it works
+
+The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms rather than one continuously-scrolling level: `onupdate()` divides the player's world position by the room size (240×176, i.e. 15×11 tiles at 16px) to get a room coordinate, and whenever that coordinate changes, `camera.setPosition(roomX * 240, roomY * 176)` hard-cuts the view to the new room — classic-adventure-game style, instead of scrolling continuously.
+
+The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
+
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. Enemies and the boss both chase the player via `pathfinding.navigateTo`; the boss adds a periodic speed-boosted lunge on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets). Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+
+Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
+
+**Key techniques:** `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+
+---
+
+## Required assets
+
+| Filename | What it is |
+|---|---|
+| `player.png` | 16×16 per frame, 4 frames horizontal (64×16 total) — frame 0 idle, frames 1–2 walk cycle, frame 3 attack pose |
+| `enemy.png` | 16×16, single frame |
+| `boss.png` | 32×32, single frame |
+| `key.png` | 16×16, single frame |
+| `heart_full.png` | 16×16, single frame — HUD heart icon, filled |
+| `heart_empty.png` | 16×16, single frame — HUD heart icon, outline/empty |
+| `tilesheet.png` | Tileset image used for the dungeon's floor/wall tiles |
+| `dungeon.stm` | Tilemap data with `floor`/`walls` tile layers, a `collision` layer, and `enemy`/`key`/`boss` marker layers |
+
+---
+
+## Controls
+
+| Key | Action |
+|---|---|
+| W / A / S / D | Move |
+| J | Attack |
+
+---
+
+## Boss.bas
+
+```bas
+Class
+Extends sprite
+
+dim hp
+dim dead
+dim chaseTarget as sprite
+dim damageCooldown
+dim baseSpeed
+dim lungeSpeed
+dim attackTimer
+dim lungeTimer
+
+Constructor(x, y, targetRef as sprite)
+  super("boss.png")
+  self.transform.setPosition(x, y)
+  self.hp = 150
+  self.dead = false
+  self.chaseTarget = targetRef
+  self.damageCooldown = 0
+  self.baseSpeed = 40
+  self.lungeSpeed = 160
+  self.attackTimer = 2.5
+  self.lungeTimer = 0
+EndConstructor
+
+function onupdate(delta)
+  if not self.dead then
+    dim dt
+    dim currentSpeed
+    dt = delta / 1000
+
+    if self.lungeTimer > 0 then
+      self.lungeTimer = self.lungeTimer - dt
+      currentSpeed = self.lungeSpeed
+    else
+      self.attackTimer = self.attackTimer - dt
+      if self.attackTimer <= 0 then
+        self.attackTimer = 2.5
+        self.lungeTimer = 0.6
+      endif
+      currentSpeed = self.baseSpeed
+    endif
+
+    pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), currentSpeed)
+
+    if self.damageCooldown > 0 then
+      self.damageCooldown = self.damageCooldown - dt
+    endif
+
+    if collision.spriteCollide(self, self.chaseTarget) then
+      if self.damageCooldown <= 0 then
+        self.chaseTarget.takeDamage()
+        self.damageCooldown = 0.5
+      endif
+    endif
+  endif
+endfunction
+
+function hit(damage)
+  if not self.dead then
+    self.hp = self.hp - damage
+    if self.hp <= 0 then
+      self.dead = true
+      world.remove(self)
+      scenemanager.switch("winscene")
+    endif
+  endif
+endfunction
+
+EndClass
+```
+
+## DungeonScene.bas
+
+```bas
+Class
+Extends scene
+
+dim tilemapset as tilemapset
+dim player as player
+dim enemies
+dim keyPickup as keypickup
+dim boss as boss
+dim lastRoomX
+dim lastRoomY
+dim heart1 as sprite
+dim heart2 as sprite
+dim heart3 as sprite
+
+Constructor()
+EndConstructor
+
+function onenter()
+  dim tm as tilemapset
+  tm = new tilemapset("dungeon.stm")
+  world.add(tm)
+  self.tilemapset = tm
+
+  collision.setupTileCollision(tm)
+  pathfinding.setup(tm, self.wallLayers())
+  camera.setZoom(2)
+
+  dim p as player
+  p = new Player(40, 40)
+  world.add(p)
+  self.player = p
+
+  self.enemies = levelhelpers.enemiesFromMarkers(tm, "enemy", p)
+  p.setEnemies(self.enemies)
+
+  dim keyMarkers
+  keyMarkers = tm.markersByTag("key")
+  dim km as Marker
+  km = keyMarkers(0)
+  dim k as keypickup
+  k = new KeyPickup(km.x, km.y)
+  world.add(k)
+  self.keyPickup = k
+
+  dim bossMarkers
+  bossMarkers = tm.markersByTag("boss")
+  dim bm as Marker
+  bm = bossMarkers(0)
+  dim b as boss
+  b = new Boss(bm.x, bm.y, p)
+  world.add(b)
+  self.boss = b
+  p.setBoss(b)
+
+  self.lastRoomX = -1
+  self.lastRoomY = -1
+
+  self.setupHud()
+endfunction
+
+function wallLayers()
+  dim layers(0)
+  array.push(layers, "collision")
+  return layers
+endfunction
+
+function setupHud()
+  dim h1 as sprite
+  h1 = new sprite("heart_full.png")
+  h1.transform.setPosition(20, 20)
+  hud.add(h1)
+  self.heart1 = h1
+
+  dim h2 as sprite
+  h2 = new sprite("heart_full.png")
+  h2.transform.setPosition(40, 20)
+  hud.add(h2)
+  self.heart2 = h2
+
+  dim h3 as sprite
+  h3 = new sprite("heart_full.png")
+  h3.transform.setPosition(60, 20)
+  hud.add(h3)
+  self.heart3 = h3
+endfunction
+
+function updateHud()
+  dim hearts
+  hearts = self.player.getHearts()
+
+  if hearts >= 1 then
+    self.heart1.setTexture("heart_full.png")
+  else
+    self.heart1.setTexture("heart_empty.png")
+  endif
+
+  if hearts >= 2 then
+    self.heart2.setTexture("heart_full.png")
+  else
+    self.heart2.setTexture("heart_empty.png")
+  endif
+
+  if hearts >= 3 then
+    self.heart3.setTexture("heart_full.png")
+  else
+    self.heart3.setTexture("heart_empty.png")
+  endif
+endfunction
+
+function onupdate(delta)
+  dim roomX
+  dim roomY
+
+  self.updateHud()
+
+  if not self.keyPickup.collected then
+    if collision.spriteCollide(self.player, self.keyPickup) then
+      self.keyPickup.collect()
+      self.player.setHasKey(true)
+    endif
+  endif
+
+  roomX = math.floor(self.player.transform.x() / 240)
+  roomY = math.floor(self.player.transform.y() / 176)
+
+  if roomX <> self.lastRoomX or roomY <> self.lastRoomY then
+    self.lastRoomX = roomX
+    self.lastRoomY = roomY
+    camera.setPosition(roomX * 240, roomY * 176)
+  endif
+endfunction
+
+EndClass
+```
+
+## Enemy.bas
+
+```bas
+Class
+Extends sprite
+
+dim hp
+dim dead
+dim chaseTarget as sprite
+dim damageCooldown
+dim speed
+
+Constructor(x, y, targetRef as sprite)
+  super("enemy.png")
+  self.transform.setPosition(x, y)
+  self.hp = 30
+  self.dead = false
+  self.chaseTarget = targetRef
+  self.damageCooldown = 0
+  self.speed = 50
+EndConstructor
+
+function onupdate(delta)
+  if not self.dead then
+    dim dt
+    dt = delta / 1000
+    pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
+
+    if self.damageCooldown > 0 then
+      self.damageCooldown = self.damageCooldown - dt
+    endif
+
+    if collision.spriteCollide(self, self.chaseTarget) then
+      if self.damageCooldown <= 0 then
+        self.chaseTarget.takeDamage()
+        self.damageCooldown = 0.5
+      endif
+    endif
+  endif
+endfunction
+
+function hit(damage)
+  if not self.dead then
+    self.hp = self.hp - damage
+    if self.hp <= 0 then
+      self.dead = true
+      world.remove(self)
+    endif
+  endif
+endfunction
+
+EndClass
+```
+
+## GameOverScene.bas
+
+```bas
+Class
+Extends scene
+
+dim failText as text
+
+Constructor()
+EndConstructor
+
+function onenter()
+  dim t1 as text
+  t1 = new text("YOU DIED", 320, 200)
+  t1.setStyle(28, 255, 60, 60)
+  hud.add(t1)
+  self.failText = t1
+endfunction
+
+function onkeydown(key)
+  scenemanager.switch("dungeon")
+endfunction
+
+EndClass
+```
+
+## KeyPickup.bas
+
+```bas
+Class
+Extends sprite
+
+dim collected
+
+Constructor(x, y)
+  super("key.png")
+  self.transform.setPosition(x, y)
+  self.collected = false
+EndConstructor
+
+function collect()
+  self.collected = true
+  world.remove(self)
+endfunction
+
+EndClass
+```
+
+## LevelHelpers.bas
+
+A plain module (no `Class` keyword) — logic shared by the dungeon scene.
+
+```bas
+' demo-src/dungeon-explorer/LevelHelpers.bas
+function enemiesFromMarkers(tileMapSet as tilemapset, tag, chaseTarget)
+  dim markers
+  markers = tileMapSet.markersByTag(tag)
+  dim result(0)
+  dim i
+  dim m as Marker
+  dim e as enemy
+  for i = 0 to array.arrLength(markers) - 1
+    m = markers(i)
+    e = new Enemy(m.x, m.y, chaseTarget)
+    world.add(e)
+    array.push(result, e)
+  next i
+  return result
+endfunction
+```
+
+## Main.bas
+
+```bas
+' demo-src/dungeon-explorer/Main.bas
+function oninit()
+  world.setPixelPerfect(true)
+endfunction
+
+dim titlescene = new TitleScene()
+dim dungeonscene = new DungeonScene()
+dim winscene = new WinScene()
+dim gameoverscene = new GameOverScene()
+
+scenemanager.register("title", titlescene)
+scenemanager.register("dungeon", dungeonscene)
+scenemanager.register("winscene", winscene)
+scenemanager.register("gameover", gameoverscene)
+scenemanager.switch("title")
+```
+
+## Player.bas
+
+```bas
+Class
+Extends animatedsprite
+
+dim hearts
+dim maxHearts
+dim facingX
+dim facingY
+dim hasKey
+dim attackCooldown
+dim invincibleTime
+dim flickerTimer
+dim visibleFlag
+dim enemies() as enemy
+dim boss as boss
+
+Constructor(x, y)
+  super("player.png", 16, 16)
+  self.transform.setPosition(x, y)
+  self.addAnim("idle", 0, 0, 1, true)
+  self.addAnim("walk", 1, 2, 6, true)
+  self.addAnim("attack", 3, 3, 1, false)
+  self.play("idle")
+  self.maxHearts = 3
+  self.hearts = 3
+  self.facingX = 0
+  self.facingY = 1
+  self.hasKey = false
+  self.attackCooldown = 0
+  self.invincibleTime = 0
+  self.flickerTimer = 0
+  self.visibleFlag = true
+EndConstructor
+
+function setEnemies(enemiesRef)
+  self.enemies = enemiesRef
+endfunction
+
+function setBoss(bossRef as boss)
+  self.boss = bossRef
+endfunction
+
+function setHasKey(value)
+  self.hasKey = value
+endfunction
+
+function getHearts()
+  return self.hearts
+endfunction
+
+function takeDamage()
+  if self.invincibleTime <= 0 then
+    self.hearts = self.hearts - 1
+    self.invincibleTime = 1
+  endif
+endfunction
+
+function tryAttack()
+  dim hitX
+  dim hitY
+  dim i
+  dim e as enemy
+
+  if self.attackCooldown <= 0 then
+    self.attackCooldown = 0.4
+    self.play("attack")
+    hitX = self.transform.x() + self.facingX * 20
+    hitY = self.transform.y() + self.facingY * 20
+
+    for i = 0 to array.arrLength(self.enemies) - 1
+      e = self.enemies(i)
+      if not e.dead then
+        if collision.boxCollide(hitX, hitY, 16, 16, e.transform.x(), e.transform.y(), 16, 16) then
+          e.hit(15)
+        endif
+      endif
+    next i
+
+    if not self.boss.dead then
+      if collision.boxCollide(hitX, hitY, 16, 16, self.boss.transform.x(), self.boss.transform.y(), 32, 32) then
+        self.boss.hit(15)
+      endif
+    endif
+  endif
+endfunction
+
+function onupdate(delta)
+  dim dt
+  dim moveX
+  dim moveY
+  dim nx
+  dim ny
+
+  dt = delta / 1000
+
+  moveX = 0
+  moveY = 0
+  if input.getKeyDown(87) then : moveY = -1 : endif
+  if input.getKeyDown(83) then : moveY = 1 : endif
+  if input.getKeyDown(65) then : moveX = -1 : endif
+  if input.getKeyDown(68) then : moveX = 1 : endif
+
+  nx = math.normalizeX(moveX, moveY)
+  ny = math.normalizeY(moveX, moveY)
+  self.setVelocity(nx * 100, ny * 100)
+
+  if moveX <> 0 or moveY <> 0 then
+    self.facingX = nx
+    self.facingY = ny
+  endif
+
+  if input.keyPressed(74) then
+    self.tryAttack()
+  endif
+
+  if self.attackCooldown > 0 then
+    self.attackCooldown = self.attackCooldown - dt
+  endif
+
+  if self.hasKey then
+    collision.setTileSolid(488, 264, false)
+    collision.setTileSolid(488, 280, false)
+  endif
+
+  if self.invincibleTime > 0 then
+    self.invincibleTime = self.invincibleTime - dt
+    self.flickerTimer = self.flickerTimer - dt
+    if self.flickerTimer <= 0 then
+      self.flickerTimer = 0.08
+      if self.visibleFlag then
+        self.visibleFlag = false
+        self.setAlpha(0.2)
+      else
+        self.visibleFlag = true
+        self.setAlpha(1)
+      endif
+    endif
+  else
+    self.setAlpha(1)
+  endif
+
+  if self.attackCooldown > 0.25 then
+    ' still flashing the attack pose from a recent swing -- let it finish
+    ' showing before switching back to walk/idle, rather than depending on
+    ' the animation engine's own "is it done playing" state
+  elseif moveX <> 0 or moveY <> 0 then
+    if not self.isPlaying("walk") then
+      self.play("walk")
+    endif
+  else
+    if not self.isPlaying("idle") then
+      self.play("idle")
+    endif
+  endif
+
+  if self.hearts <= 0 then
+    scenemanager.switch("gameover")
+  endif
+endfunction
+
+EndClass
+```
+
+## TitleScene.bas
+
+```bas
+Class
+Extends scene
+
+dim titleText as text
+dim promptText as text
+
+Constructor()
+EndConstructor
+
+function onenter()
+  world.setBackground(15, 10, 20)
+  dim t1 as text
+  t1 = new text("DUNGEON EXPLORER", 260, 200)
+  t1.setStyle(30, 255, 220, 120)
+  hud.add(t1)
+  self.titleText = t1
+
+  dim t2 as text
+  t2 = new text("Press any key to start", 290, 260)
+  t2.setStyle(16, 200, 200, 200)
+  hud.add(t2)
+  self.promptText = t2
+endfunction
+
+function onkeydown(key)
+  scenemanager.switch("dungeon")
+endfunction
+
+EndClass
+```
+
+## WinScene.bas
+
+```bas
+Class
+Extends scene
+
+dim winText as text
+
+Constructor()
+EndConstructor
+
+function onenter()
+  dim t1 as text
+  t1 = new text("THE DUNGEON IS CLEAR", 240, 200)
+  t1.setStyle(26, 255, 255, 100)
+  hud.add(t1)
+  self.winText = t1
+endfunction
+
+function onkeydown(key)
+  scenemanager.switch("title")
+endfunction
+
+EndClass
+```
