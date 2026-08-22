@@ -105,9 +105,18 @@ describe('_tweenUpdate — interpolation', () => {
     const handle = makeHandle();
     const spriteObj = { _handle: handle };
     tw._sbInstances = [spriteObj];
-    tw.tweenPlay(spriteObj, [frame(0, 0), frame(0.5, 100)], false);
+    // Non-default scale/alpha/position on the final keyframe: the "finished"
+    // path applies the raw Keyframe object directly rather than through the
+    // interpolation remap, so this catches the scalex/scaley-vs-scaleX/scaleY
+    // naming mismatch a defaults-only frame (scale 1, alpha 1) would hide.
+    tw.tweenPlay(spriteObj, [frame(0, 0, 1, 1, 1, 0, 0), frame(0.5, 100, 2, 3, 0.5, 10, 20)], false);
     tw._tweenUpdate(1000); // well past the 0.5s span
     expect(handle.angle).toBeCloseTo(100);
+    expect(handle.scale.x).toBeCloseTo(2);
+    expect(handle.scale.y).toBeCloseTo(3);
+    expect(handle.alpha).toBeCloseTo(0.5);
+    expect(handle.position.x).toBeCloseTo(10);
+    expect(handle.position.y).toBeCloseTo(20);
     expect(tw.tweenIsPlaying(spriteObj)).toBe(false);
   });
 

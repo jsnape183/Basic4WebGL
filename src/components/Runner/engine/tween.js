@@ -31,7 +31,20 @@ const _sbTween = {
       if (loop) {
         t = t % last.time;
       } else if (t >= last.time) {
-        this._applyFrame(handle, last);
+        // last is a raw Keyframe instance (lowercase scalex/scaley) -- remap
+        // to _applyFrame's camelCase shape, same as the interpolation branch
+        // below does. Passing `last` straight through here previously left
+        // v.scaleX/v.scaleY undefined, which PIXI's scale.set() silently
+        // treated as 0, collapsing the sprite's scale to nothing the instant
+        // any non-looping tween finished.
+        this._applyFrame(handle, {
+          angle: last.angle,
+          scaleX: last.scalex,
+          scaleY: last.scaley,
+          alpha: last.alpha,
+          x: last.x,
+          y: last.y,
+        });
         this._playing.delete(spriteObj);
         continue;
       }
