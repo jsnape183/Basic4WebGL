@@ -12,6 +12,7 @@ dim flickerTimer
 dim visibleFlag
 dim enemies() as enemy
 dim boss as boss
+dim sword as sword
 
 Constructor(x, y)
   super("player.png", 16, 16)
@@ -39,6 +40,10 @@ function setBoss(bossRef as boss)
   self.boss = bossRef
 endfunction
 
+function setSword(swordRef as sword)
+  self.sword = swordRef
+endfunction
+
 function setHasKey(value)
   self.hasKey = value
 endfunction
@@ -63,6 +68,26 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
+    self.sword.swing(self.transform.x(), self.transform.y(), self.facingX, self.facingY)
+
+    dim s1 as Keyframe
+    s1 = new Keyframe()
+    s1.setTime(0)
+    s1.setAngle(0)
+    s1.setPosition(self.transform.x(), self.transform.y())
+
+    dim s2 as Keyframe
+    s2 = new Keyframe()
+    s2.setTime(0.4)
+    s2.setAngle(360)
+    s2.setPosition(self.transform.x(), self.transform.y())
+
+    dim spinFrames(0)
+    array.push(spinFrames, s1)
+    array.push(spinFrames, s2)
+
+    tween.play(self, spinFrames, false)
+
     hitX = self.transform.x() + self.facingX * 20
     hitY = self.transform.y() + self.facingY * 20
 

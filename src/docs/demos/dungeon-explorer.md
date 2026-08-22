@@ -10,11 +10,13 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets). Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) swings out from the player's position through its own `tween`-driven arc, hiding itself again once `tween.isPlaying()` reports it's finished. The player can't move during that 0.4s — both keyframes in the spin pin position to wherever the swing started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
+
+Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
-**Key techniques:** `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+**Key techniques:** `tween.play`/`isPlaying` + `Keyframe` for the spin-and-swing melee attack, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
 
 ---
 
@@ -28,6 +30,7 @@ Enemies and the key are placed visually in the Tilemap Editor as tagged markers,
 | `key.png` | Kenney sprite (gem/amulet icon, standing in for a literal key), 16×16, single frame |
 | `heart_full.png` | Kenney sprite (potion icon, standing in for a heart), 16×16, single frame — HUD icon, filled |
 | `heart_empty.png` | Same Kenney sprite as `heart_full.png`, desaturated and dimmed — HUD icon, empty |
+| `sword.png` | Kenney sprite, 16×16, single frame — the separate swinging-sword sprite used only during the attack |
 | `tilesheet.png` | Kenney tileset ("Tiny Dungeon") used for the dungeon's floor/wall tiles |
 | `dungeon.stm` | Tilemap data with `floor`/`walls` tile layers, a `collision` layer, and `enemy`/`key`/`boss` marker layers |
 
@@ -151,6 +154,11 @@ function onenter()
   p = new Player(40, 40)
   world.add(p)
   self.player = p
+
+  dim sw as sword
+  sw = new Sword()
+  world.add(sw)
+  p.setSword(sw)
 
   self.enemies = levelhelpers.enemiesFromMarkers(tm, "enemy", p)
   p.setEnemies(self.enemies)
@@ -497,6 +505,7 @@ dim flickerTimer
 dim visibleFlag
 dim enemies() as enemy
 dim boss as boss
+dim sword as sword
 
 Constructor(x, y)
   super("player.png", 16, 16)
@@ -524,6 +533,10 @@ function setBoss(bossRef as boss)
   self.boss = bossRef
 endfunction
 
+function setSword(swordRef as sword)
+  self.sword = swordRef
+endfunction
+
 function setHasKey(value)
   self.hasKey = value
 endfunction
@@ -548,6 +561,26 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
+    self.sword.swing(self.transform.x(), self.transform.y(), self.facingX, self.facingY)
+
+    dim s1 as Keyframe
+    s1 = new Keyframe()
+    s1.setTime(0)
+    s1.setAngle(0)
+    s1.setPosition(self.transform.x(), self.transform.y())
+
+    dim s2 as Keyframe
+    s2 = new Keyframe()
+    s2.setTime(0.4)
+    s2.setAngle(360)
+    s2.setPosition(self.transform.x(), self.transform.y())
+
+    dim spinFrames(0)
+    array.push(spinFrames, s1)
+    array.push(spinFrames, s2)
+
+    tween.play(self, spinFrames, false)
+
     hitX = self.transform.x() + self.facingX * 20
     hitY = self.transform.y() + self.facingY * 20
 
@@ -639,6 +672,54 @@ function onupdate(delta)
 
   if self.hearts <= 0 then
     scenemanager.switch("gameover")
+  endif
+endfunction
+
+EndClass
+```
+
+## Sword.bas
+
+```bas
+Class
+Extends sprite
+
+dim active
+
+Constructor()
+  super("sword.png")
+  self.setVisible(false)
+  self.active = false
+EndConstructor
+
+function swing(px, py, facingX, facingY)
+  dim k1 as Keyframe
+  k1 = new Keyframe()
+  k1.setTime(0)
+  k1.setAngle(-60)
+  k1.setPosition(px + facingX * 10, py + facingY * 10)
+
+  dim k2 as Keyframe
+  k2 = new Keyframe()
+  k2.setTime(0.4)
+  k2.setAngle(60)
+  k2.setPosition(px + facingX * 18, py + facingY * 18)
+
+  dim frames(0)
+  array.push(frames, k1)
+  array.push(frames, k2)
+
+  self.setVisible(true)
+  self.active = true
+  tween.play(self, frames, false)
+endfunction
+
+function onupdate(delta)
+  if self.active then
+    if not tween.isPlaying(self) then
+      self.active = false
+      self.setVisible(false)
+    endif
   endif
 endfunction
 

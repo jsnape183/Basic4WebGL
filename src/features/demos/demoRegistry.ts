@@ -67,16 +67,16 @@ The player aims with the mouse, fires with the left click or spacebar, and can p
   {
     slug: 'dungeon-explorer',
     name: 'Dungeon Explorer',
-    tags: ['Scenes', 'Kinematic Movement', 'Runtime Collision', 'Tilemap Markers', 'Pathfinding'],
+    tags: ['Scenes', 'Kinematic Movement', 'Runtime Collision', 'Tilemap Markers', 'Pathfinding', 'Keyframe Animation'],
     description: `A room-by-room dungeon crawl: fight through two branches of enemies, find the key, and defeat the boss guarding the treasure room.
 
 The whole dungeon is one tilemap, but the camera treats it as discrete rooms — walking off one room's edge hard-cuts the view to the next, classic-adventure-game style, instead of scrolling continuously. The boss room's door is a real \`collision\` tile, solid until \`collision.setTileSolid(x, y, false)\` opens it once the player has the key — the tilemap's collision layer is only the *starting* state, not a fixed layout.
 
-The player moves with \`setVelocity\` (sliding cleanly along walls, automatic tile collision, no hand-rolled checks) and attacks with a short-range melee swing in whichever direction they last moved. Enemies and the boss both chase via \`pathfinding.navigateTo\`; the boss adds a periodic speed-boosted lunge on top of that. Losing all 3 hearts ends the run; defeating the boss wins it.
+The player moves with \`setVelocity\` (sliding cleanly along walls, automatic tile collision, no hand-rolled checks) and attacks with a short-range melee swing in whichever direction they last moved — a \`tween\`-driven 360° spin plus a separate sword sprite swinging out through its own keyframed arc. Enemies patrol until the player gets close, then chase via \`pathfinding.navigateTo\`; the boss skips patrolling entirely and adds a periodic speed-boosted lunge on top of its full-time chase. Losing all 3 hearts ends the run; defeating the boss wins it.
 
-**Key techniques:** \`collision.setTileSolid\`/\`isTileSolid\` for a runtime-unlockable door, \`camera.setPosition\` for discrete room-snap transitions instead of continuous scrolling, \`sprite.setVelocity\` + \`collision.setupTileCollision\` for kinematic movement, \`tileMapSet.markersByTag\` for visually-placed enemies/key/boss, \`pathfinding.navigateTo\` for chase AI.
+**Key techniques:** \`tween.play\`/\`isPlaying\` + \`Keyframe\` for the spin-and-swing melee attack, \`collision.setTileSolid\`/\`isTileSolid\` for a runtime-unlockable door, \`camera.setPosition\` for discrete room-snap transitions instead of continuous scrolling, \`sprite.setVelocity\` + \`collision.setupTileCollision\` for kinematic movement, \`tileMapSet.markersByTag\` for visually-placed enemies/key/boss, \`pathfinding.navigateTo\` for chase AI.
 
-**Assets required:** \`player.png\`, \`enemy.png\`, \`boss.png\`, \`key.png\`, \`heart_full.png\`, \`heart_empty.png\`, a tileset image, one tilemap — **Controls:** WASD to move, J to attack`,
+**Assets required:** \`player.png\`, \`enemy.png\`, \`boss.png\`, \`key.png\`, \`sword.png\`, \`heart_full.png\`, \`heart_empty.png\`, a tileset image, one tilemap — **Controls:** WASD to move, J to attack`,
     docsSlug: 'dungeon-explorer',
     json: dungeonExplorerJson as ProjectExportJson,
   },

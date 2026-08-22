@@ -30,6 +30,11 @@ function onenter()
   world.add(p)
   self.player = p
 
+  dim sw as sword
+  sw = new Sword()
+  world.add(sw)
+  p.setSword(sw)
+
   self.enemies = levelhelpers.enemiesFromMarkers(tm, "enemy", p)
   p.setEnemies(self.enemies)
 
