@@ -1,0 +1,125 @@
+Class
+Extends scene
+
+dim tilemapset as tilemapset
+dim player as player
+dim enemies
+dim keyPickup as keypickup
+dim boss as boss
+dim lastRoomX
+dim lastRoomY
+dim heart1 as sprite
+dim heart2 as sprite
+dim heart3 as sprite
+
+Constructor()
+EndConstructor
+
+function onenter()
+  dim tm as tilemapset
+  tm = new tilemapset("dungeon.stm")
+  world.add(tm)
+  self.tilemapset = tm
+
+  collision.setupTileCollision(tm)
+  pathfinding.setup(tm, self.wallLayers())
+
+  dim p as player
+  p = new Player(40, 40)
+  world.add(p)
+  self.player = p
+
+  self.enemies = levelhelpers.enemiesFromMarkers(tm, "enemy", p)
+  p.setEnemies(self.enemies)
+
+  dim keyMarkers
+  keyMarkers = tm.markersByTag("key")
+  dim km as Marker
+  km = keyMarkers(0)
+  dim k as keypickup
+  k = new KeyPickup(km.x, km.y)
+  world.add(k)
+  self.keyPickup = k
+
+  dim bossMarkers
+  bossMarkers = tm.markersByTag("boss")
+  dim bm as Marker
+  bm = bossMarkers(0)
+  dim b as boss
+  b = new Boss(bm.x, bm.y, p)
+  world.add(b)
+  self.boss = b
+  p.setBoss(b)
+
+  self.lastRoomX = -1
+  self.lastRoomY = -1
+
+  self.setupHud()
+endfunction
+
+function wallLayers()
+  dim layers(0)
+  array.push(layers, "collision")
+  return layers
+endfunction
+
+function setupHud()
+  dim h1 as sprite
+  h1 = new sprite("heart_full.png")
+  h1.transform.setPosition(20, 20)
+  hud.add(h1)
+  self.heart1 = h1
+
+  dim h2 as sprite
+  h2 = new sprite("heart_full.png")
+  h2.transform.setPosition(40, 20)
+  hud.add(h2)
+  self.heart2 = h2
+
+  dim h3 as sprite
+  h3 = new sprite("heart_full.png")
+  h3.transform.setPosition(60, 20)
+  hud.add(h3)
+  self.heart3 = h3
+endfunction
+
+function updateHud()
+  dim hearts
+  hearts = self.player.getHearts()
+
+  if hearts >= 1 then
+    self.heart1.setTexture("heart_full.png")
+  else
+    self.heart1.setTexture("heart_empty.png")
+  endif
+
+  if hearts >= 2 then
+    self.heart2.setTexture("heart_full.png")
+  else
+    self.heart2.setTexture("heart_empty.png")
+  endif
+
+  if hearts >= 3 then
+    self.heart3.setTexture("heart_full.png")
+  else
+    self.heart3.setTexture("heart_empty.png")
+  endif
+endfunction
+
+function onupdate(delta)
+  dim roomX
+  dim roomY
+
+  self.updateHud()
+
+  roomX = math.floor(self.player.transform.x() / 240)
+  roomY = math.floor(self.player.transform.y() / 176)
+
+  if roomX <> self.lastRoomX or roomY <> self.lastRoomY then
+    self.lastRoomX = roomX
+    self.lastRoomY = roomY
+    camera.setPosition(roomX * 240, roomY * 176)
+  endif
+endfunction
+
+EndClass
