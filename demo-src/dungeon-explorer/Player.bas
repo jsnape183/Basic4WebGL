@@ -10,7 +10,7 @@ dim attackCooldown
 dim invincibleTime
 dim flickerTimer
 dim visibleFlag
-dim enemies
+dim enemies() as enemy
 dim boss as boss
 
 Constructor(x, y)
@@ -37,6 +37,10 @@ endfunction
 
 function setBoss(bossRef as boss)
   self.boss = bossRef
+endfunction
+
+function setHasKey(value)
+  self.hasKey = value
 endfunction
 
 function getHearts()

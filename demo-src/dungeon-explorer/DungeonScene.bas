@@ -113,6 +113,13 @@ function onupdate(delta)
 
   self.updateHud()
 
+  if not self.keyPickup.collected then
+    if collision.spriteCollide(self.player, self.keyPickup) then
+      self.keyPickup.collect()
+      self.player.setHasKey(true)
+    endif
+  endif
+
   roomX = math.floor(self.player.transform.x() / 240)
   roomY = math.floor(self.player.transform.y() / 176)
 
