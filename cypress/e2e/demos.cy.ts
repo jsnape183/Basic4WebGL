@@ -96,3 +96,9 @@ describe('Demo: Bullet-Hell Shooter', () => {
     runDemo('demo-bullet-hell-shooter', 'src/docs/demos/BulletHellShooter.b4wgl.json', 4000);
   });
 });
+
+describe('Demo: Dungeon Explorer', () => {
+  it('runs without runtime errors', () => {
+    runDemo('demo-dungeon-explorer', 'src/docs/demos/DungeonExplorer.b4wgl.json', 4000);
+  });
+});
