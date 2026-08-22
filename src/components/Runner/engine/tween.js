@@ -1,23 +1,28 @@
 const _sbTween = {
-  _playing: new Map(), // handle -> { frames: [...sorted by time], loop, elapsed }
+  _playing: new Map(), // spriteObj -> { frames: [...sorted by time], loop, elapsed }
 
   tweenPlay(spriteObj, frames, loop) {
     if (!spriteObj || !spriteObj._handle || !frames || frames.length === 0) return;
     const sorted = [...frames].sort((a, b) => a.time - b.time);
-    this._playing.set(spriteObj._handle, { frames: sorted, loop: !!loop, elapsed: 0 });
+    this._playing.set(spriteObj, { frames: sorted, loop: !!loop, elapsed: 0 });
   },
 
   tweenStop(spriteObj) {
-    if (spriteObj && spriteObj._handle) this._playing.delete(spriteObj._handle);
+    if (spriteObj && spriteObj._handle) this._playing.delete(spriteObj);
   },
 
   tweenIsPlaying(spriteObj) {
-    return !!(spriteObj && spriteObj._handle && this._playing.has(spriteObj._handle));
+    return !!(spriteObj && spriteObj._handle && this._playing.has(spriteObj));
   },
 
   _tweenUpdate(delta) {
     const dt = delta / 1000;
-    for (const [handle, state] of this._playing) {
+    for (const [spriteObj, state] of this._playing) {
+      if (!this._sbInstances.includes(spriteObj)) {
+        this._playing.delete(spriteObj);
+        continue;
+      }
+      const handle = spriteObj._handle;
       state.elapsed += dt;
       const { frames, loop } = state;
       const last = frames[frames.length - 1];
@@ -27,20 +32,7 @@ const _sbTween = {
         t = t % last.time;
       } else if (t >= last.time) {
         this._applyFrame(handle, last);
-        this._playing.delete(handle);
-        continue;
-      }
-
-      // If we're before the first keyframe, snap to its values
-      if (t < frames[0].time) {
-        this._applyFrame(handle, {
-          angle: frames[0].angle,
-          scaleX: frames[0].scalex,
-          scaleY: frames[0].scaley,
-          alpha: frames[0].alpha,
-          x: frames[0].x,
-          y: frames[0].y,
-        });
+        this._playing.delete(spriteObj);
         continue;
       }
 
@@ -49,7 +41,11 @@ const _sbTween = {
       const a = frames[i];
       const b = frames[Math.min(i + 1, frames.length - 1)];
       const span = b.time - a.time;
-      const f = span > 0 ? (t - a.time) / span : 0;
+      // Clamping to 0 handles t before frames[0].time too: with i at its
+      // natural starting value (a = frames[0], b = frames[1]), a negative
+      // raw ratio clamps to 0 and the lerp below evaluates to exactly a's
+      // values -- i.e. snaps to the first keyframe.
+      const f = span > 0 ? Math.max(0, (t - a.time) / span) : 0;
 
       // Keyframe's softBASIC fields scaleX/scaleY compile to lowercase
       // scalex/scaley -- read those, not the camelCase names.

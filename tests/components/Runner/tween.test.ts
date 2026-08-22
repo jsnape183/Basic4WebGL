@@ -55,7 +55,9 @@ describe('_tweenUpdate — interpolation', () => {
   test('linearly interpolates angle between two keyframes', () => {
     const tw = loadTween();
     const handle = makeHandle();
-    tw.tweenPlay({ _handle: handle }, [frame(0, 0), frame(1, 100)], false);
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false);
     tw._tweenUpdate(500); // 0.5s of a 1s span
     expect(handle.angle).toBeCloseTo(50);
   });
@@ -63,8 +65,10 @@ describe('_tweenUpdate — interpolation', () => {
   test('interpolates scale, alpha, and position together', () => {
     const tw = loadTween();
     const handle = makeHandle();
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
     tw.tweenPlay(
-      { _handle: handle },
+      spriteObj,
       [frame(0, 0, 1, 1, 1, 0, 0), frame(1, 0, 3, 3, 0, 100, 200)],
       false
     );
@@ -79,7 +83,9 @@ describe('_tweenUpdate — interpolation', () => {
   test('frames need not be pre-sorted — engine sorts by time', () => {
     const tw = loadTween();
     const handle = makeHandle();
-    tw.tweenPlay({ _handle: handle }, [frame(1, 100), frame(0, 0)], false);
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(1, 100), frame(0, 0)], false);
     tw._tweenUpdate(500);
     expect(handle.angle).toBeCloseTo(50);
   });
@@ -87,7 +93,9 @@ describe('_tweenUpdate — interpolation', () => {
   test('before the first keyframe, snaps immediately to its values', () => {
     const tw = loadTween();
     const handle = makeHandle();
-    tw.tweenPlay({ _handle: handle }, [frame(0.5, 40), frame(1, 100)], false);
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0.5, 40), frame(1, 100)], false);
     tw._tweenUpdate(16.67); // well before time=0.5
     expect(handle.angle).toBeCloseTo(40);
   });
@@ -96,6 +104,7 @@ describe('_tweenUpdate — interpolation', () => {
     const tw = loadTween();
     const handle = makeHandle();
     const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
     tw.tweenPlay(spriteObj, [frame(0, 0), frame(0.5, 100)], false);
     tw._tweenUpdate(1000); // well past the 0.5s span
     expect(handle.angle).toBeCloseTo(100);
@@ -106,6 +115,7 @@ describe('_tweenUpdate — interpolation', () => {
     const tw = loadTween();
     const handle = makeHandle();
     const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
     tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], true);
     tw._tweenUpdate(1500); // 1.5s -> wraps to 0.5s into the loop
     expect(handle.angle).toBeCloseTo(50);
@@ -116,10 +126,33 @@ describe('_tweenUpdate — interpolation', () => {
     const tw = loadTween();
     const handle = makeHandle();
     const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
     tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false);
     tw._tweenUpdate(900);
     tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false); // restart
     tw._tweenUpdate(0);
     expect(handle.angle).toBeCloseTo(0);
+  });
+});
+
+describe('_tweenUpdate — stale instance cleanup', () => {
+  test('drops playing state for a sprite no longer registered in _sbInstances, without applying a frame', () => {
+    const tw = loadTween();
+    const handle = makeHandle();
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], true); // looping, would never self-clear
+    tw._sbInstances = []; // simulate world.remove(spriteObj) / scene switch
+
+    tw._tweenUpdate(500);
+
+    expect(handle.angle).toBe(0); // untouched — no frame was applied
+    expect(tw.tweenIsPlaying(spriteObj)).toBe(false);
+  });
+
+  test('does nothing when no sprite is playing', () => {
+    const tw = loadTween();
+    tw._sbInstances = [];
+    expect(() => tw._tweenUpdate(16)).not.toThrow();
   });
 });
