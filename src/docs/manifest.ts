@@ -75,6 +75,7 @@ export const docsManifest: DocSection[] = [
           { slug: 'audio',           title: 'audio',           file: 'api-reference/audio.md' },
           { slug: 'collision',       title: 'collision',       file: 'api-reference/collision.md' },
           { slug: 'pathfinding',     title: 'pathfinding',     file: 'api-reference/pathfinding.md' },
+          { slug: 'tween',           title: 'tween',           file: 'api-reference/tween.md' },
           { slug: 'scene',           title: 'scene / scenemanager', file: 'api-reference/scene.md' },
         ],
       },
