@@ -10,7 +10,9 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) swings out from the player's position through its own `tween`-driven arc, hiding itself again once `tween.isPlaying()` reports it's finished. The player can't move during that 0.4s — both keyframes in the spin pin position to wherever the swing started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) traces its own circle around the player over the same 0.4s, timed to land on the same angle the player's own spin is at, at every moment — so it reads as swinging rigidly around the spinning player. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
+
+> **Note:** `Sword.swing()` is the most advanced code in this demo — it builds its circular path by hand with `math.cos`/`math.sin` over several keyframes, because this engine has no sprite-attachment/parenting feature yet to make a swinging weapon "just follow" its wielder. Don't take it as a beginner-level pattern to copy; it's a deliberate stand-in for a capability the language doesn't have, not the intended way to combine two sprites.
 
 Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
@@ -561,7 +563,7 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
-    self.sword.swing(self.transform.x(), self.transform.y(), self.facingX, self.facingY)
+    self.sword.swing(self.transform.x(), self.transform.y())
 
     dim s1 as Keyframe
     s1 = new Keyframe()
@@ -692,22 +694,35 @@ Constructor()
   self.active = false
 EndConstructor
 
-function swing(px, py, facingX, facingY)
-  dim k1 as Keyframe
-  k1 = new Keyframe()
-  k1.setTime(0)
-  k1.setAngle(-60)
-  k1.setPosition(px + facingX * 10, py + facingY * 10)
-
-  dim k2 as Keyframe
-  k2 = new Keyframe()
-  k2.setTime(0.4)
-  k2.setAngle(60)
-  k2.setPosition(px + facingX * 18, py + facingY * 18)
-
+function swing(px, py)
+  ' Traces the sword through a full circle around (px, py), one keyframe
+  ' every 45 degrees, timed to land on the same angle the player's own
+  ' spin tween is at, at the same moment -- so the sword reads as rigidly
+  ' swinging around the spinning player instead of drifting independently
+  ' (there's no sprite-attachment/parenting feature to lean on instead;
+  ' this is a deliberate stand-in for one).
+  dim steps
+  dim duration
+  dim radius
+  dim i
+  dim angleDeg
+  dim angleRad
+  dim k as Keyframe
   dim frames(0)
-  array.push(frames, k1)
-  array.push(frames, k2)
+
+  steps = 8
+  duration = 0.4
+  radius = 7
+
+  for i = 0 to steps
+    angleDeg = (360 / steps) * i
+    angleRad = angleDeg * math.pi() / 180
+    k = new Keyframe()
+    k.setTime((duration / steps) * i)
+    k.setAngle(angleDeg)
+    k.setPosition(px + math.cos(angleRad) * radius, py + math.sin(angleRad) * radius)
+    array.push(frames, k)
+  next i
 
   self.setVisible(true)
   self.active = true
