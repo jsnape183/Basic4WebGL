@@ -22,13 +22,13 @@ Enemies and the key are placed visually in the Tilemap Editor as tagged markers,
 
 | Filename | What it is |
 |---|---|
-| `player.png` | 16×16 per frame, 4 frames horizontal (64×16 total) — frame 0 idle, frames 1–2 walk cycle, frame 3 attack pose |
-| `enemy.png` | 16×16, single frame |
-| `boss.png` | 32×32, single frame |
-| `key.png` | 16×16, single frame |
-| `heart_full.png` | 16×16, single frame — HUD heart icon, filled |
-| `heart_empty.png` | 16×16, single frame — HUD heart icon, outline/empty |
-| `tilesheet.png` | Tileset image used for the dungeon's floor/wall tiles |
+| `player.png` | Kenney sprite, 16×16 per frame, 4 frames horizontal (64×16 total) — all 4 frames identical (Tiny Dungeon's characters are single-pose, no walk cycle) |
+| `enemy.png` | Kenney sprite, 16×16, single frame |
+| `boss.png` | Kenney sprite scaled 2x, 32×32, single frame |
+| `key.png` | Kenney sprite (gem/amulet icon, standing in for a literal key), 16×16, single frame |
+| `heart_full.png` | Kenney sprite (potion icon, standing in for a heart), 16×16, single frame — HUD icon, filled |
+| `heart_empty.png` | Same Kenney sprite as `heart_full.png`, desaturated and dimmed — HUD icon, empty |
+| `tilesheet.png` | Kenney tileset ("Tiny Dungeon") used for the dungeon's floor/wall tiles |
 | `dungeon.stm` | Tilemap data with `floor`/`walls` tile layers, a `collision` layer, and `enemy`/`key`/`boss` marker layers |
 
 ---
