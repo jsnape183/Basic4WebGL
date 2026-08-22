@@ -10,7 +10,7 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. Enemies and the boss both chase the player via `pathfinding.navigateTo`; the boss adds a periodic speed-boosted lunge on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets). Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets). Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
@@ -266,6 +266,18 @@ dim dead
 dim chaseTarget as sprite
 dim damageCooldown
 dim speed
+dim state
+dim chaseRadius
+dim giveUpRadius
+dim spawnX
+dim spawnY
+dim patrolTargetX
+dim patrolTargetY
+dim patrolSpeed
+dim patrolLegTimer
+dim knockbackTimer
+dim knockbackX
+dim knockbackY
 
 Constructor(x, y, targetRef as sprite)
   super("enemy.png")
@@ -275,22 +287,85 @@ Constructor(x, y, targetRef as sprite)
   self.chaseTarget = targetRef
   self.damageCooldown = 0
   self.speed = 50
+  self.state = "patrol"
+  self.chaseRadius = 70
+  self.giveUpRadius = 110
+  self.spawnX = x
+  self.spawnY = y
+  self.patrolTargetX = x
+  self.patrolTargetY = y
+  self.patrolSpeed = 25
+  self.knockbackTimer = 0
+  self.knockbackX = 0
+  self.knockbackY = 0
+  self.pickPatrolLeg()
 EndConstructor
+
+function pickPatrolLeg()
+  dim dir
+  dim offsetX
+  dim offsetY
+  dir = math.randomint(4)
+  offsetX = 0
+  offsetY = 0
+  if dir = 0 then : offsetX = 32 : endif
+  if dir = 1 then : offsetX = -32 : endif
+  if dir = 2 then : offsetY = 32 : endif
+  if dir = 3 then : offsetY = -32 : endif
+
+  if self.patrolTargetX = self.spawnX and self.patrolTargetY = self.spawnY then
+    self.patrolTargetX = self.spawnX + offsetX
+    self.patrolTargetY = self.spawnY + offsetY
+  else
+    self.patrolTargetX = self.spawnX
+    self.patrolTargetY = self.spawnY
+  endif
+  self.patrolLegTimer = 1.5
+endfunction
 
 function onupdate(delta)
   if not self.dead then
     dim dt
+    dim dist
     dt = delta / 1000
-    pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
 
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - dt
     endif
 
-    if collision.spriteCollide(self, self.chaseTarget) then
-      if self.damageCooldown <= 0 then
-        self.chaseTarget.takeDamage()
-        self.damageCooldown = 0.5
+    if self.knockbackTimer > 0 then
+      self.knockbackTimer = self.knockbackTimer - dt
+      pathfinding.stopNavigating(self)
+      self.setVelocity(self.knockbackX * 160, self.knockbackY * 160)
+    else
+      dist = math.distance(self.transform.x(), self.transform.y(), self.chaseTarget.transform.x(), self.chaseTarget.transform.y())
+
+      if self.state = "patrol" then
+        if dist <= self.chaseRadius then
+          self.state = "chase"
+        endif
+      else
+        if dist > self.giveUpRadius then
+          self.state = "patrol"
+          self.pickPatrolLeg()
+        endif
+      endif
+
+      if self.state = "chase" then
+        pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
+      else
+        self.patrolLegTimer = self.patrolLegTimer - dt
+        if self.patrolLegTimer <= 0 then
+          self.pickPatrolLeg()
+        endif
+        pathfinding.navigateTo(self, self.patrolTargetX, self.patrolTargetY, self.patrolSpeed)
+      endif
+
+      if collision.spriteCollide(self, self.chaseTarget) then
+        if self.damageCooldown <= 0 then
+          self.chaseTarget.takeDamage()
+          self.damageCooldown = 0.5
+        endif
       endif
     endif
   endif
@@ -302,6 +377,11 @@ function hit(damage)
     if self.hp <= 0 then
       self.dead = true
       world.remove(self)
+    else
+      self.state = "chase"
+      self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
+      self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
+      self.knockbackTimer = 0.15
     endif
   endif
 endfunction
