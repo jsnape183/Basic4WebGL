@@ -23,6 +23,7 @@ function onenter()
 
   collision.setupTileCollision(tm)
   pathfinding.setup(tm, self.wallLayers())
+  camera.setZoom(2)
 
   dim p as player
   p = new Player(40, 40)
