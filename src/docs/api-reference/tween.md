@@ -15,28 +15,89 @@ k = new Keyframe()
 
 A new `Keyframe` starts with neutral values: `angle = 0`, `scaleX = 1`, `scaleY = 1`, `alpha = 1`, and position `(0, 0)`. Use the setters below to change the ones you care about.
 
-| Method | Parameters | Description |
-|--------|------------|--------------|
-| `setTime(t)` | t: number | Sets when this keyframe happens, in seconds since the animation started playing |
-| `setAngle(a)` | a: number | Sets the rotation angle, in degrees, at this keyframe |
-| `setScaleX(sx)` | sx: number | Sets the horizontal scale at this keyframe (1 = normal size) |
-| `setScaleY(sy)` | sy: number | Sets the vertical scale at this keyframe (1 = normal size) |
-| `setAlpha(al)` | al: number | Sets the transparency at this keyframe (0 = invisible, 1 = fully opaque) |
-| `setPosition(px, py)` | px: number, py: number | Sets the world position at this keyframe |
+### setTime(t)
+
+Sets when this keyframe happens, in seconds since the animation started playing.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| t         | number | Time in seconds since the animation started |
 
 ```bas
-' A treasure chest lid swinging open: it lifts up and tilts back.
-dim closed as Keyframe
-closed = new Keyframe()
-closed.setTime(0)
-closed.setAngle(0)
-closed.setPosition(chestX, chestY)
+dim k as Keyframe
+k = new Keyframe()
+k.setTime(0.5)
+```
 
-dim open as Keyframe
-open = new Keyframe()
-open.setTime(0.5)
-open.setAngle(-100)
-open.setPosition(chestX, chestY - 8)
+### setAngle(a)
+
+Sets the rotation angle, in degrees, at this keyframe.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| a         | number | Rotation in degrees at this keyframe |
+
+```bas
+dim k as Keyframe
+k = new Keyframe()
+k.setAngle(-100)
+```
+
+### setScaleX(sx)
+
+Sets the horizontal scale at this keyframe.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| sx        | number | Horizontal scale at this keyframe (1 = normal size) |
+
+```bas
+dim k as Keyframe
+k = new Keyframe()
+k.setScaleX(1.5)
+```
+
+### setScaleY(sy)
+
+Sets the vertical scale at this keyframe.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| sy        | number | Vertical scale at this keyframe (1 = normal size) |
+
+```bas
+dim k as Keyframe
+k = new Keyframe()
+k.setScaleY(1.5)
+```
+
+### setAlpha(al)
+
+Sets the transparency at this keyframe.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| al        | number | Transparency at this keyframe (0 = invisible, 1 = fully opaque) |
+
+```bas
+dim k as Keyframe
+k = new Keyframe()
+k.setAlpha(0.5)
+```
+
+### setPosition(px, py)
+
+Sets the world position at this keyframe.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| px        | number | World x position at this keyframe |
+| py        | number | World y position at this keyframe |
+
+```bas
+dim k as Keyframe
+k = new Keyframe()
+k.setPosition(100, 200)
 ```
 
 ## play(sprite, frames, loop)
@@ -52,6 +113,7 @@ Starts playing a keyframe animation on a sprite.
 Calling `play` again on a sprite that's already animating restarts it cleanly with the new `frames` — useful for switching between different animations from your game logic, like swapping an idle bob for an attack swing.
 
 ```bas
+' A treasure chest lid swinging open: it stays shut, then tilts back.
 dim lidClosed as Keyframe
 lidClosed = new Keyframe()
 lidClosed.setTime(0)
