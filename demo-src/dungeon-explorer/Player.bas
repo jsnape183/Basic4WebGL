@@ -18,7 +18,7 @@ Constructor(x, y)
   self.transform.setPosition(x, y)
   self.addAnim("idle", 0, 0, 1, true)
   self.addAnim("walk", 1, 2, 6, true)
-  self.addAnim("attack", 3, 3, 1, true)
+  self.addAnim("attack", 3, 3, 1, false)
   self.play("idle")
   self.maxHearts = 3
   self.hearts = 3
@@ -134,11 +134,15 @@ function onupdate(delta)
     self.setAlpha(1)
   endif
 
-  if moveX <> 0 or moveY <> 0 then
-    if not self.isPlaying("walk") and not self.isPlaying("attack") then
+  if self.attackCooldown > 0.25 then
+    ' still flashing the attack pose from a recent swing -- let it finish
+    ' showing before switching back to walk/idle, rather than depending on
+    ' the animation engine's own "is it done playing" state
+  elseif moveX <> 0 or moveY <> 0 then
+    if not self.isPlaying("walk") then
       self.play("walk")
     endif
-  elseif not self.isPlaying("attack") then
+  else
     if not self.isPlaying("idle") then
       self.play("idle")
     endif
