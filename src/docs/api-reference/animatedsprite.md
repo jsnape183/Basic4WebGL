@@ -279,3 +279,32 @@ if self.isBlockedRight() then
   self.setVelocity(0, self.velocityY())
 endif
 ```
+
+## attachTo(parent)
+
+Makes this sprite follow another sprite's position and rotation automatically, like a weapon glued to a character's hand. Once attached, calling `setPosition` and `setAngle` on this sprite sets its offset and rotation **relative to the parent** — as the parent moves or spins, this sprite moves and spins along with it.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| parent    | object | The sprite (or `animatedsprite`) to attach to. |
+
+```bas
+hat.attachTo(hero)
+hat.transform.setPosition(0, -12)  ' held above the hero's head
+```
+
+A few things to know:
+
+- **Position and angle become relative to the parent.** While attached, this sprite's `transform.x()`, `transform.y()`, and angle no longer describe a position on screen — they describe an offset from the parent.
+- **Depth ordering becomes relative to the parent too.** `setDepth` while attached only affects ordering among the parent's other attached sprites, not the whole game world.
+- **Chains work.** If sprite `B` is attached to sprite `A`, and sprite `C` is attached to `B`, then `C` follows both of them — moving or rotating `A` moves everything in the chain. Just don't attach a sprite back onto one of its own descendants — that creates a loop.
+- Attaching a sprite that's already attached to something else simply switches it to the new parent — no need to call `detach()` first.
+- If you remove an attached sprite from the world with `world.remove()`, call `detach()` first — otherwise it stops updating but stays visually attached to its (still-alive) parent instead of being cleaned up.
+
+## detach()
+
+Stops this sprite from following whatever it was attached to with `attachTo`. It stays exactly where it was on screen at that moment; nothing resets. Calling `detach()` when the sprite isn't attached to anything does nothing.
+
+```bas
+hat.detach()
+```
