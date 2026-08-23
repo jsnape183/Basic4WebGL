@@ -102,3 +102,30 @@ describe('sprite — isBlockedUp / isBlockedDown / isBlockedLeft / isBlockedRigh
     expect(result.code).toContain('_sb.isBlockedRight(');
   });
 });
+
+describe('sprite — attachTo / detach', () => {
+  test('compiles without error', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim child as Sprite("sword.png")',
+      '  dim par as Sprite("player.png")',
+      '  child.attachTo(par)',
+      '  child.detach()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.attachSprite( and _sb.detachSprite(', () => {
+    const result = transpileWithSprite([
+      'function test()',
+      '  dim child as Sprite("sword.png")',
+      '  dim par as Sprite("player.png")',
+      '  child.attachTo(par)',
+      '  child.detach()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.attachSprite(');
+    expect(result.code).toContain('_sb.detachSprite(');
+  });
+});

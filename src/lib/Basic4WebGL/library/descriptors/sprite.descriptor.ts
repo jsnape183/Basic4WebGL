@@ -92,5 +92,15 @@ export const spriteDescriptor: ClassDescriptor = {
       params: [],
       returns: (_p, self) => `_sb.isBlockedRight(${self._handle})`,
     },
+    {
+      name: 'attachTo',
+      params: ['parent'],
+      body: (p, self) => `_sb.attachSprite(${self._handle}, ${p.parent})`,
+    },
+    {
+      name: 'detach',
+      params: [],
+      body: (_p, self) => `_sb.detachSprite(${self._handle})`,
+    },
   ],
 };
