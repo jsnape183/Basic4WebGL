@@ -25,6 +25,7 @@ const ENGINE_MODULES = [
   'collision',
   'pathfinding',
   'tween',
+  'attach',
   'scene',
   'camera',
 ];
@@ -32,12 +33,15 @@ const ENGINE_MODULES = [
 class FakeContainer {
   children: unknown[] = [];
   sortableChildren = false;
+  parent: FakeContainer | null = null;
   scale = { set: () => {} };
   position = { set: () => {} };
-  addChild(c: unknown) {
+  addChild(c: FakeContainer) {
+    if (c.parent) c.parent.removeChild(c);
     this.children.push(c);
+    c.parent = this;
   }
-  removeChild(c: unknown) {
+  removeChild(c: FakeContainer) {
     const i = this.children.indexOf(c);
     if (i !== -1) this.children.splice(i, 1);
   }

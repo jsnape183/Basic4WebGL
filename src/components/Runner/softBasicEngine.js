@@ -15,4 +15,5 @@ const _sb = {
   ..._sbCollision,
   ..._sbPathfinding,
   ..._sbTween,
+  ..._sbAttach,
 };
