@@ -16,11 +16,11 @@ The player moves with `setVelocity` (sliding cleanly along walls via `collision.
 
 `Sword.onupdate()` watches `tween.isPlaying(player)` (not its own tween — it doesn't have one) to know when to hide itself and `detach()`.
 
-Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
-**Key techniques:** `tween.play`/`isPlaying` + `Keyframe` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+**Key techniques:** `tween.play`/`isPlaying` + `Keyframe` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, the same `tween` scale-pulse technique for telegraphing enemy attacks, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
 
 ---
 
@@ -290,6 +290,8 @@ dim patrolLegTimer
 dim knockbackTimer
 dim knockbackX
 dim knockbackY
+dim attackRange
+dim attackWindupTimer
 
 Constructor(x, y, targetRef as sprite)
   super("enemy.png")
@@ -298,7 +300,7 @@ Constructor(x, y, targetRef as sprite)
   self.dead = false
   self.chaseTarget = targetRef
   self.damageCooldown = 0
-  self.speed = 50
+  self.speed = 40
   self.state = "patrol"
   self.chaseRadius = 70
   self.giveUpRadius = 110
@@ -306,10 +308,12 @@ Constructor(x, y, targetRef as sprite)
   self.spawnY = y
   self.patrolTargetX = x
   self.patrolTargetY = y
-  self.patrolSpeed = 25
+  self.patrolSpeed = 20
   self.knockbackTimer = 0
   self.knockbackX = 0
   self.knockbackY = 0
+  self.attackRange = 18
+  self.attackWindupTimer = 0
   self.pickPatrolLeg()
 EndConstructor
 
@@ -335,6 +339,61 @@ function pickPatrolLeg()
   self.patrolLegTimer = 1.5
 endfunction
 
+function beginAttack()
+  ' Telegraphs the hit instead of dealing contact damage the instant the
+  ' enemy touches the player: puff up over 0.35s (a tween scale pulse,
+  ' 1x -> 1.4x -> 1x), standing still the whole time, and only actually
+  ' land the hit -- checked fresh, not assumed -- once the windup ends.
+  ' Gives the player a real, visible window to back off in response,
+  ' rather than being punished for contact they had no warning about.
+  '
+  ' Every keyframe below sets position explicitly, even though this
+  ' sequence is only ever meant to animate scale -- tween.js applies
+  ' every channel unconditionally each frame, and Keyframe's x/y default
+  ' to (0,0), so skipping setPosition here snaps the enemy straight to
+  ' the world origin the instant the windup starts. Hit this exact bug
+  ' live (confirmed by direct position logging, not assumed) before
+  ' fixing it -- the same mistake Player.bas's own spin tween made and
+  ' had already been fixed for, just repeated here in a new tween.
+  dim px
+  dim py
+  dim k1 as Keyframe
+  dim k2 as Keyframe
+  dim k3 as Keyframe
+  dim frames(0)
+
+  px = self.transform.x()
+  py = self.transform.y()
+
+  self.state = "attack"
+  self.attackWindupTimer = 0.35
+  self.setVelocity(0, 0)
+
+  k1 = new Keyframe()
+  k1.setTime(0)
+  k1.setScaleX(1)
+  k1.setScaleY(1)
+  k1.setPosition(px, py)
+
+  k2 = new Keyframe()
+  k2.setTime(0.2)
+  k2.setScaleX(1.4)
+  k2.setScaleY(1.4)
+  k2.setPosition(px, py)
+
+  k3 = new Keyframe()
+  k3.setTime(0.35)
+  k3.setPosition(px, py)
+  k3.setScaleX(1)
+  k3.setScaleY(1)
+
+  array.push(frames, k1)
+  array.push(frames, k2)
+  array.push(frames, k3)
+
+  tween.play(self, frames, false)
+endfunction
+
 function onupdate(delta)
   if not self.dead then
     dim dt
@@ -348,7 +407,18 @@ function onupdate(delta)
     if self.knockbackTimer > 0 then
       self.knockbackTimer = self.knockbackTimer - dt
       pathfinding.stopNavigating(self)
-      self.setVelocity(self.knockbackX * 90, self.knockbackY * 90)
+      self.setVelocity(self.knockbackX * 130, self.knockbackY * 130)
+    elseif self.state = "attack" then
+      self.attackWindupTimer = self.attackWindupTimer - dt
+      if self.attackWindupTimer <= 0 then
+        ' Re-checked fresh, not assumed still true from when the windup
+        ' started -- backing away during the telegraph avoids the hit.
+        if collision.spriteCollide(self, self.chaseTarget) then
+          self.chaseTarget.takeDamage()
+          self.damageCooldown = 0.5
+        endif
+        self.state = "chase"
+      endif
     else
       ' pathfinding.navigateTo moves the sprite directly (it doesn't use
       ' setVelocity), so nothing else ever clears the knockback velocity
@@ -375,20 +445,17 @@ function onupdate(delta)
       endif
 
       if self.state = "chase" then
-        pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
+        if dist <= self.attackRange and self.damageCooldown <= 0 then
+          self.beginAttack()
+        else
+          pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), self.speed)
+        endif
       else
         self.patrolLegTimer = self.patrolLegTimer - dt
         if self.patrolLegTimer <= 0 then
           self.pickPatrolLeg()
         endif
         pathfinding.navigateTo(self, self.patrolTargetX, self.patrolTargetY, self.patrolSpeed)
-      endif
-
-      if collision.spriteCollide(self, self.chaseTarget) then
-        if self.damageCooldown <= 0 then
-          self.chaseTarget.takeDamage()
-          self.damageCooldown = 0.5
-        endif
       endif
     endif
   endif
@@ -401,6 +468,14 @@ function hit(damage)
       self.dead = true
       world.remove(self)
     else
+      ' A hit lands while mid-windup, knockback takes over next frame
+      ' (checked first in onupdate) and interrupts the attack -- stop the
+      ' pulse tween and reset scale explicitly, or a hit landed partway
+      ' through the puff-up would leave the enemy stuck oversized.
+      if self.state = "attack" then
+        tween.stop(self)
+        self.setScale(1, 1)
+      endif
       self.state = "chase"
       self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
