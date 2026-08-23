@@ -68,35 +68,7 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
-    self.sword.swing(self, self.facingX, self.facingY)
-
-    dim s1 as Keyframe
-    s1 = new Keyframe()
-    s1.setTime(0)
-    s1.setAngle(0)
-    s1.setPosition(self.transform.x(), self.transform.y())
-
-    ' The spin tween pins the player's position for its whole duration (tween
-    ' writes position every frame, and there's no way to tween just the angle
-    ' -- see the comment on Sword's attach for why). That's a real "can't move
-    ' while swinging" lock, so it's kept short (0.15s) and independent of
-    ' attackCooldown (0.4s): confirmed live, chaining attacks the instant
-    ' cooldown allowed left the player frozen the entire cooldown window,
-    ' unable to chase a boss that had just been knocked back out of range --
-    ' which read exactly like "the hitbox is janky" even though the hitbox
-    ' geometry itself checked out clean. Ending the lock well before the next
-    ' attack is available gives the player a real window to reposition.
-    dim s2 as Keyframe
-    s2 = new Keyframe()
-    s2.setTime(0.15)
-    s2.setAngle(360)
-    s2.setPosition(self.transform.x(), self.transform.y())
-
-    dim spinFrames(0)
-    array.push(spinFrames, s1)
-    array.push(spinFrames, s2)
-
-    tween.play(self, spinFrames, false)
+    self.sword.swing(self, self.facingX, self.facingY, 0.4)
 
     ' Hitbox is centered on the player, not offset in the facing direction --
     ' matches the spin-attack visual (a full 360 turn has no single "front"),
@@ -167,6 +139,28 @@ function onupdate(delta)
     self.attackCooldown = self.attackCooldown - dt
   endif
 
+  ' Rotation is driven directly by setAngle here, not by tween.play -- tween
+  ' writes every channel (including position) unconditionally each frame,
+  ' so a tween spin controlling rotation would also have to control position
+  ' every frame, freezing the player solid for the swing's whole duration.
+  ' That's exactly what caused the boss to feel un-hittable: chaining attacks
+  ' the instant cooldown allowed left the player unable to chase a boss that
+  ' had just been knocked back out of range, confirmed live. Setting the
+  ' angle by hand here means attacking costs no mobility at all: setVelocity
+  ' above already runs unconditionally, so the player can move and spin at
+  ' the same time. The 360 turn now spans the whole attackCooldown window
+  ' (0.4s) rather than a shortened slice of it, since there's no longer a
+  ' tradeoff between "long enough to read as a real spin" and "short enough
+  ' the player isn't stuck standing still" -- a shorter, tween-locked version
+  ' of this spin (0.15s) shipped briefly and read as the attack getting cut
+  ' off/cancelled by movement input, because pose and lock ended together
+  ' well before the cooldown did.
+  if self.attackCooldown > 0 then
+    self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)
+  else
+    self.setAngle(0)
+  endif
+
   if self.hasKey then
     collision.setTileSolid(488, 264, false)
     collision.setTileSolid(488, 280, false)
@@ -189,8 +183,8 @@ function onupdate(delta)
     self.setAlpha(1)
   endif
 
-  if self.attackCooldown > 0.25 then
-    ' still flashing the attack pose from a recent swing -- let it finish
+  if self.attackCooldown > 0 then
+    ' still flashing the attack pose for the whole spin -- let it finish
     ' showing before switching back to walk/idle, rather than depending on
     ' the animation engine's own "is it done playing" state
   elseif moveX <> 0 or moveY <> 0 then

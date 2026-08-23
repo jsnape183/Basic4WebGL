@@ -10,17 +10,17 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `tryAttack()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre. The attack is also a little flourish: `tween.play()` spins the player a full 360° over a 0.15s window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin — no tween of its own needed. The player can't move during that spin — both of the player's own spin keyframes pin position to wherever the attack started, a side effect of `tween` writing every channel (position included) each frame, not a deliberate lock. That lock is intentionally kept much shorter than the 0.4s `attackCooldown`: an earlier version tied both to the same 0.4s, so chaining attacks the instant cooldown allowed left the player frozen for the *entire* cooldown window — unable to chase a boss that had just been knocked back out of range, which read exactly like a broken hitbox even though the hit-box geometry itself checked out clean under direct measurement. Ending the lock well before the next attack is available gives the player a real window to reposition between swings.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `tryAttack()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre. The attack is also a little flourish: `Player.onupdate()` spins the player a full 360° over the whole 0.4s `attackCooldown` window by setting `self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)` directly each frame, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin. This wasn't always hand-rolled — an earlier version used `tween.play()` for the rotation, which pinned the player's position to a fixed keyframe value for the tween's whole duration (`tween` writes every channel, position included, unconditionally each frame — there's no way to tween just the angle). That made attacking a real "can't move while swinging" lock; a first attempt shortened the lock to 0.15s (independent of the 0.4s cooldown) so the player wasn't frozen the *entire* cooldown window, which fixed a boss-chase problem — a fully-locked player couldn't close distance on a boss that had just been knocked back out of range, which read exactly like a broken hitbox even though the hit-box geometry checked out clean under direct measurement — but then made the attack pose feel like it was getting cut off by movement input, since the visual pose and the lock both ended together well before the cooldown did. Driving rotation directly with `setAngle` instead of `tween` sidesteps the tradeoff entirely: `setVelocity` already runs unconditionally every frame, so with nothing else fighting it for control of position, attacking costs no mobility at all, and the spin can run the full, satisfying 0.4s without needing to lock anything.
 
-`Sword.swing(player, facingX, facingY)` calls `attachTo(player)` and sets a fixed local position/angle held out to the player's side, derived from the player's current facing direction rather than hardcoded — an earlier version fixed the offset at a single tuned pose (matching only the "facing right" case), which visually pointed the sword somewhere unrelated to the real hit box (`Player.tryAttack()`'s `facingX`/`facingY * 20`) for every other facing direction; combat still worked mechanically in all directions the whole time, but it *looked* broken in three of the four. The sword's own angle is never tweened — an earlier version additionally tweened it 0° to 360° on the assumption the sword's own rotation was what produced the sweep-around-the-player effect; it wasn't. Since the sword is attached and its local position is offset (not `(0, 0)`), the *player's* own spin alone carries it around in a circle — adding the sword's own rotation on top composed additively with the player's (PIXI sums a child's rotation with its parent's), making it complete two full orbits per one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Leaving the sword's own angle fixed, position derived from facing, both bugs fixed together.
+`Sword.swing(player, facingX, facingY, duration)` calls `attachTo(player)` and sets a fixed local position/angle held out to the player's side, derived from the player's current facing direction rather than hardcoded — an earlier version fixed the offset at a single tuned pose (matching only the "facing right" case), which visually pointed the sword somewhere unrelated to the real hit box (`Player.tryAttack()`'s `facingX`/`facingY * 20`) for every other facing direction; combat still worked mechanically in all directions the whole time, but it *looked* broken in three of the four. The sword's own angle is never animated — an earlier version additionally tweened it 0° to 360° on the assumption the sword's own rotation was what produced the sweep-around-the-player effect; it wasn't. Since the sword is attached and its local position is offset (not `(0, 0)`), the *player's* own spin alone carries it around in a circle — animating the sword's own rotation on top composed additively with the player's (PIXI sums a child's rotation with its parent's), making it complete two full orbits per one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Leaving the sword's own angle fixed, position derived from facing, both bugs fixed together.
 
-`Sword.onupdate()` watches `tween.isPlaying(player)` (not its own tween — it doesn't have one) to know when to hide itself and `detach()`.
+`Sword.onupdate()` counts down its own `swingTimer`, set from the `duration` passed into `swing()`, to know when to hide itself and `detach()` — it used to watch `tween.isPlaying(player)` instead, back when the player's spin was itself tween-driven; once that moved to `setAngle`, there was no tween state left to poll, so the sword tracks its own clock, kept in sync with the player's spin by always being handed the same duration the caller used.
 
 Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit. The boss never patrols — it's a full-time chase — but its lunge gets the same telegraph treatment as regular enemies now: `attackTimer` counts down to trigger a 0.3s windup (the same scale-pulse-while-standing-still pattern), *then* a 0.6s lunge at 3.5x its base speed. A successful hit on the boss also knocks it back and cancels an in-progress windup outright, mirroring `Enemy.hit()`. Standing still to land a spin attack right next to the boss is still a real risk — its contact damage doesn't stop just because it's mid-chase — just no longer an *unwarned* one. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
-**Key techniques:** `tween.play`/`isPlaying` + `Keyframe` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, the same `tween` scale-pulse technique for telegraphing enemy attacks, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+**Key techniques:** `sprite.setAngle` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `tween.play`/`Keyframe` for telegraphing enemy/boss attacks with a scale pulse, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
 
 ---
 
@@ -731,35 +731,7 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
-    self.sword.swing(self, self.facingX, self.facingY)
-
-    dim s1 as Keyframe
-    s1 = new Keyframe()
-    s1.setTime(0)
-    s1.setAngle(0)
-    s1.setPosition(self.transform.x(), self.transform.y())
-
-    ' The spin tween pins the player's position for its whole duration (tween
-    ' writes position every frame, and there's no way to tween just the angle
-    ' -- see the comment on Sword's attach for why). That's a real "can't move
-    ' while swinging" lock, so it's kept short (0.15s) and independent of
-    ' attackCooldown (0.4s): confirmed live, chaining attacks the instant
-    ' cooldown allowed left the player frozen the entire cooldown window,
-    ' unable to chase a boss that had just been knocked back out of range --
-    ' which read exactly like "the hitbox is janky" even though the hitbox
-    ' geometry itself checked out clean. Ending the lock well before the next
-    ' attack is available gives the player a real window to reposition.
-    dim s2 as Keyframe
-    s2 = new Keyframe()
-    s2.setTime(0.15)
-    s2.setAngle(360)
-    s2.setPosition(self.transform.x(), self.transform.y())
-
-    dim spinFrames(0)
-    array.push(spinFrames, s1)
-    array.push(spinFrames, s2)
-
-    tween.play(self, spinFrames, false)
+    self.sword.swing(self, self.facingX, self.facingY, 0.4)
 
     ' Hitbox is centered on the player, not offset in the facing direction --
     ' matches the spin-attack visual (a full 360 turn has no single "front"),
@@ -830,6 +802,28 @@ function onupdate(delta)
     self.attackCooldown = self.attackCooldown - dt
   endif
 
+  ' Rotation is driven directly by setAngle here, not by tween.play -- tween
+  ' writes every channel (including position) unconditionally each frame,
+  ' so a tween spin controlling rotation would also have to control position
+  ' every frame, freezing the player solid for the swing's whole duration.
+  ' That's exactly what caused the boss to feel un-hittable: chaining attacks
+  ' the instant cooldown allowed left the player unable to chase a boss that
+  ' had just been knocked back out of range, confirmed live. Setting the
+  ' angle by hand here means attacking costs no mobility at all: setVelocity
+  ' above already runs unconditionally, so the player can move and spin at
+  ' the same time. The 360 turn now spans the whole attackCooldown window
+  ' (0.4s) rather than a shortened slice of it, since there's no longer a
+  ' tradeoff between "long enough to read as a real spin" and "short enough
+  ' the player isn't stuck standing still" -- a shorter, tween-locked version
+  ' of this spin (0.15s) shipped briefly and read as the attack getting cut
+  ' off/cancelled by movement input, because pose and lock ended together
+  ' well before the cooldown did.
+  if self.attackCooldown > 0 then
+    self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)
+  else
+    self.setAngle(0)
+  endif
+
   if self.hasKey then
     collision.setTileSolid(488, 264, false)
     collision.setTileSolid(488, 280, false)
@@ -852,8 +846,8 @@ function onupdate(delta)
     self.setAlpha(1)
   endif
 
-  if self.attackCooldown > 0.25 then
-    ' still flashing the attack pose from a recent swing -- let it finish
+  if self.attackCooldown > 0 then
+    ' still flashing the attack pose for the whole spin -- let it finish
     ' showing before switching back to walk/idle, rather than depending on
     ' the animation engine's own "is it done playing" state
   elseif moveX <> 0 or moveY <> 0 then
@@ -882,42 +876,40 @@ Extends sprite
 
 dim active
 dim playerRef as sprite
+dim swingTimer
 
 Constructor()
   super("sword.png")
   self.setVisible(false)
   self.active = false
+  self.swingTimer = 0
 EndConstructor
 
-function swing(p, facingX, facingY)
+function swing(p, facingX, facingY, duration)
   ' Attaching alone already makes the sword sweep around the player: the
   ' sword's own anchor sits at its top-left corner (the sprite default),
-  ' not its centre, so once its local position is offset from (0,0) --
-  ' i.e. its pivot is glued to the player's own position, some distance
-  ' away -- the player's own spin tween carries that off-centre pivot
-  ' around in a circle all by itself. The sword does NOT need its own
-  ' angle tween on top of that: an earlier version gave it one, which
-  ' composed additively with the player's rotation (PIXI sums a child's
-  ' rotation with its parent's) and made the sword complete two full
-  ' orbits for every one player spin -- confirmed by sampling world-space
-  ' position, not assumed. Leaving the sword's own angle fixed makes it
-  ' track the player's spin exactly once.
+  ' not its centre, so once its local position is (0,0) -- i.e. its pivot
+  ' is glued to the player's own position -- the player's own spin (driven
+  ' by setAngle in Player.onupdate) carries that off-centre pivot around in
+  ' a circle all by itself. The sword does NOT need its own angle animation
+  ' on top of that: an earlier version gave it one, which composed
+  ' additively with the player's rotation (PIXI sums a child's rotation with
+  ' its parent's) and made the sword complete two full orbits for every one
+  ' player spin -- confirmed by sampling world-space position, not assumed.
+  ' Leaving the sword's own angle fixed makes it track the player's spin
+  ' exactly once.
   '
   ' Position/angle are derived from the player's current facing, not
-  ' hardcoded -- an earlier version fixed them at a single pose tuned by
-  ' eye for facing right, which visually pointed the sword somewhere
-  ' unrelated to the real hit box (Player.tryAttack's facingX/Y * 20) for
-  ' every other facing direction. Confirmed live: the actual hit
-  ' detection was fine the whole time, only the sword's visual position
-  ' was wrong, which read exactly like "attacks don't land". alongDist/
-  ' perpDist reproduce that same tuned pose, just expressed relative to
-  ' facing instead of the world x-axis, so it looks the same when facing
-  ' right and rotates correctly for every other direction.
-  '
-  ' Parameter deliberately named `p`, not `playerRef` -- matching this name
-  ' to the `playerRef` field triggered a real transpiler bug where the
-  ' compiler resolved the assignment against the class's own field default
-  ' instead of the local parameter, silently assigning undefined.
+  ' hardcoded -- an earlier version fixed them at a single (18, -5) /
+  ' 90 degree pose tuned by eye for facing right, which visually pointed
+  ' the sword somewhere unrelated to the real hitbox (Player.tryAttack's
+  ' facingX/Y * 20) for every other facing direction. Confirmed live: the
+  ' actual hit detection was fine the whole time, only the sword's visual
+  ' position was wrong, which read exactly like "attacks don't land".
+  ' alongDist/perpDist reproduce that same tuned (18, -5) pose, just
+  ' expressed relative to facing instead of the world x-axis, so it looks
+  ' the same when facing right and rotates correctly for every other
+  ' direction.
   dim alongDist
   dim perpDist
   dim perpX
@@ -934,11 +926,19 @@ function swing(p, facingX, facingY)
   self.setAngle(90 + math.atan2(facingY, facingX) * 180 / math.pi())
   self.setVisible(true)
   self.active = true
+  self.swingTimer = duration
 endfunction
 
 function onupdate(delta)
+  ' Tracks its own timer rather than polling tween.isPlaying(playerRef) --
+  ' the player no longer uses tween for its spin at all (see Player.bas), so
+  ' there's no longer any tween state to poll. duration is passed in from
+  ' the caller (Player.tryAttack) so the sword's visible lifetime always
+  ' matches however long the player's own spin actually takes, without the
+  ' two having to agree on a hardcoded number independently.
   if self.active then
-    if not tween.isPlaying(self.playerRef) then
+    self.swingTimer = self.swingTimer - delta / 1000
+    if self.swingTimer <= 0 then
       self.active = false
       self.setVisible(false)
       self.detach()
