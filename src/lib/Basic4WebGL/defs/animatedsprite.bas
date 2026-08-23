@@ -86,4 +86,12 @@ function isBlockedRight()
     return call("_sb.isBlockedRight(this._handle)")
 endfunction
 
+function attachTo(parent)
+    call("_sb.attachSprite(this._handle, attachto_parent)")
+endfunction
+
+function detach()
+    call("_sb.detachSprite(this._handle)")
+endfunction
+
 EndClass

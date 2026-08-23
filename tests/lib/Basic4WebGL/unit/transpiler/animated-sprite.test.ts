@@ -340,3 +340,32 @@ describe('AnimatedSprite — isBlockedUp / isBlockedDown / isBlockedLeft / isBlo
     expect(result.code).toContain('_sb.isBlockedRight(');
   });
 });
+
+// ─── attachTo / detach ──────────────────────────────────────────────────────────
+
+describe('AnimatedSprite — attachTo / detach', () => {
+  test('compiles without error', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim child as AnimatedSprite("hero.png", 48, 48)',
+      '  dim par as AnimatedSprite("mount.png", 48, 48)',
+      '  child.attachTo(par)',
+      '  child.detach()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.attachSprite( and _sb.detachSprite(', () => {
+    const result = transpileWithAnimSprite([
+      'function test()',
+      '  dim child as AnimatedSprite("hero.png", 48, 48)',
+      '  dim par as AnimatedSprite("mount.png", 48, 48)',
+      '  child.attachTo(par)',
+      '  child.detach()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.attachSprite(');
+    expect(result.code).toContain('_sb.detachSprite(');
+  });
+});
