@@ -12,7 +12,7 @@ The boss room's door is a real `collision` tile, solid until the player has the 
 
 The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin — no tween of its own needed. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
 
-`Sword.swing()` calls `attachTo(player)` and leaves the sword's own local angle fixed at 0 — the sword's sprite has its pivot at its top-left corner (the default for a plain `sprite`, unlike `animatedsprite`, which centres it), so once the sword's local position is `(0, 0)` — its pivot glued exactly to the player's own position — the *player's* spin alone carries that off-centre pivot around in a circle. An earlier version additionally tweened the sword's own local angle 0° to 360° on top of that, on the assumption the sword's own rotation was what produced the sweep; it wasn't, and since PIXI adds a child's rotation to its parent's, that extra tween made the sword complete two full orbits for every one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Removing the sword's own tween fixed it: one attach call, one fixed angle, one clean orbit, driven entirely by the player's own spin.
+`Sword.swing(player, facingX, facingY)` calls `attachTo(player)` and sets a fixed local position/angle held out to the player's side, derived from the player's current facing direction rather than hardcoded — an earlier version fixed the offset at a single tuned pose (matching only the "facing right" case), which visually pointed the sword somewhere unrelated to the real hit box (`Player.tryAttack()`'s `facingX`/`facingY * 20`) for every other facing direction; combat still worked mechanically in all directions the whole time, but it *looked* broken in three of the four. The sword's own angle is never tweened — an earlier version additionally tweened it 0° to 360° on the assumption the sword's own rotation was what produced the sweep-around-the-player effect; it wasn't. Since the sword is attached and its local position is offset (not `(0, 0)`), the *player's* own spin alone carries it around in a circle — adding the sword's own rotation on top composed additively with the player's (PIXI sums a child's rotation with its parent's), making it complete two full orbits per one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Leaving the sword's own angle fixed, position derived from facing, both bugs fixed together.
 
 `Sword.onupdate()` watches `tween.isPlaying(player)` (not its own tween — it doesn't have one) to know when to hide itself and `detach()`.
 
@@ -565,7 +565,7 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
-    self.sword.swing(self)
+    self.sword.swing(self, self.facingX, self.facingY)
 
     dim s1 as Keyframe
     s1 = new Keyframe()
@@ -697,27 +697,49 @@ Constructor()
   self.active = false
 EndConstructor
 
-function swing(p)
+function swing(p, facingX, facingY)
   ' Attaching alone already makes the sword sweep around the player: the
   ' sword's own anchor sits at its top-left corner (the sprite default),
-  ' not its centre, so once its local position is (0,0) -- i.e. its pivot
-  ' is glued to the player's own position -- the player's own spin tween
-  ' carries that off-centre pivot around in a circle all by itself. The
-  ' sword does NOT need its own angle tween on top of that: an earlier
-  ' version gave it one, which composed additively with the player's
-  ' rotation (PIXI sums a child's rotation with its parent's) and made the
-  ' sword complete two full orbits for every one player spin -- confirmed
-  ' by sampling world-space position, not assumed. Leaving the sword's own
-  ' angle fixed at 0 makes it track the player's spin exactly once.
+  ' not its centre, so once its local position is offset from (0,0) --
+  ' i.e. its pivot is glued to the player's own position, some distance
+  ' away -- the player's own spin tween carries that off-centre pivot
+  ' around in a circle all by itself. The sword does NOT need its own
+  ' angle tween on top of that: an earlier version gave it one, which
+  ' composed additively with the player's rotation (PIXI sums a child's
+  ' rotation with its parent's) and made the sword complete two full
+  ' orbits for every one player spin -- confirmed by sampling world-space
+  ' position, not assumed. Leaving the sword's own angle fixed makes it
+  ' track the player's spin exactly once.
+  '
+  ' Position/angle are derived from the player's current facing, not
+  ' hardcoded -- an earlier version fixed them at a single pose tuned by
+  ' eye for facing right, which visually pointed the sword somewhere
+  ' unrelated to the real hit box (Player.tryAttack's facingX/Y * 20) for
+  ' every other facing direction. Confirmed live: the actual hit
+  ' detection was fine the whole time, only the sword's visual position
+  ' was wrong, which read exactly like "attacks don't land". alongDist/
+  ' perpDist reproduce that same tuned pose, just expressed relative to
+  ' facing instead of the world x-axis, so it looks the same when facing
+  ' right and rotates correctly for every other direction.
   '
   ' Parameter deliberately named `p`, not `playerRef` -- matching this name
   ' to the `playerRef` field triggered a real transpiler bug where the
   ' compiler resolved the assignment against the class's own field default
   ' instead of the local parameter, silently assigning undefined.
+  dim alongDist
+  dim perpDist
+  dim perpX
+  dim perpY
+
+  alongDist = 18
+  perpDist = -5
+  perpX = -facingY
+  perpY = facingX
+
   self.playerRef = p
   self.attachTo(p)
-  self.transform.setPosition(0, 0)
-  self.setAngle(0)
+  self.transform.setPosition(facingX * alongDist + perpX * perpDist, facingY * alongDist + perpY * perpDist)
+  self.setAngle(90 + math.atan2(facingY, facingX) * 180 / math.pi())
   self.setVisible(true)
   self.active = true
 endfunction
