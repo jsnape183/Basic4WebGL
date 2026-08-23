@@ -25,6 +25,10 @@ function makeContainer(name: string) {
       this.children.push(child);
       child.parent = this;
     },
+    removeChild(child: unknown) {
+      const i = this.children.indexOf(child);
+      if (i !== -1) this.children.splice(i, 1);
+    },
   };
 }
 
@@ -93,5 +97,23 @@ describe('attachSprite / detachSprite', () => {
     expect(() => attach.attachSprite(childHandle, null)).not.toThrow();
     expect(() => attach.attachSprite(childHandle, {})).not.toThrow(); // parentObj._handle missing
     expect(childHandle.parent).toBe(world); // untouched
+  });
+
+  test('attaching a sprite that was never added to any container (null original parent) can still be detached', () => {
+    const attach = loadAttach();
+    // A freshly-constructed sprite that hasn't been world.add()/hud.add()'d
+    // yet has a null PIXI parent — a legitimate value, not "never attached".
+    const childHandle = { parent: null as unknown };
+    const parentHandle = makeContainer('parent');
+
+    attach.attachSprite(childHandle, { _handle: parentHandle });
+    expect(childHandle.parent).toBe(parentHandle);
+
+    attach.detachSprite(childHandle);
+    expect(childHandle.parent).toBe(null); // restored to its real original (null), not stuck attached
+
+    // A second detach must be a true no-op, not throw or re-apply anything.
+    expect(() => attach.detachSprite(childHandle)).not.toThrow();
+    expect(childHandle.parent).toBe(null);
   });
 });
