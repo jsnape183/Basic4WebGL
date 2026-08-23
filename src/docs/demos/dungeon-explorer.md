@@ -16,7 +16,7 @@ The player moves with `setVelocity` (sliding cleanly along walls via `collision.
 
 `Sword.onupdate()` watches `tween.isPlaying(player)` (not its own tween — it doesn't have one) to know when to hide itself and `detach()`.
 
-Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit. The boss never patrols — it's a full-time chase — but its lunge gets the same telegraph treatment as regular enemies now: `attackTimer` counts down to trigger a 0.3s windup (the same scale-pulse-while-standing-still pattern), *then* a 0.6s lunge at 3.5x its base speed. A successful hit on the boss also knocks it back and cancels an in-progress windup outright, mirroring `Enemy.hit()`. Standing still to land a spin attack right next to the boss is still a real risk — its contact damage doesn't stop just because it's mid-chase — just no longer an *unwarned* one. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
@@ -63,19 +63,73 @@ dim baseSpeed
 dim lungeSpeed
 dim attackTimer
 dim lungeTimer
+dim windupTimer
+dim knockbackTimer
+dim knockbackX
+dim knockbackY
 
 Constructor(x, y, targetRef as sprite)
   super("boss.png")
   self.transform.setPosition(x, y)
-  self.hp = 150
+  self.hp = 120
   self.dead = false
   self.chaseTarget = targetRef
   self.damageCooldown = 0
   self.baseSpeed = 40
-  self.lungeSpeed = 160
+  self.lungeSpeed = 140
   self.attackTimer = 2.5
   self.lungeTimer = 0
+  self.windupTimer = 0
+  self.knockbackTimer = 0
+  self.knockbackX = 0
+  self.knockbackY = 0
 EndConstructor
+
+function beginWindup()
+  ' Same telegraph pattern as the regular enemies' attack windup: pulse
+  ' scale over 0.3s, standing still, before the actual lunge fires. The
+  ' boss previously had zero warning before a 4x-speed lunge -- unfair
+  ' by the standard the rest of this demo now holds itself to. Every
+  ' keyframe sets position explicitly for the same reason Enemy.bas's
+  ' equivalent does: tween applies every channel unconditionally each
+  ' frame, and an unset position defaults to (0,0).
+  dim px
+  dim py
+  dim k1 as Keyframe
+  dim k2 as Keyframe
+  dim k3 as Keyframe
+  dim frames(0)
+
+  px = self.transform.x()
+  py = self.transform.y()
+
+  self.windupTimer = 0.3
+  self.setVelocity(0, 0)
+
+  k1 = new Keyframe()
+  k1.setTime(0)
+  k1.setScaleX(1)
+  k1.setScaleY(1)
+  k1.setPosition(px, py)
+
+  k2 = new Keyframe()
+  k2.setTime(0.15)
+  k2.setScaleX(1.25)
+  k2.setScaleY(1.25)
+  k2.setPosition(px, py)
+
+  k3 = new Keyframe()
+  k3.setTime(0.3)
+  k3.setScaleX(1)
+  k3.setScaleY(1)
+  k3.setPosition(px, py)
+
+  array.push(frames, k1)
+  array.push(frames, k2)
+  array.push(frames, k3)
+
+  tween.play(self, frames, false)
+endfunction
 
 function onupdate(delta)
   if not self.dead then
@@ -83,28 +137,41 @@ function onupdate(delta)
     dim currentSpeed
     dt = delta / 1000
 
-    if self.lungeTimer > 0 then
-      self.lungeTimer = self.lungeTimer - dt
-      currentSpeed = self.lungeSpeed
-    else
-      self.attackTimer = self.attackTimer - dt
-      if self.attackTimer <= 0 then
-        self.attackTimer = 2.5
-        self.lungeTimer = 0.6
-      endif
-      currentSpeed = self.baseSpeed
-    endif
-
-    pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), currentSpeed)
-
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - dt
     endif
 
-    if collision.spriteCollide(self, self.chaseTarget) then
-      if self.damageCooldown <= 0 then
-        self.chaseTarget.takeDamage()
-        self.damageCooldown = 0.5
+    if self.knockbackTimer > 0 then
+      self.knockbackTimer = self.knockbackTimer - dt
+      pathfinding.stopNavigating(self)
+      self.setVelocity(self.knockbackX * 80, self.knockbackY * 80)
+    elseif self.windupTimer > 0 then
+      self.windupTimer = self.windupTimer - dt
+      pathfinding.stopNavigating(self)
+      self.setVelocity(0, 0)
+      if self.windupTimer <= 0 then
+        self.lungeTimer = 0.6
+      endif
+    else
+      if self.lungeTimer > 0 then
+        self.lungeTimer = self.lungeTimer - dt
+        currentSpeed = self.lungeSpeed
+      else
+        self.attackTimer = self.attackTimer - dt
+        if self.attackTimer <= 0 then
+          self.attackTimer = 2.5
+          self.beginWindup()
+        endif
+        currentSpeed = self.baseSpeed
+      endif
+
+      pathfinding.navigateTo(self, self.chaseTarget.transform.x(), self.chaseTarget.transform.y(), currentSpeed)
+
+      if collision.spriteCollide(self, self.chaseTarget) then
+        if self.damageCooldown <= 0 then
+          self.chaseTarget.takeDamage()
+          self.damageCooldown = 0.6
+        endif
       endif
     endif
   endif
@@ -117,6 +184,19 @@ function hit(damage)
       self.dead = true
       world.remove(self)
       scenemanager.switch("winscene")
+    else
+      ' Mirrors Enemy.bas: knock the boss back so a successful hit buys
+      ' breathing room, and cleanly cancel an in-progress windup pulse
+      ' (stop the tween, reset scale) rather than leaving it stuck
+      ' mid-puff if the hit interrupts it.
+      if self.windupTimer > 0 then
+        tween.stop(self)
+        self.setScale(1, 1)
+        self.windupTimer = 0
+      endif
+      self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
+      self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
+      self.knockbackTimer = 0.15
     endif
   endif
 endfunction
