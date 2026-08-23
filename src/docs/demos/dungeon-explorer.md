@@ -12,6 +12,8 @@ The boss room's door is a real `collision` tile, solid until the player has the 
 
 The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `Player.checkSwingHits()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre.
 
+The player's own attack box is 44×44 (±22px from its centre); the box checked against the boss matches its real 32×32 size (±16px), giving a combined reach of 38px. Regular enemies are checked against a 28×28 box, padded well past their real 16×16 size (±8px) — without the padding their reach would only be 30px, and since a target's own half-size is what it contributes to the combined reach, the bigger boss would end up feeling generous purely because it's a bigger target, while small enemies felt tight for the same reason in reverse. Padding brings enemies to a 36px reach, close to parity with the boss.
+
 More fundamentally, the hit check no longer runs once, at the instant the attack button is pressed — `Player.onupdate()` calls `checkSwingHits()` every frame for as long as `attackCooldown > 0` (the whole 0.4s swing), not just on the frame `tryAttack()` fires. Every hit-detection complaint this attack went through traced back to some variant of the same problem: something had to be in exactly the right place on exactly the one frame the check ran, whether that was a facing-offset box that missed anything close, a correctly-sized box checked against a player who couldn't get back into range after a knockback, or a swing that looked like it got cancelled because its visible pose ended right when the movement lock did. Checking continuously fixes the whole class at once: a target that wanders into the box at any point during the swing gets hit, not only one that already happened to be there the instant the button went down — much closer to how a swinging sword actually behaves, and no longer dependent on split-second timing. A `swingId` counter on `Player`, bumped once per swing in `tryAttack()`, stops one swing from hitting the same target on more than one of the ~24 frames it's checked over — `Enemy.hit(damage, swingId)`/`Boss.hit(damage, swingId)` only apply damage the first time a given `swingId` reaches them, tracked in each target's own `lastHitSwingId`.
 
 The attack is also a little flourish: `Player.onupdate()` spins the player a full 360° over the whole 0.4s `attackCooldown` window by setting `self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)` directly each frame, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin. This wasn't always hand-rolled — an earlier version used `tween.play()` for the rotation, which pinned the player's position to a fixed keyframe value for the tween's whole duration (`tween` writes every channel, position included, unconditionally each frame — there's no way to tween just the angle). That made attacking a real "can't move while swinging" lock; a first attempt shortened the lock to 0.15s (independent of the 0.4s cooldown) so the player wasn't frozen the *entire* cooldown window, which fixed a boss-chase problem — a fully-locked player couldn't close distance on a boss that had just been knocked back out of range — but then made the attack pose feel like it was getting cut off by movement input, since the visual pose and the lock both ended together well before the cooldown did. Driving rotation directly with `setAngle` instead of `tween` sidesteps the tradeoff entirely: `setVelocity` already runs unconditionally every frame, so with nothing else fighting it for control of position, attacking costs no mobility at all, and the spin can run the full, satisfying 0.4s without needing to lock anything.
@@ -778,7 +780,21 @@ function checkSwingHits()
   ' which (unlike the player's `animatedsprite`) has no centered anchor.
   ' Feeding that raw top-left position into boxCollide as if it were a
   ' center silently shifts the effective hit-check away from where the
-  ' enemy actually renders. Correcting by half each target's own size.
+  ' enemy actually renders. The `+ 8`/`+ 16` centering offsets are each
+  ' target's own real size (16x16 enemy, 32x32 boss) and stay fixed
+  ' regardless of the box size checked below -- they locate the center,
+  ' the box size below controls how generous the reach to that center is.
+  '
+  ' The box checked against each enemy is padded out to 28x28, well past
+  ' its real 16x16 size: with the player's own box at 44x44 (half 22), a
+  ' target's OWN half-size is what it contributes to the combined reach
+  ' (22 + target's own half), so a small 16x16 enemy (half 8) only reached
+  ' 30px center-to-center while the bigger 32x32 boss (half 16) reached
+  ' 38px -- the boss felt generous and regular enemies felt tight purely
+  ' because they're smaller, not from any difference in how forgiving the
+  ' check itself was. Padding enemies to 28x28 (half 14) brings their
+  ' reach to 36px, close to the boss's, without touching the boss's own
+  ' box or the player's.
   dim hitX
   dim hitY
   dim i
@@ -790,7 +806,7 @@ function checkSwingHits()
   for i = 0 to array.arrLength(self.enemies) - 1
     e = self.enemies(i)
     if not e.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 28, 28) then
         e.hit(15, self.swingId)
       endif
     endif

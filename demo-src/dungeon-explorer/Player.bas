@@ -95,7 +95,21 @@ function checkSwingHits()
   ' which (unlike the player's `animatedsprite`) has no centered anchor.
   ' Feeding that raw top-left position into boxCollide as if it were a
   ' center silently shifts the effective hit-check away from where the
-  ' enemy actually renders. Correcting by half each target's own size.
+  ' enemy actually renders. The `+ 8`/`+ 16` centering offsets are each
+  ' target's own real size (16x16 enemy, 32x32 boss) and stay fixed
+  ' regardless of the box size checked below -- they locate the center,
+  ' the box size below controls how generous the reach to that center is.
+  '
+  ' The box checked against each enemy is padded out to 28x28, well past
+  ' its real 16x16 size: with the player's own box at 44x44 (half 22), a
+  ' target's OWN half-size is what it contributes to the combined reach
+  ' (22 + target's own half), so a small 16x16 enemy (half 8) only reached
+  ' 30px center-to-center while the bigger 32x32 boss (half 16) reached
+  ' 38px -- the boss felt generous and regular enemies felt tight purely
+  ' because they're smaller, not from any difference in how forgiving the
+  ' check itself was. Padding enemies to 28x28 (half 14) brings their
+  ' reach to 36px, close to the boss's, without touching the boss's own
+  ' box or the player's.
   dim hitX
   dim hitY
   dim i
@@ -107,7 +121,7 @@ function checkSwingHits()
   for i = 0 to array.arrLength(self.enemies) - 1
     e = self.enemies(i)
     if not e.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 28, 28) then
         e.hit(15, self.swingId)
       endif
     endif
