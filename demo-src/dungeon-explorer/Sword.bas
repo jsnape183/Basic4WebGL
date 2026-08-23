@@ -9,38 +9,30 @@ Constructor()
   self.active = false
 EndConstructor
 
-function swing(px, py)
-  ' Traces the sword through a full circle around (px, py), one keyframe
-  ' every 45 degrees, timed to land on the same angle the player's own
-  ' spin tween is at, at the same moment -- so the sword reads as rigidly
-  ' swinging around the spinning player instead of drifting independently
-  ' (there's no sprite-attachment/parenting feature to lean on instead;
-  ' this is a deliberate stand-in for one).
-  dim steps
-  dim duration
-  dim radius
-  dim i
-  dim angleDeg
-  dim angleRad
-  dim k as Keyframe
+function swing(playerRef)
+  ' Attaches to the player for the duration of the swing, so the tween below
+  ' only needs to animate this sword's own local angle -- PIXI's transform
+  ' stack takes care of making that angle relative to the player, which is
+  ' what makes the sword sweep around the player as it also spins.
+  dim s1 as Keyframe
+  dim s2 as Keyframe
   dim frames(0)
 
-  steps = 8
-  duration = 0.4
-  radius = 7
-
-  for i = 0 to steps
-    angleDeg = (360 / steps) * i
-    angleRad = angleDeg * math.pi() / 180
-    k = new Keyframe()
-    k.setTime((duration / steps) * i)
-    k.setAngle(angleDeg)
-    k.setPosition(px + math.cos(angleRad) * radius, py + math.sin(angleRad) * radius)
-    array.push(frames, k)
-  next i
-
+  self.attachTo(playerRef)
   self.setVisible(true)
   self.active = true
+
+  s1 = new Keyframe()
+  s1.setTime(0)
+  s1.setAngle(0)
+
+  s2 = new Keyframe()
+  s2.setTime(0.4)
+  s2.setAngle(360)
+
+  array.push(frames, s1)
+  array.push(frames, s2)
+
   tween.play(self, frames, false)
 endfunction
 
@@ -49,6 +41,7 @@ function onupdate(delta)
     if not tween.isPlaying(self) then
       self.active = false
       self.setVisible(false)
+      self.detach()
     endif
   endif
 endfunction

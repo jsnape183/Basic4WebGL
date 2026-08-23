@@ -68,7 +68,7 @@ function tryAttack()
   if self.attackCooldown <= 0 then
     self.attackCooldown = 0.4
     self.play("attack")
-    self.sword.swing(self.transform.x(), self.transform.y())
+    self.sword.swing(self)
 
     dim s1 as Keyframe
     s1 = new Keyframe()
