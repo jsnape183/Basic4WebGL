@@ -10,9 +10,11 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo` and tweens its own local angle through the same 360° over the same 0.4s — since it's attached, that rotation is automatically relative to the player, so it reads as swinging rigidly around the spinning player. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin — no tween of its own needed. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
 
-`Sword.swing()` uses `attachTo`/`detach` to glue the sword to the player for the swing's duration — once attached, the sword only needs to tween its own local angle from 0° to 360°, and `attachTo`'s parent-relative positioning (backed by PIXI's own container parenting) takes care of making that rotation orbit around the player automatically.
+`Sword.swing()` calls `attachTo(player)` and leaves the sword's own local angle fixed at 0 — the sword's sprite has its pivot at its top-left corner (the default for a plain `sprite`, unlike `animatedsprite`, which centres it), so once the sword's local position is `(0, 0)` — its pivot glued exactly to the player's own position — the *player's* spin alone carries that off-centre pivot around in a circle. An earlier version additionally tweened the sword's own local angle 0° to 360° on top of that, on the assumption the sword's own rotation was what produced the sweep; it wasn't, and since PIXI adds a child's rotation to its parent's, that extra tween made the sword complete two full orbits for every one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Removing the sword's own tween fixed it: one attach call, one fixed angle, one clean orbit, driven entirely by the player's own spin.
+
+`Sword.onupdate()` watches `tween.isPlaying(player)` (not its own tween — it doesn't have one) to know when to hide itself and `detach()`.
 
 Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Landing a hit on an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit from contact damage. The boss skips all of that — it's a full-time chase, with a periodic speed-boosted lunge layered on top of its base chase speed (`attackTimer` counts down to trigger a 0.6s lunge at 4x speed, then resets), which also means standing still to land a spin attack right next to the boss is a real risk, not a free action. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
@@ -687,6 +689,7 @@ Class
 Extends sprite
 
 dim active
+dim playerRef as sprite
 
 Constructor()
   super("sword.png")
@@ -694,36 +697,34 @@ Constructor()
   self.active = false
 EndConstructor
 
-function swing(playerRef)
-  ' Attaches to the player for the duration of the swing, so the tween below
-  ' only needs to animate this sword's own local angle -- PIXI's transform
-  ' stack takes care of making that angle relative to the player, which is
-  ' what makes the sword sweep around the player as it also spins.
-  dim s1 as Keyframe
-  dim s2 as Keyframe
-  dim frames(0)
-
-  self.attachTo(playerRef)
+function swing(p)
+  ' Attaching alone already makes the sword sweep around the player: the
+  ' sword's own anchor sits at its top-left corner (the sprite default),
+  ' not its centre, so once its local position is (0,0) -- i.e. its pivot
+  ' is glued to the player's own position -- the player's own spin tween
+  ' carries that off-centre pivot around in a circle all by itself. The
+  ' sword does NOT need its own angle tween on top of that: an earlier
+  ' version gave it one, which composed additively with the player's
+  ' rotation (PIXI sums a child's rotation with its parent's) and made the
+  ' sword complete two full orbits for every one player spin -- confirmed
+  ' by sampling world-space position, not assumed. Leaving the sword's own
+  ' angle fixed at 0 makes it track the player's spin exactly once.
+  '
+  ' Parameter deliberately named `p`, not `playerRef` -- matching this name
+  ' to the `playerRef` field triggered a real transpiler bug where the
+  ' compiler resolved the assignment against the class's own field default
+  ' instead of the local parameter, silently assigning undefined.
+  self.playerRef = p
+  self.attachTo(p)
+  self.transform.setPosition(0, 0)
+  self.setAngle(0)
   self.setVisible(true)
   self.active = true
-
-  s1 = new Keyframe()
-  s1.setTime(0)
-  s1.setAngle(0)
-
-  s2 = new Keyframe()
-  s2.setTime(0.4)
-  s2.setAngle(360)
-
-  array.push(frames, s1)
-  array.push(frames, s2)
-
-  tween.play(self, frames, false)
 endfunction
 
 function onupdate(delta)
   if self.active then
-    if not tween.isPlaying(self) then
+    if not tween.isPlaying(self.playerRef) then
       self.active = false
       self.setVisible(false)
       self.detach()
