@@ -10,7 +10,7 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a short-range melee swing in whichever direction (`facingX`/`facingY`) they last moved — `tryAttack()` builds a hit box 20px out from the player's centre in that facing direction and checks it against every living enemy and the boss with `collision.boxCollide`. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin — no tween of its own needed. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `tryAttack()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre. The attack is also a little flourish: `tween.play()` spins the player a full 360° over the 0.4s attack window, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin — no tween of its own needed. The player can't move during that 0.4s — both of the player's own spin keyframes pin position to wherever the attack started, which is also a deliberate "committing to the attack" trade-off, not just a side effect.
 
 `Sword.swing(player, facingX, facingY)` calls `attachTo(player)` and sets a fixed local position/angle held out to the player's side, derived from the player's current facing direction rather than hardcoded — an earlier version fixed the offset at a single tuned pose (matching only the "facing right" case), which visually pointed the sword somewhere unrelated to the real hit box (`Player.tryAttack()`'s `facingX`/`facingY * 20`) for every other facing direction; combat still worked mechanically in all directions the whole time, but it *looked* broken in three of the four. The sword's own angle is never tweened — an earlier version additionally tweened it 0° to 360° on the assumption the sword's own rotation was what produced the sweep-around-the-player effect; it wasn't. Since the sword is attached and its local position is offset (not `(0, 0)`), the *player's* own spin alone carries it around in a circle — adding the sword's own rotation on top composed additively with the player's (PIXI sums a child's rotation with its parent's), making it complete two full orbits per one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Leaving the sword's own angle fixed, position derived from facing, both bugs fixed together.
 
@@ -751,20 +751,36 @@ function tryAttack()
 
     tween.play(self, spinFrames, false)
 
-    hitX = self.transform.x() + self.facingX * 20
-    hitY = self.transform.y() + self.facingY * 20
+    ' Hitbox is centered on the player, not offset in the facing direction --
+    ' matches the spin-attack visual (a full 360 turn has no single "front"),
+    ' and sidesteps a real dead zone the old offset-box had: a facing-offset
+    ' box only covered roughly 20px +/- 8px along the facing axis, so an
+    ' enemy standing right next to the player (well within the contact range
+    ' where it can already hit back) frequently fell outside that band and
+    ' took zero hits no matter how many times tryAttack() ran. Confirmed by
+    ' sweeping actual distances 0-20px against a real chasing enemy: every
+    ' attack in the 0-10px range missed.
+    '
+    ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
+    ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
+    ' which (unlike the player's `animatedsprite`) has no centered anchor.
+    ' Feeding that raw top-left position into boxCollide as if it were a
+    ' center silently shifts the effective hit-check away from where the
+    ' enemy actually renders. Correcting by half each target's own size.
+    hitX = self.transform.x()
+    hitY = self.transform.y()
 
     for i = 0 to array.arrLength(self.enemies) - 1
       e = self.enemies(i)
       if not e.dead then
-        if collision.boxCollide(hitX, hitY, 16, 16, e.transform.x(), e.transform.y(), 16, 16) then
+        if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
           e.hit(15)
         endif
       endif
     next i
 
     if not self.boss.dead then
-      if collision.boxCollide(hitX, hitY, 16, 16, self.boss.transform.x(), self.boss.transform.y(), 32, 32) then
+      if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
         self.boss.hit(15)
       endif
     endif

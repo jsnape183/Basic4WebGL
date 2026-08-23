@@ -88,20 +88,36 @@ function tryAttack()
 
     tween.play(self, spinFrames, false)
 
-    hitX = self.transform.x() + self.facingX * 20
-    hitY = self.transform.y() + self.facingY * 20
+    ' Hitbox is centered on the player, not offset in the facing direction --
+    ' matches the spin-attack visual (a full 360 turn has no single "front"),
+    ' and sidesteps a real dead zone the old offset-box had: a facing-offset
+    ' box only covered roughly 20px +/- 8px along the facing axis, so an
+    ' enemy standing right next to the player (well within the contact range
+    ' where it can already hit back) frequently fell outside that band and
+    ' took zero hits no matter how many times tryAttack() ran. Confirmed by
+    ' sweeping actual distances 0-20px against a real chasing enemy: every
+    ' attack in the 0-10px range missed.
+    '
+    ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
+    ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
+    ' which (unlike the player's `animatedsprite`) has no centered anchor.
+    ' Feeding that raw top-left position into boxCollide as if it were a
+    ' center silently shifts the effective hit-check away from where the
+    ' enemy actually renders. Correcting by half each target's own size.
+    hitX = self.transform.x()
+    hitY = self.transform.y()
 
     for i = 0 to array.arrLength(self.enemies) - 1
       e = self.enemies(i)
       if not e.dead then
-        if collision.boxCollide(hitX, hitY, 16, 16, e.transform.x(), e.transform.y(), 16, 16) then
+        if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
           e.hit(15)
         endif
       endif
     next i
 
     if not self.boss.dead then
-      if collision.boxCollide(hitX, hitY, 16, 16, self.boss.transform.x(), self.boss.transform.y(), 32, 32) then
+      if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
         self.boss.hit(15)
       endif
     endif
