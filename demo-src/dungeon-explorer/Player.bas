@@ -13,6 +13,7 @@ dim visibleFlag
 dim enemies() as enemy
 dim boss as boss
 dim sword as sword
+dim swingId
 
 Constructor(x, y)
   super("player.png", 16, 16)
@@ -30,6 +31,7 @@ Constructor(x, y)
   self.invincibleTime = 0
   self.flickerTimer = 0
   self.visibleFlag = true
+  self.swingId = 0
 EndConstructor
 
 function setEnemies(enemiesRef)
@@ -60,48 +62,60 @@ function takeDamage()
 endfunction
 
 function tryAttack()
+  if self.attackCooldown <= 0 then
+    self.attackCooldown = 0.4
+    self.swingId = self.swingId + 1
+    self.play("attack")
+    self.sword.swing(self, self.facingX, self.facingY, 0.4)
+  endif
+endfunction
+
+function checkSwingHits()
+  ' Checked every frame the swing is active (see onupdate, gated on
+  ' attackCooldown > 0), not once at the instant the attack button was
+  ' pressed. An instant-only check requires the target to already be in
+  ' exactly the right place at exactly that one frame -- every hit-detection
+  ' complaint in this attack's history traces back to some version of that:
+  ' a facing-offset box that missed anything close, a hitbox that was fine
+  ' but a frozen player that couldn't get back into range after a knockback,
+  ' an animation that looked cancelled because the lock and the pose ended
+  ' together. Checking continuously for the whole swing means a target that
+  ' wanders into the box at ANY point during the 0.4s swing gets hit, not
+  ' just one that happened to already be there the instant the button was
+  ' pressed -- closer to how a swinging sword actually works, and removes
+  ' the whole class of "was it in range on the right frame" bugs at once.
+  ' self.swingId (bumped once per swing in tryAttack) stops this from
+  ' hitting the same target more than once while it sits in the box for
+  ' several consecutive frames -- see Enemy.hit/Boss.hit.
+  '
+  ' Hitbox is centered on the player, not offset in the facing direction --
+  ' matches the spin-attack visual (a full 360 turn has no single "front").
+  ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
+  ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
+  ' which (unlike the player's `animatedsprite`) has no centered anchor.
+  ' Feeding that raw top-left position into boxCollide as if it were a
+  ' center silently shifts the effective hit-check away from where the
+  ' enemy actually renders. Correcting by half each target's own size.
   dim hitX
   dim hitY
   dim i
   dim e as enemy
 
-  if self.attackCooldown <= 0 then
-    self.attackCooldown = 0.4
-    self.play("attack")
-    self.sword.swing(self, self.facingX, self.facingY, 0.4)
+  hitX = self.transform.x()
+  hitY = self.transform.y()
 
-    ' Hitbox is centered on the player, not offset in the facing direction --
-    ' matches the spin-attack visual (a full 360 turn has no single "front"),
-    ' and sidesteps a real dead zone the old offset-box had: a facing-offset
-    ' box only covered roughly 20px +/- 8px along the facing axis, so an
-    ' enemy standing right next to the player (well within the contact range
-    ' where it can already hit back) frequently fell outside that band and
-    ' took zero hits no matter how many times tryAttack() ran. Confirmed by
-    ' sweeping actual distances 0-20px against a real chasing enemy: every
-    ' attack in the 0-10px range missed.
-    '
-    ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
-    ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
-    ' which (unlike the player's `animatedsprite`) has no centered anchor.
-    ' Feeding that raw top-left position into boxCollide as if it were a
-    ' center silently shifts the effective hit-check away from where the
-    ' enemy actually renders. Correcting by half each target's own size.
-    hitX = self.transform.x()
-    hitY = self.transform.y()
-
-    for i = 0 to array.arrLength(self.enemies) - 1
-      e = self.enemies(i)
-      if not e.dead then
-        if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
-          e.hit(15)
-        endif
+  for i = 0 to array.arrLength(self.enemies) - 1
+    e = self.enemies(i)
+    if not e.dead then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
+        e.hit(15, self.swingId)
       endif
-    next i
+    endif
+  next i
 
-    if not self.boss.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
-        self.boss.hit(15)
-      endif
+  if not self.boss.dead then
+    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
+      self.boss.hit(15, self.swingId)
     endif
   endif
 endfunction
@@ -157,6 +171,7 @@ function onupdate(delta)
   ' well before the cooldown did.
   if self.attackCooldown > 0 then
     self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)
+    self.checkSwingHits()
   else
     self.setAngle(0)
   endif

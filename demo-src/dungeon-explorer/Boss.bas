@@ -13,6 +13,7 @@ dim windupTimer
 dim knockbackTimer
 dim knockbackX
 dim knockbackY
+dim lastHitSwingId
 
 Constructor(x, y, targetRef as sprite)
   super("boss.png")
@@ -29,6 +30,7 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackTimer = 0
   self.knockbackX = 0
   self.knockbackY = 0
+  self.lastHitSwingId = -1
 EndConstructor
 
 function beginWindup()
@@ -123,8 +125,14 @@ function onupdate(delta)
   endif
 endfunction
 
-function hit(damage)
-  if not self.dead then
+function hit(damage, swingId)
+  ' swingId guards against the same swing hitting the boss more than once
+  ' now that Player checks collision every frame the sword is active (see
+  ' Player.onupdate) rather than at a single instant -- without it, standing
+  ' inside the hitbox for several consecutive frames of one swing would
+  ' apply damage every one of those frames instead of just once.
+  if not self.dead and self.lastHitSwingId <> swingId then
+    self.lastHitSwingId = swingId
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true

@@ -10,7 +10,11 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `tryAttack()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre. The attack is also a little flourish: `Player.onupdate()` spins the player a full 360° over the whole 0.4s `attackCooldown` window by setting `self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)` directly each frame, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin. This wasn't always hand-rolled — an earlier version used `tween.play()` for the rotation, which pinned the player's position to a fixed keyframe value for the tween's whole duration (`tween` writes every channel, position included, unconditionally each frame — there's no way to tween just the angle). That made attacking a real "can't move while swinging" lock; a first attempt shortened the lock to 0.15s (independent of the 0.4s cooldown) so the player wasn't frozen the *entire* cooldown window, which fixed a boss-chase problem — a fully-locked player couldn't close distance on a boss that had just been knocked back out of range, which read exactly like a broken hitbox even though the hit-box geometry checked out clean under direct measurement — but then made the attack pose feel like it was getting cut off by movement input, since the visual pose and the lock both ended together well before the cooldown did. Driving rotation directly with `setAngle` instead of `tween` sidesteps the tradeoff entirely: `setVelocity` already runs unconditionally every frame, so with nothing else fighting it for control of position, attacking costs no mobility at all, and the spin can run the full, satisfying 0.4s without needing to lock anything.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `Player.checkSwingHits()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre.
+
+More fundamentally, the hit check no longer runs once, at the instant the attack button is pressed — `Player.onupdate()` calls `checkSwingHits()` every frame for as long as `attackCooldown > 0` (the whole 0.4s swing), not just on the frame `tryAttack()` fires. Every hit-detection complaint this attack went through traced back to some variant of the same problem: something had to be in exactly the right place on exactly the one frame the check ran, whether that was a facing-offset box that missed anything close, a correctly-sized box checked against a player who couldn't get back into range after a knockback, or a swing that looked like it got cancelled because its visible pose ended right when the movement lock did. Checking continuously fixes the whole class at once: a target that wanders into the box at any point during the swing gets hit, not only one that already happened to be there the instant the button went down — much closer to how a swinging sword actually behaves, and no longer dependent on split-second timing. A `swingId` counter on `Player`, bumped once per swing in `tryAttack()`, stops one swing from hitting the same target on more than one of the ~24 frames it's checked over — `Enemy.hit(damage, swingId)`/`Boss.hit(damage, swingId)` only apply damage the first time a given `swingId` reaches them, tracked in each target's own `lastHitSwingId`.
+
+The attack is also a little flourish: `Player.onupdate()` spins the player a full 360° over the whole 0.4s `attackCooldown` window by setting `self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)` directly each frame, and a separate `Sword` sprite (invisible the rest of the time) attaches to the player via `attachTo`, so it's carried around by the player's own spin. This wasn't always hand-rolled — an earlier version used `tween.play()` for the rotation, which pinned the player's position to a fixed keyframe value for the tween's whole duration (`tween` writes every channel, position included, unconditionally each frame — there's no way to tween just the angle). That made attacking a real "can't move while swinging" lock; a first attempt shortened the lock to 0.15s (independent of the 0.4s cooldown) so the player wasn't frozen the *entire* cooldown window, which fixed a boss-chase problem — a fully-locked player couldn't close distance on a boss that had just been knocked back out of range — but then made the attack pose feel like it was getting cut off by movement input, since the visual pose and the lock both ended together well before the cooldown did. Driving rotation directly with `setAngle` instead of `tween` sidesteps the tradeoff entirely: `setVelocity` already runs unconditionally every frame, so with nothing else fighting it for control of position, attacking costs no mobility at all, and the spin can run the full, satisfying 0.4s without needing to lock anything.
 
 `Sword.swing(player, facingX, facingY, duration)` calls `attachTo(player)` and sets a fixed local position/angle held out to the player's side, derived from the player's current facing direction rather than hardcoded — an earlier version fixed the offset at a single tuned pose (matching only the "facing right" case), which visually pointed the sword somewhere unrelated to the real hit box (`Player.tryAttack()`'s `facingX`/`facingY * 20`) for every other facing direction; combat still worked mechanically in all directions the whole time, but it *looked* broken in three of the four. The sword's own angle is never animated — an earlier version additionally tweened it 0° to 360° on the assumption the sword's own rotation was what produced the sweep-around-the-player effect; it wasn't. Since the sword is attached and its local position is offset (not `(0, 0)`), the *player's* own spin alone carries it around in a circle — animating the sword's own rotation on top composed additively with the player's (PIXI sums a child's rotation with its parent's), making it complete two full orbits per one player spin, confirmed by sampling its world position frame-by-frame rather than assumed. Leaving the sword's own angle fixed, position derived from facing, both bugs fixed together.
 
@@ -67,6 +71,7 @@ dim windupTimer
 dim knockbackTimer
 dim knockbackX
 dim knockbackY
+dim lastHitSwingId
 
 Constructor(x, y, targetRef as sprite)
   super("boss.png")
@@ -83,6 +88,7 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackTimer = 0
   self.knockbackX = 0
   self.knockbackY = 0
+  self.lastHitSwingId = -1
 EndConstructor
 
 function beginWindup()
@@ -177,8 +183,14 @@ function onupdate(delta)
   endif
 endfunction
 
-function hit(damage)
-  if not self.dead then
+function hit(damage, swingId)
+  ' swingId guards against the same swing hitting the boss more than once
+  ' now that Player checks collision every frame the sword is active (see
+  ' Player.onupdate) rather than at a single instant -- without it, standing
+  ' inside the hitbox for several consecutive frames of one swing would
+  ' apply damage every one of those frames instead of just once.
+  if not self.dead and self.lastHitSwingId <> swingId then
+    self.lastHitSwingId = swingId
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true
@@ -372,6 +384,7 @@ dim knockbackX
 dim knockbackY
 dim attackRange
 dim attackWindupTimer
+dim lastHitSwingId
 
 Constructor(x, y, targetRef as sprite)
   super("enemy.png")
@@ -394,6 +407,7 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackY = 0
   self.attackRange = 18
   self.attackWindupTimer = 0
+  self.lastHitSwingId = -1
   self.pickPatrolLeg()
 EndConstructor
 
@@ -541,8 +555,14 @@ function onupdate(delta)
   endif
 endfunction
 
-function hit(damage)
-  if not self.dead then
+function hit(damage, swingId)
+  ' swingId guards against the same swing hitting this enemy more than once
+  ' now that Player checks collision every frame the sword is active (see
+  ' Player.onupdate) rather than at a single instant -- without it, standing
+  ' inside the hitbox for several consecutive frames of one swing would
+  ' apply damage every one of those frames instead of just once.
+  if not self.dead and self.lastHitSwingId <> swingId then
+    self.lastHitSwingId = swingId
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true
@@ -676,6 +696,7 @@ dim visibleFlag
 dim enemies() as enemy
 dim boss as boss
 dim sword as sword
+dim swingId
 
 Constructor(x, y)
   super("player.png", 16, 16)
@@ -693,6 +714,7 @@ Constructor(x, y)
   self.invincibleTime = 0
   self.flickerTimer = 0
   self.visibleFlag = true
+  self.swingId = 0
 EndConstructor
 
 function setEnemies(enemiesRef)
@@ -723,48 +745,60 @@ function takeDamage()
 endfunction
 
 function tryAttack()
+  if self.attackCooldown <= 0 then
+    self.attackCooldown = 0.4
+    self.swingId = self.swingId + 1
+    self.play("attack")
+    self.sword.swing(self, self.facingX, self.facingY, 0.4)
+  endif
+endfunction
+
+function checkSwingHits()
+  ' Checked every frame the swing is active (see onupdate, gated on
+  ' attackCooldown > 0), not once at the instant the attack button was
+  ' pressed. An instant-only check requires the target to already be in
+  ' exactly the right place at exactly that one frame -- every hit-detection
+  ' complaint in this attack's history traces back to some version of that:
+  ' a facing-offset box that missed anything close, a hitbox that was fine
+  ' but a frozen player that couldn't get back into range after a knockback,
+  ' an animation that looked cancelled because the lock and the pose ended
+  ' together. Checking continuously for the whole swing means a target that
+  ' wanders into the box at ANY point during the 0.4s swing gets hit, not
+  ' just one that happened to already be there the instant the button was
+  ' pressed -- closer to how a swinging sword actually works, and removes
+  ' the whole class of "was it in range on the right frame" bugs at once.
+  ' self.swingId (bumped once per swing in tryAttack) stops this from
+  ' hitting the same target more than once while it sits in the box for
+  ' several consecutive frames -- see Enemy.hit/Boss.hit.
+  '
+  ' Hitbox is centered on the player, not offset in the facing direction --
+  ' matches the spin-attack visual (a full 360 turn has no single "front").
+  ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
+  ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
+  ' which (unlike the player's `animatedsprite`) has no centered anchor.
+  ' Feeding that raw top-left position into boxCollide as if it were a
+  ' center silently shifts the effective hit-check away from where the
+  ' enemy actually renders. Correcting by half each target's own size.
   dim hitX
   dim hitY
   dim i
   dim e as enemy
 
-  if self.attackCooldown <= 0 then
-    self.attackCooldown = 0.4
-    self.play("attack")
-    self.sword.swing(self, self.facingX, self.facingY, 0.4)
+  hitX = self.transform.x()
+  hitY = self.transform.y()
 
-    ' Hitbox is centered on the player, not offset in the facing direction --
-    ' matches the spin-attack visual (a full 360 turn has no single "front"),
-    ' and sidesteps a real dead zone the old offset-box had: a facing-offset
-    ' box only covered roughly 20px +/- 8px along the facing axis, so an
-    ' enemy standing right next to the player (well within the contact range
-    ' where it can already hit back) frequently fell outside that band and
-    ' took zero hits no matter how many times tryAttack() ran. Confirmed by
-    ' sweeping actual distances 0-20px against a real chasing enemy: every
-    ' attack in the 0-10px range missed.
-    '
-    ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
-    ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
-    ' which (unlike the player's `animatedsprite`) has no centered anchor.
-    ' Feeding that raw top-left position into boxCollide as if it were a
-    ' center silently shifts the effective hit-check away from where the
-    ' enemy actually renders. Correcting by half each target's own size.
-    hitX = self.transform.x()
-    hitY = self.transform.y()
-
-    for i = 0 to array.arrLength(self.enemies) - 1
-      e = self.enemies(i)
-      if not e.dead then
-        if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
-          e.hit(15)
-        endif
+  for i = 0 to array.arrLength(self.enemies) - 1
+    e = self.enemies(i)
+    if not e.dead then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 16, 16) then
+        e.hit(15, self.swingId)
       endif
-    next i
+    endif
+  next i
 
-    if not self.boss.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
-        self.boss.hit(15)
-      endif
+  if not self.boss.dead then
+    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
+      self.boss.hit(15, self.swingId)
     endif
   endif
 endfunction
@@ -820,6 +854,7 @@ function onupdate(delta)
   ' well before the cooldown did.
   if self.attackCooldown > 0 then
     self.setAngle((0.4 - self.attackCooldown) / 0.4 * 360)
+    self.checkSwingHits()
   else
     self.setAngle(0)
   endif

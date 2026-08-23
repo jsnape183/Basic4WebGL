@@ -20,6 +20,7 @@ dim knockbackX
 dim knockbackY
 dim attackRange
 dim attackWindupTimer
+dim lastHitSwingId
 
 Constructor(x, y, targetRef as sprite)
   super("enemy.png")
@@ -42,6 +43,7 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackY = 0
   self.attackRange = 18
   self.attackWindupTimer = 0
+  self.lastHitSwingId = -1
   self.pickPatrolLeg()
 EndConstructor
 
@@ -189,8 +191,14 @@ function onupdate(delta)
   endif
 endfunction
 
-function hit(damage)
-  if not self.dead then
+function hit(damage, swingId)
+  ' swingId guards against the same swing hitting this enemy more than once
+  ' now that Player checks collision every frame the sword is active (see
+  ' Player.onupdate) rather than at a single instant -- without it, standing
+  ' inside the hitbox for several consecutive frames of one swing would
+  ' apply damage every one of those frames instead of just once.
+  if not self.dead and self.lastHitSwingId <> swingId then
+    self.lastHitSwingId = swingId
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true
