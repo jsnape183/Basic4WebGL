@@ -22,7 +22,7 @@ The attack is also a little flourish: `Player.onupdate()` spins the player a ful
 
 `Sword.onupdate()` counts down its own `swingTimer`, set from the `duration` passed into `swing()`, to know when to hide itself and `detach()` — it used to watch `tween.isPlaying(player)` instead, back when the player's spin was itself tween-driven; once that moved to `setAngle`, there was no tween state left to poll, so the sword tracks its own clock, kept in sync with the player's spin by always being handed the same duration the caller used.
 
-Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player), so a successful attack buys breathing room instead of guaranteeing a counter-hit. The boss never patrols — it's a full-time chase — but its lunge gets the same telegraph treatment as regular enemies now: `attackTimer` counts down to trigger a 0.3s windup (the same scale-pulse-while-standing-still pattern), *then* a 0.6s lunge at 3.5x its base speed. A successful hit on the boss also knocks it back and cancels an in-progress windup outright, mirroring `Enemy.hit()`. Standing still to land a spin attack right next to the boss is still a real risk — its contact damage doesn't stop just because it's mid-chase — just no longer an *unwarned* one. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
+Regular enemies aren't always aggressive: each one patrols a short back-and-forth leg near its spawn point until the player comes within `chaseRadius` (70px), at which point it switches to chasing via `pathfinding.navigateTo`, giving up and returning to patrol if the player gets more than `giveUpRadius` (110px) away again. Once within `attackRange` (18px) of the player, an enemy stops and telegraphs its attack instead of dealing contact damage instantly: a `tween` scale pulse (1x → 1.4x → 1x over 0.35s) while standing still, checking fresh whether the player is still in range only once the pulse finishes — back away during the puff-up and the hit never lands. Landing a hit *on* an enemy also knocks it back briefly (a short `setVelocity` shove away from the player) and flashes it — a plain `hitFlashTimer` toggling `setAlpha` between 1 and 0.3 every 0.06s, driven by hand in `onupdate()` rather than by `tween`. `tween` writes position every frame it's active, and a hit is exactly the moment this same object is also being knocked back via `setVelocity` — a tween-driven flash here would freeze that knockback solid for the flash's duration, the same conflict this attack's hit detection already ran into twice with the player's own movement (see above). The player already flashes the same way on taking damage — a `flickerTimer` toggling its own alpha for the duration of its post-hit invincibility — so enemies and the boss now match it using the identical technique. The boss never patrols — it's a full-time chase — but its lunge gets the same telegraph treatment as regular enemies now: `attackTimer` counts down to trigger a 0.3s windup (the same scale-pulse-while-standing-still pattern), *then* a 0.6s lunge at 3.5x its base speed. A successful hit on the boss also knocks it back and cancels an in-progress windup outright, mirroring `Enemy.hit()`. Standing still to land a spin attack right next to the boss is still a real risk — its contact damage doesn't stop just because it's mid-chase — just no longer an *unwarned* one. Losing all 3 hearts switches to `GameOverScene`; defeating the boss switches straight to `WinScene`.
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
@@ -74,6 +74,9 @@ dim knockbackTimer
 dim knockbackX
 dim knockbackY
 dim lastHitSwingId
+dim hitFlashTimer
+dim hitFlashTickTimer
+dim hitFlashOn
 
 Constructor(x, y, targetRef as sprite)
   super("boss.png")
@@ -91,6 +94,9 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackX = 0
   self.knockbackY = 0
   self.lastHitSwingId = -1
+  self.hitFlashTimer = 0
+  self.hitFlashTickTimer = 0
+  self.hitFlashOn = false
 EndConstructor
 
 function beginWindup()
@@ -147,6 +153,31 @@ function onupdate(delta)
 
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - dt
+    endif
+
+    ' Hit flash driven by hand, the same way Player's own invincibility
+    ' flicker is, rather than by tween -- tween writes position every frame
+    ' it's active, and a hit is exactly the moment the boss also gets
+    ' knocked back via setVelocity below. A tween-driven flash here would
+    ' freeze that knockback solid for the flash's duration, the same bug
+    ' this attack's hit detection already went through twice with the
+    ' player's own movement. A plain timer has no such conflict.
+    if self.hitFlashTimer > 0 then
+      self.hitFlashTimer = self.hitFlashTimer - dt
+      self.hitFlashTickTimer = self.hitFlashTickTimer - dt
+      if self.hitFlashTimer <= 0 then
+        self.hitFlashOn = false
+        self.setAlpha(1)
+      elseif self.hitFlashTickTimer <= 0 then
+        self.hitFlashTickTimer = 0.06
+        if self.hitFlashOn then
+          self.hitFlashOn = false
+          self.setAlpha(1)
+        else
+          self.hitFlashOn = true
+          self.setAlpha(0.3)
+        endif
+      endif
     endif
 
     if self.knockbackTimer > 0 then
@@ -208,6 +239,9 @@ function hit(damage, swingId)
         self.setScale(1, 1)
         self.windupTimer = 0
       endif
+      self.hitFlashTimer = 0.18
+      self.hitFlashTickTimer = 0
+      self.hitFlashOn = false
       self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackTimer = 0.15
@@ -387,6 +421,9 @@ dim knockbackY
 dim attackRange
 dim attackWindupTimer
 dim lastHitSwingId
+dim hitFlashTimer
+dim hitFlashTickTimer
+dim hitFlashOn
 
 Constructor(x, y, targetRef as sprite)
   super("enemy.png")
@@ -410,6 +447,9 @@ Constructor(x, y, targetRef as sprite)
   self.attackRange = 18
   self.attackWindupTimer = 0
   self.lastHitSwingId = -1
+  self.hitFlashTimer = 0
+  self.hitFlashTickTimer = 0
+  self.hitFlashOn = false
   self.pickPatrolLeg()
 EndConstructor
 
@@ -500,6 +540,32 @@ function onupdate(delta)
       self.damageCooldown = self.damageCooldown - dt
     endif
 
+    ' Hit flash driven by hand, the same way Player's own invincibility
+    ' flicker is, rather than by tween -- tween writes position every frame
+    ' it's active (see the comments throughout this file's tween usage), and
+    ' a hit is exactly the moment this enemy also gets knocked back via
+    ' setVelocity below. A tween-driven flash here would freeze that
+    ' knockback solid for the flash's duration, the same bug this attack's
+    ' hit detection already went through twice with the player's own
+    ' movement. A plain timer has no such conflict.
+    if self.hitFlashTimer > 0 then
+      self.hitFlashTimer = self.hitFlashTimer - dt
+      self.hitFlashTickTimer = self.hitFlashTickTimer - dt
+      if self.hitFlashTimer <= 0 then
+        self.hitFlashOn = false
+        self.setAlpha(1)
+      elseif self.hitFlashTickTimer <= 0 then
+        self.hitFlashTickTimer = 0.06
+        if self.hitFlashOn then
+          self.hitFlashOn = false
+          self.setAlpha(1)
+        else
+          self.hitFlashOn = true
+          self.setAlpha(0.3)
+        endif
+      endif
+    endif
+
     if self.knockbackTimer > 0 then
       self.knockbackTimer = self.knockbackTimer - dt
       pathfinding.stopNavigating(self)
@@ -578,6 +644,9 @@ function hit(damage, swingId)
         tween.stop(self)
         self.setScale(1, 1)
       endif
+      self.hitFlashTimer = 0.18
+      self.hitFlashTickTimer = 0
+      self.hitFlashOn = false
       self.state = "chase"
       self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())

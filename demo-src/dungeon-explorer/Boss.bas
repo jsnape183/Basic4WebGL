@@ -14,6 +14,9 @@ dim knockbackTimer
 dim knockbackX
 dim knockbackY
 dim lastHitSwingId
+dim hitFlashTimer
+dim hitFlashTickTimer
+dim hitFlashOn
 
 Constructor(x, y, targetRef as sprite)
   super("boss.png")
@@ -31,6 +34,9 @@ Constructor(x, y, targetRef as sprite)
   self.knockbackX = 0
   self.knockbackY = 0
   self.lastHitSwingId = -1
+  self.hitFlashTimer = 0
+  self.hitFlashTickTimer = 0
+  self.hitFlashOn = false
 EndConstructor
 
 function beginWindup()
@@ -87,6 +93,31 @@ function onupdate(delta)
 
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - dt
+    endif
+
+    ' Hit flash driven by hand, the same way Player's own invincibility
+    ' flicker is, rather than by tween -- tween writes position every frame
+    ' it's active, and a hit is exactly the moment the boss also gets
+    ' knocked back via setVelocity below. A tween-driven flash here would
+    ' freeze that knockback solid for the flash's duration, the same bug
+    ' this attack's hit detection already went through twice with the
+    ' player's own movement. A plain timer has no such conflict.
+    if self.hitFlashTimer > 0 then
+      self.hitFlashTimer = self.hitFlashTimer - dt
+      self.hitFlashTickTimer = self.hitFlashTickTimer - dt
+      if self.hitFlashTimer <= 0 then
+        self.hitFlashOn = false
+        self.setAlpha(1)
+      elseif self.hitFlashTickTimer <= 0 then
+        self.hitFlashTickTimer = 0.06
+        if self.hitFlashOn then
+          self.hitFlashOn = false
+          self.setAlpha(1)
+        else
+          self.hitFlashOn = true
+          self.setAlpha(0.3)
+        endif
+      endif
     endif
 
     if self.knockbackTimer > 0 then
@@ -148,6 +179,9 @@ function hit(damage, swingId)
         self.setScale(1, 1)
         self.windupTimer = 0
       endif
+      self.hitFlashTimer = 0.18
+      self.hitFlashTickTimer = 0
+      self.hitFlashOn = false
       self.knockbackX = math.normalizeX(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackY = math.normalizeY(self.transform.x() - self.chaseTarget.transform.x(), self.transform.y() - self.chaseTarget.transform.y())
       self.knockbackTimer = 0.15
