@@ -7,14 +7,6 @@ const _sbAttach = {
     if (!this._originalParents.has(childHandle)) {
       this._originalParents.set(childHandle, childHandle.parent);
     }
-    // Remove from current parent if needed (in case parentObj._handle.addChild doesn't)
-    const currentParent = childHandle.parent;
-    if (currentParent && currentParent.children && currentParent !== parentObj._handle) {
-      const index = currentParent.children.indexOf(childHandle);
-      if (index !== -1) {
-        currentParent.children.splice(index, 1);
-      }
-    }
     parentObj._handle.addChild(childHandle);
   },
 

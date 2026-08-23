@@ -39,7 +39,7 @@ describe('attachSprite / detachSprite', () => {
     const attach = loadAttach();
     const world = makeContainer('world');
     const childHandle = makeHandle(world);
-    const parentHandle = { parent: world as unknown, children: [] as unknown[], addChild(c: { parent: unknown }) { this.children.push(c); c.parent = this; } };
+    const parentHandle = makeContainer('parent');
 
     attach.attachSprite(childHandle, { _handle: parentHandle });
 
@@ -51,7 +51,7 @@ describe('attachSprite / detachSprite', () => {
     const attach = loadAttach();
     const world = makeContainer('world');
     const childHandle = makeHandle(world);
-    const parentHandle = { parent: world as unknown, children: [] as unknown[], addChild(c: { parent: unknown }) { this.children.push(c); c.parent = this; } };
+    const parentHandle = makeContainer('parent');
 
     attach.attachSprite(childHandle, { _handle: parentHandle });
     attach.detachSprite(childHandle);
@@ -64,8 +64,8 @@ describe('attachSprite / detachSprite', () => {
     const attach = loadAttach();
     const world = makeContainer('world');
     const childHandle = makeHandle(world);
-    const parentA = { parent: world as unknown, children: [] as unknown[], addChild(c: { parent: unknown }) { this.children.push(c); c.parent = this; } };
-    const parentB = { parent: world as unknown, children: [] as unknown[], addChild(c: { parent: unknown }) { this.children.push(c); c.parent = this; } };
+    const parentA = makeContainer('parentA');
+    const parentB = makeContainer('parentB');
 
     attach.attachSprite(childHandle, { _handle: parentA });
     attach.attachSprite(childHandle, { _handle: parentB }); // switch parents mid-attachment
