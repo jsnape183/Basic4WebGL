@@ -348,8 +348,19 @@ function onupdate(delta)
     if self.knockbackTimer > 0 then
       self.knockbackTimer = self.knockbackTimer - dt
       pathfinding.stopNavigating(self)
-      self.setVelocity(self.knockbackX * 160, self.knockbackY * 160)
+      self.setVelocity(self.knockbackX * 90, self.knockbackY * 90)
     else
+      ' pathfinding.navigateTo moves the sprite directly (it doesn't use
+      ' setVelocity), so nothing else ever clears the knockback velocity
+      ' set above once the timer expires -- without this, the kinematic
+      ' collision system (which DOES read setVelocity, independently of
+      ' pathfinding) kept applying that last knockback push every frame
+      ' forever, pinning the enemy against whatever wall it reached
+      ' instead of actually stopping. Confirmed live: velocity was still
+      ' exactly the knockback value dozens of frames after the timer hit
+      ' zero.
+      self.setVelocity(0, 0)
+
       dist = math.distance(self.transform.x(), self.transform.y(), self.chaseTarget.transform.x(), self.chaseTarget.transform.y())
 
       if self.state = "patrol" then
