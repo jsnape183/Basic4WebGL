@@ -76,9 +76,19 @@ function tryAttack()
     s1.setAngle(0)
     s1.setPosition(self.transform.x(), self.transform.y())
 
+    ' The spin tween pins the player's position for its whole duration (tween
+    ' writes position every frame, and there's no way to tween just the angle
+    ' -- see the comment on Sword's attach for why). That's a real "can't move
+    ' while swinging" lock, so it's kept short (0.15s) and independent of
+    ' attackCooldown (0.4s): confirmed live, chaining attacks the instant
+    ' cooldown allowed left the player frozen the entire cooldown window,
+    ' unable to chase a boss that had just been knocked back out of range --
+    ' which read exactly like "the hitbox is janky" even though the hitbox
+    ' geometry itself checked out clean. Ending the lock well before the next
+    ' attack is available gives the player a real window to reposition.
     dim s2 as Keyframe
     s2 = new Keyframe()
-    s2.setTime(0.4)
+    s2.setTime(0.15)
     s2.setAngle(360)
     s2.setPosition(self.transform.x(), self.transform.y())
 
