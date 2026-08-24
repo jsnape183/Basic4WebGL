@@ -126,3 +126,152 @@ describe('render alpha', () => {
     expect(host._alpha).toBeLessThan(1);
   });
 });
+
+// A stand-in for a PIXI display object: the frame loop only ever touches
+// `position.x`, `position.y`, and its own `_sb*` bookkeeping fields.
+function makeHandle(x = 0, y = 0) {
+  return {
+    position: {
+      x,
+      y,
+      set(nx: number, ny: number) {
+        this.x = nx;
+        this.y = ny;
+      },
+    },
+  } as any;
+}
+
+// Builds a host whose _fixedStep moves `handle` by (dx, dy) each step.
+function makeMovingHost(handle: any, dx: number, dy: number) {
+  const inst = { _handle: handle };
+  const host: any = {
+    ...loadFrameLoop(),
+    _displaced: [],
+    _sbInstances: [inst],
+    _cameraSnapshot() {},
+    _cameraApply() {},
+    _cameraRestore() {},
+    _fixedStep() {
+      handle.position.x += dx;
+      handle.position.y += dy;
+    },
+  };
+  return host;
+}
+
+describe('render interpolation', () => {
+  test('renders a moving object between its last two simulation samples', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 10, 0);
+    // One full step, then a quarter-step of leftover time.
+    host._update(STEP + STEP / 4);
+    // Simulation is at 10; the render shows a quarter of the way from the
+    // previous sample toward it. Interpolation is backward-looking — it never
+    // extrapolates past the position the simulation has actually reached.
+    expect(handle.position.x).toBeCloseTo(2.5, 6);
+  });
+
+  test('restores the authoritative simulation position after the render', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 10, 0);
+    host._update(STEP + STEP / 4);
+    host._afterRender();
+    expect(handle.position.x).toBeCloseTo(10, 6);
+  });
+
+  test('game logic inside a fixed step always sees the authoritative position', () => {
+    const handle = makeHandle(0, 0);
+    const seen: number[] = [];
+    const host = makeMovingHost(handle, 10, 0);
+    const move = host._fixedStep;
+    host._fixedStep = function () {
+      seen.push(handle.position.x);
+      move.call(this);
+    };
+    host._update(STEP + STEP / 2);
+    host._afterRender();
+    host._update(STEP);
+    // The second step starts from 10, not from the 5 that was rendered.
+    expect(seen).toEqual([0, 10]);
+  });
+
+  test('leaves a stationary object completely alone', () => {
+    const handle = makeHandle(100, 50);
+    const host = makeMovingHost(handle, 0, 0);
+    host._update(STEP + STEP / 2);
+    expect(handle.position.x).toBe(100);
+    expect(handle.position.y).toBe(50);
+  });
+
+  test('interpolates the y axis as well', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 0, 8);
+    host._update(STEP + STEP / 2);
+    expect(handle.position.y).toBeCloseTo(4, 6);
+  });
+
+  test('interpolates from the second-to-last step when a frame runs several', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 10, 0);
+    host._update(STEP * 2 + STEP / 2);
+    // Three samples are in play: 0, 10, 20. Blending must use 10 -> 20, not
+    // 0 -> 20, or a catch-up frame renders the object half a screen behind.
+    expect(handle.position.x).toBeCloseTo(15, 6);
+  });
+
+  test('does not smear an object that was teleported during the step', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 0, 0);
+    host._fixedStep = function () {
+      handle.position.set(500, 300);
+      handle._sbNoInterp = true;
+    };
+    host._update(STEP + STEP / 2);
+    expect(handle.position.x).toBe(500);
+    expect(handle.position.y).toBe(300);
+  });
+
+  test('clears the teleport flag so the next step interpolates again', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 0, 0);
+    host._fixedStep = function () {
+      handle.position.set(500, 300);
+      handle._sbNoInterp = true;
+    };
+    host._update(STEP);
+    host._afterRender();
+    host._fixedStep = function () {
+      handle.position.x += 10;
+    };
+    host._update(STEP + STEP / 2);
+    expect(handle.position.x).toBeCloseTo(505, 6);
+  });
+
+  test('snaps rather than smears a jump larger than the interpolation limit', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 400, 0);
+    host._update(STEP + STEP / 2);
+    expect(handle.position.x).toBe(400);
+  });
+
+  test('an object added mid-run is not interpolated from a stale sample', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 10, 0);
+    host._update(STEP);
+    host._afterRender();
+    const late = makeHandle(999, 999);
+    host._sbInstances.push({ _handle: late });
+    host._update(STEP + STEP / 2);
+    expect(late.position.x).toBe(999);
+    expect(late.position.y).toBe(999);
+  });
+
+  test('a restore with nothing displaced is a harmless no-op', () => {
+    const handle = makeHandle(7, 7);
+    const host = makeMovingHost(handle, 0, 0);
+    host._afterRender();
+    host._afterRender();
+    expect(handle.position.x).toBe(7);
+  });
+});

@@ -29,6 +29,24 @@ const _sbFrameLoop = {
   // motion, which is recoverable, instead of locking up, which is not.
   MAX_STEPS: 5,
 
+  // Per-step displacement above which a position change is treated as a
+  // teleport and rendered without interpolation. HEURISTIC, but with a very
+  // wide margin: 64px per 1/60s is 3840 px/s, six canvas-widths per second on
+  // the 640x360 stage. Nothing in any demo moves within two orders of
+  // magnitude of that, while a room-cut teleport clears it easily. Both
+  // failure modes are benign — a false snap is exactly the pre-interpolation
+  // behaviour for one frame, and a false interpolation smears by under 64px
+  // for under one frame. The exact detector for teleports issued *outside* a
+  // fixed step (spawns, onenter, key handlers) is _inFixedStep in
+  // _sbSprites.setPosition; this only catches teleports issued from inside a
+  // step, such as Dungeon Explorer's room transitions.
+  MAX_INTERP_STEP_PX: 64,
+
+  // Handles whose position currently holds an interpolated render value and
+  // must be restored. Kept as its own list so the restore never has to rescan
+  // the instance registry.
+  _displaced: [],
+
   _accumulator: 0,
   _alpha: 0,
   // True only while _fixedStep is on the stack. Read by _sbSprites.setPosition
@@ -69,9 +87,72 @@ const _sbFrameLoop = {
     this._renderPrepare();
   },
 
-  // Placeholders replaced in the next task — separated so the accumulator can
-  // be tested on its own.
-  _snapshot() {},
-  _renderPrepare() {},
-  _afterRender() {},
+  // Records each instance's pre-step position. Runs at the top of EVERY fixed
+  // step, so after a multi-step frame the recorded sample is the one from the
+  // start of the LAST step — which is exactly what the render must blend from.
+  _snapshot() {
+    const instances = this._sbInstances;
+    for (let i = 0; i < instances.length; i += 1) {
+      const handle = instances[i]._handle;
+      if (!handle) continue;
+      handle._sbPrevX = handle.position.x;
+      handle._sbPrevY = handle.position.y;
+      handle._sbHasPrev = true;
+    }
+    this._cameraSnapshot();
+  },
+
+  // Runs after the last fixed step of a frame and before PIXI renders. Saves
+  // each moving object's authoritative position and overwrites position with
+  // the interpolated blend. _afterRender puts the authoritative values back.
+  _renderPrepare() {
+    const alpha = this._alpha;
+    const instances = this._sbInstances;
+    const limit = this.MAX_INTERP_STEP_PX;
+    for (let i = 0; i < instances.length; i += 1) {
+      const handle = instances[i]._handle;
+      if (!handle) continue;
+
+      // An object registered since the last snapshot has no previous sample to
+      // blend from — rendering it against a stale or absent one would fling it
+      // across the screen on its first frame.
+      if (!handle._sbHasPrev) continue;
+
+      // A hard teleport this step: show the destination, not the journey.
+      if (handle._sbNoInterp) {
+        handle._sbNoInterp = false;
+        continue;
+      }
+
+      const simX = handle.position.x;
+      const simY = handle.position.y;
+      const dx = simX - handle._sbPrevX;
+      const dy = simY - handle._sbPrevY;
+      if (dx === 0 && dy === 0) continue;
+      if (Math.abs(dx) > limit || Math.abs(dy) > limit) continue;
+
+      handle._sbSimX = simX;
+      handle._sbSimY = simY;
+      handle.position.set(
+        handle._sbPrevX + dx * alpha,
+        handle._sbPrevY + dy * alpha
+      );
+      this._displaced.push(handle);
+    }
+    this._cameraApply(alpha);
+  },
+
+  // Registered on the PIXI ticker at UPDATE_PRIORITY.UTILITY (-50), which runs
+  // after PIXI's own render (UPDATE_PRIORITY.LOW, -25), so the displaced window
+  // is confined to the render itself. Nothing softBASIC can run — not
+  // onupdate, not a key handler, not a collision query — falls inside it.
+  _afterRender() {
+    const displaced = this._displaced;
+    for (let i = 0; i < displaced.length; i += 1) {
+      const handle = displaced[i];
+      handle.position.set(handle._sbSimX, handle._sbSimY);
+    }
+    displaced.length = 0;
+    this._cameraRestore();
+  },
 };
