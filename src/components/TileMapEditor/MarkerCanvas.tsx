@@ -11,9 +11,21 @@ type Props = {
   onPaintCell: (row: number, col: number) => void;
   /** When false, renders the same marker chips with no aria-label/role/mouse handlers — used for dimmed, non-active reference layers so their cells never collide with the active layer's "Row X, Column Y" labels. Defaults to true. */
   interactive?: boolean;
+  /** Fires as the cursor moves over a cell, for a coordinate readout elsewhere in the editor. Only wired up when interactive. */
+  onHoverCell?: (row: number, col: number) => void;
+  /** Fires when the cursor leaves the grid entirely, to clear the readout. */
+  onHoverEnd?: () => void;
 };
 
-const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell, interactive = true }) => {
+const MarkerCanvas: React.FC<Props> = ({
+  rows,
+  cols,
+  markers,
+  onPaintCell,
+  interactive = true,
+  onHoverCell,
+  onHoverEnd,
+}) => {
   const { startPaint, continuePaint } = usePaintDrag(onPaintCell);
 
   const markerAt = (row: number, col: number) => markers.find((m) => m.row === row && m.col === col);
@@ -29,7 +41,14 @@ const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell, inter
           aria-label={interactive ? `Row ${row}, Column ${col}` : undefined}
           title={marker?.tag}
           onMouseDown={interactive ? () => startPaint(row, col) : undefined}
-          onMouseEnter={interactive ? () => continuePaint(row, col) : undefined}
+          onMouseEnter={
+            interactive
+              ? () => {
+                  continuePaint(row, col);
+                  onHoverCell?.(row, col);
+                }
+              : undefined
+          }
           className={`border border-ds-border flex items-center justify-center text-[10px] font-bold text-white ${interactive ? 'hover:ring-2 hover:ring-inset hover:ring-ds-accent' : ''}`}
           style={{
             width: CELL_SIZE,
@@ -47,6 +66,7 @@ const MarkerCanvas: React.FC<Props> = ({ rows, cols, markers, onPaintCell, inter
     <div
       role={interactive ? 'grid' : undefined}
       aria-label={interactive ? 'Marker canvas' : undefined}
+      onMouseLeave={interactive ? onHoverEnd : undefined}
       style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}
     >
       {cells}

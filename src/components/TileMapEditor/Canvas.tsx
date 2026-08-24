@@ -9,9 +9,20 @@ type Props = {
   onPaintCell: (row: number, col: number) => void;
   /** When false, renders the same tile art with no aria-label/role/mouse handlers — used for dimmed, non-active reference layers so their cells never collide with the active layer's "Row X, Column Y" labels. Defaults to true. */
   interactive?: boolean;
+  /** Fires as the cursor moves over a cell, for a coordinate readout elsewhere in the editor. Only wired up when interactive. */
+  onHoverCell?: (row: number, col: number) => void;
+  /** Fires when the cursor leaves the grid entirely, to clear the readout. */
+  onHoverEnd?: () => void;
 };
 
-const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell, interactive = true }) => {
+const TileMapCanvas: React.FC<Props> = ({
+  layerData,
+  slices,
+  onPaintCell,
+  interactive = true,
+  onHoverCell,
+  onHoverEnd,
+}) => {
   const { startPaint, continuePaint } = usePaintDrag(onPaintCell);
   const cols = layerData[0]?.length ?? 0;
 
@@ -19,6 +30,7 @@ const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell, intera
     <div
       role={interactive ? 'grid' : undefined}
       aria-label={interactive ? 'Tilemap canvas' : undefined}
+      onMouseLeave={interactive ? onHoverEnd : undefined}
       style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${cols}, ${CELL_SIZE}px)` }}
     >
       {layerData.map((rowData, row) =>
@@ -28,7 +40,14 @@ const TileMapCanvas: React.FC<Props> = ({ layerData, slices, onPaintCell, intera
             role={interactive ? 'gridcell' : undefined}
             aria-label={interactive ? `Row ${row}, Column ${col}` : undefined}
             onMouseDown={interactive ? () => startPaint(row, col) : undefined}
-            onMouseEnter={interactive ? () => continuePaint(row, col) : undefined}
+            onMouseEnter={
+              interactive
+                ? () => {
+                    continuePaint(row, col);
+                    onHoverCell?.(row, col);
+                  }
+                : undefined
+            }
             className={`border border-ds-border ${interactive ? 'hover:ring-2 hover:ring-inset hover:ring-ds-accent' : ''}`}
             style={{
               width: CELL_SIZE,

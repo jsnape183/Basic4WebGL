@@ -95,6 +95,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [hiddenLayerKeys, setHiddenLayerKeys] = useState<Set<string>>(() => new Set());
+  const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
 
   useEffect(() => {
     setDraftDoc(decodeStmContent(asset.content));
@@ -255,22 +256,28 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         )}
       </div>
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex justify-end gap-2 p-2 border-b border-ds-border">
-          <button
-            type="button"
-            onClick={() => downloadStmFile(draftDoc, asset.name)}
-            className="border border-ds-border text-ds-text text-sm px-4 py-1.5 rounded hover:bg-ds-surface transition"
-          >
-            Export
-          </button>
-          <button
-            type="button"
-            disabled={!isDirty}
-            onClick={handleSave}
-            className="bg-accent-gradient text-white text-sm px-4 py-1.5 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Save
-          </button>
+        <div className="flex items-center justify-between gap-2 p-2 border-b border-ds-border">
+          <span className="text-xs text-ds-text-muted min-w-0">
+            {hoverCell &&
+              `Row ${hoverCell.row}, Col ${hoverCell.col} · x ${hoverCell.col * draftDoc.tileWidth}, y ${hoverCell.row * draftDoc.tileHeight}`}
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => downloadStmFile(draftDoc, asset.name)}
+              className="border border-ds-border text-ds-text text-sm px-4 py-1.5 rounded hover:bg-ds-surface transition"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              disabled={!isDirty}
+              onClick={handleSave}
+              className="bg-accent-gradient text-white text-sm px-4 py-1.5 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+          </div>
         </div>
         <div className="flex-1 min-h-0 overflow-auto p-2">
           <div style={{ position: 'relative', width: gridCols * CELL_SIZE, height: gridRows * CELL_SIZE }}>
@@ -298,6 +305,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
                       markers={layer.markers}
                       onPaintCell={handlePaintCell}
                       interactive={isActive}
+                      onHoverCell={(row, col) => setHoverCell({ row, col })}
+                      onHoverEnd={() => setHoverCell(null)}
                     />
                   ) : layer.kind === 'collision' ? (
                     <CollisionCanvas
@@ -306,6 +315,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
                       data={layer.data}
                       onPaintCell={handlePaintCell}
                       interactive={isActive}
+                      onHoverCell={(row, col) => setHoverCell({ row, col })}
+                      onHoverEnd={() => setHoverCell(null)}
                     />
                   ) : (
                     <TileMapCanvas
@@ -313,6 +324,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
                       slices={slices}
                       onPaintCell={handlePaintCell}
                       interactive={isActive}
+                      onHoverCell={(row, col) => setHoverCell({ row, col })}
+                      onHoverEnd={() => setHoverCell(null)}
                     />
                   )}
                 </div>

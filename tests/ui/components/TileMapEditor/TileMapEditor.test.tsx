@@ -109,6 +109,21 @@ describe('TileMapEditor', () => {
     expect(onDirtyChange).toHaveBeenLastCalledWith('m1', false);
   });
 
+  test('hovering a cell shows its row/column and world x/y in the toolbar', () => {
+    renderEditor(); // tileWidth 8, tileHeight 8
+    fireEvent.mouseEnter(screen.getByLabelText('Row 0, Column 1'));
+    // col 1 * tileWidth 8 = x 8; row 0 * tileHeight 8 = y 0
+    expect(screen.getByText('Row 0, Col 1 · x 8, y 0')).toBeInTheDocument();
+  });
+
+  test('moving the mouse off the grid clears the readout', () => {
+    renderEditor();
+    fireEvent.mouseEnter(screen.getByLabelText('Row 0, Column 1'));
+    expect(screen.getByText('Row 0, Col 1 · x 8, y 0')).toBeInTheDocument();
+    fireEvent.mouseLeave(screen.getByRole('grid'));
+    expect(screen.queryByText(/Row 0, Col 1/)).not.toBeInTheDocument();
+  });
+
   test('clicking Export downloads the current draft as a plain-JSON .stm file named after the asset', async () => {
     const createObjectURL = vi.fn(() => 'blob:mock-url');
     const revokeObjectURL = vi.fn();
