@@ -22,9 +22,18 @@ function loadCamera() {
 // _cameraUpdate(delta) are both defined in.
 const FRAME_MS = 1000 / 60;
 
-function advance(camera: { _cameraUpdate: (d: number) => void }, seconds: number) {
+function advance(
+  camera: { _cameraUpdate: (d: number) => void; _cameraApply: (a: number) => void },
+  seconds: number
+) {
   const frames = Math.round((seconds * 1000) / FRAME_MS);
-  for (let i = 0; i < frames; i += 1) camera._cameraUpdate(FRAME_MS);
+  for (let i = 0; i < frames; i += 1) {
+    camera._cameraUpdate(FRAME_MS);
+    // The engine applies the camera to worldContainer once per rendered frame,
+    // after the last fixed step. At alpha 1 that is the post-step position,
+    // which is what these timing tests assert against.
+    camera._cameraApply(1);
+  }
 }
 
 afterEach(() => {
@@ -82,5 +91,56 @@ describe('camera shake timing', () => {
 
     expect(late, 'shake magnitude decays over the duration').to.be.lessThan(early);
     expect(early, 'shake starts near the requested intensity').to.be.greaterThan(10);
+  });
+});
+
+// The camera has to be interpolated for the same reason sprites are, and more
+// urgently: with camera.follow(player, 0) it locks to the player each fixed
+// step, so a camera that jumped in fixed steps while the player rendered
+// interpolated would make the player visibly slide relative to the viewport —
+// the exact artefact interpolation exists to remove.
+describe('camera render interpolation', () => {
+  test('applies the interpolated camera position at render time', () => {
+    const { camera, positions } = loadCamera();
+    camera._cameraSnapshot();
+    camera._camX = 100;
+    camera._camY = 0;
+    camera._cameraApply(0.5);
+
+    expect(positions[positions.length - 1].x).toBeCloseTo(-50, 6);
+  });
+
+  test('restores the authoritative camera transform after the render', () => {
+    const { camera, positions } = loadCamera();
+    camera._cameraSnapshot();
+    camera._camX = 100;
+    camera._cameraApply(0.5);
+    camera._cameraRestore();
+
+    expect(positions[positions.length - 1].x).toBeCloseTo(-100, 6);
+  });
+
+  test('camera.setPosition is a hard cut, never a smooth glide', () => {
+    const { camera, positions } = loadCamera();
+    camera._cameraSnapshot();
+    camera._camX = 0;
+    camera._cameraApply(1);
+    positions.length = 0;
+
+    // A room transition: snapshot, then a hard cut inside the same step.
+    camera._cameraSnapshot();
+    camera.cameraSetPosition(640, 0);
+    camera._cameraApply(0.5);
+
+    expect(positions[positions.length - 1].x).toBeCloseTo(-640, 6);
+  });
+
+  test('cameraX still reports the authoritative position, not the rendered one', () => {
+    const { camera } = loadCamera();
+    camera._cameraSnapshot();
+    camera._camX = 100;
+    camera._cameraApply(0.5);
+
+    expect(camera.cameraX()).toBe(100);
   });
 });
