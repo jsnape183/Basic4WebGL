@@ -275,3 +275,19 @@ describe('render interpolation', () => {
     expect(handle.position.x).toBe(7);
   });
 });
+
+describe('frame loop reset', () => {
+  test('clears banked time and displaced handles', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 10, 0);
+    host._update(STEP + STEP / 2);
+    expect(host._displaced.length).toBe(1);
+
+    host._frameLoopReset();
+
+    expect(host._accumulator).toBe(0);
+    expect(host._alpha).toBe(0);
+    expect(host._displaced.length).toBe(0);
+    expect(host._inFixedStep).toBe(false);
+  });
+});

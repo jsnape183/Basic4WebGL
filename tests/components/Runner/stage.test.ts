@@ -359,6 +359,7 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     stage._cameraReset = vi.fn();
     stage._pathfindingReset = vi.fn();
     stage._tileCollisionReset = vi.fn();
+    stage._frameLoopReset = vi.fn();
 
     stage.clear();
 
@@ -370,10 +371,29 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     stage._cameraReset = vi.fn();
     stage._pathfindingReset = vi.fn();
     const resetCalls: string[] = [];
-    stage._tileCollisionReset = () => resetCalls.push('reset');
+    stage._tileCollisionReset = () => resetCalls.push("reset");
+    stage._frameLoopReset = vi.fn();
 
     stage.clear();
 
     expect(resetCalls).toEqual(['reset']);
+  });
+
+  // The frame loop's accumulator and its list of render-displaced handles are
+  // module-level, so unlike the per-handle interpolation fields they survive
+  // the scene switch that destroys every instance. Leftover banked time would
+  // make the new scene's first frame run a simulation step it has not earned,
+  // and a stale displaced entry would write a dead handle's position back
+  // after the next render.
+  test('clear() also resets the frame loop', () => {
+    const stage = loadStageOnly();
+    stage._cameraReset = vi.fn();
+    stage._pathfindingReset = vi.fn();
+    stage._tileCollisionReset = vi.fn();
+    stage._frameLoopReset = vi.fn();
+
+    stage.clear();
+
+    expect(stage._frameLoopReset).toHaveBeenCalledTimes(1);
   });
 });

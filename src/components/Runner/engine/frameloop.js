@@ -155,4 +155,16 @@ const _sbFrameLoop = {
     displaced.length = 0;
     this._cameraRestore();
   },
+
+  // Called from stage.clear() on a scene switch. The per-handle interpolation
+  // fields die with the handles, but this module's own state does not: a
+  // half-full accumulator would make the new scene's first frame run a step it
+  // has not earned, and a stale _displaced entry would write a destroyed
+  // handle's saved position back after the next render.
+  _frameLoopReset() {
+    this._accumulator = 0;
+    this._alpha = 0;
+    this._displaced.length = 0;
+    this._inFixedStep = false;
+  },
 };
