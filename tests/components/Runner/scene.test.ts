@@ -21,22 +21,22 @@ function loadScene() {
   return scene;
 }
 
-describe('_sbScene._update — pathfinding movement wiring', () => {
+describe('_sbScene._fixedStep — pathfinding movement wiring', () => {
   test('calls _pathfindingUpdate(delta) every frame, alongside _cameraUpdate', () => {
     const scene = loadScene();
 
-    scene._update(16.67);
+    scene._fixedStep(16.67);
 
     expect(scene._pathfindingUpdate).toHaveBeenCalledWith(16.67);
     expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
   });
 });
 
-describe('_sbScene._update — tween animation wiring', () => {
+describe('_sbScene._fixedStep — tween animation wiring', () => {
   test('calls _tweenUpdate(delta) every frame, alongside _cameraUpdate', () => {
     const scene = loadScene();
 
-    scene._update(16.67);
+    scene._fixedStep(16.67);
 
     expect(scene._tweenUpdate).toHaveBeenCalledWith(16.67);
     expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
