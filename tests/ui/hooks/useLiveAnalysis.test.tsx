@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { vi, afterEach, beforeEach, test, expect } from 'vitest';
-import sessionReducer from '../../../src/features/session/sessionSlice';
+import sessionReducer, { setIsRunning } from '../../../src/features/session/sessionSlice';
 import filesReducer, { addFile, updateFile } from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
 import packagesReducer, { seedPackages } from '../../../src/features/packages/packagesSlice';
@@ -100,6 +100,45 @@ test('resets the timer on rapid successive changes (only compiles once)', () => 
     vi.advanceTimersByTime(500);
   });
 
+  expect(spy).toHaveBeenCalledTimes(1);
+});
+
+test('does not compile while a Run session is active, even after the debounce interval', () => {
+  // A full project transpile is expensive enough (confirmed via a real
+  // Chrome performance trace: ~90ms on the main thread) that firing it every
+  // ~450ms while the game preview iframe is running visibly stalls the
+  // running game -- the preview shares the same single JS thread as the
+  // rest of the app. There's no reason to keep re-diagnosing source the
+  // player isn't editing right now.
+  const spy = vi.spyOn(Basic4WebGL, 'transpile');
+  const store = makeStore();
+  store.dispatch(setIsRunning(true));
+  renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+  expect(spy).not.toHaveBeenCalled();
+});
+
+test('resumes compiling once the Run session stops', () => {
+  const spy = vi.spyOn(Basic4WebGL, 'transpile').mockReturnValue({ diagnostics: [] });
+  const store = makeStore();
+  store.dispatch(setIsRunning(true));
+  const { rerender } = renderHook(() => useLiveAnalysis('p1'), { wrapper: wrapper(store) });
+
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
+  expect(spy).not.toHaveBeenCalled();
+
+  act(() => {
+    store.dispatch(setIsRunning(false));
+  });
+  rerender();
+  act(() => {
+    vi.advanceTimersByTime(500);
+  });
   expect(spy).toHaveBeenCalledTimes(1);
 });
 
