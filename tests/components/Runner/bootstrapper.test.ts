@@ -65,27 +65,64 @@ describe('boot sequence order', () => {
 // Vitest cannot drive a real PIXI.Ticker, so cypress/e2e/deltaUnits.cy.ts owns
 // the behavioural proof. This is the cheap static guard that fails the moment
 // the wiring is edited back, without waiting for a browser run.
+// The frame loop is driven by exactly two ticker callbacks, and their ORDER is
+// load-bearing. PIXI runs ticker callbacks in descending priority, and
+// Application registers its own render at UPDATE_PRIORITY.LOW (-25). So:
+//
+//   NORMAL  (0)  _sb._update      — fixed steps, then write interpolated positions
+//   LOW    (-25) PIXI render      — draws the interpolated positions
+//   UTILITY(-50) _sb._afterRender — restores the authoritative positions
+//
+// All three run synchronously inside one requestAnimationFrame tick, which is
+// what guarantees no softBASIC code can ever observe an interpolated position.
+// Get the priority wrong and either the render draws un-interpolated positions
+// or game logic starts reading smoothed ones.
 describe('per-frame ticker wiring', () => {
   const html = readFileSync('src/components/Runner/bootstrapper.html', 'utf-8');
-  // The wiring statement itself, with comments excluded — the surrounding
+  // The wiring statements themselves, with comments excluded — the surrounding
   // explanation deliberately names `deltaTime` to say why it is wrong, so the
   // assertions have to look at code rather than at the whole file.
-  const wiring = html
+  const tickerLines = html
     .split('\n')
     .filter((line) => !line.trim().startsWith('//'))
-    .find((line) => line.includes('app.ticker.add'));
+    .filter((line) => line.includes('app.ticker.add'));
 
-  test('registers exactly one per-frame ticker callback', () => {
-    expect(wiring, 'bootstrapper.html no longer wires app.ticker.add').toBeDefined();
-    expect(html.match(/app\.ticker\.add/g)).toHaveLength(1);
+  test('registers exactly two per-frame ticker callbacks', () => {
+    expect(tickerLines).toHaveLength(2);
   });
 
   test('drives _sb._update from the millisecond delta, not the normalised one', () => {
-    expect(wiring).toContain('_sb._update(ticker.deltaMS)');
+    expect(tickerLines[0]).toContain('_sb._update(ticker.deltaMS)');
   });
 
   test('never reads the frame-normalised ticker.deltaTime', () => {
-    expect(wiring).not.toContain('deltaTime');
+    expect(tickerLines.join('\n')).not.toContain('deltaTime');
+  });
+
+  test('restores interpolated positions after PIXI renders', () => {
+    expect(tickerLines[1]).toContain('_sb._afterRender()');
+    expect(tickerLines[1]).toContain('PIXI.UPDATE_PRIORITY.UTILITY');
+  });
+});
+
+// engine/frameloop.js has to be part of the assembled `_sb`, or _sb._update
+// resolves to something else and fixed stepping silently stops happening.
+describe('frame loop engine wiring', () => {
+  const engine = readFileSync('src/components/Runner/softBasicEngine.js', 'utf-8');
+
+  test('spreads _sbFrameLoop into _sb', () => {
+    expect(engine).toContain('..._sbFrameLoop,');
+  });
+
+  test('spreads it last, so its _update wins over the same-named siblings', () => {
+    const spreads = engine.match(/\.\.\._sb\w+,/g) ?? [];
+    expect(spreads[spreads.length - 1]).toBe('..._sbFrameLoop,');
+  });
+
+  test('the runner concatenates frameloop.js into the sandboxed iframe', () => {
+    const runner = readFileSync('src/components/Runner/index.tsx', 'utf-8');
+    expect(runner).toContain("./engine/frameloop.js?raw");
+    expect(runner).toContain('sbFrameLoop,');
   });
 });
 

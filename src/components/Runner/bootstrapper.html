@@ -184,6 +184,16 @@
           // `speed * delta / 1000` — is milliseconds, so this must be deltaMS.
           app.ticker.add((ticker) => _sb._update(ticker.deltaMS));
 
+          // Runs AFTER PIXI's own render, which Application registers at
+          // UPDATE_PRIORITY.LOW (-25); ticker callbacks fire in descending
+          // priority order, so UTILITY (-50) is last. _sb._update leaves every
+          // moving object's `position` holding an interpolated render value;
+          // this puts the authoritative simulation value back, so the displaced
+          // window is confined to the render call itself and no softBASIC code
+          // — not onupdate, not a key handler, not a collision query — can ever
+          // observe a smoothed position.
+          app.ticker.add(() => _sb._afterRender(), null, PIXI.UPDATE_PRIORITY.UTILITY);
+
           _sb._sbClasses.forEach((c) => {
             if (c.symbol.onenter) {
               c.symbol.onenter();

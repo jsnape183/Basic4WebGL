@@ -16,6 +16,7 @@ import sbTween from './engine/tween.js?raw';
 import sbAttach from './engine/attach.js?raw';
 import sbScene from './engine/scene.js?raw';
 import sbCamera from './engine/camera.js?raw';
+import sbFrameLoop from './engine/frameloop.js?raw';
 import softBasicEngine from './softBasicEngine.js?raw';
 import bootstrapper from './bootstrapper.html?raw';
 
@@ -45,7 +46,7 @@ const Runner = React.forwardRef<HTMLIFrameElement, RunnerProps>(({
         srcDoc={bootstrapper
           .replace(
             '//${softBasicGFX}',
-            [sbLifecycle, sbInput, sbAssets, sbFile, sbSave, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, sbPathfinding, sbTween, sbAttach, sbScene, sbCamera, softBasicEngine].join('\n')
+            [sbLifecycle, sbInput, sbAssets, sbFile, sbSave, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, sbPathfinding, sbTween, sbAttach, sbScene, sbCamera, sbFrameLoop, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
           .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)

@@ -28,6 +28,7 @@ const ENGINE_MODULES = [
   'attach',
   'scene',
   'camera',
+  'frameloop',
 ];
 
 class FakeContainer {
@@ -112,7 +113,7 @@ describe('instance registry stays shared between _sb and _sbLifecycle', () => {
   });
 });
 
-describe('_sb._update keeps dispatching onupdate after registry mutations', () => {
+describe('_sb._fixedStep keeps dispatching onupdate after registry mutations', () => {
   test('survivor still updates after another object is removed from the world', () => {
     const { _sb } = loadEngine();
     const survivor = makeEntity('survivor');
@@ -120,13 +121,13 @@ describe('_sb._update keeps dispatching onupdate after registry mutations', () =
     _sb.addToWorld(survivor);
     _sb.addToWorld(doomed);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(survivor.calls).toHaveLength(1);
 
     _sb.removeFromWorld(doomed);
 
-    _sb._update(1);
-    _sb._update(1);
+    _sb._fixedStep(1);
+    _sb._fixedStep(1);
     expect(survivor.calls).toHaveLength(3);
     expect(doomed.calls).toHaveLength(1); // removed, so no further updates
   });
@@ -139,8 +140,8 @@ describe('_sb._update keeps dispatching onupdate after registry mutations', () =
     const fresh = makeEntity('fresh');
     _sb.addToWorld(fresh);
 
-    _sb._update(1);
-    _sb._update(1);
+    _sb._fixedStep(1);
+    _sb._fixedStep(1);
     expect(fresh.calls).toHaveLength(2);
   });
 
@@ -152,7 +153,7 @@ describe('_sb._update keeps dispatching onupdate after registry mutations', () =
     const fresh = makeEntity('fresh');
     _sb.addToHud(fresh);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(fresh.calls).toHaveLength(1);
   });
 
@@ -174,9 +175,9 @@ describe('_sb._update keeps dispatching onupdate after registry mutations', () =
     _sb.sceneSwitch('level1');
     _sb._applySwitch();
 
-    _sb._update(1);
-    _sb._update(1);
-    _sb._update(1);
+    _sb._fixedStep(1);
+    _sb._fixedStep(1);
+    _sb._fixedStep(1);
     expect(spawned.calls).toHaveLength(3);
   });
 
@@ -187,7 +188,7 @@ describe('_sb._update keeps dispatching onupdate after registry mutations', () =
     _sb.clearHud();
     _sb.addToHud(hudScore);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(hudScore.calls).toHaveLength(1);
   });
 });
@@ -199,7 +200,7 @@ describe('registry mutation still removes what it should', () => {
     _sb.addToWorld(entity);
     _sb.removeFromWorld(entity);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(entity.calls).toHaveLength(0);
     expect(_sb._sbInstances).not.toContain(entity);
   });
@@ -213,7 +214,7 @@ describe('registry mutation still removes what it should', () => {
 
     _sb.clearWorld();
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(worldObj.calls).toHaveLength(0);
     expect(hudObj.calls).toHaveLength(1);
   });
@@ -227,7 +228,7 @@ describe('registry mutation still removes what it should', () => {
 
     _sb.clearHud();
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(worldObj.calls).toHaveLength(1);
     expect(hudObj.calls).toHaveLength(0);
   });
@@ -241,7 +242,7 @@ describe('registry mutation still removes what it should', () => {
 
     _sb.clear();
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(worldObj.calls).toHaveLength(0);
     expect(hudObj.calls).toHaveLength(0);
     expect(_sb._sbInstances).toHaveLength(0);
@@ -253,7 +254,7 @@ describe('registry mutation still removes what it should', () => {
     _sb.addToWorld(entity);
     _sb.addToWorld(entity);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(entity.calls).toHaveLength(1);
   });
 });
@@ -275,14 +276,14 @@ describe('mutating the registry from inside onupdate', () => {
     };
     [first, suicidal, third, fourth].forEach((e) => _sb.addToWorld(e));
 
-    _sb._update(1);
+    _sb._fixedStep(1);
 
     expect(first.calls).toHaveLength(1);
     expect(suicidal.calls).toHaveLength(1);
     expect(third.calls, 'object after the removed one still updated').toHaveLength(1);
     expect(fourth.calls).toHaveLength(1);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(suicidal.calls, 'removed object stops updating next frame').toHaveLength(1);
     expect(third.calls).toHaveLength(2);
   });
@@ -298,10 +299,10 @@ describe('mutating the registry from inside onupdate', () => {
     _sb.addToWorld(clearer);
     _sb.addToWorld(other);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(other.calls, 'still updated in the frame it was cleared in').toHaveLength(1);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(other.calls, 'no longer registered afterwards').toHaveLength(1);
   });
 
@@ -319,10 +320,10 @@ describe('mutating the registry from inside onupdate', () => {
     };
     _sb.addToWorld(spawner);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(spawned.calls, 'not updated in its own spawn frame').toHaveLength(0);
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     expect(spawned.calls).toHaveLength(1);
   });
 });
@@ -333,9 +334,9 @@ describe('class-level onupdate is unaffected', () => {
     const onupdate = vi.fn();
     _sb._sbClasses = [{ name: 'main', symbol: { onupdate } }];
 
-    _sb._update(1);
+    _sb._fixedStep(1);
     _sb.clear();
-    _sb._update(1);
+    _sb._fixedStep(1);
 
     expect(onupdate).toHaveBeenCalledTimes(2);
   });
