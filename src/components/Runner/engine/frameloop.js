@@ -83,6 +83,12 @@ const _sbFrameLoop = {
       this._accumulator = 0;
     }
 
+    // Clamped, not just divided. A scene switch runs *inside* a fixed step
+    // (_fixedStep -> _applySwitch -> stage.clear -> _frameLoopReset), which
+    // zeroes the accumulator mid-loop; the `-= FIXED_STEP_MS` above then drives
+    // it negative. An unclamped alpha would go negative with it and render
+    // every surviving object a full step behind its previous sample.
+    if (this._accumulator < 0) this._accumulator = 0;
     this._alpha = this._accumulator / this.FIXED_STEP_MS;
     this._renderPrepare();
   },

@@ -277,6 +277,22 @@ describe('render interpolation', () => {
 });
 
 describe('frame loop reset', () => {
+  // A scene switch happens *inside* a fixed step: _fixedStep calls _applySwitch,
+  // which calls stage.clear(), which calls _frameLoopReset. That zeroes the
+  // accumulator mid-loop, and the `_accumulator -= FIXED_STEP_MS` that follows
+  // the step then drives it negative — which would make alpha negative and
+  // render every surviving object a full step BEHIND its previous sample.
+  test('never produces a negative alpha when a step resets it mid-loop', () => {
+    const handle = makeHandle(0, 0);
+    const host = makeMovingHost(handle, 1, 0);
+    host._fixedStep = function () {
+      this._frameLoopReset();
+    };
+    host._update(STEP * 1.5);
+
+    expect(host._alpha).toBeGreaterThanOrEqual(0);
+  });
+
   test('clears banked time and displaced handles', () => {
     const handle = makeHandle(0, 0);
     const host = makeMovingHost(handle, 10, 0);
