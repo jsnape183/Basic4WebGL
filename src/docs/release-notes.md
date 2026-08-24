@@ -1,5 +1,38 @@
 # Release Notes
 
+## v0.6.16 — 2026-08-24
+
+### New: fixed-timestep simulation with interpolated rendering
+
+- The game loop now steps simulation (movement, tile collision, pathfinding, tween) in constant 16.667ms chunks, however many real time actually calls for each rendered frame, instead of applying whatever variable, real-world frame delta the browser happened to hand it that frame. What's drawn on screen is a smooth interpolated blend between the last two simulated positions, not the raw simulated position itself — so a sprite's true position, collision checks, and every other piece of game logic are completely unaffected, but on-screen motion is no longer at the mercy of frame-time jitter (a GC pause, a tab losing focus, a slow frame) showing up as a visible jolt. `sprite.setPosition` keeps working as a movement primitive exactly as tutorials teach it (no unwanted smoothing lag), while an out-of-band jump (spawning, a scene's own `onenter`, a hard teleport) still renders instantly with no smear. `camera.follow` is interpolated along with everything else — `camera.setPosition`'s hard room-cut transitions stay instant
+
+### New: keyframe animation (`tween`)
+
+- New `Keyframe` class and `tween` module: `tween.play(sprite, keyframes, loop)` animates a sprite's angle, scale, alpha, and/or position smoothly across a sequence of `Keyframe`s over time; `tween.stop`/`tween.isPlaying` round it out. Each channel (angle, scaleX, scaleY, alpha, position) is only ever written to the sprite if some keyframe in the sequence actually set it — a tween that only animates rotation, say, never touches position, leaving it free for `setVelocity`-driven movement (or anything else) to keep controlling at the same time
+
+### New: sprite attachment (`attachTo` / `detach`)
+
+- `sprite.attachTo(parent)` and `animatedsprite.attachTo(parent)` reparent one sprite under another using PIXI's own container hierarchy, so the child's position/angle are automatically interpreted relative to its parent — a held weapon, a turret on a vehicle, anything that should move and rotate together with zero hand-computed trig. `detach()` restores it to its original parent
+
+### New: change a tilemap's tiles at runtime (`setTile`)
+
+- `tilemap.setTile(x, y, tileId)` and `tilemaplayer.setTile(x, y, tileId)` change which tile is drawn at a given position while the game is running — a locked door swapping to its open art once a key is collected, a switch flipping a floor tile, breaking open a wall. Pairs naturally with `collision.setTileSolid` for changing both the art and whether a tile blocks movement together
+
+### New: Dungeon Explorer demo
+
+- Added "Dungeon Explorer" to the Demos page — a room-by-room dungeon crawl with a 360° spin-and-swing melee attack, patrol/chase enemy AI with telegraphed attacks and knockback, a boss fight, a key-and-locked-door puzzle, and discrete room-to-room camera transitions instead of continuous scrolling
+
+### Tile Map Editor
+
+- Hovering a tile in the palette now shows its numeric ID in a tooltip, and hovering the map canvas shows the hovered cell's row/column and world x/y in the toolbar — both make it much easier to find the exact coordinates and IDs a script needs to reference
+
+### Fixes
+
+- A sprite's melee-style hit detection (and similar "did this touch that" checks meant to cover a whole swing or window of time, not just one instant) is now far more forgiving of exactly when a moving target enters range, checked continuously rather than only at the single frame an action began
+- Fixed a sprite's velocity-driven movement being able to freeze solid while a `tween` was also animating it, even for a channel (like rotation) the tween never touched — `tween` no longer claims channels a keyframe sequence doesn't actually set (see "New: keyframe animation" above)
+- Fixed enemy knockback never fully stopping, permanently pinning an enemy against whatever wall it was pushed into
+- Fixed a sprite reparented via `attachTo` before it had ever been added to a container failing to detach correctly
+
 ## v0.6.15 — 2026-08-15
 
 ### New: change collision at runtime
