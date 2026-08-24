@@ -3,8 +3,18 @@ const _sbSprites = {
     const texture = _sbAssets.get(imagePath);
     return new PIXI.Sprite(texture);
   },
+  // setPosition is BOTH softBASIC's movement primitive (the tutorials teach
+  // `setPosition(x + speed * delta / 1000, y)` inside onupdate) and its
+  // teleport primitive (spawning, room transitions, respawns). Interpolation
+  // has to treat those differently, and the frame loop's _inFixedStep flag
+  // separates them exactly: game state only advances inside a fixed step, so a
+  // setPosition issued anywhere else — module top-level, oninit, onenter, a key
+  // handler — is by definition a placement, not motion, and must render at its
+  // destination rather than smearing there. Teleports issued from *inside* a
+  // step are caught separately by _sbFrameLoop.MAX_INTERP_STEP_PX.
   setPosition(obj, x, y) {
     obj.position.set(x, y);
+    if (!this._inFixedStep) obj._sbNoInterp = true;
   },
   getPositionX(obj) {
     return obj.position.x;

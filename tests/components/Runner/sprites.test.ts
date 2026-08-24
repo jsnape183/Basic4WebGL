@@ -43,3 +43,48 @@ describe('setVelocity / getVelocityX / getVelocityY', () => {
     expect(sprites.getVelocityY(b)).toBe(0);
   });
 });
+
+// setPosition needs to know whether it is being called from inside a fixed
+// simulation step. It reads that from `this._inFixedStep`, which the assembled
+// `_sb` carries from _sbFrameLoop — so a test host just supplies the flag.
+function loadSpritesWithFrameLoop(inFixedStep: boolean) {
+  return { ...loadSprites(), _inFixedStep: inFixedStep };
+}
+
+function makePositionHandle() {
+  return {
+    position: {
+      x: 0,
+      y: 0,
+      set(nx: number, ny: number) {
+        this.x = nx;
+        this.y = ny;
+      },
+    },
+  } as any;
+}
+
+describe('setPosition teleport marking', () => {
+  test('marks a position set from outside a fixed step as a teleport', () => {
+    const sprites = loadSpritesWithFrameLoop(false);
+    const handle = makePositionHandle();
+    sprites.setPosition(handle, 300, 200);
+    expect(handle._sbNoInterp).toBe(true);
+    expect(handle.position.x).toBe(300);
+  });
+
+  test('treats a move inside a fixed step as movement, not a teleport', () => {
+    const sprites = loadSpritesWithFrameLoop(true);
+    const handle = makePositionHandle();
+    sprites.setPosition(handle, 4, 0);
+    expect(handle._sbNoInterp).toBeFalsy();
+  });
+
+  test('still positions the sprite exactly, either way', () => {
+    const sprites = loadSpritesWithFrameLoop(true);
+    const handle = makePositionHandle();
+    sprites.setPosition(handle, 12.5, 7.25);
+    expect(handle.position.x).toBe(12.5);
+    expect(handle.position.y).toBe(7.25);
+  });
+});
