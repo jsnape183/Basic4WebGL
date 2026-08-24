@@ -33,6 +33,7 @@ const Palette: React.FC<Props> = ({ slices, selectedTile, onSelectTile }) => {
               type="button"
               onClick={() => onSelectTile(tileId)}
               aria-label={`Tile ${tileId}`}
+              title={`ID: ${tileId}`}
               aria-pressed={selectedTile === tileId}
               style={{ width: CELL_SIZE, height: CELL_SIZE }}
               className={`border ${
