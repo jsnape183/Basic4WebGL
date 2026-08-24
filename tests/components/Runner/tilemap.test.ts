@@ -39,7 +39,10 @@ class FakeTexture {
 class FakeContainer {
   children: unknown[] = [];
   x = 0; y = 0; parent: unknown = null;
+  texture: unknown;
+  constructor(texture?: unknown) { this.texture = texture; }
   addChild(c: unknown) { this.children.push(c); }
+  removeChild(c: unknown) { this.children = this.children.filter((child) => child !== c); }
   removeChildren() { this.children = []; }
 }
 
@@ -418,5 +421,98 @@ describe('markersByTag', () => {
 
     // local center (5, 5) + offset (20, 0) = world (25, 5)
     expect(markersByTag(handle, 'spawn')).toEqual([{ x: 25, y: 5 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setTile — swaps a single cell's tile art (and _map entry) at runtime, e.g.
+// for a door that changes appearance once the player has a key. Needs a real
+// PIXI.Sprite constructor (to build the replacement tile) and PIXI.Container
+// (to remove the old one), so these use the loadTilemapWithAssets/withLoadedSheet
+// fixtures rather than the pure-offset-math loadTilemap() used above.
+// ---------------------------------------------------------------------------
+
+describe('setTile', () => {
+  test('updates the map data and renders a new tile sprite at that cell', async () => {
+    const { _sbTilemaps } = await withLoadedSheet(64, 64); // 4x4 grid -> 16 frames
+    const handle = _sbTilemaps.createTileMap('sheet.png', 16, 16);
+    handle._map = [[0, 0], [0, 0]];
+
+    _sbTilemaps.setTile(handle, 0, 0, 5);
+
+    expect(handle._map[0][0]).toBe(5);
+    expect(handle.children).toHaveLength(1);
+    expect((handle.children[0] as { texture: unknown }).texture).toBe(handle._frames[4]); // id 5 -> frames[4]
+  });
+
+  test('replaces a tile that was already painted at load time, not stacking a second sprite', async () => {
+    const { _sbAssets, _sbTilemaps } = await withLoadedSheet(64, 64);
+    const handle = _sbTilemaps.createTileMap('sheet.png', 16, 16);
+    _sbAssets.get = (name: string) => (name === 'level.json' ? [[3]] : undefined);
+    _sbTilemaps.loadTileMap(handle, 'level.json');
+    expect(handle.children).toHaveLength(1); // the originally-loaded tile
+
+    _sbTilemaps.setTile(handle, 0, 0, 9);
+
+    expect(handle._map[0][0]).toBe(9);
+    expect(handle.children).toHaveLength(1); // still one sprite, not two
+    expect((handle.children[0] as { texture: unknown }).texture).toBe(handle._frames[8]); // id 9 -> frames[8]
+  });
+
+  test('setting a tile to id 0 clears its art entirely', async () => {
+    const { _sbTilemaps } = await withLoadedSheet(64, 64);
+    const handle = _sbTilemaps.createTileMap('sheet.png', 16, 16);
+    handle._map = [[0]];
+    _sbTilemaps.setTile(handle, 0, 0, 5);
+
+    _sbTilemaps.setTile(handle, 0, 0, 0);
+
+    expect(handle._map[0][0]).toBe(0);
+    expect(handle.children).toHaveLength(0);
+  });
+
+  test('changing one cell does not disturb a neighboring cell\'s tile', async () => {
+    const { _sbAssets, _sbTilemaps } = await withLoadedSheet(64, 64);
+    const handle = _sbTilemaps.createTileMap('sheet.png', 16, 16);
+    _sbAssets.get = (name: string) => (name === 'level.json' ? [[3, 4]] : undefined);
+    _sbTilemaps.loadTileMap(handle, 'level.json');
+
+    _sbTilemaps.setTile(handle, 0, 0, 9); // only touch col 0
+
+    expect(handle._map[0]).toEqual([9, 4]);
+    expect(handle.children).toHaveLength(2);
+  });
+
+  test('accounts for a nested TileMapSet handle\'s offset, same as tileAt', () => {
+    // loadTilemapWithAssets always wires its own fresh {} as worldContainer
+    // internally (it doesn't accept a caller-supplied one) -- parent: null
+    // here just ends the ancestor walk at setHandle itself, same net effect
+    // as parenting to whatever the real worldContainer instance is.
+    const { _sbTilemaps } = loadTilemapWithAssets({});
+    const setHandle: any = { x: 30, y: 0, parent: null };
+    const layerHandle: any = {
+      x: 0, y: 0, parent: setHandle,
+      _tileW: 10, _tileH: 10, _map: [[0, 0]], _frames: [{}, {}],
+      children: [],
+      addChild(c: unknown) { this.children.push(c); },
+      removeChild(c: unknown) { this.children = this.children.filter((child: unknown) => child !== c); },
+    };
+
+    // world (35, 5): minus set offset (30) = local (5, 5) -> col 0
+    _sbTilemaps.setTile(layerHandle, 35, 5, 1);
+
+    expect(layerHandle._map[0][0]).toBe(1);
+    expect(layerHandle._map[0][1]).toBe(0);
+    expect(layerHandle.children).toHaveLength(1);
+  });
+
+  test('an out-of-bounds world position is a no-op', async () => {
+    const { _sbTilemaps } = await withLoadedSheet(64, 64);
+    const handle = _sbTilemaps.createTileMap('sheet.png', 16, 16);
+    handle._map = [[0, 0]];
+
+    expect(() => _sbTilemaps.setTile(handle, -100, -100, 5)).not.toThrow();
+    expect(handle._map[0][0]).toBe(0);
+    expect(handle.children).toHaveLength(0);
   });
 });

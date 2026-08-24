@@ -52,6 +52,29 @@ describe('TileMapLayer — tileAt', () => {
   });
 });
 
+// ─── setTile ──────────────────────────────────────────────────────────────────
+
+describe('TileMapLayer — setTile', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapLayer([
+      'function test()',
+      '  dim m as TileMapLayer(call("null"))',
+      '  m.setTile(100, 200, 23)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setTile(', () => {
+    const result = transpileWithTileMapLayer([
+      'function test()',
+      '  dim m as TileMapLayer(call("null"))',
+      '  m.setTile(100, 200, 23)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setTile(');
+  });
+});
+
 // ─── widthPx / heightPx ───────────────────────────────────────────────────────
 
 describe('TileMapLayer — widthPx / heightPx', () => {

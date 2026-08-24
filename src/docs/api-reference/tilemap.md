@@ -57,6 +57,24 @@ if tile = 1 then
 endif
 ```
 
+## setTile(x, y, tileId)
+
+Changes which tile is drawn at a given world position — useful for a door that changes appearance once the player has a key, a switch that flips a floor tile, or breaking a wall open at runtime.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| x         | number | Horizontal world position in pixels |
+| y         | number | Vertical world position in pixels |
+| tileId    | number | The tile ID to place there. `0` clears the tile (leaves it empty). |
+
+```bas
+function onKeyCollected()
+  self.setTile(576, 176, 23)
+endfunction
+```
+
+> **Note:** `setTile` only changes what's drawn — it doesn't touch collision. Pair it with `collision.setTileSolid` (see [collision](collision)) if the tile you're changing should also stop blocking or start blocking movement.
+
 ## widthPx()
 
 Returns the total width of the tilemap in pixels.

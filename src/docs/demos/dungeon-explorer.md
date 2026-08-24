@@ -8,7 +8,7 @@ A room-by-room dungeon crawl: fight through two branches of enemies, find the ke
 
 The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms rather than one continuously-scrolling level: `onupdate()` divides the player's world position by the room size (240×176, i.e. 15×11 tiles at 16px) to get a room coordinate, and whenever that coordinate changes, `camera.setPosition(roomX * 240, roomY * 176)` hard-cuts the view to the new room — classic-adventure-game style, instead of scrolling continuously.
 
-The boss room's door is a real `collision` tile, solid until the player has the key: `Player.onupdate()` calls `collision.setTileSolid(488, 264, false)` and `collision.setTileSolid(488, 280, false)` once `self.hasKey` is true, unlocking both door tiles. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
+The boss room's door is two tiles (row 11, columns 36-37 in `dungeon.stm`) that both look *and* behave solid until the player has the key. `DungeonScene.onupdate()` runs `openBossDoor()` once, right when the key pickup is collected — not every frame — since it does two things at once: `floorLayer.setTile(576, 176, 23)` / `setTile(592, 176, 24)` swaps the closed-door tile art (ids 47/48) for the open-door art (23/24) on the `"floor"` layer via `tilemaplayer.setTile`, and `collision.setTileSolid(576, 176, false)` / `(592, 176, false)` clears the matching collision cells so the player can actually walk through. `setTile` only changes what's drawn, not collision — the two calls are deliberately paired, one for each half of "the door is now open." The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
 The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `Player.checkSwingHits()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre.
 
@@ -26,7 +26,7 @@ Regular enemies aren't always aggressive: each one patrols a short back-and-fort
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
-**Key techniques:** `sprite.setAngle` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `tween.play`/`Keyframe` for telegraphing enemy/boss attacks with a scale pulse, `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door, `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+**Key techniques:** `sprite.setAngle` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `tween.play`/`Keyframe` for telegraphing enemy/boss attacks with a scale pulse, `tilemaplayer.setTile` + `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door (visual and collision, changed together), `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
 
 ---
 
@@ -320,6 +320,23 @@ function onenter()
   self.setupHud()
 endfunction
 
+function openBossDoor()
+  ' Swaps the boss room's closed-door pair (tile ids 47/48 on the "floor"
+  ' layer, at row 11, cols 36-37) for their open counterparts (23/24) the
+  ' instant the key is collected, and clears their collision so the player
+  ' can actually walk through. Runs once here, at the moment of pickup,
+  ' rather than every frame from Player.onupdate() -- setTile removes and
+  ' recreates a PIXI sprite each call, which would be wasteful (and pointless,
+  ' since the result is identical) to repeat 60 times a second for the rest
+  ' of the level.
+  dim floorLayer as TileMapLayer
+  floorLayer = self.tilemapset.layer("floor")
+  floorLayer.setTile(576, 176, 23)
+  floorLayer.setTile(592, 176, 24)
+  collision.setTileSolid(576, 176, false)
+  collision.setTileSolid(592, 176, false)
+endfunction
+
 function wallLayers()
   dim layers(0)
   array.push(layers, "collision")
@@ -379,6 +396,7 @@ function onupdate(delta)
     if collision.spriteCollide(self.player, self.keyPickup) then
       self.keyPickup.collect()
       self.player.setHasKey(true)
+      self.openBossDoor()
     endif
   endif
 

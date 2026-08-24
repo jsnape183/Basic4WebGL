@@ -1,3 +1,31 @@
+// Sums a handle's own local offset (set by ObjectTransform.setPosition) plus
+// every ancestor's, up to but not including the world/hud container. A plain
+// TileMap/TileMapLayer added directly to the world has no ancestor besides
+// worldContainer, so this is identical to just reading handle.x/handle.y. A
+// TileMapLayer nested inside a TileMapSet's wrapping container additionally
+// picks up the set's own transform, so moving the whole set
+// (tm.transform.setPosition) is correctly reflected for any of its layers.
+// worldContainer/hudContainer's own position (camera pan) is deliberately
+// excluded — every caller's contract has always been world space, not
+// camera-relative screen space. Shared by tileAt, setTile, and markersByTag.
+// A plain top-level function, not a method on _sbTilemaps -- tileAt and
+// markersByTag are both called destructured in existing tests/usage
+// (`const { tileAt } = ...`), which drops `this`, so a shared helper that
+// needs calling from them can't rely on `this._worldOffset` the way
+// tileAtInSet relies on `this.tileAt` (tileAtInSet is only ever called bound,
+// `tilemap.tileAtInSet(...)`).
+function _tilemapWorldOffset(handle) {
+  let offsetX = 0;
+  let offsetY = 0;
+  let node = handle;
+  while (node && node !== worldContainer && node !== hudContainer) {
+    offsetX += node.x;
+    offsetY += node.y;
+    node = node.parent;
+  }
+  return { x: offsetX, y: offsetY };
+}
+
 const _sbTilemaps = {
   createTileMap(tilesetPath, tileW, tileH) {
     tileW = Number(tileW);
@@ -8,13 +36,16 @@ const _sbTilemaps = {
     container._tileH = tileH;
     container._frames = frames;
     container._map = [];
+    container._tileSprites = [];
     return container;
   },
 
   loadTileMap(handle, jsonPath) {
     const data = _sbAssets.get(jsonPath);
     handle.removeChildren();
+    handle._tileSprites = [];
     for (let row = 0; row < data.length; row++) {
+      handle._tileSprites[row] = [];
       for (let col = 0; col < data[row].length; col++) {
         const id = data[row][col];
         if (!id) continue;
@@ -23,35 +54,53 @@ const _sbTilemaps = {
         sprite.x = col * handle._tileW;
         sprite.y = row * handle._tileH;
         handle.addChild(sprite);
+        handle._tileSprites[row][col] = sprite;
       }
     }
     handle._map = data;
   },
 
   tileAt(handle, worldX, worldY) {
-    // Sum this handle's own local offset (set by ObjectTransform.setPosition)
-    // plus every ancestor's, up to but not including the world/hud container.
-    // A plain TileMap/TileMapLayer added directly to the world has no
-    // ancestor besides worldContainer, so this is identical to just reading
-    // handle.x/handle.y. A TileMapLayer nested inside a TileMapSet's wrapping
-    // container additionally picks up the set's own transform, so moving the
-    // whole set (tm.transform.setPosition) is correctly reflected in tileAt
-    // on any of its layers. worldContainer/hudContainer's own position
-    // (camera pan) is deliberately excluded — tileAt's contract has always
-    // been in world space, not camera-relative screen space.
-    let offsetX = 0;
-    let offsetY = 0;
-    let node = handle;
-    while (node && node !== worldContainer && node !== hudContainer) {
-      offsetX += node.x;
-      offsetY += node.y;
-      node = node.parent;
-    }
-    const col = Math.floor((Number(worldX) - offsetX) / handle._tileW);
-    const row = Math.floor((Number(worldY) - offsetY) / handle._tileH);
+    const offset = _tilemapWorldOffset(handle);
+    const col = Math.floor((Number(worldX) - offset.x) / handle._tileW);
+    const row = Math.floor((Number(worldY) - offset.y) / handle._tileH);
     if (row < 0 || row >= handle._map.length) return 0;
     if (col < 0 || col >= (handle._map[0]?.length ?? 0)) return 0;
     return handle._map[row][col] ?? 0;
+  },
+
+  // Swaps a single cell's tile art at runtime (e.g. a door changing
+  // appearance once the player has a key) -- removes whatever sprite was at
+  // that cell (whether painted at load time or by an earlier setTile call)
+  // and, for a non-zero id, adds a fresh one in its place. handle._map is
+  // updated to match, so a later tileAt on this same cell reflects the
+  // change. Silently does nothing for a cell outside the map or an id
+  // outside the tileset, same as tileAt's existing out-of-bounds contract.
+  setTile(handle, worldX, worldY, tileId) {
+    tileId = Number(tileId);
+    const offset = _tilemapWorldOffset(handle);
+    const col = Math.floor((Number(worldX) - offset.x) / handle._tileW);
+    const row = Math.floor((Number(worldY) - offset.y) / handle._tileH);
+    if (row < 0 || row >= handle._map.length) return;
+    if (col < 0 || col >= (handle._map[0]?.length ?? 0)) return;
+
+    if (!handle._tileSprites) handle._tileSprites = [];
+    if (!handle._tileSprites[row]) handle._tileSprites[row] = [];
+    const existing = handle._tileSprites[row][col];
+    if (existing) {
+      handle.removeChild(existing);
+      handle._tileSprites[row][col] = undefined;
+    }
+
+    handle._map[row][col] = tileId;
+
+    if (tileId >= 1 && tileId <= handle._frames.length) {
+      const sprite = new PIXI.Sprite(handle._frames[tileId - 1]);
+      sprite.x = col * handle._tileW;
+      sprite.y = row * handle._tileH;
+      handle.addChild(sprite);
+      handle._tileSprites[row][col] = sprite;
+    }
   },
 
   tileMapWidthPx(handle) {
@@ -114,7 +163,9 @@ const _sbTilemaps = {
       container._tileH = tileH;
       container._frames = frames;
       container._map = layerData;
+      container._tileSprites = [];
       for (let row = 0; row < layerData.length; row++) {
+        container._tileSprites[row] = [];
         for (let col = 0; col < layerData[row].length; col++) {
           const id = layerData[row][col];
           if (!id) continue;
@@ -123,6 +174,7 @@ const _sbTilemaps = {
           sprite.x = col * tileW;
           sprite.y = row * tileH;
           container.addChild(sprite);
+          container._tileSprites[row][col] = sprite;
         }
       }
       layerContainers[name] = container;
@@ -160,14 +212,9 @@ const _sbTilemaps = {
   // TileMapSet's own .transform moves the whole map, returned positions move
   // with it, matching tileAt's existing offset contract.
   markersByTag(setHandle, tag) {
-    let offsetX = 0;
-    let offsetY = 0;
-    let node = setHandle;
-    while (node && node !== worldContainer && node !== hudContainer) {
-      offsetX += node.x;
-      offsetY += node.y;
-      node = node.parent;
-    }
+    const offset = _tilemapWorldOffset(setHandle);
+    const offsetX = offset.x;
+    const offsetY = offset.y;
     const results = [];
     for (const m of setHandle._markers) {
       if (m.tag !== tag) continue;

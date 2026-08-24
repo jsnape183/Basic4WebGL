@@ -63,6 +63,23 @@ function onenter()
   self.setupHud()
 endfunction
 
+function openBossDoor()
+  ' Swaps the boss room's closed-door pair (tile ids 47/48 on the "floor"
+  ' layer, at row 11, cols 36-37) for their open counterparts (23/24) the
+  ' instant the key is collected, and clears their collision so the player
+  ' can actually walk through. Runs once here, at the moment of pickup,
+  ' rather than every frame from Player.onupdate() -- setTile removes and
+  ' recreates a PIXI sprite each call, which would be wasteful (and pointless,
+  ' since the result is identical) to repeat 60 times a second for the rest
+  ' of the level.
+  dim floorLayer as TileMapLayer
+  floorLayer = self.tilemapset.layer("floor")
+  floorLayer.setTile(576, 176, 23)
+  floorLayer.setTile(592, 176, 24)
+  collision.setTileSolid(576, 176, false)
+  collision.setTileSolid(592, 176, false)
+endfunction
+
 function wallLayers()
   dim layers(0)
   array.push(layers, "collision")
@@ -122,6 +139,7 @@ function onupdate(delta)
     if collision.spriteCollide(self.player, self.keyPickup) then
       self.keyPickup.collect()
       self.player.setHasKey(true)
+      self.openBossDoor()
     endif
   endif
 

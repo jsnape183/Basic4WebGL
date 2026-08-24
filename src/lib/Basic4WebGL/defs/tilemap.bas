@@ -14,6 +14,10 @@ function tileAt(x, y)
     return call("_sb.tileAt(this._handle, tileat_x, tileat_y)")
 endfunction
 
+function setTile(x, y, tileId)
+    call("_sb.setTile(this._handle, settile_x, settile_y, settile_tileId)")
+endfunction
+
 function widthPx()
     return call("_sb.tileMapWidthPx(this._handle)")
 endfunction

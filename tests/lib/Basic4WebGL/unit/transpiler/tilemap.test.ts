@@ -81,6 +81,29 @@ describe('TileMap — tileAt', () => {
   });
 });
 
+// ─── setTile ──────────────────────────────────────────────────────────────────
+
+describe('TileMap — setTile', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMap([
+      'function test()',
+      '  dim m as TileMap("tileset.png", 32, 32)',
+      '  m.setTile(100, 200, 5)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.setTile(', () => {
+    const result = transpileWithTileMap([
+      'function test()',
+      '  dim m as TileMap("tileset.png", 32, 32)',
+      '  m.setTile(100, 200, 5)',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.setTile(');
+  });
+});
+
 // ─── widthPx / heightPx ───────────────────────────────────────────────────────
 
 describe('TileMap — widthPx', () => {

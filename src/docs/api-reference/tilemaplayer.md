@@ -37,6 +37,35 @@ if tile > 0 then
 endif
 ```
 
+## setTile(x, y, tileId)
+
+Changes which tile is drawn at a given world position on this layer — useful for a door that changes appearance once the player has a key, a switch that flips a floor tile, or breaking a wall open at runtime.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| x         | number | Horizontal world position in pixels |
+| y         | number | Vertical world position in pixels |
+| tileId    | number | The tile ID to place there. `0` clears the tile (leaves it empty). |
+
+```bas
+' A locked door made of two tiles, swapped to their open versions once the
+' player picks up the key.
+dim floorLayer as tilemaplayer
+
+function onenter()
+  floorLayer = level.layer("floor")
+endfunction
+
+function onKeyCollected()
+  floorLayer.setTile(576, 176, 23)
+  floorLayer.setTile(592, 176, 24)
+  collision.setTileSolid(576, 176, false)
+  collision.setTileSolid(592, 176, false)
+endfunction
+```
+
+> **Note:** `setTile` only changes what's drawn — it doesn't touch collision. Pair it with `collision.setTileSolid` (see [collision](collision)) if the tile you're changing should also stop blocking or start blocking movement.
+
 ## widthPx()
 
 Returns the total width of this layer in pixels.
