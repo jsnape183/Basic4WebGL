@@ -6,6 +6,11 @@ dim scaleY
 dim alpha
 dim x
 dim y
+dim hasAngle
+dim hasScaleX
+dim hasScaleY
+dim hasAlpha
+dim hasPosition
 
 Constructor()
   self.time = 0
@@ -15,6 +20,11 @@ Constructor()
   self.alpha = 1
   self.x = 0
   self.y = 0
+  self.hasAngle = false
+  self.hasScaleX = false
+  self.hasScaleY = false
+  self.hasAlpha = false
+  self.hasPosition = false
 EndConstructor
 
 function setTime(t)
@@ -23,23 +33,28 @@ endfunction
 
 function setAngle(a)
   self.angle = a
+  self.hasAngle = true
 endfunction
 
 function setScaleX(sx)
   self.scaleX = sx
+  self.hasScaleX = true
 endfunction
 
 function setScaleY(sy)
   self.scaleY = sy
+  self.hasScaleY = true
 endfunction
 
 function setAlpha(al)
   self.alpha = al
+  self.hasAlpha = true
 endfunction
 
 function setPosition(px, py)
   self.x = px
   self.y = py
+  self.hasPosition = true
 endfunction
 
 EndClass

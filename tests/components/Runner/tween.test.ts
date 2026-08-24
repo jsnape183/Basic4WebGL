@@ -22,9 +22,37 @@ function makeHandle() {
 
 // Matches the compiled field names a real `Keyframe` instance has —
 // scaleX/scaleY compile to lowercase scalex/scaley (confirmed via a
-// throwaway transpile during design, not assumed).
-function frame(time: number, angle: number, scalex = 1, scaley = 1, alpha = 1, x = 0, y = 0) {
-  return { time, angle, scalex, scaley, alpha, x, y };
+// throwaway transpile during design, not assumed). Every channel is only
+// marked "set" (hasangle/hasscalex/etc, read by tweenPlay to decide which
+// channels this tween controls at all) when the caller actually passes it,
+// mirroring how a real Keyframe only flips its has* flag when the matching
+// setter is called -- angle included, so a test can build an angle-less
+// (e.g. position-only) frame the same way a real .bas caller would by
+// simply never calling setAngle.
+function frame(
+  time: number,
+  angle?: number,
+  scalex?: number,
+  scaley?: number,
+  alphaVal?: number,
+  x?: number,
+  y?: number
+) {
+  const hasPosition = x !== undefined || y !== undefined;
+  return {
+    time,
+    angle: angle ?? 0,
+    scalex: scalex ?? 1,
+    scaley: scaley ?? 1,
+    alpha: alphaVal ?? 1,
+    x: x ?? 0,
+    y: y ?? 0,
+    hasangle: angle !== undefined,
+    hasscalex: scalex !== undefined,
+    hasscaley: scaley !== undefined,
+    hasalpha: alphaVal !== undefined,
+    hasposition: hasPosition,
+  };
 }
 
 describe('tweenPlay / tweenIsPlaying / tweenStop', () => {
@@ -141,6 +169,81 @@ describe('_tweenUpdate — interpolation', () => {
     tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false); // restart
     tw._tweenUpdate(0);
     expect(handle.angle).toBeCloseTo(0);
+  });
+});
+
+describe('_tweenUpdate — only controls channels a keyframe actually set', () => {
+  test('a tween that only sets angle leaves position, scale, and alpha alone', () => {
+    const tw = loadTween();
+    const handle = makeHandle();
+    handle.position.x = 50;
+    handle.position.y = 60;
+    handle.scale.x = 2;
+    handle.scale.y = 3;
+    handle.alpha = 0.4;
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false);
+    tw._tweenUpdate(500);
+    expect(handle.angle).toBeCloseTo(50);
+    expect(handle.position.x).toBe(50);
+    expect(handle.position.y).toBe(60);
+    expect(handle.scale.x).toBe(2);
+    expect(handle.scale.y).toBe(3);
+    expect(handle.alpha).toBe(0.4);
+  });
+
+  test('a tween that only sets position leaves angle, scale, and alpha alone', () => {
+    const tw = loadTween();
+    const handle = makeHandle();
+    handle.angle = 30;
+    handle.scale.x = 2;
+    handle.scale.y = 3;
+    handle.alpha = 0.4;
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(
+      spriteObj,
+      [frame(0, undefined, undefined, undefined, undefined, 0, 0), frame(1, undefined, undefined, undefined, undefined, 100, 200)],
+      false
+    );
+    tw._tweenUpdate(500);
+    expect(handle.position.x).toBeCloseTo(50);
+    expect(handle.position.y).toBeCloseTo(100);
+    expect(handle.angle).toBe(30);
+    expect(handle.scale.x).toBe(2);
+    expect(handle.scale.y).toBe(3);
+    expect(handle.alpha).toBe(0.4);
+  });
+
+  test('a manual change to an untouched channel mid-tween is not overwritten on the next tick', () => {
+    const tw = loadTween();
+    const handle = makeHandle();
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0, 0), frame(1, 100)], false); // angle-only
+    tw._tweenUpdate(200);
+    // Something else (e.g. kinematic movement driven by setVelocity) moves
+    // the sprite while the angle tween is still running.
+    handle.position.x = 999;
+    handle.position.y = 888;
+    tw._tweenUpdate(200);
+    expect(handle.position.x).toBe(999);
+    expect(handle.position.y).toBe(888);
+  });
+
+  test('holding the final keyframe of a non-looping tween still only applies channels that were set', () => {
+    const tw = loadTween();
+    const handle = makeHandle();
+    handle.position.x = 12;
+    handle.position.y = 34;
+    const spriteObj = { _handle: handle };
+    tw._sbInstances = [spriteObj];
+    tw.tweenPlay(spriteObj, [frame(0, 0), frame(0.5, 100)], false); // angle-only
+    tw._tweenUpdate(1000); // well past the 0.5s span
+    expect(handle.angle).toBeCloseTo(100);
+    expect(handle.position.x).toBe(12);
+    expect(handle.position.y).toBe(34);
   });
 });
 

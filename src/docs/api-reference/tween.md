@@ -13,7 +13,7 @@ dim k as Keyframe
 k = new Keyframe()
 ```
 
-A new `Keyframe` starts with neutral values: `angle = 0`, `scaleX = 1`, `scaleY = 1`, `alpha = 1`, and position `(0, 0)`. Use the setters below to change the ones you care about.
+A new `Keyframe` starts with neutral values: `angle = 0`, `scaleX = 1`, `scaleY = 1`, `alpha = 1`, and position `(0, 0)`. Use the setters below to change the ones you care about — and only the ones you actually call a setter for take effect when the animation plays. Angle, scale, alpha, and position are each controlled independently: if nothing in a keyframe sequence ever calls `setPosition`, `tween` never touches the sprite's position at all, leaving it free to be moved some other way (by `setVelocity`, by your own code, by anything) at the same time the rest of the animation plays.
 
 ### setTime(t)
 
@@ -159,6 +159,26 @@ if tween.isPlaying(player) = false then
 endif
 ```
 
-> **Note:** If any keyframe in a sequence uses `setPosition`, every keyframe in that same sequence needs its own `setPosition` call — there's no safe default to fall back to for position. A keyframe that skips it snaps the sprite to `(0, 0)` at that point in the animation, not to wherever it currently is.
+> **Note:** A sequence only controls a given channel (angle, scale X, scale Y, alpha, or position) if at least one keyframe in it calls that channel's setter. If none of them ever call `setPosition`, for example, `tween` leaves the sprite's position alone for the whole animation — a spin animation built only from `setAngle` calls can play at the same time as normal movement, with nothing fighting over control of position. Within a sequence that *does* control a channel, any keyframe that skips that channel's setter just uses its own neutral default (`angle = 0`, `scaleX`/`scaleY` = `1`, `alpha = 1`, position `(0, 0)`) at that point in the animation — so if some keyframes set position and one doesn't, that one keyframe really will animate through the origin. Set it explicitly on every keyframe in a sequence that uses it at all.
+
+```bas
+' A spin that doesn't touch position -- the sprite can keep moving under
+' setVelocity, or under your own code, for the whole 0.4s the spin plays.
+dim spinStart as Keyframe
+spinStart = new Keyframe()
+spinStart.setTime(0)
+spinStart.setAngle(0)
+
+dim spinEnd as Keyframe
+spinEnd = new Keyframe()
+spinEnd.setTime(0.4)
+spinEnd.setAngle(360)
+
+dim spinFrames(0)
+array.push(spinFrames, spinStart)
+array.push(spinFrames, spinEnd)
+
+tween.play(player, spinFrames, false)
+```
 
 > **Note:** Playback jumps straight to the first keyframe's values the moment `play` is called — there's no automatic frame that eases in from the sprite's current state. If a smooth start matters, add your own keyframe at `setTime(0)` matching the sprite's current angle, scale, alpha, and position.

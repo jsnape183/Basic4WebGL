@@ -1,10 +1,29 @@
 const _sbTween = {
-  _playing: new Map(), // spriteObj -> { frames: [...sorted by time], loop, elapsed }
+  _playing: new Map(), // spriteObj -> { frames: [...sorted by time], loop, elapsed, channels }
 
   tweenPlay(spriteObj, frames, loop) {
     if (!spriteObj || !spriteObj._handle || !frames || frames.length === 0) return;
     const sorted = [...frames].sort((a, b) => a.time - b.time);
-    this._playing.set(spriteObj, { frames: sorted, loop: !!loop, elapsed: 0 });
+    // A channel (angle/scaleX/scaleY/alpha/position) is only ever written to
+    // the handle if at least one keyframe in this sequence explicitly set it
+    // (Keyframe's has* fields, flipped true by its setters) -- otherwise
+    // that channel is left alone for the whole tween, under whatever else is
+    // controlling it (setVelocity-driven movement, manual setAngle, etc).
+    // Previously every channel was written every frame regardless, defaulting
+    // untouched ones to Keyframe's neutral values (position 0,0 included) --
+    // that unconditional write is exactly what forced every tween in this
+    // codebase to either explicitly re-specify position on every keyframe or
+    // have it silently frozen/snapped, the same bug hit and fixed by hand
+    // three separate times this session (the player's own spin, the sword,
+    // and twice for enemy/boss attack telegraphs).
+    const channels = {
+      angle: sorted.some((f) => f.hasangle),
+      scaleX: sorted.some((f) => f.hasscalex),
+      scaleY: sorted.some((f) => f.hasscaley),
+      alpha: sorted.some((f) => f.hasalpha),
+      position: sorted.some((f) => f.hasposition),
+    };
+    this._playing.set(spriteObj, { frames: sorted, loop: !!loop, elapsed: 0, channels });
   },
 
   tweenStop(spriteObj) {
@@ -24,7 +43,7 @@ const _sbTween = {
       }
       const handle = spriteObj._handle;
       state.elapsed += dt;
-      const { frames, loop } = state;
+      const { frames, loop, channels } = state;
       const last = frames[frames.length - 1];
       let t = state.elapsed;
 
@@ -37,7 +56,7 @@ const _sbTween = {
         // v.scaleX/v.scaleY undefined, which PIXI's scale.set() silently
         // treated as 0, collapsing the sprite's scale to nothing the instant
         // any non-looping tween finished.
-        this._applyFrame(handle, {
+        this._applyFrame(channels, handle, {
           angle: last.angle,
           scaleX: last.scalex,
           scaleY: last.scaley,
@@ -62,7 +81,7 @@ const _sbTween = {
 
       // Keyframe's softBASIC fields scaleX/scaleY compile to lowercase
       // scalex/scaley -- read those, not the camelCase names.
-      this._applyFrame(handle, {
+      this._applyFrame(channels, handle, {
         angle: a.angle + (b.angle - a.angle) * f,
         scaleX: a.scalex + (b.scalex - a.scalex) * f,
         scaleY: a.scaley + (b.scaley - a.scaley) * f,
@@ -73,10 +92,15 @@ const _sbTween = {
     }
   },
 
-  _applyFrame(handle, v) {
-    handle.angle = v.angle;
-    handle.scale.set(v.scaleX, v.scaleY);
-    handle.alpha = v.alpha;
-    handle.position.set(v.x, v.y);
+  // Only writes a channel to the handle if `channels` says this tween
+  // actually controls it -- see the comment in tweenPlay. Position (x/y) is
+  // written together since Keyframe only exposes a combined setPosition,
+  // never independent setX/setY.
+  _applyFrame(channels, handle, v) {
+    if (channels.angle) handle.angle = v.angle;
+    if (channels.scaleX) handle.scale.x = v.scaleX;
+    if (channels.scaleY) handle.scale.y = v.scaleY;
+    if (channels.alpha) handle.alpha = v.alpha;
+    if (channels.position) handle.position.set(v.x, v.y);
   },
 };
