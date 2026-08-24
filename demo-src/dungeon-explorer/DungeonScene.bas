@@ -64,7 +64,7 @@ function onenter()
 endfunction
 
 function openBossDoor()
-  ' Swaps the boss room's closed-door pair (tile ids 47/48 on the "floor"
+  ' Swaps the boss room's closed-door pair (tile ids 47/48 on the "walls"
   ' layer, at row 11, cols 36-37) for their open counterparts (23/24) the
   ' instant the key is collected, and clears their collision so the player
   ' can actually walk through. Runs once here, at the moment of pickup,
@@ -72,10 +72,19 @@ function openBossDoor()
   ' recreates a PIXI sprite each call, which would be wasteful (and pointless,
   ' since the result is identical) to repeat 60 times a second for the rest
   ' of the level.
-  dim floorLayer as TileMapLayer
-  floorLayer = self.tilemapset.layer("floor")
-  floorLayer.setTile(576, 176, 23)
-  floorLayer.setTile(592, 176, 24)
+  '
+  ' The door tiles live on "walls", not "floor" -- an earlier version painted
+  ' them on "floor" with a solid wall tile left in place on "walls" right on
+  ' top of them, which rendered fine in the Tile Map Editor (a non-active
+  ' layer draws at 35% opacity there, so the door art showed faintly through)
+  ' but was fully hidden in the actual game, where every layer draws at full
+  ' opacity in file order and "walls" draws over "floor". Moving the door
+  ' tiles onto "walls" itself removes the overlap instead of working around
+  ' it.
+  dim wallsLayer as TileMapLayer
+  wallsLayer = self.tilemapset.layer("walls")
+  wallsLayer.setTile(576, 176, 23)
+  wallsLayer.setTile(592, 176, 24)
   collision.setTileSolid(576, 176, false)
   collision.setTileSolid(592, 176, false)
 endfunction
