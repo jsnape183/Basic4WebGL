@@ -62,13 +62,17 @@ endfunction
 
 ## onupdate(delta)
 
-Called every frame. `delta` is the elapsed time in milliseconds since the last frame.
+Called every simulation step — a steady 60 steps per second — with `delta` as the elapsed time in milliseconds for that step.
 
 ```bas
 function onupdate(delta)
   x = x + speed * delta
 endfunction
 ```
+
+Keep writing movement in terms of `delta` exactly as before. The game runs its simulation at a steady rate no matter how fast or slow the screen happens to be drawing, and draws moving objects at a blended in-between position, so motion stays smooth even when a frame takes longer than usual.
+
+Because the simulation and the screen are independent, `onupdate` may occasionally run twice before one frame is drawn, or not at all. Over any stretch of real time the totals still match, which is why scaling by `delta` remains the right way to move things.
 
 ## onkeydown(key) — optional
 
