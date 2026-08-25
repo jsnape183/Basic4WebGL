@@ -277,3 +277,51 @@ describe('emitterStart / emitterStop / continuous spawning', () => {
     expect(handle.particles).toHaveLength(3); // 10 * 0.3 = 3.0 accumulated total
   });
 });
+
+describe('spawn shapes', () => {
+  test('default (point) spawns exactly at the emitter position', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterPosition(handle, 50, 60);
+    particles.emitterBurst(handle, 1);
+    expect(handle.particles[0].x).toBe(50);
+    expect(handle.particles[0].y).toBe(60);
+  });
+
+  test('setEmitterSpawnCircle spawns within the given radius of the emitter position', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterPosition(handle, 100, 100);
+    particles.setEmitterSpawnCircle(handle, 10);
+    particles.emitterBurst(handle, 50);
+    for (const p of handle.particles) {
+      const dist = Math.hypot(p.x - 100, p.y - 100);
+      expect(dist).toBeLessThanOrEqual(10 + 1e-9);
+    }
+  });
+
+  test('setEmitterSpawnBoxShape spawns within the given box centered on the emitter position', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterPosition(handle, 100, 100);
+    particles.setEmitterSpawnBoxShape(handle, 20, 10);
+    particles.emitterBurst(handle, 50);
+    for (const p of handle.particles) {
+      expect(p.x).toBeGreaterThanOrEqual(90);
+      expect(p.x).toBeLessThanOrEqual(110);
+      expect(p.y).toBeGreaterThanOrEqual(95);
+      expect(p.y).toBeLessThanOrEqual(105);
+    }
+  });
+
+  test('setEmitterSpawnPoint reverts to spawning exactly at the emitter position', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterPosition(handle, 5, 5);
+    particles.setEmitterSpawnCircle(handle, 10);
+    particles.setEmitterSpawnPoint(handle);
+    particles.emitterBurst(handle, 1);
+    expect(handle.particles[0].x).toBe(5);
+    expect(handle.particles[0].y).toBe(5);
+  });
+});

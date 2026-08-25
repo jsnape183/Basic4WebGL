@@ -130,6 +130,34 @@ const _sbParticles = {
     state.maxParticles = Number(n);
   },
 
+  setEmitterPosition(handle, x, y) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.x = Number(x);
+    state.y = Number(y);
+  },
+
+  setEmitterSpawnPoint(handle) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawnShape = 'point';
+  },
+
+  setEmitterSpawnCircle(handle, radius) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawnShape = 'circle';
+    state.spawnRadius = Number(radius);
+  },
+
+  setEmitterSpawnBoxShape(handle, width, height) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawnShape = 'box';
+    state.spawnBoxW = Number(width);
+    state.spawnBoxH = Number(height);
+  },
+
   emitterStart(handle) {
     const state = this._emitters.get(handle);
     if (!state) return;
