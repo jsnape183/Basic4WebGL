@@ -205,3 +205,61 @@ describe('_particlesUpdate — property interpolation over life', () => {
     expect(handle.particles[0].tint).toBe(0xffffff);
   });
 });
+
+describe('emitterStart / emitterStop / continuous spawning', () => {
+  test('a fresh emitter does not spawn on its own', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 10);
+    particles._particlesUpdate(1000);
+    expect(handle.particles).toHaveLength(0);
+  });
+
+  test('start() begins spawning at the configured rate', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 10); // 10/sec
+    particles.setEmitterLifetime(handle, 100, 100); // effectively immortal for this test
+    particles.emitterStart(handle);
+
+    particles._particlesUpdate(1000); // 1 full second
+    expect(handle.particles).toHaveLength(10);
+  });
+
+  test('stop() halts new spawns but leaves existing particles alone', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 10);
+    particles.setEmitterLifetime(handle, 100, 100);
+    particles.emitterStart(handle);
+    particles._particlesUpdate(500); // 5 particles
+
+    particles.emitterStop(handle);
+    particles._particlesUpdate(500); // would have been 5 more
+
+    expect(handle.particles).toHaveLength(5);
+  });
+
+  test('spawning respects maxParticles even while continuously spawning', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 100);
+    particles.setEmitterLifetime(handle, 100, 100);
+    particles.setEmitterMaxParticles(handle, 3);
+    particles.emitterStart(handle);
+
+    particles._particlesUpdate(1000);
+    expect(handle.particles).toHaveLength(3);
+  });
+
+  test('burst still works independently while an emitter is continuously running', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 0); // no continuous spawning
+    particles.setEmitterLifetime(handle, 100, 100);
+    particles.emitterStart(handle);
+    particles.emitterBurst(handle, 4);
+    particles._particlesUpdate(1000);
+    expect(handle.particles).toHaveLength(4); // only the burst, spawnRate is 0
+  });
+});

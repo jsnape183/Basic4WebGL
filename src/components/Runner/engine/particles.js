@@ -118,6 +118,30 @@ const _sbParticles = {
     state.colorEnd = Number(endColor);
   },
 
+  setEmitterSpawnRate(handle, perSecond) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawnRate = Number(perSecond);
+  },
+
+  setEmitterMaxParticles(handle, n) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.maxParticles = Number(n);
+  },
+
+  emitterStart(handle) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawning = true;
+  },
+
+  emitterStop(handle) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.spawning = false;
+  },
+
   // Linearly interpolates one 0xRRGGBB color toward another by `t` (0..1),
   // channel-wise. Shared by _particlesUpdate; not exposed to softBASIC.
   _lerpColor(start, end, t) {
@@ -138,6 +162,14 @@ const _sbParticles = {
     if (this._emitters.size === 0) return;
     const dt = delta / 1000;
     for (const [handle, state] of this._emitters) {
+      if (state.spawning && state.spawnRate > 0) {
+        state.spawnAccumulator += state.spawnRate * dt;
+        while (state.spawnAccumulator >= 1) {
+          this._spawnOne(handle, state);
+          state.spawnAccumulator -= 1;
+        }
+      }
+
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
         p.age += dt;
