@@ -45,6 +45,7 @@ function takeDamage(amount)
   if self.invincibleTime <= 0 then
     self.hp = self.hp - amount
     self.invincibleTime = 0.5
+    particles.burstPlayerHit(self.transform.x(), self.transform.y())
   endif
 endfunction
 
