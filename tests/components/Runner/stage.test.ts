@@ -26,6 +26,7 @@ const ENGINE_MODULES = [
   'pathfinding',
   'tween',
   'attach',
+  'particles',
   'scene',
   'camera',
   'frameloop',

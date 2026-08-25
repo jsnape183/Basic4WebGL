@@ -17,6 +17,7 @@ function loadScene() {
   scene._cameraUpdate = vi.fn();
   scene._pathfindingUpdate = vi.fn();
   scene._tweenUpdate = vi.fn();
+  scene._particlesUpdate = vi.fn();
   scene._resetFrameInput = vi.fn();
   return scene;
 }
@@ -39,6 +40,17 @@ describe('_sbScene._fixedStep — tween animation wiring', () => {
     scene._fixedStep(16.67);
 
     expect(scene._tweenUpdate).toHaveBeenCalledWith(16.67);
+    expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
+  });
+});
+
+describe('_sbScene._fixedStep — particles wiring', () => {
+  test('calls _particlesUpdate(delta) every frame, alongside _cameraUpdate', () => {
+    const scene = loadScene();
+
+    scene._fixedStep(16.67);
+
+    expect(scene._particlesUpdate).toHaveBeenCalledWith(16.67);
     expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
   });
 });

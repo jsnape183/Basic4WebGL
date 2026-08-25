@@ -51,6 +51,7 @@ const _sbScene = {
     this._cameraUpdate(delta);
     this._pathfindingUpdate(delta);
     this._tweenUpdate(delta);
+    this._particlesUpdate(delta);
     this._resetFrameInput();
   },
 };

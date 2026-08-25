@@ -14,6 +14,7 @@ import sbCollision from './engine/collision.js?raw';
 import sbPathfinding from './engine/pathfinding.js?raw';
 import sbTween from './engine/tween.js?raw';
 import sbAttach from './engine/attach.js?raw';
+import sbParticles from './engine/particles.js?raw';
 import sbScene from './engine/scene.js?raw';
 import sbCamera from './engine/camera.js?raw';
 import sbFrameLoop from './engine/frameloop.js?raw';
@@ -46,7 +47,7 @@ const Runner = React.forwardRef<HTMLIFrameElement, RunnerProps>(({
         srcDoc={bootstrapper
           .replace(
             '//${softBasicGFX}',
-            [sbLifecycle, sbInput, sbAssets, sbFile, sbSave, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, sbPathfinding, sbTween, sbAttach, sbScene, sbCamera, sbFrameLoop, softBasicEngine].join('\n')
+            [sbLifecycle, sbInput, sbAssets, sbFile, sbSave, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, sbPathfinding, sbTween, sbAttach, sbParticles, sbScene, sbCamera, sbFrameLoop, softBasicEngine].join('\n')
           )
           .replace('//${transpiled}', transpiled)
           .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)
