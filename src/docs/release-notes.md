@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.6.17 — 2026-08-25
+
+### Fixes
+
+- The editor's live diagnostics/autocomplete rebuild was being torn down and recreated on every re-render of the edit page — cursor moves, tab switches, any unrelated Redux update — not just on real source edits, which could delay diagnostics updates well past the intended debounce window. It's now only rebuilt when the project's files or packages actually change
+
 ## v0.6.16 — 2026-08-24
 
 ### New: fixed-timestep simulation with interpolated rendering
