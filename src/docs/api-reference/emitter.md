@@ -121,7 +121,7 @@ spark.setAlphaOverLife(1, 0)
 
 ## setColorOverLife(startColor, endColor)
 
-Sets how a particle's color tint changes across its life, from `startColor` when it spawns to `endColor` right before it disappears. Colors are numbers in the form `0xRRGGBB` — for example, `0xFF0000` is red.
+Sets how a particle's color tint changes across its life, from `startColor` when it spawns to `endColor` right before it disappears. Colors are numbers combining red, green, and blue (0-255 each) into one value: `red * 65536 + green * 256 + blue`. For example, pure red (255, 0, 0) is `16711680`.
 
 | Parameter  | Type   | Description |
 |------------|--------|-------------|
@@ -129,8 +129,8 @@ Sets how a particle's color tint changes across its life, from `startColor` when
 | endColor   | number | Tint color right before the particle disappears |
 
 ```bas
-' Fire-like sparks: starts yellow-white, cools to red
-spark.setColorOverLife(0xFFFF88, 0xFF3300)
+' Fire-like sparks: starts yellow-white (255, 255, 136), cools to red-orange (255, 51, 0)
+spark.setColorOverLife(16777096, 16724736)
 ```
 
 ## setSpawnPoint()
