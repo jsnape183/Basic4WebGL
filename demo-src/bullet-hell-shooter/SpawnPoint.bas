@@ -40,6 +40,7 @@ function hit(damage)
     if self.hp <= 0 then
       self.destroyed = true
       self.setTexture("spawnpoint_destroyed.png")
+      particles.burstSpawnDestroyed(self.transform.x(), self.transform.y())
     endif
   endif
 endfunction
