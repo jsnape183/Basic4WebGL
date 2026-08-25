@@ -210,6 +210,8 @@ Makes this emitter follow another sprite's position automatically, like a smoke 
 |-----------|--------|-------------|
 | parent    | object | The sprite (or `animatedsprite`) to attach to. |
 
+If you remove an attached emitter from the world with `world.remove()`, call `detach()` first — otherwise it stops updating but stays visually attached to its (still-alive) parent instead of being cleaned up.
+
 ```bas
 dim trail as Emitter("smoke.png")
 

@@ -72,6 +72,14 @@ describe('emitterBurst', () => {
     const particles = loadParticles();
     expect(() => particles.emitterBurst({}, 5)).not.toThrow();
   });
+
+  test('a single burst larger than maxParticles is capped', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterMaxParticles(handle, 3);
+    particles.emitterBurst(handle, 10);
+    expect(handle.particles).toHaveLength(3);
+  });
 });
 
 describe('_particlesUpdate — aging and movement', () => {
