@@ -41,6 +41,7 @@ function hit(damage)
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true
+      particles.burstMobDeath(self.transform.x(), self.transform.y())
       world.remove(self)
     endif
   endif
