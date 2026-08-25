@@ -369,4 +369,46 @@ describe('TileMapEditor — collision layers', () => {
     expect(decoded.layers.background).toEqual([[1, 1], [1, 1]]);
     expect(decoded.layers.foreground).toEqual([[0, 0], [0, 0]]);
   });
+
+  test('switching to a collision layer shows the solid/not-solid picker instead of the tile palette', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+    expect(screen.getByLabelText('Not Solid')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tile 1')).not.toBeInTheDocument();
+  });
+
+  test('switching back to a tile layer shows the tile palette again', async () => {
+    renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+    await userEvent.click(screen.getByText('background'));
+    expect(screen.getByLabelText('Eraser')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Not Solid')).not.toBeInTheDocument();
+  });
+
+  test('painting defaults to Solid, matching prior behavior', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+    expect(screen.getByLabelText('Solid')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.collision3).toEqual({ type: 'collision', data: [[0, 1], [0, 0]] });
+  });
+
+  test('selecting Not Solid clears an already-solid cell', async () => {
+    const { store } = renderEditor();
+    await userEvent.click(screen.getByLabelText('Add collision layer'));
+    await userEvent.click(screen.getByText('collision3'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1')); // solid by default
+
+    await userEvent.click(screen.getByLabelText('Not Solid'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1')); // now clears it
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = decodeContent(store.getState().assets.byId['m1'].content);
+    expect(decoded.layers.collision3).toEqual({ type: 'collision', data: [[0, 0], [0, 0]] });
+  });
 });

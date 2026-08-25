@@ -10,6 +10,7 @@ import TileMapCanvas from './Canvas';
 import MarkerCanvas from './MarkerCanvas';
 import CollisionCanvas from './CollisionCanvas';
 import TagPicker from './TagPicker';
+import CollisionPicker from './CollisionPicker';
 import LayersPanel from './LayersPanel';
 import { StmDoc, EditorLayer, MarkerEntry } from './types';
 
@@ -93,6 +94,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  // 1 (solid) by default, matching this layer kind's original always-solid
+  // painting behavior before Not Solid existed as an option.
+  const [selectedCollisionValue, setSelectedCollisionValue] = useState<number>(1);
   const [isDirty, setIsDirty] = useState(false);
   const [hiddenLayerKeys, setHiddenLayerKeys] = useState<Set<string>>(() => new Set());
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
@@ -150,7 +154,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         ...prev,
         layers: prev.layers.map((l, i) => {
           if (i !== activeIndex || l.kind !== 'collision') return l;
-          return { ...l, data: setGridCell(l.data, row, col, 1) };
+          return { ...l, data: setGridCell(l.data, row, col, selectedCollisionValue) };
         }),
       }));
     } else {
@@ -329,6 +333,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         <div className="h-40 flex-shrink-0 border-t border-ds-border">
           {activeLayer?.kind === 'marker' ? (
             <TagPicker tags={markerTags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
+          ) : activeLayer?.kind === 'collision' ? (
+            <CollisionPicker selectedValue={selectedCollisionValue} onSelectValue={setSelectedCollisionValue} />
           ) : (
             <Palette slices={slices} selectedTile={selectedTile} onSelectTile={setSelectedTile} />
           )}
