@@ -97,6 +97,38 @@ const _sbParticles = {
     state.gravityY = Number(y);
   },
 
+  setEmitterScaleOverLife(handle, start, end) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.scaleStart = Number(start);
+    state.scaleEnd = Number(end);
+  },
+
+  setEmitterAlphaOverLife(handle, start, end) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.alphaStart = Number(start);
+    state.alphaEnd = Number(end);
+  },
+
+  setEmitterColorOverLife(handle, startColor, endColor) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.colorStart = Number(startColor);
+    state.colorEnd = Number(endColor);
+  },
+
+  // Linearly interpolates one 0xRRGGBB color toward another by `t` (0..1),
+  // channel-wise. Shared by _particlesUpdate; not exposed to softBASIC.
+  _lerpColor(start, end, t) {
+    const sr = (start >> 16) & 0xff, sg = (start >> 8) & 0xff, sb = start & 0xff;
+    const er = (end >> 16) & 0xff, eg = (end >> 8) & 0xff, eb = end & 0xff;
+    const r = Math.round(sr + (er - sr) * t);
+    const g = Math.round(sg + (eg - sg) * t);
+    const b = Math.round(sb + (eb - sb) * t);
+    return (r << 16) | (g << 8) | b;
+  },
+
   // Called once per fixed simulation step (see Task 5 for the _fixedStep
   // wiring). Ages every particle across every emitter, integrates velocity
   // (gravity first, then position), and removes anything past its lifetime.
@@ -118,6 +150,13 @@ const _sbParticles = {
         p.vy += state.gravityY * dt;
         p.particle.x += p.vx * dt;
         p.particle.y += p.vy * dt;
+
+        const t = p.age / p.lifetime;
+        const scale = state.scaleStart + (state.scaleEnd - state.scaleStart) * t;
+        p.particle.scaleX = scale;
+        p.particle.scaleY = scale;
+        p.particle.alpha = state.alphaStart + (state.alphaEnd - state.alphaStart) * t;
+        p.particle.tint = this._lerpColor(state.colorStart, state.colorEnd, t);
       }
     }
   },

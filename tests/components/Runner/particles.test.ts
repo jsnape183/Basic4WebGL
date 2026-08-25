@@ -136,3 +136,72 @@ describe('_particlesUpdate — aging and movement', () => {
     expect(b.particles[0].x).toBeCloseTo(0);
   });
 });
+
+describe('_particlesUpdate — property interpolation over life', () => {
+  test('alpha defaults to fading from 1 to 0 across a particle life', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 1, 1);
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(500); // halfway through its 1s life
+    expect(handle.particles[0].alpha).toBeCloseTo(0.5);
+  });
+
+  test('setEmitterAlphaOverLife overrides the default fade', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 1, 1);
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.setEmitterAlphaOverLife(handle, 0, 1); // fade IN instead
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(500);
+    expect(handle.particles[0].alpha).toBeCloseTo(0.5);
+    particles._particlesUpdate(499); // just under its full lifetime
+    expect(handle.particles[0].alpha).toBeCloseTo(0.999, 2);
+  });
+
+  test('setEmitterScaleOverLife interpolates scaleX/scaleY together', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 1, 1);
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.setEmitterScaleOverLife(handle, 1, 0.2);
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(500);
+    expect(handle.particles[0].scaleX).toBeCloseTo(0.6);
+    expect(handle.particles[0].scaleY).toBeCloseTo(0.6);
+  });
+
+  test('setEmitterColorOverLife interpolates tint channel-wise', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 1, 1);
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.setEmitterColorOverLife(handle, 0xff0000, 0x0000ff); // red -> blue
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(500); // halfway
+    // Halfway between pure red (0xff0000) and pure blue (0x0000ff) is
+    // roughly a 50/50 mix on each channel: ~0x800080.
+    const tint = handle.particles[0].tint;
+    const r = (tint >> 16) & 0xff;
+    const g = (tint >> 8) & 0xff;
+    const b = tint & 0xff;
+    expect(r).toBeCloseTo(128, -1);
+    expect(g).toBe(0);
+    expect(b).toBeCloseTo(128, -1);
+  });
+
+  test('default color-over-life (white to white) leaves tint unchanged', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.emitterBurst(handle, 1);
+    particles._particlesUpdate(500);
+    expect(handle.particles[0].tint).toBe(0xffffff);
+  });
+});
