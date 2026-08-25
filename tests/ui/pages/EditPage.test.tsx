@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { render, act, screen } from '@testing-library/react';
+import { render, act, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -195,4 +195,120 @@ test('opening a non-tilemap asset does not stop a running preview', async () => 
   await user.dblClick(screen.getByText('hero.png'));
 
   expect(store.getState().session.isRunning).toBe(true);
+});
+
+const addDirtyTilemapProject = (projectId: string) => {
+  const store = makeStore(projectId);
+  store.dispatch(addFile({ id: 'file-main', name: 'Main', source: '', projectId }));
+  store.dispatch(selectFile({ projectId, fileId: 'file-main' }));
+  const stmDoc = { tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png', layers: { background: [[1, 1], [1, 1]] } };
+  const stmContent =
+    'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(stmDoc))));
+  store.dispatch(addAsset({
+    id: 'asset-level',
+    name: 'level.stm',
+    content: stmContent,
+    projectId,
+    folderId: null,
+    fullName: 'level.stm',
+  }));
+  return store;
+};
+
+test('switching to a file tab with unsaved tilemap changes prompts, and stays put if declined', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-6';
+  const store = addDirtyTilemapProject(projectId);
+  renderEditPage(projectId, store);
+
+  await user.dblClick(screen.getByText('level.stm'));
+  fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1')); // paints a cell, marks dirty
+
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await user.click(screen.getByRole('option', { name: /Main/ }));
+
+  expect(confirmSpy).toHaveBeenCalledWith('Discard unsaved changes?');
+  expect(screen.getByLabelText('Eraser')).toBeInTheDocument(); // still on the tilemap editor
+});
+
+test('switching to a file tab with unsaved tilemap changes proceeds if confirmed', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-7';
+  const store = addDirtyTilemapProject(projectId);
+  renderEditPage(projectId, store);
+
+  await user.dblClick(screen.getByText('level.stm'));
+  fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await user.click(screen.getByRole('option', { name: /Main/ }));
+
+  expect(screen.queryByLabelText('Eraser')).not.toBeInTheDocument();
+});
+
+test('switching to another asset tab with unsaved tilemap changes prompts first', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-8';
+  const store = addDirtyTilemapProject(projectId);
+  store.dispatch(addAsset({
+    id: 'asset-sprite',
+    name: 'hero.png',
+    content: 'data:image/png;base64,xxx',
+    projectId,
+    folderId: null,
+    fullName: 'hero.png',
+  }));
+  renderEditPage(projectId, store);
+
+  await user.dblClick(screen.getByText('level.stm'));
+  fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await user.dblClick(screen.getByText('hero.png'));
+
+  expect(confirmSpy).toHaveBeenCalledWith('Discard unsaved changes?');
+  expect(screen.getByLabelText('Eraser')).toBeInTheDocument(); // still the tilemap editor
+});
+
+test('clicking Export project with unsaved tilemap changes prompts before exporting', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-9';
+  const store = addDirtyTilemapProject(projectId);
+  renderEditPage(projectId, store);
+
+  await user.dblClick(screen.getByText('level.stm'));
+  fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await user.click(screen.getByLabelText('Export project'));
+
+  expect(confirmSpy).toHaveBeenCalled();
+});
+
+test('warns before the browser tab closes/navigates away while a tilemap has unsaved changes', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-10';
+  const store = addDirtyTilemapProject(projectId);
+  renderEditPage(projectId, store);
+
+  await user.dblClick(screen.getByText('level.stm'));
+  fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+  const event = new Event('beforeunload', { cancelable: true });
+  const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+  window.dispatchEvent(event);
+
+  expect(preventDefaultSpy).toHaveBeenCalled();
+});
+
+test('does not warn before unload when there are no unsaved tilemap changes', async () => {
+  const projectId = 'proj-11';
+  const store = makeStore(projectId);
+  renderEditPage(projectId, store);
+
+  const event = new Event('beforeunload', { cancelable: true });
+  const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+  window.dispatchEvent(event);
+
+  expect(preventDefaultSpy).not.toHaveBeenCalled();
 });

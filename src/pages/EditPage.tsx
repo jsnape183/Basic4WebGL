@@ -99,6 +99,22 @@ const EditPage: React.FC = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Regular file edits auto-save (see useAutoSave) and are never at risk on
+  // navigation, but an asset like a tilemap only persists on an explicit
+  // Save -- closing/refreshing the tab with a dirty one open would silently
+  // lose it, so warn the browser's own way (custom messages are ignored by
+  // modern browsers; setting returnValue/calling preventDefault is what
+  // actually triggers its native "leave site?" prompt).
+  useEffect(() => {
+    if (dirtyAssetIds.length === 0) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirtyAssetIds]);
+
   if (!project) {
     return (
       <div className="min-h-screen bg-ds-bg flex items-center justify-center text-ds-error text-sm">
@@ -113,9 +129,25 @@ const EditPage: React.FC = () => {
     }
   };
 
+  // Shared by every way of navigating away from the currently-open asset
+  // (switching to a file tab, switching to a different asset tab, or
+  // exporting the project) -- an asset like a tilemap only persists on an
+  // explicit Save, so anything that would abandon or bypass unsaved edits
+  // needs the same confirmation handleAssetTabClose already uses. Returns
+  // false (and leaves dirtyAssetIds untouched) if the user declines, so the
+  // caller can bail out before actually navigating away.
+  const confirmDiscardActiveAsset = (): boolean => {
+    if (activeAssetTabId && dirtyAssetIds.includes(activeAssetTabId)) {
+      if (!window.confirm('Discard unsaved changes?')) return false;
+      setDirtyAssetIds((prev) => prev.filter((entryId) => entryId !== activeAssetTabId));
+    }
+    return true;
+  };
+
   const handleJumpToLoc = (loc: SourceLocation) => {
     const target = files.find((f) => f.name === loc.filename);
     if (!target) return;
+    if (!confirmDiscardActiveAsset()) return;
     setActiveAssetTabId(null);
     dispatch(selectFile({ projectId: project.id, fileId: target.id }));
     setJumpTarget({ line: loc.line, col: loc.col });
@@ -134,6 +166,7 @@ const EditPage: React.FC = () => {
   };
 
   const handleTabSelect = (fileId: string) => {
+    if (!confirmDiscardActiveAsset()) return;
     setActiveAssetTabId(null);
     dispatch(selectFile({ projectId: project.id, fileId }));
   };
@@ -150,6 +183,8 @@ const EditPage: React.FC = () => {
   };
 
   const handleOpenAsset = (assetId: string) => {
+    if (assetId !== activeAssetTabId && !confirmDiscardActiveAsset()) return;
+
     // The running preview and the Tile Map Editor can both be looking at the
     // same tilemap asset at once -- collision/tile edits made while a game
     // built from stale data keeps running underneath are confusing at best,
@@ -165,6 +200,7 @@ const EditPage: React.FC = () => {
   };
 
   const handleAssetTabSelect = (assetId: string) => {
+    if (assetId !== activeAssetTabId && !confirmDiscardActiveAsset()) return;
     setActiveAssetTabId(assetId);
   };
 
@@ -270,7 +306,18 @@ const EditPage: React.FC = () => {
           id: 'export',
           icon: <ExportIcon />,
           ariaLabel: 'Export project',
-          onAction: () => dispatch(exportProject(project.id)),
+          onAction: () => {
+            // Export reads saved (Redux) content, not an asset's in-progress
+            // draft -- unlike navigating away, nothing here is discarded, so
+            // this warns without touching dirtyAssetIds; the tilemap editor
+            // still shows the same unsaved changes afterward either way.
+            if (dirtyAssetIds.length > 0 && !window.confirm(
+              "You have unsaved changes that won't be included in this export. Export anyway?"
+            )) {
+              return;
+            }
+            dispatch(exportProject(project.id));
+          },
         },
         {
           id: 'tilemap',
