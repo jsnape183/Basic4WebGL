@@ -162,6 +162,9 @@ const _sbParticles = {
     if (this._emitters.size === 0) return;
     const dt = delta / 1000;
     for (const [handle, state] of this._emitters) {
+      // Particles spawned here fall through to the aging loop below in this same
+      // call, so a particle born mid-frame is aged by the full frame's dt before
+      // ever being rendered (and can die same-frame if lifetime <= dt).
       if (state.spawning && state.spawnRate > 0) {
         state.spawnAccumulator += state.spawnRate * dt;
         while (state.spawnAccumulator >= 1) {

@@ -262,4 +262,18 @@ describe('emitterStart / emitterStop / continuous spawning', () => {
     particles._particlesUpdate(1000);
     expect(handle.particles).toHaveLength(4); // only the burst, spawnRate is 0
   });
+
+  test('spawn accumulator carries fractional remainder across many small update calls', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpawnRate(handle, 3); // 3/sec -> 0.3 accumulated per 100ms call
+    particles.setEmitterLifetime(handle, 100, 100); // nothing dies mid-test
+    particles.emitterStart(handle);
+
+    for (let i = 0; i < 10; i++) {
+      particles._particlesUpdate(100); // each call alone would round down to 0 spawns
+    }
+
+    expect(handle.particles).toHaveLength(3); // 10 * 0.3 = 3.0 accumulated total
+  });
 });
