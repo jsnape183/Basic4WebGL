@@ -56,6 +56,7 @@ function onupdate(delta)
   endif
 
   if self.level.tileAt("walls", x, y) <> 0 then
+    particles.burstBulletImpact(x, y)
     world.remove(self)
     return
   endif
@@ -64,6 +65,7 @@ function onupdate(delta)
     if not self.spawnPoints(i).destroyed then
       if collision.spriteCollide(self, self.spawnPoints(i)) then
         self.spawnPoints(i).hit(self.damage)
+        particles.burstBulletImpact(x, y)
         world.remove(self)
         return
       endif
@@ -74,6 +76,7 @@ function onupdate(delta)
     if not self.mobs(i).dead then
       if collision.spriteCollide(self, self.mobs(i)) then
         self.mobs(i).hit(self.damage)
+        particles.burstBulletImpact(x, y)
         world.remove(self)
         return
       endif
