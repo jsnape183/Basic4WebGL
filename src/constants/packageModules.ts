@@ -29,6 +29,7 @@ import world from '../lib/Basic4WebGL/defs/world.bas?raw';
 import hud from '../lib/Basic4WebGL/defs/hud.bas?raw';
 import Keyframe from '../lib/Basic4WebGL/defs/Keyframe.bas?raw';
 import tween from '../lib/Basic4WebGL/defs/tween.bas?raw';
+import Emitter from '../lib/Basic4WebGL/defs/Emitter.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -62,4 +63,5 @@ export const packageModules: Record<string, string> = {
   hud,
   Keyframe,
   tween,
+  Emitter,
 };
