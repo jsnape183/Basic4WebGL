@@ -55,7 +55,10 @@ const _sbParticles = {
     const dirRad = (dirDeg * Math.PI) / 180;
     const lifetime = state.lifetimeMin + Math.random() * (state.lifetimeMax - state.lifetimeMin);
 
-    const particle = new PIXI.Particle({ texture: state.texture, x: sx, y: sy });
+    // anchorX/anchorY default to 0 (top-left) in PIXI — center-anchor so
+    // setScaleOverLife shrinks/grows the particle around its spawn point
+    // instead of visually dragging it toward its top-left corner.
+    const particle = new PIXI.Particle({ texture: state.texture, x: sx, y: sy, anchorX: 0.5, anchorY: 0.5 });
     container.addParticle(particle);
     state.particles.push({
       particle,

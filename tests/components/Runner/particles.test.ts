@@ -9,11 +9,14 @@ import { describe, test, expect } from 'vitest';
 // tests/components/Runner/tilemap.test.ts's loadTilemapWithAssets pattern.
 class FakeParticle {
   x: number; y: number; scaleX: number; scaleY: number; rotation: number;
-  alpha: number; tint: number; texture: unknown;
-  constructor(opts: { texture: unknown; x: number; y: number }) {
+  alpha: number; tint: number; texture: unknown; anchorX: number; anchorY: number;
+  constructor(opts: { texture: unknown; x: number; y: number; anchorX?: number; anchorY?: number }) {
     this.texture = opts.texture;
     this.x = opts.x; this.y = opts.y;
     this.scaleX = 1; this.scaleY = 1; this.rotation = 0; this.alpha = 1; this.tint = 0xffffff;
+    // Real PIXI.Particle defaults anchorX/anchorY to 0 (top-left) unless set explicitly.
+    this.anchorX = opts.anchorX ?? 0;
+    this.anchorY = opts.anchorY ?? 0;
   }
 }
 class FakeParticleContainer {
@@ -71,6 +74,18 @@ describe('emitterBurst', () => {
   test('bursting on an unknown handle does nothing (no throw)', () => {
     const particles = loadParticles();
     expect(() => particles.emitterBurst({}, 5)).not.toThrow();
+  });
+
+  test('spawned particles are center-anchored, not top-left-anchored', () => {
+    // PIXI.Particle defaults anchorX/anchorY to 0 (top-left). Left at that
+    // default, setScaleOverLife shrinking a particle visually drags it toward
+    // its top-left corner instead of shrinking in place — reads as the
+    // particle "drifting" away from where it was spawned as it fades out.
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.emitterBurst(handle, 1);
+    expect(handle.particles[0].anchorX).toBe(0.5);
+    expect(handle.particles[0].anchorY).toBe(0.5);
   });
 
   test('a single burst larger than maxParticles is capped', () => {
