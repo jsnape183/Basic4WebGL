@@ -288,49 +288,56 @@ describe('emitterStart / emitterStop / continuous spawning', () => {
 });
 
 describe('spawn shapes', () => {
-  test('default (point) spawns exactly at the emitter position', () => {
+  // Particle x/y are LOCAL coordinates within the emitter's PIXI.ParticleContainer.
+  // PIXI composes container.position + child-local-position at render time, so a
+  // particle "at the emitter" must sit at local (0,0) — NOT at container.position.x/y.
+  // Setting it to container.position.x/y here would double-apply the offset once
+  // PIXI renders it (container.position + particle.local = 2x the intended spot).
+  // These tests deliberately set a non-zero container position specifically to catch
+  // that class of bug, since it's invisible when the container sits at the origin.
+  test('default (point) spawns at the container-local origin regardless of container position', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
     handle.position = { x: 50, y: 60 };
     particles.emitterBurst(handle, 1);
-    expect(handle.particles[0].x).toBe(50);
-    expect(handle.particles[0].y).toBe(60);
+    expect(handle.particles[0].x).toBe(0);
+    expect(handle.particles[0].y).toBe(0);
   });
 
-  test('setEmitterSpawnCircle spawns within the given radius of the emitter position', () => {
+  test('setEmitterSpawnCircle spawns within the given radius of the container-local origin', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
     handle.position = { x: 100, y: 100 };
     particles.setEmitterSpawnCircle(handle, 10);
     particles.emitterBurst(handle, 50);
     for (const p of handle.particles) {
-      const dist = Math.hypot(p.x - 100, p.y - 100);
+      const dist = Math.hypot(p.x, p.y);
       expect(dist).toBeLessThanOrEqual(10 + 1e-9);
     }
   });
 
-  test('setEmitterSpawnBoxShape spawns within the given box centered on the emitter position', () => {
+  test('setEmitterSpawnBoxShape spawns within the given box centered on the container-local origin', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
     handle.position = { x: 100, y: 100 };
     particles.setEmitterSpawnBoxShape(handle, 20, 10);
     particles.emitterBurst(handle, 50);
     for (const p of handle.particles) {
-      expect(p.x).toBeGreaterThanOrEqual(90);
-      expect(p.x).toBeLessThanOrEqual(110);
-      expect(p.y).toBeGreaterThanOrEqual(95);
-      expect(p.y).toBeLessThanOrEqual(105);
+      expect(p.x).toBeGreaterThanOrEqual(-10);
+      expect(p.x).toBeLessThanOrEqual(10);
+      expect(p.y).toBeGreaterThanOrEqual(-5);
+      expect(p.y).toBeLessThanOrEqual(5);
     }
   });
 
-  test('setEmitterSpawnPoint reverts to spawning exactly at the emitter position', () => {
+  test('setEmitterSpawnPoint reverts to spawning at the container-local origin', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
     handle.position = { x: 5, y: 5 };
     particles.setEmitterSpawnCircle(handle, 10);
     particles.setEmitterSpawnPoint(handle);
     particles.emitterBurst(handle, 1);
-    expect(handle.particles[0].x).toBe(5);
-    expect(handle.particles[0].y).toBe(5);
+    expect(handle.particles[0].x).toBe(0);
+    expect(handle.particles[0].y).toBe(0);
   });
 });

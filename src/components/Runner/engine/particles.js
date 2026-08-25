@@ -34,8 +34,12 @@ const _sbParticles = {
   _spawnOne(container, state) {
     if (state.particles.length >= state.maxParticles) return;
 
-    let sx = container.position.x;
-    let sy = container.position.y;
+    // Particle x/y are LOCAL to `container` — PIXI composes container.position
+    // with each child's local position at render time, so the container's own
+    // position must NOT be added in here too. The container's position (set via
+    // the emitter's transform) already places local (0,0) at the right world spot.
+    let sx = 0;
+    let sy = 0;
     if (state.spawnShape === 'circle' && state.spawnRadius > 0) {
       const angle = Math.random() * Math.PI * 2;
       const r = Math.random() * state.spawnRadius;
