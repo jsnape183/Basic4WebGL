@@ -12,11 +12,13 @@ Mobs are **pathfinding-driven**: each level calls `pathfinding.setup(tilemapset,
 
 The player aims with the mouse — `math.atan2` between the player's world position and the mouse's world position (`input.mouseX() / camera.zoom() + camera.x()`, accounting for both camera scroll and zoom) gives the aim angle, which also drives the sprite's rotation via `setAngle()`. Firing (left click or spacebar) is gated by a per-weapon cooldown. There are three weapons, picked up via `WeaponPickup` markers: **pistol** (moderate rate, single shot), **shotgun** (slow rate, five-bullet spread fired in a fan), and **SMG** (fast rate, single shot). Each spawned `Bullet` carries its own damage, speed, and lifetime based on which weapon fired it, and despawns on hitting a wall, a spawn point, a mob, or timing out.
 
+Particle effects (built on the `Emitter` class) fire at four moments — a mob dying, a spawn point being destroyed, a bullet hitting something, and the player taking damage — via a small shared-emitter module, **`Particles.bas`**, called from each level's `onenter()` and from the relevant hit/death/damage branch in `Mob`, `SpawnPoint`, `Bullet`, and `Player`. Each effect reuses one persistent `Emitter` per type rather than creating a new one per event, since `Emitter` has no destroy method and mob deaths happen constantly over a play session.
+
 The HUD (health bar, current weapon, spawns remaining, level timer) is built from `sprite` and `text` instances added with `hud.add()` — deliberately not `drawing`, which draws into camera-relative world space and would scroll off screen as the player moves. Each level tracks its own clear time in a shared `GameData` module; on reaching `WinScene`, the three times are summed and compared against a **personal best** persisted with `save.set(...)`, so it survives a page reload. Taking damage down to zero HP at any point switches to `GameOverScene`, which resets the level times and sends the player back to level 1.
 
 A couple of engine quirks were found during development and have since been fixed at the source rather than worked around: typed Constructor parameters and Constructor-scope locals now compile to correct JavaScript, and `Main.bas`/`TitleScene.bas` show the right way to set module-level state from `oninit()` — see the code comments in `Main.bas`/`TitleScene.bas` below for that last one.
 
-**Key techniques:** `pathfinding.navigateTo` for obstacle-avoiding enemy movement, `tileMapSet.markersByTag` for visually-authored spawn/pickup placement, per-weapon `Bullet` parameterization, HUD built from `sprite`/`text` instances added via `hud.add()`.
+**Key techniques:** `pathfinding.navigateTo` for obstacle-avoiding enemy movement, `tileMapSet.markersByTag` for visually-authored spawn/pickup placement, per-weapon `Bullet` parameterization, HUD built from `sprite`/`text` instances added via `hud.add()`, shared/reused `Emitter` instances for hit/death particle effects.
 
 ---
 
@@ -30,6 +32,7 @@ A couple of engine quirks were found during development and have since been fixe
 | `spawnpoint_destroyed.png` | 16×16 sprite |
 | `pickup.png` | 16×8 sprite |
 | `bullet.png` | 4×4 sprite |
+| `particle.png` | 16×16 soft-edged white dot, tinted per-effect via `setColorOverLife` |
 | `healthbar_bg.png` | HUD health bar background |
 | `healthbar_fill.png` | HUD health bar fill (scaled by current HP) |
 | `tilesheet.png` | Kenney tileset used for level geometry |
@@ -176,6 +179,7 @@ function takeDamage(amount)
   if self.invincibleTime <= 0 then
     self.hp = self.hp - amount
     self.invincibleTime = 0.5
+    particles.burstPlayerHit(self.transform.x(), self.transform.y())
   endif
 endfunction
 
@@ -220,8 +224,8 @@ function onupdate(delta)
   dim y
   dim moveX
   dim moveY
-  dim newX
-  dim newY
+  dim nx
+  dim ny
   dim mouseWorldX
   dim mouseWorldY
   dim aimAngle
@@ -248,20 +252,9 @@ function onupdate(delta)
     moveX = 1
   endif
 
-  if moveX <> 0 then
-    newX = x + moveX * 150 * dt
-    if self.level.tileAt("walls", newX, y) = 0 then
-      x = newX
-    endif
-  endif
-  if moveY <> 0 then
-    newY = y + moveY * 150 * dt
-    if self.level.tileAt("walls", x, newY) = 0 then
-      y = newY
-    endif
-  endif
-
-  self.transform.setPosition(x, y)
+  nx = math.normalizeX(moveX, moveY)
+  ny = math.normalizeY(moveX, moveY)
+  self.setVelocity(nx * 150, ny * 150)
 
   mouseWorldX = input.mouseX() / camera.zoom() + camera.x()
   mouseWorldY = input.mouseY() / camera.zoom() + camera.y()
@@ -363,6 +356,7 @@ function hit(damage)
     self.hp = self.hp - damage
     if self.hp <= 0 then
       self.dead = true
+      particles.burstMobDeath(self.transform.x(), self.transform.y())
       world.remove(self)
     endif
   endif
@@ -416,6 +410,7 @@ function hit(damage)
     if self.hp <= 0 then
       self.destroyed = true
       self.setTexture("spawnpoint_destroyed.png")
+      particles.burstSpawnDestroyed(self.transform.x(), self.transform.y())
     endif
   endif
 endfunction
@@ -484,6 +479,7 @@ function onupdate(delta)
   endif
 
   if self.level.tileAt("walls", x, y) <> 0 then
+    particles.burstBulletImpact(x, y)
     world.remove(self)
     return
   endif
@@ -492,6 +488,7 @@ function onupdate(delta)
     if not self.spawnPoints(i).destroyed then
       if collision.spriteCollide(self, self.spawnPoints(i)) then
         self.spawnPoints(i).hit(self.damage)
+        particles.burstBulletImpact(x, y)
         world.remove(self)
         return
       endif
@@ -502,6 +499,7 @@ function onupdate(delta)
     if not self.mobs(i).dead then
       if collision.spriteCollide(self, self.mobs(i)) then
         self.mobs(i).hit(self.damage)
+        particles.burstBulletImpact(x, y)
         world.remove(self)
         return
       endif
@@ -598,6 +596,80 @@ function formatTime(totalSeconds)
 endfunction
 ```
 
+## Particles.bas
+
+```bas
+' demo-src/bullet-hell-shooter/Particles.bas
+dim mobDeathEmitter as Emitter
+dim spawnDestroyedEmitter as Emitter
+dim bulletImpactEmitter as Emitter
+dim playerHitEmitter as Emitter
+
+function setup()
+  mobDeathEmitter = new Emitter("particle.png")
+  mobDeathEmitter.setLifetime(0.4, 0.4)
+  mobDeathEmitter.setSpeed(40, 90)
+  mobDeathEmitter.setDirection(0, 360)
+  mobDeathEmitter.setGravity(0, 120)
+  mobDeathEmitter.setScaleOverLife(1, 0.2)
+  mobDeathEmitter.setAlphaOverLife(1, 0)
+  mobDeathEmitter.setColorOverLife(16729156, 9109504)
+  mobDeathEmitter.setMaxParticles(80)
+  world.add(mobDeathEmitter)
+
+  spawnDestroyedEmitter = new Emitter("particle.png")
+  spawnDestroyedEmitter.setLifetime(0.6, 0.6)
+  spawnDestroyedEmitter.setSpeed(60, 140)
+  spawnDestroyedEmitter.setDirection(0, 360)
+  spawnDestroyedEmitter.setGravity(0, 100)
+  spawnDestroyedEmitter.setScaleOverLife(1.4, 0.2)
+  spawnDestroyedEmitter.setAlphaOverLife(1, 0)
+  spawnDestroyedEmitter.setColorOverLife(16770650, 15093780)
+  spawnDestroyedEmitter.setMaxParticles(60)
+  world.add(spawnDestroyedEmitter)
+
+  bulletImpactEmitter = new Emitter("particle.png")
+  bulletImpactEmitter.setLifetime(0.2, 0.2)
+  bulletImpactEmitter.setSpeed(20, 50)
+  bulletImpactEmitter.setDirection(0, 360)
+  bulletImpactEmitter.setScaleOverLife(0.8, 0.1)
+  bulletImpactEmitter.setAlphaOverLife(1, 0)
+  bulletImpactEmitter.setColorOverLife(16777215, 9868950)
+  bulletImpactEmitter.setMaxParticles(150)
+  world.add(bulletImpactEmitter)
+
+  playerHitEmitter = new Emitter("particle.png")
+  playerHitEmitter.setLifetime(0.3, 0.3)
+  playerHitEmitter.setSpeed(30, 70)
+  playerHitEmitter.setDirection(0, 360)
+  playerHitEmitter.setScaleOverLife(1, 0.2)
+  playerHitEmitter.setAlphaOverLife(1, 0)
+  playerHitEmitter.setColorOverLife(16729156, 16729156)
+  playerHitEmitter.setMaxParticles(50)
+  world.add(playerHitEmitter)
+endfunction
+
+function burstMobDeath(x, y)
+  mobDeathEmitter.transform.setPosition(x, y)
+  mobDeathEmitter.burst(8)
+endfunction
+
+function burstSpawnDestroyed(x, y)
+  spawnDestroyedEmitter.transform.setPosition(x, y)
+  spawnDestroyedEmitter.burst(18)
+endfunction
+
+function burstBulletImpact(x, y)
+  bulletImpactEmitter.transform.setPosition(x, y)
+  bulletImpactEmitter.burst(4)
+endfunction
+
+function burstPlayerHit(x, y)
+  playerHitEmitter.transform.setPosition(x, y)
+  playerHitEmitter.burst(6)
+endfunction
+```
+
 ## TitleScene.bas
 
 ```bas
@@ -660,11 +732,14 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(0, 0)
+  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map1.stm")
   world.add(tm)
   self.tilemapset = tm
+
+  collision.setupTileCollision(tm)
 
   pathfinding.setup(tm, self.wallLayers())
 
@@ -689,7 +764,7 @@ endfunction
 
 function wallLayers()
   dim layers(0)
-  array.push(layers, "walls")
+  array.push(layers, "collision")
   return layers
 endfunction
 
@@ -793,11 +868,14 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(1, 0)
+  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map2.stm")
   world.add(tm)
   self.tilemapset = tm
+
+  collision.setupTileCollision(tm)
 
   pathfinding.setup(tm, self.wallLayers())
 
@@ -822,7 +900,7 @@ endfunction
 
 function wallLayers()
   dim layers(0)
-  array.push(layers, "walls")
+  array.push(layers, "collision")
   return layers
 endfunction
 
@@ -926,11 +1004,14 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(2, 0)
+  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map3.stm")
   world.add(tm)
   self.tilemapset = tm
+
+  collision.setupTileCollision(tm)
 
   pathfinding.setup(tm, self.wallLayers())
 
@@ -955,7 +1036,7 @@ endfunction
 
 function wallLayers()
   dim layers(0)
-  array.push(layers, "walls")
+  array.push(layers, "collision")
   return layers
 endfunction
 
