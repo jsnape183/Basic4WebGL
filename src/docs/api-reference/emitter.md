@@ -1,11 +1,14 @@
 # Emitter
 
-An `Emitter` produces a stream of small, short-lived visual particles — sparks from a hit, smoke trailing behind something moving, dust drifting near a torch, a burst when something explodes. Each particle moves on its own, fades or changes color over its short life, and disappears automatically.
+An `Emitter` produces a stream of small, short-lived visual particles — sparks from a hit, smoke trailing behind something moving, dust drifting near a torch, a burst when something explodes. Each particle moves on its own, fades or changes color over its short life, and disappears automatically. An emitter spawns particles in one of two ways: continuously, at a steady rate (`start()` + `setSpawnRate()`), or all at once (`burst()`).
 
 ## Constructor
 
+An `Emitter` must be added to the world with `world.add()` before it will spawn, render, or animate any particles — just like a `sprite`.
+
 ```bas
 dim spark as Emitter("spark.png")
+world.add(spark)
 ```
 
 | Parameter   | Type   | Description |
@@ -190,15 +193,22 @@ Spawns `count` particles immediately, once. Works regardless of whether the emit
 | count     | number | How many particles to spawn right now |
 
 ```bas
+dim spark as Emitter("spark.png")
+world.add(spark)
+
 function onEnemyHit()
   spark.transform.setPosition(enemy.transform.x(), enemy.transform.y())
   spark.burst(15)
 endfunction
 ```
 
-## attachTo(parent) / detach()
+## attachTo(parent)
 
-Works exactly like `sprite.attachTo`/`detach` (see the [sprite](sprite) docs) — the emitter follows the given sprite's position automatically, useful for a trail effect behind something moving. `detach()` stops following and returns it to spawning at a fixed position.
+Makes this emitter follow another sprite's position automatically, like a smoke trail behind something moving. Works exactly like `sprite.attachTo` (see the [sprite](sprite) docs) — once attached, the emitter's position is relative to the parent instead of the world.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| parent    | object | The sprite (or `animatedsprite`) to attach to. |
 
 ```bas
 dim trail as Emitter("smoke.png")
@@ -209,6 +219,14 @@ function onenter()
   trail.start()
   world.add(trail)
 endfunction
+```
+
+## detach()
+
+Stops this emitter from following whatever it was attached to with `attachTo`. It stays exactly where it was on screen at that moment; nothing resets. Calling `detach()` when the emitter isn't attached to anything does nothing.
+
+```bas
+trail.detach()
 ```
 
 ## transform
