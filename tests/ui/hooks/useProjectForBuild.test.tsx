@@ -61,6 +61,20 @@ test('softcore modules appear before softgfx modules in lib', () => {
   expect(mathIdx).toBeLessThan(gfxIdx);
 });
 
+test('returns referentially stable output across an unrelated re-render', () => {
+  const store = makeStore();
+  const { result, rerender } = renderHook(() => useProjectForBuild('p1'), {
+    wrapper: wrap(store),
+  });
+  const firstResult = result.current;
+
+  rerender();
+
+  expect(result.current).toBe(firstResult);
+  expect(result.current.lib).toBe(firstResult.lib);
+  expect(result.current.files).toBe(firstResult.files);
+});
+
 test('falls back to softcore + softgfx when project has no packageIds (migration)', () => {
   const store = configureStore({
     reducer: { projects: projectsReducer, packages: packagesReducer, files: filesReducer },

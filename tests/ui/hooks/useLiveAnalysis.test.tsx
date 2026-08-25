@@ -168,6 +168,8 @@ test('a symbol snapshot from a clean compile survives a subsequent failing compi
         fullName: 'Main.bas',
       })
     );
+  });
+  act(() => {
     vi.advanceTimersByTime(500);
   });
   rerender();

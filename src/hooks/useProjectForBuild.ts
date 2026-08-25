@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ProjectFile } from '../lib/CompilerLib/compiler/types';
@@ -23,23 +24,29 @@ export const useProjectForBuild = (projectId: string): BuildProject => {
 
   const files = useAllFilesForProject(projectId);
 
-  const lib: ProjectFile[] = packageIds.flatMap((pkgId) => {
-    const pkg = packagesById[pkgId];
-    if (!pkg) return [];
-    return pkg.moduleNames
-      .map((name) => ({ name, source: packageModules[name] ?? '' }))
-      .filter((m) => m.source !== '');
-  });
+  const packageIdsKey = packageIds.join(',');
+  const filesKey = files.map((f) => `${f.id}:${f.name}:${f.source}`).join(' ');
 
-  // Map IFile → ProjectFile. Use plain name (not fullName) so the lexer
-  // derives the correct class name — filenames are unique across the project
-  // regardless of folder, so there is no ambiguity in error reporting.
-  const projectFiles: ProjectFile[] = files.map((f) => ({
-    name: f.name,
-    source: f.source,
-  }));
+  return useMemo(() => {
+    const lib: ProjectFile[] = packageIds.flatMap((pkgId) => {
+      const pkg = packagesById[pkgId];
+      if (!pkg) return [];
+      return pkg.moduleNames
+        .map((name) => ({ name, source: packageModules[name] ?? '' }))
+        .filter((m) => m.source !== '');
+    });
 
-  const { files: sortedFiles, error: dependencyError } = sortByDependencies(projectFiles);
+    // Map IFile → ProjectFile. Use plain name (not fullName) so the lexer
+    // derives the correct class name — filenames are unique across the project
+    // regardless of folder, so there is no ambiguity in error reporting.
+    const projectFiles: ProjectFile[] = files.map((f) => ({
+      name: f.name,
+      source: f.source,
+    }));
 
-  return { lib, files: sortedFiles, dependencyError };
+    const { files: sortedFiles, error: dependencyError } = sortByDependencies(projectFiles);
+
+    return { lib, files: sortedFiles, dependencyError };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageIdsKey, filesKey, packagesById]);
 };
