@@ -21,6 +21,7 @@ import { exportProject } from '../features/projects/exportProject';
 import FileTabs from '../components/FileTabs';
 import BottomPanel from '../components/BottomPanel';
 import AssetPreview from '../components/AssetPreview';
+import { getAssetType } from '../components/AssetPreview/getAssetType';
 import TilemapChooserModal from '../components/TileMapEditor/TilemapChooserModal';
 
 const EnterFullscreenIcon = () => (
@@ -149,6 +150,14 @@ const EditPage: React.FC = () => {
   };
 
   const handleOpenAsset = (assetId: string) => {
+    // The running preview and the Tile Map Editor can both be looking at the
+    // same tilemap asset at once -- collision/tile edits made while a game
+    // built from stale data keeps running underneath are confusing at best,
+    // and the game just keeps ticking off-screen for no reason otherwise.
+    const asset = allAssetsById[assetId];
+    if (isRunning && asset && getAssetType(asset.name) === 'tilemap') {
+      stop();
+    }
     if (!openAssetTabs.some((t) => t.assetId === assetId)) {
       setOpenAssetTabs((prev) => [...prev, { assetId }]);
     }

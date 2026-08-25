@@ -248,13 +248,6 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
 
   return (
     <div className="flex h-full">
-      <div className="w-40 flex-shrink-0 border-r border-ds-border">
-        {activeLayer?.kind === 'marker' ? (
-          <TagPicker tags={markerTags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
-        ) : (
-          <Palette slices={slices} selectedTile={selectedTile} onSelectTile={setSelectedTile} />
-        )}
-      </div>
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center justify-between gap-2 p-2 border-b border-ds-border">
           <span className="text-xs text-ds-text-muted min-w-0">
@@ -332,6 +325,13 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
               );
             })}
           </div>
+        </div>
+        <div className="h-40 flex-shrink-0 border-t border-ds-border">
+          {activeLayer?.kind === 'marker' ? (
+            <TagPicker tags={markerTags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
+          ) : (
+            <Palette slices={slices} selectedTile={selectedTile} onSelectTile={setSelectedTile} />
+          )}
         </div>
       </div>
       <div className="w-48 flex-shrink-0 border-l border-ds-border">

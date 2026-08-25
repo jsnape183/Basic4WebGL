@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { vi, afterEach } from 'vitest';
-import sessionReducer, { addLog } from '../../../src/features/session/sessionSlice';
+import sessionReducer, { addLog, setIsRunning } from '../../../src/features/session/sessionSlice';
 import filesReducer, { addFile } from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
 import packagesReducer from '../../../src/features/packages/packagesSlice';
@@ -137,4 +137,62 @@ test('clicking a file in the file tree switches back to the code editor when an 
   // main pane back to the code editor, not leave the tilemap editor showing.
   await user.click(screen.getByRole('option', { name: /Main/ }));
   expect(screen.queryByLabelText('Eraser')).not.toBeInTheDocument();
+});
+
+test('opening a tilemap asset stops a running preview', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-4';
+  const store = makeStore(projectId);
+
+  const stmDoc = { tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png', layers: {} };
+  const stmContent =
+    'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(stmDoc))));
+  store.dispatch(addAsset({
+    id: 'asset-level',
+    name: 'level.stm',
+    content: stmContent,
+    projectId,
+    folderId: null,
+    fullName: 'level.stm',
+  }));
+
+  renderEditPage(projectId, store);
+
+  act(() => {
+    store.dispatch(setIsRunning(true));
+  });
+  expect(store.getState().session.isRunning).toBe(true);
+
+  // Opening the Tile Map Editor while a preview is running should stop it --
+  // the game running underneath while its own tilemap asset is being edited
+  // is confusing at best (stale collision/tile data) and wasteful at worst
+  // (the running game keeps ticking, off-screen, for no reason).
+  await user.dblClick(screen.getByText('level.stm'));
+
+  expect(store.getState().session.isRunning).toBe(false);
+});
+
+test('opening a non-tilemap asset does not stop a running preview', async () => {
+  const user = userEvent.setup();
+  const projectId = 'proj-5';
+  const store = makeStore(projectId);
+
+  store.dispatch(addAsset({
+    id: 'asset-sprite',
+    name: 'hero.png',
+    content: 'data:image/png;base64,xxx',
+    projectId,
+    folderId: null,
+    fullName: 'hero.png',
+  }));
+
+  renderEditPage(projectId, store);
+
+  act(() => {
+    store.dispatch(setIsRunning(true));
+  });
+
+  await user.dblClick(screen.getByText('hero.png'));
+
+  expect(store.getState().session.isRunning).toBe(true);
 });

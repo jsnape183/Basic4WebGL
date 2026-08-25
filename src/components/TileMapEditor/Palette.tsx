@@ -10,13 +10,13 @@ type Props = {
 
 const Palette: React.FC<Props> = ({ slices, selectedTile, onSelectTile }) => {
   return (
-    <div className="flex flex-col h-full p-2 gap-2 overflow-y-auto">
+    <div className="flex flex-row h-full p-2 gap-2 overflow-x-auto items-start">
       <button
         type="button"
         onClick={() => onSelectTile(null)}
         aria-label="Eraser"
         aria-pressed={selectedTile === null}
-        className={`text-xs px-2 py-1 rounded border ${
+        className={`flex-shrink-0 text-xs px-2 py-1 rounded border ${
           selectedTile === null
             ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
             : 'border-ds-border text-ds-text-muted hover:text-ds-text'
@@ -24,7 +24,10 @@ const Palette: React.FC<Props> = ({ slices, selectedTile, onSelectTile }) => {
       >
         Eraser
       </button>
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(auto-fill, ${CELL_SIZE}px)` }}>
+      <div
+        className="grid gap-1 flex-shrink-0 h-full"
+        style={{ gridAutoFlow: 'column', gridTemplateRows: `repeat(auto-fill, ${CELL_SIZE}px)` }}
+      >
         {slices.map((src, index) => {
           const tileId = index + 1;
           return (
