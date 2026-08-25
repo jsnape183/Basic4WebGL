@@ -68,4 +68,57 @@ const _sbParticles = {
     if (!state) return;
     for (let i = 0; i < Number(count); i++) this._spawnOne(handle, state);
   },
+
+  setEmitterLifetime(handle, min, max) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.lifetimeMin = Number(min);
+    state.lifetimeMax = Number(max);
+  },
+
+  setEmitterSpeed(handle, min, max) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.speedMin = Number(min);
+    state.speedMax = Number(max);
+  },
+
+  setEmitterDirection(handle, angleMin, angleMax) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.dirMin = Number(angleMin);
+    state.dirMax = Number(angleMax);
+  },
+
+  setEmitterGravity(handle, x, y) {
+    const state = this._emitters.get(handle);
+    if (!state) return;
+    state.gravityX = Number(x);
+    state.gravityY = Number(y);
+  },
+
+  // Called once per fixed simulation step (see Task 5 for the _fixedStep
+  // wiring). Ages every particle across every emitter, integrates velocity
+  // (gravity first, then position), and removes anything past its lifetime.
+  // No-ops cheaply when _emitters is empty, matching
+  // _sbPathfinding._pathfindingUpdate's existing early-return convention.
+  _particlesUpdate(delta) {
+    if (this._emitters.size === 0) return;
+    const dt = delta / 1000;
+    for (const [handle, state] of this._emitters) {
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.age += dt;
+        if (p.age > p.lifetime) {
+          handle.removeParticle(p.particle);
+          state.particles.splice(i, 1);
+          continue;
+        }
+        p.vx += state.gravityX * dt;
+        p.vy += state.gravityY * dt;
+        p.particle.x += p.vx * dt;
+        p.particle.y += p.vy * dt;
+      }
+    }
+  },
 };

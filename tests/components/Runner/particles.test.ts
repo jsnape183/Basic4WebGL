@@ -72,3 +72,67 @@ describe('emitterBurst', () => {
     expect(() => particles.emitterBurst({}, 5)).not.toThrow();
   });
 });
+
+describe('_particlesUpdate — aging and movement', () => {
+  test('does nothing when no emitters exist', () => {
+    const particles = loadParticles();
+    expect(() => particles._particlesUpdate(16.67)).not.toThrow();
+  });
+
+  test('a particle moves according to its velocity each step', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterSpeed(handle, 100, 100); // fixed speed
+    particles.setEmitterDirection(handle, 0, 0); // straight along +x
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(1000); // 1 second
+
+    expect(handle.particles[0].x).toBeCloseTo(100);
+    expect(handle.particles[0].y).toBeCloseTo(0);
+  });
+
+  test('gravity accelerates a particle over time', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 10, 10); // outlive the 2s this test covers (default is 1s)
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.setEmitterGravity(handle, 0, 100); // px/s^2 downward
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(1000); // 1s: vy becomes 100, y += 100 this step
+    expect(handle.particles[0].y).toBeCloseTo(100);
+    particles._particlesUpdate(1000); // 2nd second: vy is now 200, y += 200
+    expect(handle.particles[0].y).toBeCloseTo(300);
+  });
+
+  test('a particle is removed from the container once its lifetime elapses', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const handle = particles.createEmitter('spark.png');
+    particles.setEmitterLifetime(handle, 0.5, 0.5);
+    particles.setEmitterSpeed(handle, 0, 0);
+    particles.emitterBurst(handle, 1);
+
+    particles._particlesUpdate(400);
+    expect(handle.particles).toHaveLength(1); // still alive at 0.4s of 0.5s
+
+    particles._particlesUpdate(200); // now at 0.6s, past its 0.5s lifetime
+    expect(handle.particles).toHaveLength(0);
+  });
+
+  test('only affects particles belonging to the emitter being updated, not other emitters', () => {
+    const particles = loadParticles({ 'spark.png': 'tex' });
+    const a = particles.createEmitter('spark.png');
+    const b = particles.createEmitter('spark.png');
+    particles.setEmitterSpeed(a, 100, 100);
+    particles.setEmitterDirection(a, 0, 0);
+    particles.setEmitterSpeed(b, 0, 0);
+    particles.emitterBurst(a, 1);
+    particles.emitterBurst(b, 1);
+
+    particles._particlesUpdate(1000);
+
+    expect(a.particles[0].x).toBeCloseTo(100);
+    expect(b.particles[0].x).toBeCloseTo(0);
+  });
+});
