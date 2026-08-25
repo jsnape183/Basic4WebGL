@@ -18,6 +18,7 @@ class FakeParticle {
 }
 class FakeParticleContainer {
   particles: FakeParticle[] = [];
+  position = { x: 0, y: 0 };
   addParticle(p: FakeParticle) { this.particles.push(p); }
   removeParticle(p: FakeParticle) { this.particles = this.particles.filter((x) => x !== p); }
 }
@@ -282,7 +283,7 @@ describe('spawn shapes', () => {
   test('default (point) spawns exactly at the emitter position', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
-    particles.setEmitterPosition(handle, 50, 60);
+    handle.position = { x: 50, y: 60 };
     particles.emitterBurst(handle, 1);
     expect(handle.particles[0].x).toBe(50);
     expect(handle.particles[0].y).toBe(60);
@@ -291,7 +292,7 @@ describe('spawn shapes', () => {
   test('setEmitterSpawnCircle spawns within the given radius of the emitter position', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
-    particles.setEmitterPosition(handle, 100, 100);
+    handle.position = { x: 100, y: 100 };
     particles.setEmitterSpawnCircle(handle, 10);
     particles.emitterBurst(handle, 50);
     for (const p of handle.particles) {
@@ -303,7 +304,7 @@ describe('spawn shapes', () => {
   test('setEmitterSpawnBoxShape spawns within the given box centered on the emitter position', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
-    particles.setEmitterPosition(handle, 100, 100);
+    handle.position = { x: 100, y: 100 };
     particles.setEmitterSpawnBoxShape(handle, 20, 10);
     particles.emitterBurst(handle, 50);
     for (const p of handle.particles) {
@@ -317,7 +318,7 @@ describe('spawn shapes', () => {
   test('setEmitterSpawnPoint reverts to spawning exactly at the emitter position', () => {
     const particles = loadParticles({ 'spark.png': 'tex' });
     const handle = particles.createEmitter('spark.png');
-    particles.setEmitterPosition(handle, 5, 5);
+    handle.position = { x: 5, y: 5 };
     particles.setEmitterSpawnCircle(handle, 10);
     particles.setEmitterSpawnPoint(handle);
     particles.emitterBurst(handle, 1);

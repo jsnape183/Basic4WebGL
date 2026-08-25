@@ -21,7 +21,6 @@ const _sbParticles = {
       alphaStart: 1, alphaEnd: 0,
       colorStart: 0xffffff, colorEnd: 0xffffff,
       spawnShape: 'point', spawnRadius: 0, spawnBoxW: 0, spawnBoxH: 0,
-      x: 0, y: 0,
     });
     return container;
   },
@@ -35,8 +34,8 @@ const _sbParticles = {
   _spawnOne(container, state) {
     if (state.particles.length >= state.maxParticles) return;
 
-    let sx = state.x;
-    let sy = state.y;
+    let sx = container.position.x;
+    let sy = container.position.y;
     if (state.spawnShape === 'circle' && state.spawnRadius > 0) {
       const angle = Math.random() * Math.PI * 2;
       const r = Math.random() * state.spawnRadius;
@@ -128,13 +127,6 @@ const _sbParticles = {
     const state = this._emitters.get(handle);
     if (!state) return;
     state.maxParticles = Number(n);
-  },
-
-  setEmitterPosition(handle, x, y) {
-    const state = this._emitters.get(handle);
-    if (!state) return;
-    state.x = Number(x);
-    state.y = Number(y);
   },
 
   setEmitterSpawnPoint(handle) {
