@@ -22,6 +22,7 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(1, 0)
+  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map2.stm")
