@@ -11,6 +11,7 @@ EndConstructor
 
 function collect()
   self.collected = true
+  particles.burstKeySparkle(self.transform.x() + 8, self.transform.y() + 8)
   world.remove(self)
 endfunction
 

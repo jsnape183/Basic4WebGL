@@ -39,6 +39,18 @@ Constructor(x, y, targetRef as sprite)
   self.hitFlashOn = false
 EndConstructor
 
+function isDead()
+  ' A getter, not a bare `self.boss.dead` field read from DungeonScene --
+  ' member-field type inference through a class-typed field (self.boss is
+  ' `dim boss as boss`) doesn't resolve, so any *strict* type check on the
+  ' read comes back "Expected type(s) Boolean... but got Object" (confirmed
+  ' live). `not self.boss.dead` alone never surfaced this because NotNode
+  ' has no validate() at all, unlike a plain `if` condition or an `and`.
+  ' A method's declared return type inference works correctly where the
+  ' equivalent field access doesn't, same as self.player.getHearts() below.
+  return self.dead
+endfunction
+
 function beginWindup()
   ' Same telegraph pattern as the regular enemies' attack windup: pulse
   ' scale over 0.3s, standing still, before the actual lunge fires. The
@@ -165,10 +177,11 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
+    particles.burstHitSpark(self.transform.x() + 16, self.transform.y() + 16)
     if self.hp <= 0 then
       self.dead = true
+      particles.burstBossDeath(self.transform.x() + 16, self.transform.y() + 16)
       world.remove(self)
-      scenemanager.switch("winscene")
     else
       ' Mirrors Enemy.bas: knock the boss back so a successful hit buys
       ' breathing room, and cleanly cancel an in-progress windup pulse

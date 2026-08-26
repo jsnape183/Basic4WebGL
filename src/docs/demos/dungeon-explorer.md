@@ -26,7 +26,9 @@ Regular enemies aren't always aggressive: each one patrols a short back-and-fort
 
 Enemies and the key are placed visually in the Tilemap Editor as tagged markers, not hardcoded — `DungeonScene.onenter()` calls `levelhelpers.enemiesFromMarkers(tm, "enemy", p)` to spawn every enemy from `"enemy"`-tagged markers, and reads the single `"key"`-tagged marker and `"boss"`-tagged marker directly via `tm.markersByTag(...)`. Key pickup is overlap-based: `onupdate()` checks `collision.spriteCollide(self.player, self.keyPickup)` each frame and, on contact, calls `self.keyPickup.collect()` and `self.player.setHasKey(true)`.
 
-**Key techniques:** `sprite.setAngle` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `tween.play`/`Keyframe` for telegraphing enemy/boss attacks with a scale pulse, `tilemaplayer.setTile` + `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door (visual and collision, changed together), `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI.
+Combat and pickups get particle feedback via a small shared-emitter module, `Particles.bas` (the same pattern as Coins Platformer's and Bullet Hell Shooter's own particle integration): every landed hit fires a small `burstHitSpark`, a dying enemy adds a `burstEnemyDeath` poof, the boss's death fires a bigger `burstBossDeath`, and collecting the key fires `burstKeySparkle`. The boss-death burst needed one extra step beyond just calling it from `Boss.hit()`: `Boss.hit()` used to call `scenemanager.switch("winscene")` directly the instant hp hit 0, which would clear the world the same frame — before that burst ever rendered a single frame, the exact "particle destroyed before it renders" gotcha Coins Platformer's `burstLevelComplete`/`finishTimer` already went through. The fix is the same: `Boss.hit()` now only bursts the particles and removes the boss from the world; `DungeonScene.onupdate()` polls `self.boss.isDead()` and waits 0.6s (a `winTimer`, mirroring `finishTimer`) before actually switching, giving the burst time to show. That poll uses a real getter, `Boss.isDead()`, rather than a bare `self.boss.dead` field read — member-field type inference through a class-typed field (`self.boss` is `dim boss as boss`) doesn't resolve the field's real type, so a strict type check on that read (a plain `if`, or an `and`) rejects it as "Expected type(s) Boolean... but got Object," confirmed live. Every *existing* `self.boss.dead` read in this demo (e.g. `Player.checkSwingHits`) happens to sit under a bare `not`, which performs no type check at all, so the gap stayed silent until this scene's own boss-death handling needed a real conditional.
+
+**Key techniques:** `sprite.setAngle` + `sprite.attachTo`/`detach` for the spin-and-swing melee attack, `tween.play`/`Keyframe` for telegraphing enemy/boss attacks with a scale pulse, `tilemaplayer.setTile` + `collision.setTileSolid`/`isTileSolid` for a runtime-unlockable door (visual and collision, changed together), `camera.setPosition` for discrete room-snap transitions instead of continuous scrolling, `sprite.setVelocity` + `collision.setupTileCollision` for kinematic movement, `tileMapSet.markersByTag` for visually-placed enemies/key/boss, `pathfinding.navigateTo` for chase AI, particle effects via a shared `Emitter` module.
 
 ---
 
@@ -43,6 +45,7 @@ Enemies and the key are placed visually in the Tilemap Editor as tagged markers,
 | `sword.png` | Kenney sprite, 16×16, single frame — the separate swinging-sword sprite used only during the attack |
 | `tilesheet.png` | Kenney tileset ("Tiny Dungeon") used for the dungeon's floor/wall tiles |
 | `dungeon.stm` | Tilemap data with `floor`/`walls` tile layers, a `collision` layer, and `enemy`/`key`/`boss` marker layers |
+| `particle.png` | Small square sprite used by every `Emitter` in `Particles.bas` — hit sparks, enemy/boss death bursts, and the key pickup sparkle |
 
 ---
 
@@ -98,6 +101,18 @@ Constructor(x, y, targetRef as sprite)
   self.hitFlashTickTimer = 0
   self.hitFlashOn = false
 EndConstructor
+
+function isDead()
+  ' A getter, not a bare `self.boss.dead` field read from DungeonScene --
+  ' member-field type inference through a class-typed field (self.boss is
+  ' `dim boss as boss`) doesn't resolve, so any *strict* type check on the
+  ' read comes back "Expected type(s) Boolean... but got Object" (confirmed
+  ' live). `not self.boss.dead` alone never surfaced this because NotNode
+  ' has no validate() at all, unlike a plain `if` condition or an `and`.
+  ' A method's declared return type inference works correctly where the
+  ' equivalent field access doesn't, same as self.player.getHearts() below.
+  return self.dead
+endfunction
 
 function beginWindup()
   ' Same telegraph pattern as the regular enemies' attack windup: pulse
@@ -225,10 +240,11 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
+    particles.burstHitSpark(self.transform.x() + 16, self.transform.y() + 16)
     if self.hp <= 0 then
       self.dead = true
+      particles.burstBossDeath(self.transform.x() + 16, self.transform.y() + 16)
       world.remove(self)
-      scenemanager.switch("winscene")
     else
       ' Mirrors Enemy.bas: knock the boss back so a successful hit buys
       ' breathing room, and cleanly cancel an in-progress windup pulse
@@ -268,6 +284,8 @@ dim lastRoomY
 dim heart1 as sprite
 dim heart2 as sprite
 dim heart3 as sprite
+dim bossDefeated
+dim winTimer
 
 Constructor()
 EndConstructor
@@ -316,8 +334,11 @@ function onenter()
 
   self.lastRoomX = -1
   self.lastRoomY = -1
+  self.bossDefeated = false
+  self.winTimer = 0
 
   self.setupHud()
+  particles.setup()
 endfunction
 
 function openBossDoor()
@@ -416,6 +437,37 @@ function onupdate(delta)
     self.lastRoomX = roomX
     self.lastRoomY = roomY
     camera.setPosition(roomX * 240, roomY * 176)
+  endif
+
+  ' Boss.hit() bursts the death particles and removes the boss from the
+  ' world the instant hp hits 0, but no longer switches scenes itself --
+  ' switching this same frame would clear the world (see stage.js's
+  ' clear()) before that burst ever renders a single frame, the same
+  ' "particle destroyed before it renders" gotcha Coins Platformer's
+  ' burstLevelComplete/finishTimer already went through. Waiting here
+  ' instead, the same way, gives the burst time to actually show.
+  '
+  ' self.boss.isDead() -- a getter -- not a bare self.boss.dead field read.
+  ' Member-field type inference through a class-typed field (self.boss is
+  ' `dim boss as boss`) doesn't resolve to the field's real type, so a
+  ' strict type check on that read (a plain `if` condition, or an `and`)
+  ' rejects it as "Expected type(s) Boolean... but got Object" -- confirmed
+  ' live. Every existing self.boss.dead read elsewhere in this demo (e.g.
+  ' Player.checkSwingHits) happens to sit under a bare `not`, which has no
+  ' type check at all, so this gap stayed silent until this scene's own
+  ' boss-death handling needed a real conditional. See Boss.isDead()'s own
+  ' comment for why the method call resolves correctly where the field
+  ' access doesn't.
+  if not self.bossDefeated then
+    if self.boss.isDead() then
+      self.bossDefeated = true
+    endif
+  endif
+  if self.bossDefeated then
+    self.winTimer = self.winTimer + delta / 1000
+    if self.winTimer >= 0.6 then
+      scenemanager.switch("winscene")
+    endif
   endif
 endfunction
 
@@ -659,8 +711,10 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
+    particles.burstHitSpark(self.transform.x() + 8, self.transform.y() + 8)
     if self.hp <= 0 then
       self.dead = true
+      particles.burstEnemyDeath(self.transform.x() + 8, self.transform.y() + 8)
       world.remove(self)
     else
       ' A hit lands while mid-windup, knockback takes over next frame
@@ -727,6 +781,7 @@ EndConstructor
 
 function collect()
   self.collected = true
+  particles.burstKeySparkle(self.transform.x() + 8, self.transform.y() + 8)
   world.remove(self)
 endfunction
 
@@ -774,6 +829,82 @@ scenemanager.register("dungeon", dungeonscene)
 scenemanager.register("winscene", winscene)
 scenemanager.register("gameover", gameoverscene)
 scenemanager.switch("title")
+```
+
+## Particles.bas
+
+A small shared-emitter module, following the same pattern as Coins Platformer's and Bullet Hell Shooter's own `Particles.bas`: one `Emitter` per distinct effect, all configured once in `setup()` (called as the very last statement of `DungeonScene.onenter()`, after every other `world.add()` call — PIXI renders a container's children in the order they were added, and there's no explicit z-index, so an emitter created before the tilemap would render underneath it), and a `burstXxx(x, y)` helper per effect that repositions the shared emitter and fires it.
+
+```bas
+' demo-src/dungeon-explorer/Particles.bas
+dim hitSparkEmitter as Emitter
+dim enemyDeathEmitter as Emitter
+dim bossDeathEmitter as Emitter
+dim keySparkleEmitter as Emitter
+
+function setup()
+  hitSparkEmitter = new Emitter("particle.png")
+  hitSparkEmitter.setLifetime(0.15, 0.25)
+  hitSparkEmitter.setSpeed(40, 90)
+  hitSparkEmitter.setDirection(0, 360)
+  hitSparkEmitter.setScaleOverLife(0.35, 0.05)
+  hitSparkEmitter.setAlphaOverLife(1, 0)
+  hitSparkEmitter.setColorOverLife(16777215, 16755200)
+  hitSparkEmitter.setMaxParticles(60)
+  world.add(hitSparkEmitter)
+
+  enemyDeathEmitter = new Emitter("particle.png")
+  enemyDeathEmitter.setLifetime(0.35, 0.5)
+  enemyDeathEmitter.setSpeed(30, 80)
+  enemyDeathEmitter.setDirection(0, 360)
+  enemyDeathEmitter.setGravity(0, 80)
+  enemyDeathEmitter.setScaleOverLife(0.5, 0.1)
+  enemyDeathEmitter.setAlphaOverLife(1, 0)
+  enemyDeathEmitter.setColorOverLife(16729156, 9109504)
+  enemyDeathEmitter.setMaxParticles(80)
+  world.add(enemyDeathEmitter)
+
+  bossDeathEmitter = new Emitter("particle.png")
+  bossDeathEmitter.setLifetime(0.6, 1)
+  bossDeathEmitter.setSpeed(60, 160)
+  bossDeathEmitter.setDirection(0, 360)
+  bossDeathEmitter.setGravity(0, 100)
+  bossDeathEmitter.setScaleOverLife(0.7, 0.1)
+  bossDeathEmitter.setAlphaOverLife(1, 0)
+  bossDeathEmitter.setColorOverLife(16766720, 16747520)
+  bossDeathEmitter.setMaxParticles(120)
+  world.add(bossDeathEmitter)
+
+  keySparkleEmitter = new Emitter("particle.png")
+  keySparkleEmitter.setLifetime(0.3, 0.45)
+  keySparkleEmitter.setSpeed(15, 40)
+  keySparkleEmitter.setDirection(0, 360)
+  keySparkleEmitter.setScaleOverLife(0.3, 0.05)
+  keySparkleEmitter.setAlphaOverLife(1, 0)
+  keySparkleEmitter.setColorOverLife(16766720, 16777215)
+  keySparkleEmitter.setMaxParticles(40)
+  world.add(keySparkleEmitter)
+endfunction
+
+function burstHitSpark(x, y)
+  hitSparkEmitter.transform.setPosition(x, y)
+  hitSparkEmitter.burst(6)
+endfunction
+
+function burstEnemyDeath(x, y)
+  enemyDeathEmitter.transform.setPosition(x, y)
+  enemyDeathEmitter.burst(12)
+endfunction
+
+function burstBossDeath(x, y)
+  bossDeathEmitter.transform.setPosition(x, y)
+  bossDeathEmitter.burst(30)
+endfunction
+
+function burstKeySparkle(x, y)
+  keySparkleEmitter.transform.setPosition(x, y)
+  keySparkleEmitter.burst(10)
+endfunction
 ```
 
 ## Player.bas

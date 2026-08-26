@@ -11,6 +11,8 @@ dim lastRoomY
 dim heart1 as sprite
 dim heart2 as sprite
 dim heart3 as sprite
+dim bossDefeated
+dim winTimer
 
 Constructor()
 EndConstructor
@@ -59,8 +61,11 @@ function onenter()
 
   self.lastRoomX = -1
   self.lastRoomY = -1
+  self.bossDefeated = false
+  self.winTimer = 0
 
   self.setupHud()
+  particles.setup()
 endfunction
 
 function openBossDoor()
@@ -159,6 +164,37 @@ function onupdate(delta)
     self.lastRoomX = roomX
     self.lastRoomY = roomY
     camera.setPosition(roomX * 240, roomY * 176)
+  endif
+
+  ' Boss.hit() bursts the death particles and removes the boss from the
+  ' world the instant hp hits 0, but no longer switches scenes itself --
+  ' switching this same frame would clear the world (see stage.js's
+  ' clear()) before that burst ever renders a single frame, the same
+  ' "particle destroyed before it renders" gotcha Coins Platformer's
+  ' burstLevelComplete/finishTimer already went through. Waiting here
+  ' instead, the same way, gives the burst time to actually show.
+  '
+  ' self.boss.isDead() -- a getter -- not a bare self.boss.dead field read.
+  ' Member-field type inference through a class-typed field (self.boss is
+  ' `dim boss as boss`) doesn't resolve to the field's real type, so a
+  ' strict type check on that read (a plain `if` condition, or an `and`)
+  ' rejects it as "Expected type(s) Boolean... but got Object" -- confirmed
+  ' live. Every existing self.boss.dead read elsewhere in this demo (e.g.
+  ' Player.checkSwingHits) happens to sit under a bare `not`, which has no
+  ' type check at all, so this gap stayed silent until this scene's own
+  ' boss-death handling needed a real conditional. See Boss.isDead()'s own
+  ' comment for why the method call resolves correctly where the field
+  ' access doesn't.
+  if not self.bossDefeated then
+    if self.boss.isDead() then
+      self.bossDefeated = true
+    endif
+  endif
+  if self.bossDefeated then
+    self.winTimer = self.winTimer + delta / 1000
+    if self.winTimer >= 0.6 then
+      scenemanager.switch("winscene")
+    endif
   endif
 endfunction
 

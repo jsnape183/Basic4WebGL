@@ -232,8 +232,10 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
+    particles.burstHitSpark(self.transform.x() + 8, self.transform.y() + 8)
     if self.hp <= 0 then
       self.dead = true
+      particles.burstEnemyDeath(self.transform.x() + 8, self.transform.y() + 8)
       world.remove(self)
     else
       ' A hit lands while mid-windup, knockback takes over next frame
