@@ -6,11 +6,11 @@ A three-level scrolling platformer: run, jump, dodge patrolling enemies, and col
 
 ## How it works
 
-Each level is its own `Class extends scene` (`Level1Scene`, `Level2Scene`, `Level3Scene`), built from a `tilemapset` loaded from a `.stm` file — a single "ground" layer per level in this demo, though `.stm` supports any number of named layers. The player is a `Class extends animatedsprite` with four animations (idle, run, jump, land) driven by simple polling of `input.getKeyDown()` and `input.keyPressed()` each frame.
+Each level is its own `Class extends scene` (`Level1Scene`, `Level2Scene`, `Level3Scene`), built from a `tilemapset` loaded from a `.stm` file — a "ground" layer for tile art plus a "collision" layer for physics in this demo, though `.stm` supports any number of named layers. The player is a `Class extends animatedsprite` with four animations (idle, run, jump, land) driven by simple polling of `input.getKeyDown()` and `input.keyPressed()` each frame.
 
 softBASIC's `Extends` only supports single-level inheritance — a class that already extends `scene` can't itself be extended again — so the three level scenes can't share a common base class. Instead, the logic that's identical across all three (building the tilemap and camera, spawning the player and coin counter, checking coin pickups, resetting on enemy contact, the fall-through deadzone, and the level-end check) lives in **`LevelHelpers.bas`**, a plain module (no `Class` keyword) called from each scene as `levelhelpers.someFunction(...)`. Each scene keeps only what's genuinely level-specific: its `.stm` level file, spawn point, enemy patrol routes, and coin layout.
 
-**Collision** is hand-rolled from the ground layer's `tileAt(x, y)` point-sampling — the vertical (ground) check samples just below the player's feet and snaps to the tile's top surface; the horizontal (wall) check samples the leading edge at two heights before applying movement, blocking the player rather than letting them clip into a solid block from the side.
+**Movement and collision** use the engine's built-in kinematics: `self.setVelocity(vx, vy)` sets a stored velocity that the engine automatically applies and resolves against the level's tile grid once per frame, right after `onupdate()` returns — no manual position math needed. `collision.setupTileCollision(tm)` (called once in `levelhelpers.beginLevel`) reads the `.stm`'s "collision" layer to build that grid. Gravity is simulated by adding to a stored `vy` every frame before calling `setVelocity`; `self.isBlockedDown()` reports whether the *previous* frame's downward movement was stopped by solid ground, which is exactly "am I standing on something right now" — the basis for jump-eligibility, the landing puff's edge-detection, and the run/idle animation state. `self.isBlockedUp()` similarly stops upward velocity dead against a ceiling. Horizontal wall-blocking needs no extra code at all — the same automatic resolution that stops downward movement at the ground also stops horizontal movement at a wall.
 
 **A deadzone** (`levelhelpers.applyDeadzone`) resets the player to the level's start if they fall more than 100px below the map — otherwise a missed jump over a gap just falls forever.
 
@@ -29,7 +29,7 @@ Particle effects (built on the `Emitter` class) fire at three moments — jumpin
 | `coin.png` | 8×8 static sprite |
 | `tilemap_trimmed.png` | 8×8 tileset — tile ID `3` is solid ground |
 | `particle.png` | 16×16 soft-edged white dot, tinted per-effect via `setColorOverLife` |
-| `level1.stm` / `level2.stm` / `level3.stm` | Multi-layer tilemap data for each level (a single "ground" layer here), loaded by `tilemapset`'s constructor |
+| `level1.stm` / `level2.stm` / `level3.stm` | Multi-layer tilemap data for each level — a "ground" layer for tile art and a "collision" layer for physics — loaded by `tilemapset`'s constructor |
 
 ---
 
@@ -150,9 +150,7 @@ Class
 Extends animatedsprite
 
 dim vy
-dim grounded
 dim wasGrounded
-dim level
 dim startX
 dim startY
 
@@ -163,7 +161,6 @@ Constructor(x, y)
   self.addAnim("jump", 2, 2, 4, false)
   self.addAnim("land", 3, 3, 4, false)
   self.vy = 0
-  self.grounded = false
   ' Starts true, not false — the player spawns standing on the ground, and
   ' this must not read as a landing transition on the very first frame.
   self.wasGrounded = true
@@ -174,32 +171,19 @@ Constructor(x, y)
   world.add(self)
 EndConstructor
 
-function setLevel(lvl)
-  self.level = lvl
-endfunction
-
 function resetToStart()
   self.transform.setPosition(self.startX, self.startY)
   self.vy = 0
+  self.setVelocity(0, 0)
 endfunction
 
 function onupdate(delta)
   dim dt
-  dim x
-  dim y
-  dim newX
   dim dir
-  dim edgeX
-  dim topY
-  dim bottomY
   dim moving
-  dim feetY
-  dim tileId
-  dim tileTop
+  dim grounded
 
   dt = delta / 1000
-  x = self.transform.x()
-  y = self.transform.y()
   moving = false
   dir = 0
 
@@ -214,46 +198,36 @@ function onupdate(delta)
     self.setFlip(false, false)
   endif
 
-  if dir <> 0 then
-    newX = x + dir * 50 * dt
-    edgeX = newX + dir * 4
-    topY = y - 3
-    bottomY = y + 3
-    if self.level.tileAt(edgeX, topY) = 0 and self.level.tileAt(edgeX, bottomY) = 0 then
-      x = newX
-    endif
-  endif
+  ' isBlockedDown()/isBlockedUp() reflect the *previous* frame's kinematics
+  ' resolve (setVelocity's movement is applied automatically after onupdate
+  ' returns — see collision.js's _applyKinematics) — i.e. "was I resting on
+  ' something as of last frame," which is exactly "am I grounded right now."
+  grounded = self.isBlockedDown()
 
   self.vy = self.vy + 400 * dt
+  if grounded and self.vy > 0 then
+    self.vy = 0
+  endif
+  if self.isBlockedUp() and self.vy < 0 then
+    self.vy = 0
+  endif
 
   if input.keyPressed(32) or input.keyPressed(38) or input.keyPressed(87) then
-    if self.grounded then
+    if grounded then
       self.vy = -140
       self.play("jump")
-      particles.burstJumpPuff(x, y + 4)
+      particles.burstJumpPuff(self.transform.x(), self.transform.y() + 4)
     endif
   endif
 
-  y = y + self.vy * dt
+  self.setVelocity(dir * 50, self.vy)
 
-  feetY = y + 4
-  tileId = self.level.tileAt(x, feetY)
-  self.grounded = false
-  if tileId > 0 and self.vy >= 0 then
-    tileTop = math.floor(feetY / 8) * 8
-    y = tileTop - 4
-    self.vy = 0
-    self.grounded = true
+  if not self.wasGrounded and grounded then
+    particles.burstLandPuff(self.transform.x(), self.transform.y() + 4)
   endif
+  self.wasGrounded = grounded
 
-  if not self.wasGrounded and self.grounded then
-    particles.burstLandPuff(x, y + 4)
-  endif
-  self.wasGrounded = self.grounded
-
-  self.transform.setPosition(x, y)
-
-  if self.grounded then
+  if grounded then
     if moving then
       if not self.isPlaying("run") then
         self.play("run")
@@ -282,6 +256,7 @@ function beginLevel(stmFile)
   dim tm as tilemapset
   tm = new tilemapset(stmFile)
   world.add(tm)
+  collision.setupTileCollision(tm)
 
   dim ground as tilemaplayer
   ground = tm.layer("ground")
@@ -289,10 +264,9 @@ function beginLevel(stmFile)
   return ground
 endfunction
 
-function spawnPlayer(tm as tilemaplayer, spawnX, spawnY)
+function spawnPlayer(spawnX, spawnY)
   dim p as player
   p = new Player(spawnX, spawnY)
-  p.setLevel(tm)
   return p
 endfunction
 
@@ -344,6 +318,7 @@ endfunction
 function reachedLevelEnd(player as player, tm as tilemaplayer)
   return player.transform.x() > tm.widthPx() - 16
 endfunction
+
 ```
 
 ## Particles.bas
@@ -430,7 +405,7 @@ function onenter()
   self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level1.stm")
-  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 52)
+  self.player = levelhelpers.spawnPlayer(16, 52)
 
   dim e as enemy
   e = new Enemy(150, 48, 130, 190)
@@ -511,7 +486,7 @@ function onenter()
   self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level2.stm")
-  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)
+  self.player = levelhelpers.spawnPlayer(16, 68)
 
   dim e as enemy
   e = new Enemy(254, 40, 254, 286)
@@ -596,7 +571,7 @@ function onenter()
   self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level3.stm")
-  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 84)
+  self.player = levelhelpers.spawnPlayer(16, 84)
 
   dim e as enemy
   e = new Enemy(172, 56, 172, 216)

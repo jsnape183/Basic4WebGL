@@ -5,6 +5,7 @@ function beginLevel(stmFile)
   dim tm as tilemapset
   tm = new tilemapset(stmFile)
   world.add(tm)
+  collision.setupTileCollision(tm)
 
   dim ground as tilemaplayer
   ground = tm.layer("ground")
@@ -12,10 +13,9 @@ function beginLevel(stmFile)
   return ground
 endfunction
 
-function spawnPlayer(tm as tilemaplayer, spawnX, spawnY)
+function spawnPlayer(spawnX, spawnY)
   dim p as player
   p = new Player(spawnX, spawnY)
-  p.setLevel(tm)
   return p
 endfunction
 

@@ -18,7 +18,7 @@ function onenter()
   self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level2.stm")
-  self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)
+  self.player = levelhelpers.spawnPlayer(16, 68)
 
   dim e as enemy
   e = new Enemy(254, 40, 254, 286)
