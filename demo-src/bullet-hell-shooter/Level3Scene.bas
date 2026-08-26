@@ -64,16 +64,20 @@ function wallLayers()
 endfunction
 
 function setupHud()
+  ' healthbar_bg.png/healthbar_fill.png are 1x1 pixel images stretched via
+  ' setScale into a bar shape. `sprite` is centre-anchored, so each bar's
+  ' setPosition must be its CENTRE, not its top-left corner: a 100x14 bar
+  ' whose top-left should sit at (20, 20) is centred at (20 + 100/2, 20 + 14/2).
   dim bg as sprite
   bg = new sprite("healthbar_bg.png")
-  bg.transform.setPosition(20, 20)
+  bg.transform.setPosition(70, 27)
   bg.setScale(100, 14)
   hud.add(bg)
   self.hpBg = bg
 
   dim fill as sprite
   fill = new sprite("healthbar_fill.png")
-  fill.transform.setPosition(20, 20)
+  fill.transform.setPosition(70, 27)
   fill.setScale(100, 14)
   hud.add(fill)
   self.hpFill = fill
@@ -110,7 +114,14 @@ function onupdate(delta)
   t = gamedata.getLevelTime(2) + dt
   gamedata.setLevelTime(2, t)
 
-  self.hpFill.setScale(100 * (self.player.getHp() / 100), 14)
+  ' Re-centre the fill bar as it shrinks so its LEFT edge stays pinned at
+  ' x=20 (draining right-to-left) instead of shrinking symmetrically about
+  ' the bar's centre, which is what a naive setScale-only shrink would do
+  ' now that `sprite` is centre-anchored.
+  dim hpFillWidth
+  hpFillWidth = 100 * (self.player.getHp() / 100)
+  self.hpFill.transform.setPosition(20 + hpFillWidth / 2, 27)
+  self.hpFill.setScale(hpFillWidth, 14)
   self.weaponLabel.setText(self.player.getCurrentWeapon())
   self.spawnLabel.setText("Spawns: " + string.str(levelhelpers.spawnPointsRemaining(self.spawnPoints)))
   self.timerLabel.setText(levelhelpers.formatTime(t))

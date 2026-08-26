@@ -21,7 +21,7 @@ function onenter()
   self.player = levelhelpers.spawnPlayer(16, 52)
 
   dim e as enemy
-  e = new Enemy(150, 48, 130, 190)
+  e = new Enemy(154, 52, 134, 194)
   array.push(self.enemies, e)
 
   self.spawnCoins()
@@ -36,19 +36,19 @@ endfunction
 
 function spawnCoins()
   dim c as coin
-  c = new Coin(40, 48)
+  c = new Coin(44, 52)
   array.push(self.coins, c)
-  c = new Coin(80, 48)
+  c = new Coin(84, 52)
   array.push(self.coins, c)
-  c = new Coin(110, 48)
+  c = new Coin(114, 52)
   array.push(self.coins, c)
-  c = new Coin(136, 48)
+  c = new Coin(140, 52)
   array.push(self.coins, c)
-  c = new Coin(184, 32)
+  c = new Coin(188, 36)
   array.push(self.coins, c)
-  c = new Coin(220, 48)
+  c = new Coin(224, 52)
   array.push(self.coins, c)
-  c = new Coin(300, 48)
+  c = new Coin(304, 52)
   array.push(self.coins, c)
 endfunction
 

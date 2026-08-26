@@ -10,6 +10,40 @@ function loadSprites() {
   return factory();
 }
 
+// createSprite additionally needs PIXI.Sprite and _sbAssets in scope.
+class FakeSprite {
+  texture: unknown;
+  anchor = { x: 0, y: 0, set(v: number) { this.x = v; this.y = v; } };
+  constructor(texture: unknown) {
+    this.texture = texture;
+  }
+}
+
+function loadSpritesWithPixi() {
+  const src = readFileSync('src/components/Runner/engine/sprites.js', 'utf-8');
+  const PIXI = { Sprite: FakeSprite };
+  const _sbAssets = { get: (_path: string) => ({ fake: 'texture' }) };
+  const factory = new Function(
+    'PIXI',
+    '_sbAssets',
+    `${src}\n return _sbSprites;`
+  );
+  return factory(PIXI, _sbAssets);
+}
+
+// `sprite` must be centre-anchored to match `animatedsprite` (which already
+// does `pixi.anchor.set(0.5)`) — see engine/animatedsprite.js. Before this,
+// createSprite left PIXI's own top-left default in place, which is exactly
+// the inconsistency this test guards against regressing.
+describe('createSprite — anchor', () => {
+  test('anchors the sprite at its centre (0.5, 0.5), matching animatedsprite', () => {
+    const sprites = loadSpritesWithPixi();
+    const sprite = sprites.createSprite('player.png') as FakeSprite;
+    expect(sprite.anchor.x).toBe(0.5);
+    expect(sprite.anchor.y).toBe(0.5);
+  });
+});
+
 describe('setVelocity / getVelocityX / getVelocityY', () => {
   test('stores velocity components, readable back via the getters', () => {
     const sprites = loadSprites();

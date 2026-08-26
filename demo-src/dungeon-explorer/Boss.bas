@@ -177,10 +177,10 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
-    particles.burstHitSpark(self.transform.x() + 16, self.transform.y() + 16)
+    particles.burstHitSpark(self.transform.x(), self.transform.y())
     if self.hp <= 0 then
       self.dead = true
-      particles.burstBossDeath(self.transform.x() + 16, self.transform.y() + 16)
+      particles.burstBossDeath(self.transform.x(), self.transform.y())
       world.remove(self)
     else
       ' Mirrors Enemy.bas: knock the boss back so a successful hit buys

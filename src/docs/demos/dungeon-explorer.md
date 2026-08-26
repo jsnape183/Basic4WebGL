@@ -10,7 +10,7 @@ The whole dungeon is one tilemap, but `DungeonScene` treats it as discrete rooms
 
 The boss room's door is two tiles (row 11, columns 36-37 in `dungeon.stm`) that both look *and* behave solid until the player has the key. `DungeonScene.onupdate()` runs `openBossDoor()` once, right when the key pickup is collected — not every frame — since it does two things at once: `wallsLayer.setTile(576, 176, 23)` / `setTile(592, 176, 24)` swaps the closed-door tile art (ids 47/48) for the open-door art (23/24) on the `"walls"` layer via `tilemaplayer.setTile`, and `collision.setTileSolid(576, 176, false)` / `(592, 176, false)` clears the matching collision cells so the player can actually walk through. `setTile` only changes what's drawn, not collision — the two calls are deliberately paired, one for each half of "the door is now open." The door tiles live on `"walls"`, not `"floor"` — an earlier version painted them on `"floor"` while leaving a solid wall tile in place on `"walls"` directly on top, which looked fine in the Tile Map Editor (a non-active layer renders at 35% opacity there, so the door art showed faintly through) but was completely hidden in the actual game, where every layer draws at full opacity in file order and `"walls"` draws over `"floor"`. Painting the door tiles onto `"walls"` itself removes the overlap rather than working around it. The tilemap's collision layer, painted in the Tilemap Editor, is only the *starting* state — not a fixed layout.
 
-The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `Player.checkSwingHits()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions also need a manual correction (`+ 8`/`+ 16`) before being checked — both extend `sprite`, which (unlike the player's `animatedsprite`) has no centred anchor, so their raw position is their top-left corner, not their centre.
+The player moves with `setVelocity` (sliding cleanly along walls via `collision.setupTileCollision`, no hand-rolled axis checks) and attacks with a 360° spin — `Player.checkSwingHits()` checks a hit box centred directly *on* the player against every living enemy and the boss with `collision.boxCollide`, no facing direction involved. It wasn't always centred: an earlier version offset the hit box 20px out in the facing direction, which left a real dead zone close to the player — an enemy standing right next to the player (well within the range where *it* can already hit back) fell outside that offset band and took zero damage no matter how many swings landed, confirmed by sweeping actual distances against a real chasing enemy. A directional offset never made sense for a full 360° spin anyway; centering the box on the player fixed the dead zone and matches the visual. `Enemy`/`Boss` positions can be fed straight into `boxCollide` with no correction — both extend `sprite`, which (like the player's `animatedsprite`) is centre-anchored, so `transform.x()`/`y()` already reports each target's centre.
 
 The player's own attack box is 44×44 (±22px from its centre); the box checked against the boss matches its real 32×32 size (±16px), giving a combined reach of 38px. Regular enemies are checked against a 28×28 box, padded well past their real 16×16 size (±8px) — without the padding their reach would only be 30px, and since a target's own half-size is what it contributes to the combined reach, the bigger boss would end up feeling generous purely because it's a bigger target, while small enemies felt tight for the same reason in reverse. Padding brings enemies to a 36px reach, close to parity with the boss.
 
@@ -240,10 +240,10 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
-    particles.burstHitSpark(self.transform.x() + 16, self.transform.y() + 16)
+    particles.burstHitSpark(self.transform.x(), self.transform.y())
     if self.hp <= 0 then
       self.dead = true
-      particles.burstBossDeath(self.transform.x() + 16, self.transform.y() + 16)
+      particles.burstBossDeath(self.transform.x(), self.transform.y())
       world.remove(self)
     else
       ' Mirrors Enemy.bas: knock the boss back so a successful hit buys
@@ -374,21 +374,24 @@ function wallLayers()
 endfunction
 
 function setupHud()
+  ' heart_full.png/heart_empty.png are 16x16. `sprite` is centre-anchored,
+  ' so each heart's setPosition must be its CENTRE (top-left + 8, 8) to keep
+  ' the row sitting at the same on-screen spot as before.
   dim h1 as sprite
   h1 = new sprite("heart_full.png")
-  h1.transform.setPosition(20, 20)
+  h1.transform.setPosition(28, 28)
   hud.add(h1)
   self.heart1 = h1
 
   dim h2 as sprite
   h2 = new sprite("heart_full.png")
-  h2.transform.setPosition(40, 20)
+  h2.transform.setPosition(48, 28)
   hud.add(h2)
   self.heart2 = h2
 
   dim h3 as sprite
   h3 = new sprite("heart_full.png")
-  h3.transform.setPosition(60, 20)
+  h3.transform.setPosition(68, 28)
   hud.add(h3)
   self.heart3 = h3
 endfunction
@@ -711,10 +714,10 @@ function hit(damage, swingId)
   if not self.dead and self.lastHitSwingId <> swingId then
     self.lastHitSwingId = swingId
     self.hp = self.hp - damage
-    particles.burstHitSpark(self.transform.x() + 8, self.transform.y() + 8)
+    particles.burstHitSpark(self.transform.x(), self.transform.y())
     if self.hp <= 0 then
       self.dead = true
-      particles.burstEnemyDeath(self.transform.x() + 8, self.transform.y() + 8)
+      particles.burstEnemyDeath(self.transform.x(), self.transform.y())
       world.remove(self)
     else
       ' A hit lands while mid-windup, knockback takes over next frame
@@ -781,7 +784,7 @@ EndConstructor
 
 function collect()
   self.collected = true
-  particles.burstKeySparkle(self.transform.x() + 8, self.transform.y() + 8)
+  particles.burstKeySparkle(self.transform.x(), self.transform.y())
   world.remove(self)
 endfunction
 
@@ -1003,14 +1006,8 @@ function checkSwingHits()
   ' Hitbox is centered on the player, not offset in the facing direction --
   ' matches the spin-attack visual (a full 360 turn has no single "front").
   ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
-  ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
-  ' which (unlike the player's `animatedsprite`) has no centered anchor.
-  ' Feeding that raw top-left position into boxCollide as if it were a
-  ' center silently shifts the effective hit-check away from where the
-  ' enemy actually renders. The `+ 8`/`+ 16` centering offsets are each
-  ' target's own real size (16x16 enemy, 32x32 boss) and stay fixed
-  ' regardless of the box size checked below -- they locate the center,
-  ' the box size below controls how generous the reach to that center is.
+  ' center -- `sprite` (like `animatedsprite`) is centre-anchored, so no
+  ' correction is needed to feed these straight into boxCollide.
   '
   ' The box checked against each enemy is padded out to 28x28, well past
   ' its real 16x16 size: with the player's own box at 44x44 (half 22), a
@@ -1033,14 +1030,14 @@ function checkSwingHits()
   for i = 0 to array.arrLength(self.enemies) - 1
     e = self.enemies(i)
     if not e.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 28, 28) then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x(), e.transform.y(), 28, 28) then
         e.hit(15, self.swingId)
       endif
     endif
   next i
 
   if not self.boss.dead then
-    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
+    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x(), self.boss.transform.y(), 32, 32) then
       self.boss.hit(15, self.swingId)
     endif
   endif
@@ -1164,36 +1161,26 @@ Constructor()
 EndConstructor
 
 function swing(p, facingX, facingY, duration)
-  ' Attaching alone already makes the sword sweep around the player: the
-  ' sword's own anchor sits at its top-left corner (the sprite default),
-  ' not its centre, so once its local position is (0,0) -- i.e. its pivot
-  ' is glued to the player's own position -- the player's own spin (driven
-  ' by setAngle in Player.onupdate) carries that off-centre pivot around in
-  ' a circle all by itself. The sword does NOT need its own angle animation
-  ' on top of that: an earlier version gave it one, which composed
-  ' additively with the player's rotation (PIXI sums a child's rotation with
-  ' its parent's) and made the sword complete two full orbits for every one
-  ' player spin -- confirmed by sampling world-space position, not assumed.
-  ' Leaving the sword's own angle fixed makes it track the player's spin
-  ' exactly once.
+  ' Attaching makes the sword sweep around the player: its local position
+  ' (set below, relative to the player) is carried around in a circle by
+  ' the player's own spin (driven by setAngle in Player.onupdate), since
+  ' PIXI rotates a child's position along with its parent's. The sword does
+  ' NOT need its own angle animation on top of that: an earlier version
+  ' gave it one, which composed additively with the player's rotation and
+  ' made the sword complete two full orbits for every one player spin --
+  ' confirmed by sampling world-space position, not assumed. Leaving the
+  ' sword's own angle fixed makes it track the player's spin exactly once.
   '
   ' Position/angle are derived from the player's current facing, not
-  ' hardcoded -- an earlier version fixed them at a single (18, -5) /
-  ' 90 degree pose tuned by eye for facing right, which visually pointed
-  ' the sword somewhere unrelated to the real hitbox (Player.tryAttack's
-  ' facingX/Y * 20) for every other facing direction. Confirmed live: the
-  ' actual hit detection was fine the whole time, only the sword's visual
-  ' position was wrong, which read exactly like "attacks don't land".
-  ' alongDist/perpDist reproduce that same tuned (18, -5) pose, just
-  ' expressed relative to facing instead of the world x-axis, so it looks
-  ' the same when facing right and rotates correctly for every other
-  ' direction.
+  ' hardcoded. alongDist/perpDist place the sword's own CENTRE (`sprite`
+  ' is centre-anchored) relative to the player, tuned by eye so the blade
+  ' reads as an outstretched sword rather than overlapping the player.
   dim alongDist
   dim perpDist
   dim perpX
   dim perpY
 
-  alongDist = 18
+  alongDist = 26
   perpDist = -5
   perpX = -facingY
   perpY = facingX

@@ -2,7 +2,7 @@
 
 An `animatedsprite` plays frame-by-frame animations from a sprite sheet. The sprite sheet must be a grid of equal-sized frames. Extend it using `Extends animatedsprite` in your class file.
 
-Position is controlled through `self.transform` — see [ObjectTransform](objecttransform).
+Position is controlled through `self.transform` — see [ObjectTransform](objecttransform). The position you set is the **centre** of the current frame, not its top-left corner.
 
 ## Constructor
 

@@ -1,7 +1,9 @@
 const _sbSprites = {
   createSprite(imagePath) {
     const texture = _sbAssets.get(imagePath);
-    return new PIXI.Sprite(texture);
+    const sprite = new PIXI.Sprite(texture);
+    sprite.anchor.set(0.5);
+    return sprite;
   },
   // setPosition is BOTH softBASIC's movement primitive (the tutorials teach
   // `setPosition(x + speed * delta / 1000, y)` inside onupdate) and its

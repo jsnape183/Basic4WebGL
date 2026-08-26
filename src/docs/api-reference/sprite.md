@@ -2,7 +2,7 @@
 
 A `sprite` displays a single image on the canvas. Extend it using `Extends sprite` in your class file, then call `super("image.png")` in your constructor.
 
-Position is controlled through `self.transform` — see [ObjectTransform](objecttransform).
+Position is controlled through `self.transform` — see [ObjectTransform](objecttransform). The position you set is the **centre** of the sprite's image, not its top-left corner.
 
 ## Constructor
 

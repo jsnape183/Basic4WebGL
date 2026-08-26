@@ -13,36 +13,26 @@ Constructor()
 EndConstructor
 
 function swing(p, facingX, facingY, duration)
-  ' Attaching alone already makes the sword sweep around the player: the
-  ' sword's own anchor sits at its top-left corner (the sprite default),
-  ' not its centre, so once its local position is (0,0) -- i.e. its pivot
-  ' is glued to the player's own position -- the player's own spin (driven
-  ' by setAngle in Player.onupdate) carries that off-centre pivot around in
-  ' a circle all by itself. The sword does NOT need its own angle animation
-  ' on top of that: an earlier version gave it one, which composed
-  ' additively with the player's rotation (PIXI sums a child's rotation with
-  ' its parent's) and made the sword complete two full orbits for every one
-  ' player spin -- confirmed by sampling world-space position, not assumed.
-  ' Leaving the sword's own angle fixed makes it track the player's spin
-  ' exactly once.
+  ' Attaching makes the sword sweep around the player: its local position
+  ' (set below, relative to the player) is carried around in a circle by
+  ' the player's own spin (driven by setAngle in Player.onupdate), since
+  ' PIXI rotates a child's position along with its parent's. The sword does
+  ' NOT need its own angle animation on top of that: an earlier version
+  ' gave it one, which composed additively with the player's rotation and
+  ' made the sword complete two full orbits for every one player spin --
+  ' confirmed by sampling world-space position, not assumed. Leaving the
+  ' sword's own angle fixed makes it track the player's spin exactly once.
   '
   ' Position/angle are derived from the player's current facing, not
-  ' hardcoded -- an earlier version fixed them at a single (18, -5) /
-  ' 90 degree pose tuned by eye for facing right, which visually pointed
-  ' the sword somewhere unrelated to the real hitbox (Player.tryAttack's
-  ' facingX/Y * 20) for every other facing direction. Confirmed live: the
-  ' actual hit detection was fine the whole time, only the sword's visual
-  ' position was wrong, which read exactly like "attacks don't land".
-  ' alongDist/perpDist reproduce that same tuned (18, -5) pose, just
-  ' expressed relative to facing instead of the world x-axis, so it looks
-  ' the same when facing right and rotates correctly for every other
-  ' direction.
+  ' hardcoded. alongDist/perpDist place the sword's own CENTRE (`sprite`
+  ' is centre-anchored) relative to the player, tuned by eye so the blade
+  ' reads as an outstretched sword rather than overlapping the player.
   dim alongDist
   dim perpDist
   dim perpX
   dim perpY
 
-  alongDist = 18
+  alongDist = 26
   perpDist = -5
   perpX = -facingY
   perpY = facingX

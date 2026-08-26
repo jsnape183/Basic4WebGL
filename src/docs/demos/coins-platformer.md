@@ -426,7 +426,7 @@ function onenter()
   self.player = levelhelpers.spawnPlayer(16, 52)
 
   dim e as enemy
-  e = new Enemy(150, 48, 130, 190)
+  e = new Enemy(154, 52, 134, 194)
   array.push(self.enemies, e)
 
   self.spawnCoins()
@@ -441,19 +441,19 @@ endfunction
 
 function spawnCoins()
   dim c as coin
-  c = new Coin(40, 48)
+  c = new Coin(44, 52)
   array.push(self.coins, c)
-  c = new Coin(80, 48)
+  c = new Coin(84, 52)
   array.push(self.coins, c)
-  c = new Coin(110, 48)
+  c = new Coin(114, 52)
   array.push(self.coins, c)
-  c = new Coin(136, 48)
+  c = new Coin(140, 52)
   array.push(self.coins, c)
-  c = new Coin(184, 32)
+  c = new Coin(188, 36)
   array.push(self.coins, c)
-  c = new Coin(220, 48)
+  c = new Coin(224, 52)
   array.push(self.coins, c)
-  c = new Coin(300, 48)
+  c = new Coin(304, 52)
   array.push(self.coins, c)
 endfunction
 
@@ -478,7 +478,6 @@ function onupdate(delta)
 endfunction
 
 EndClass
-
 ```
 
 ## Level2Scene.bas
@@ -507,9 +506,9 @@ function onenter()
   self.player = levelhelpers.spawnPlayer(16, 68)
 
   dim e as enemy
-  e = new Enemy(254, 40, 254, 286)
+  e = new Enemy(258, 44, 258, 290)
   array.push(self.enemies, e)
-  e = new Enemy(326, 56, 326, 378)
+  e = new Enemy(330, 60, 330, 382)
   array.push(self.enemies, e)
 
   self.spawnCoins()
@@ -524,21 +523,21 @@ endfunction
 
 function spawnCoins()
   dim c as coin
-  c = new Coin(44, 64)
+  c = new Coin(48, 68)
   array.push(self.coins, c)
-  c = new Coin(124, 56)
+  c = new Coin(128, 60)
   array.push(self.coins, c)
-  c = new Coin(188, 40)
+  c = new Coin(192, 44)
   array.push(self.coins, c)
-  c = new Coin(212, 16)
+  c = new Coin(216, 20)
   array.push(self.coins, c)
-  c = new Coin(268, 40)
+  c = new Coin(272, 44)
   array.push(self.coins, c)
-  c = new Coin(348, 56)
+  c = new Coin(352, 60)
   array.push(self.coins, c)
-  c = new Coin(420, 64)
+  c = new Coin(424, 68)
   array.push(self.coins, c)
-  c = new Coin(460, 64)
+  c = new Coin(464, 68)
   array.push(self.coins, c)
 endfunction
 
@@ -563,7 +562,6 @@ function onupdate(delta)
 endfunction
 
 EndClass
-
 ```
 
 ## Level3Scene.bas
@@ -592,11 +590,11 @@ function onenter()
   self.player = levelhelpers.spawnPlayer(16, 84)
 
   dim e as enemy
-  e = new Enemy(172, 56, 172, 216)
+  e = new Enemy(176, 60, 176, 220)
   array.push(self.enemies, e)
-  e = new Enemy(308, 40, 308, 344)
+  e = new Enemy(312, 44, 312, 348)
   array.push(self.enemies, e)
-  e = new Enemy(444, 72, 444, 464)
+  e = new Enemy(448, 76, 448, 468)
   array.push(self.enemies, e)
 
   self.spawnCoins()
@@ -611,25 +609,25 @@ endfunction
 
 function spawnCoins()
   dim c as coin
-  c = new Coin(36, 80)
+  c = new Coin(40, 84)
   array.push(self.coins, c)
-  c = new Coin(116, 72)
+  c = new Coin(120, 76)
   array.push(self.coins, c)
-  c = new Coin(196, 56)
+  c = new Coin(200, 60)
   array.push(self.coins, c)
-  c = new Coin(260, 40)
+  c = new Coin(264, 44)
   array.push(self.coins, c)
-  c = new Coin(260, 16)
+  c = new Coin(264, 20)
   array.push(self.coins, c)
-  c = new Coin(324, 40)
+  c = new Coin(328, 44)
   array.push(self.coins, c)
-  c = new Coin(396, 56)
+  c = new Coin(400, 60)
   array.push(self.coins, c)
-  c = new Coin(452, 72)
+  c = new Coin(456, 76)
   array.push(self.coins, c)
-  c = new Coin(516, 80)
+  c = new Coin(520, 84)
   array.push(self.coins, c)
-  c = new Coin(540, 80)
+  c = new Coin(544, 84)
   array.push(self.coins, c)
 endfunction
 
@@ -654,7 +652,6 @@ function onupdate(delta)
 endfunction
 
 EndClass
-
 ```
 
 ## WinScene.bas

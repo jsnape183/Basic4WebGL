@@ -101,21 +101,24 @@ function wallLayers()
 endfunction
 
 function setupHud()
+  ' heart_full.png/heart_empty.png are 16x16. `sprite` is centre-anchored,
+  ' so each heart's setPosition must be its CENTRE (top-left + 8, 8) to keep
+  ' the row sitting at the same on-screen spot as before.
   dim h1 as sprite
   h1 = new sprite("heart_full.png")
-  h1.transform.setPosition(20, 20)
+  h1.transform.setPosition(28, 28)
   hud.add(h1)
   self.heart1 = h1
 
   dim h2 as sprite
   h2 = new sprite("heart_full.png")
-  h2.transform.setPosition(40, 20)
+  h2.transform.setPosition(48, 28)
   hud.add(h2)
   self.heart2 = h2
 
   dim h3 as sprite
   h3 = new sprite("heart_full.png")
-  h3.transform.setPosition(60, 20)
+  h3.transform.setPosition(68, 28)
   hud.add(h3)
   self.heart3 = h3
 endfunction

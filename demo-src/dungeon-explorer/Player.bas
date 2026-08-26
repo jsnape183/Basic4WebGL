@@ -91,14 +91,8 @@ function checkSwingHits()
   ' Hitbox is centered on the player, not offset in the facing direction --
   ' matches the spin-attack visual (a full 360 turn has no single "front").
   ' e.transform.x()/y() and self.boss.transform.x()/y() are each target's
-  ' top-left corner, not its center -- Enemy and Boss extend `sprite`,
-  ' which (unlike the player's `animatedsprite`) has no centered anchor.
-  ' Feeding that raw top-left position into boxCollide as if it were a
-  ' center silently shifts the effective hit-check away from where the
-  ' enemy actually renders. The `+ 8`/`+ 16` centering offsets are each
-  ' target's own real size (16x16 enemy, 32x32 boss) and stay fixed
-  ' regardless of the box size checked below -- they locate the center,
-  ' the box size below controls how generous the reach to that center is.
+  ' center -- `sprite` (like `animatedsprite`) is centre-anchored, so no
+  ' correction is needed to feed these straight into boxCollide.
   '
   ' The box checked against each enemy is padded out to 28x28, well past
   ' its real 16x16 size: with the player's own box at 44x44 (half 22), a
@@ -121,14 +115,14 @@ function checkSwingHits()
   for i = 0 to array.arrLength(self.enemies) - 1
     e = self.enemies(i)
     if not e.dead then
-      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x() + 8, e.transform.y() + 8, 28, 28) then
+      if collision.boxCollide(hitX, hitY, 44, 44, e.transform.x(), e.transform.y(), 28, 28) then
         e.hit(15, self.swingId)
       endif
     endif
   next i
 
   if not self.boss.dead then
-    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x() + 16, self.boss.transform.y() + 16, 32, 32) then
+    if collision.boxCollide(hitX, hitY, 44, 44, self.boss.transform.x(), self.boss.transform.y(), 32, 32) then
       self.boss.hit(15, self.swingId)
     endif
   endif
