@@ -1,6 +1,6 @@
 # Wolfenstein-Style Raycaster
 
-A single-file softBASIC tech demo: textured walls, a chasing enemy with hit detection, a HUD weapon with muzzle flash, player health, and a game-over screen. WASD to move, spacebar to fire.
+A single-file softBASIC tech demo: textured walls, a chasing enemy with hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, player health, and a game-over screen. WASD to move, spacebar to fire.
 
 ---
 
@@ -12,11 +12,13 @@ The stepping algorithm is **DDA** (Digital Differential Analyser) — it steps f
 
 The enemy is a **billboard sprite**: its position in world space is projected onto the screen using a camera-plane transform. A **z-buffer** records each wall's distance per column, so the enemy is only drawn where it is closer to the camera than the wall behind it.
 
+Firing, landing a hit, and killing the enemy all trigger an `Emitter` burst — the same particle module used by Coins Platformer, Bullet Hell Shooter, and Dungeon Explorer, but wired up differently here: this demo has no `world`/`camera` at all, so every emitter is added via `hud.add()` instead of `world.add()`, and positioned using the same projected screen coordinates the enemy billboard itself already computes rather than world-space map coordinates. See [HUD layering](#hud-layering) below for why.
+
 ---
 
 ## Required assets
 
-Upload five PNG files to your project's asset library before running:
+Upload six PNG files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -25,6 +27,7 @@ Upload five PNG files to your project's asset library before running:
 | `enemy_hit.png` | 64×64 enemy hit-flash frame |
 | `enemy_dead.png` | 64×64 enemy death frame |
 | `gun.png` | Weapon sprite for the HUD |
+| `particle.png` | Small square sprite used by every `Emitter` — muzzle flash, enemy hit spark, enemy death burst |
 
 ---
 
@@ -66,6 +69,18 @@ dim ENIW = 64
 dim weaponSprite as Sprite
 dim flashTimer = 4
 
+' Particles -- added to the HUD layer, not the world. castRays() calls
+' drawing.clear() and redraws the ceiling/floor/walls into the world
+' container fresh every single frame, so anything world.add()'d would get
+' painted over the instant the next frame's walls go up. HUD is a
+' separate container that always renders on top of the world, which is
+' also why the gun sprite and health text below stay visible -- placing
+' the emitters there sidesteps the redraw entirely. There's no camera in
+' this demo, so HUD/world/screen coordinates are all the same thing.
+dim muzzleFlashEmitter as Emitter
+dim enemyHitEmitter as Emitter
+dim enemyDeathEmitter as Emitter
+
 ' Player state
 dim posX = 1.5
 dim posY = 4.5
@@ -76,7 +91,7 @@ dim planeY = 0.66
 dim playerHealth = 100
 dim damageCooldown = 0
 
-' HUD
+' Hud
 dim mapW = 8
 dim cells(64)
 dim healthText as Text
@@ -93,7 +108,7 @@ dim enemyHit = false
 dim enemyHitTimer = 0
 dim enemySpeed = 0.02
 
-' Z-buffer: stores wall distance per ray column
+' Z-buffer
 dim zbuffer(200)
 
 ' Movement speeds
@@ -123,14 +138,29 @@ endfunction
 
 function checkHit()
     dim aimCol = RAYS / 2
+    dim hitX
     if enemyAlive = 1 and enemyTransformY > 0 then
         if math.abs(enemyScreenX - aimCol) < 15 then
             if zbuffer(aimCol) > enemyTransformY then
                 enemyHit = true
                 enemyHitTimer = 10
                 enemyHealth = enemyHealth - 1
+
+                ' enemyScreenX is a ray/column index (0..RAYS), not a pixel --
+                ' converting it the same way castRays()/renderEnemy() convert
+                ' a column to its actual destX puts the burst exactly where
+                ' the enemy sprite is drawn. SCY is the fixed vertical anchor
+                ' every wall/enemy strip is centred on (no look up/down in
+                ' this demo), so it's also the correct burst height.
+                hitX = enemyScreenX * STRIP + STRIP / 2
+
                 if enemyHealth < 1
                     enemyAlive = false
+                    enemyDeathEmitter.transform.setPosition(hitX, SCY)
+                    enemyDeathEmitter.burst(24)
+                else
+                    enemyHitEmitter.transform.setPosition(hitX, SCY)
+                    enemyHitEmitter.burst(8)
                 endif
             endif
         endif
@@ -188,6 +218,8 @@ function handleInput()
     if input.getKeyDown(32) then
         if flashTimer = 0 then
             flashTimer = 4
+            muzzleFlashEmitter.transform.setPosition((stage.width() / 2)+137, stage.height() - 150)
+            muzzleFlashEmitter.burst(14)
             checkHit()
         endif
     endif
@@ -372,7 +404,11 @@ function renderEnemy()
     drawLeft = math.floor(spriteScreenX - spriteW / 2)
     drawRight = math.floor(spriteScreenX + spriteW / 2)
 
-    enemyScreenX = spriteScreenX
+    if transformY <= 0 then
+        return
+    endif
+    spriteScreenX = math.floor((RAYS / 2) * (1.0 + transformX / transformY))
+    enemyScreenX = spriteScreenX        ' store for hit detection
     enemyTransformY = transformY
 
     for sc = drawLeft to drawRight - 1
@@ -381,7 +417,7 @@ function renderEnemy()
                 texCol = math.floor((sc - drawLeft) * ENIW / spriteW)
                 destX = sc * STRIP + STRIP / 2
 
-                if enemyAlive = true
+                if enemyAlive = true 
                     if enemyHitTimer > 0
                         drawing.drawImageStrip("enemy_hit.png", texCol, destX, SCY, STRIP, spriteH)
                     else
@@ -399,25 +435,54 @@ function renderEnemy()
     endif
 endfunction
 
-function renderFlash()
-    if flashTimer <= 0 then
-        return
+function updateFlashCooldown()
+    ' flashTimer now only gates fire rate (see handleInput) -- the visible
+    ' flash itself is muzzleFlashEmitter's burst, fired once at the moment
+    ' of the shot rather than redrawn every frame the cooldown is active.
+    if flashTimer > 0 then
+        flashTimer = flashTimer - 1
     endif
-    dim alpha = flashTimer * 60
-    pen.setFillColor(255, alpha, 0)
-    pen.setLineWidth(0)
-    drawing.drawCircle((stage.width() / 2) + 137, stage.height() - 150, 30)
-    flashTimer = flashTimer - 1
 endfunction
 
 function onenter()
     buildMap()
     weaponSprite = new Sprite("gun.png")
     hud.add(weaponSprite)
+    'weaponSprite.setScale(4, 4)
     weaponSprite.transform.setPosition(stage.width() / 2, stage.height() - 200)
-    healthText = new Text("Health: 100", 10, 10)
+    healthText = new Text("Health: 100",10,10)
     hud.add(healthText)
-    gameOverText = new Text("GAME OVER!", stage.width() / 2, stage.height() / 2)
+    gameOverText = new Text("GAME OVER!",stage.width() / 2, stage.height() / 2)
+
+    muzzleFlashEmitter = new Emitter("particle.png")
+    muzzleFlashEmitter.setLifetime(0.1, 0.15)
+    muzzleFlashEmitter.setSpeed(80, 160)
+    muzzleFlashEmitter.setDirection(0, 360)
+    muzzleFlashEmitter.setScaleOverLife(0.4, 0.05)
+    muzzleFlashEmitter.setAlphaOverLife(1, 0)
+    muzzleFlashEmitter.setColorOverLife(16777120, 16744448)
+    muzzleFlashEmitter.setMaxParticles(30)
+    hud.add(muzzleFlashEmitter)
+
+    enemyHitEmitter = new Emitter("particle.png")
+    enemyHitEmitter.setLifetime(0.15, 0.25)
+    enemyHitEmitter.setSpeed(60, 140)
+    enemyHitEmitter.setDirection(0, 360)
+    enemyHitEmitter.setScaleOverLife(0.5, 0.05)
+    enemyHitEmitter.setAlphaOverLife(1, 0)
+    enemyHitEmitter.setColorOverLife(16777215, 16711680)
+    enemyHitEmitter.setMaxParticles(40)
+    hud.add(enemyHitEmitter)
+
+    enemyDeathEmitter = new Emitter("particle.png")
+    enemyDeathEmitter.setLifetime(0.4, 0.6)
+    enemyDeathEmitter.setSpeed(80, 200)
+    enemyDeathEmitter.setDirection(0, 360)
+    enemyDeathEmitter.setScaleOverLife(0.7, 0.1)
+    enemyDeathEmitter.setAlphaOverLife(1, 0)
+    enemyDeathEmitter.setColorOverLife(16711680, 4473924)
+    enemyDeathEmitter.setMaxParticles(80)
+    hud.add(enemyDeathEmitter)
 endfunction
 
 function onupdate()
@@ -431,7 +496,7 @@ function onupdate()
     moveEnemy()
     renderEnemy()
     healthText.setText("Health: " + string.str(playerHealth))
-    renderFlash()
+    updateFlashCooldown()
 endfunction
 ```
 
@@ -473,4 +538,12 @@ Firing (spacebar) calls `checkHit`. A shot registers if:
 
 ### HUD layering
 
-The weapon sprite and health text are added to `hud`, not `world`. This keeps them always on top of the 3D view, which is drawn each frame via `drawing.drawImageStrip` into the world layer.
+The weapon sprite, health text, and all three particle emitters are added to `hud`, not `world`. This keeps them always on top of the 3D view, which is drawn each frame via `drawing.drawImageStrip` into the world layer.
+
+For the emitters specifically, this isn't just a visual preference — it's required. `castRays` calls `drawing.clear()` and redraws the ceiling, floor, and every wall strip into the world container from scratch every single frame. Anything added to `world` (the normal place an `Emitter` goes in the other particle-enabled demos) would get painted over the instant the next frame's walls went up, since the freshly-redrawn strips are added after it every time. `hud` is a separate container that always renders on top of `world` regardless of what's redrawn there, which is also why the gun sprite and health text stay visible — routing the emitters through it sidesteps the redraw entirely. There's no `camera` anywhere in this demo, so `hud`, `world`, and screen coordinates are all the same thing here, unlike in a scrolling demo where they'd diverge.
+
+### Muzzle flash and hit particles
+
+Three `Emitter`s are set up once in `onenter()`: `muzzleFlashEmitter`, `enemyHitEmitter`, and `enemyDeathEmitter`. The old muzzle flash was a `pen`/`drawing.drawCircle` circle redrawn every frame `flashTimer` was active; it's now a single `muzzleFlashEmitter.burst(14)` fired once, at the moment of the shot, positioned at the same fixed HUD point the circle used to be drawn at. `flashTimer` still exists, but only as a fire-rate cooldown now (renamed `updateFlashCooldown`, called from `onupdate`) — it no longer drives any drawing itself.
+
+`checkHit`'s hit and death bursts need a screen position, not a world one, since this demo has no camera to convert one into the other. `enemyScreenX` is a ray/column index (0 to `RAYS`), not a pixel — converting it with the same `enemyScreenX * STRIP + STRIP / 2` expression `castRays`/`renderEnemy` already use for their own `destX` puts the burst exactly where the enemy sprite is actually drawn. `SCY`, the fixed vertical anchor every wall and enemy strip is centred on (there's no vertical look in this demo), is the correct burst height for the same reason.

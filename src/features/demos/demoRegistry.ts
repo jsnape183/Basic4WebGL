@@ -22,11 +22,13 @@ export const demoRegistry: DemoEntry[] = [
 
 Casts 200 rays per frame, drawing textured wall strips scaled by distance to create a 3D perspective. A **z-buffer** tracks wall distances so a billboard enemy sprite is correctly occluded by walls. One enemy chases the player, deals melee damage on contact, and dies after 10 hits.
 
-**Spacebar** fires — hit detection checks if the centre ray is within 15 columns of the enemy's projected screen position and that the z-buffer confirms it's visible. The HUD weapon, health counter, and game-over screen are rendered via \`hud.add()\` so they always sit above the world layer.
+**Spacebar** fires — hit detection checks if the centre ray is within 15 columns of the enemy's projected screen position and that the z-buffer confirms it's visible. The HUD weapon, health counter, game-over screen, and every particle emitter are rendered via \`hud.add()\` so they always sit above the world layer, which this demo redraws from scratch every frame.
 
-**Key techniques:** DDA raycasting, perpendicular wall distance (no fisheye), texture column sampling via \`drawing.drawImageStrip\`, camera-plane billboard projection, separate x/y wall-sliding collision.
+Firing, landing a hit, and killing the enemy each burst an \`Emitter\` — a particle muzzle flash replacing the old \`drawing.drawCircle\` flash, plus a hit spark and a death burst, positioned using the same projected screen coordinates the enemy billboard itself already computes.
 
-**Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\` — **Controls:** WASD to move, Space to fire`,
+**Key techniques:** DDA raycasting, perpendicular wall distance (no fisheye), texture column sampling via \`drawing.drawImageStrip\`, camera-plane billboard projection, separate x/y wall-sliding collision, particle effects via a shared \`Emitter\` module added to \`hud\` instead of \`world\`.
+
+**Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\`, \`particle.png\` — **Controls:** WASD to move, Space to fire`,
     docsSlug: 'raycaster',
     json: raycasterJson as ProjectExportJson,
   },
