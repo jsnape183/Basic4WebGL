@@ -69,6 +69,18 @@ dim ENIW = 64
 dim weaponSprite as Sprite
 dim flashTimer = 4
 
+' weaponSprite is a plain Sprite, not an animatedsprite -- its transform
+' is its top-left corner, not its centre (confirmed live: a centre-relative
+' offset here put the flash up in the ceiling, nowhere near the gun). The
+' muzzle opening sits at roughly (122, 36) in the underlying 256x256
+' gun.png, found by locating the dark pixel cluster at the tip of the
+' barrel -- these are that point's offset from the sprite's own top-left,
+' so muzzleFlashEmitter can be positioned relative to weaponSprite's own
+' transform rather than a second, independent hardcoded screen coordinate
+' that has to be kept in sync with it by hand.
+dim muzzleOffsetX = 122
+dim muzzleOffsetY = 36
+
 ' Particles -- added to the HUD layer, not the world. castRays() calls
 ' drawing.clear() and redraws the ceiling/floor/walls into the world
 ' container fresh every single frame, so anything world.add()'d would get
@@ -218,8 +230,8 @@ function handleInput()
     if input.getKeyDown(32) then
         if flashTimer = 0 then
             flashTimer = 4
-            muzzleFlashEmitter.transform.setPosition((stage.width() / 2)+137, stage.height() - 150)
-            muzzleFlashEmitter.burst(14)
+            muzzleFlashEmitter.transform.setPosition(weaponSprite.transform.x() + muzzleOffsetX, weaponSprite.transform.y() + muzzleOffsetY)
+            muzzleFlashEmitter.burst(18)
             checkHit()
         endif
     endif
@@ -458,7 +470,7 @@ function onenter()
     muzzleFlashEmitter.setLifetime(0.1, 0.15)
     muzzleFlashEmitter.setSpeed(80, 160)
     muzzleFlashEmitter.setDirection(0, 360)
-    muzzleFlashEmitter.setScaleOverLife(0.4, 0.05)
+    muzzleFlashEmitter.setScaleOverLife(0.6, 0.08)
     muzzleFlashEmitter.setAlphaOverLife(1, 0)
     muzzleFlashEmitter.setColorOverLife(16777120, 16744448)
     muzzleFlashEmitter.setMaxParticles(30)
@@ -544,6 +556,8 @@ For the emitters specifically, this isn't just a visual preference — it's requ
 
 ### Muzzle flash and hit particles
 
-Three `Emitter`s are set up once in `onenter()`: `muzzleFlashEmitter`, `enemyHitEmitter`, and `enemyDeathEmitter`. The old muzzle flash was a `pen`/`drawing.drawCircle` circle redrawn every frame `flashTimer` was active; it's now a single `muzzleFlashEmitter.burst(14)` fired once, at the moment of the shot, positioned at the same fixed HUD point the circle used to be drawn at. `flashTimer` still exists, but only as a fire-rate cooldown now (renamed `updateFlashCooldown`, called from `onupdate`) — it no longer drives any drawing itself.
+Three `Emitter`s are set up once in `onenter()`: `muzzleFlashEmitter`, `enemyHitEmitter`, and `enemyDeathEmitter`. The old muzzle flash was a `pen`/`drawing.drawCircle` circle redrawn every frame `flashTimer` was active; it's now a single `muzzleFlashEmitter.burst(18)` fired once, at the moment of the shot. `flashTimer` still exists, but only as a fire-rate cooldown now (renamed `updateFlashCooldown`, called from `onupdate`) — it no longer drives any drawing itself.
+
+The flash is positioned relative to `weaponSprite.transform`, not an independent hardcoded screen coordinate — `muzzleOffsetX`/`muzzleOffsetY` (122, 36) are the muzzle opening's pixel position in the underlying 256×256 `gun.png`, found by locating the dark pixel cluster at the tip of the barrel. A first attempt treated those as an offset from the sprite's *centre*, which put the flash up in the ceiling — `Sprite` (what `weaponSprite` is) has no centred anchor, unlike `animatedsprite`; its transform is its top-left corner, confirmed live once the centre-relative version visibly missed. Tying the flash to the gun's own transform (rather than a second, independent screen coordinate) also means the two can't drift out of sync if the gun's position ever changes.
 
 `checkHit`'s hit and death bursts need a screen position, not a world one, since this demo has no camera to convert one into the other. `enemyScreenX` is a ray/column index (0 to `RAYS`), not a pixel — converting it with the same `enemyScreenX * STRIP + STRIP / 2` expression `castRays`/`renderEnemy` already use for their own `destX` puts the burst exactly where the enemy sprite is actually drawn. `SCY`, the fixed vertical anchor every wall and enemy strip is centred on (there's no vertical look in this demo), is the correct burst height for the same reason.
