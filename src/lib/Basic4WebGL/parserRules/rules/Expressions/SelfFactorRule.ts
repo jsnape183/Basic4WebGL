@@ -16,6 +16,7 @@ import { assertInsideClass } from '../classGuards';
 import { CompilationError } from '@CompilerLib/errors';
 import { symbolTypes } from '../../../symbolTypes';
 import resolveSelfMember from './helpers/resolveSelfMember';
+import resolveMemberChainType from './helpers/resolveMemberChainType';
 
 @RegisterParserRule('SelfFactor')
 class SelfFactorRule implements IParserRule {
@@ -99,11 +100,19 @@ class SelfFactorRule implements IParserRule {
       return new PropertyMethodTermNode(chain, args, loc);
     }
 
-    // self.prop.sub.method(args) — chained call through a sub-object in expression context
+    // self.prop.sub.method(args) — chained call through a sub-object in expression context.
+    // Track every segment name (not just the first), since a chain that ends
+    // without a method call needs to resolve the FINAL segment's type by
+    // walking into each intermediate class-typed field's own class — see
+    // resolveMemberChainType for why looking up only the first segment
+    // against the outer class was wrong.
+    const segments = [memberName];
     while (check(tokens.Dot, tokenStream.current())) {
       matchAndMove(tokens.Dot, tokenStream);
       matchAndMove(tokens.Variable, tokenStream);
-      chain += `.${tokenStream.prev().text.toLowerCase()}`;
+      const segment = tokenStream.prev().text.toLowerCase();
+      segments.push(segment);
+      chain += `.${segment}`;
 
       if (check(tokens.OpenParen, tokenStream.current())) {
         const args = getParserRule('ExpressionList').parse(tokenStream, symbolTable, undefined);
@@ -111,16 +120,13 @@ class SelfFactorRule implements IParserRule {
       }
     }
 
-    // self.property in expression context — look up symbol type from class scope so arithmetic
-    // type-checks pass correctly even when a local variable shadows the class property name.
-    // Walk up the inheritance chain so inherited properties resolve to the correct type,
-    // skipping any ancestor declaration that carried no type of its own.
-    const dataType = resolveSelfMember(
-      symbolTable,
-      memberName,
-      symbolTypes.Variable,
-      (symbol) => symbol.dataType !== undefined
-    )?.dataType;
+    // self.property[.sub.sub...] in expression context — look up the final
+    // segment's type by walking the chain through each intermediate
+    // class-typed field, so arithmetic/boolean/string type-checks pass
+    // correctly even when a local variable shadows the class property name.
+    // Walks up inheritance chains along the way, skipping any ancestor
+    // declaration that carried no type of its own.
+    const dataType = resolveMemberChainType(symbolTable, segments);
     return new PropertyTermNode(chain, loc, dataType);
   }
 }
