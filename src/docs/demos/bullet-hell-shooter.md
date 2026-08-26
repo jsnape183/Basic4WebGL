@@ -732,7 +732,6 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(0, 0)
-  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map1.stm")
@@ -760,6 +759,12 @@ function onenter()
   camera.follow(p, 0.1)
 
   self.setupHud()
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, and mobs — PIXI draws worldContainer's
+  ' children in insertion order (no zIndex is set anywhere), so anything
+  ' added earlier renders underneath what's added later.
+  particles.setup()
 endfunction
 
 function wallLayers()
@@ -839,6 +844,7 @@ function onupdate(delta)
 endfunction
 
 EndClass
+
 ```
 
 ## Level2Scene.bas
@@ -868,7 +874,6 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(1, 0)
-  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map2.stm")
@@ -896,6 +901,12 @@ function onenter()
   camera.follow(p, 0.1)
 
   self.setupHud()
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, and mobs — PIXI draws worldContainer's
+  ' children in insertion order (no zIndex is set anywhere), so anything
+  ' added earlier renders underneath what's added later.
+  particles.setup()
 endfunction
 
 function wallLayers()
@@ -975,6 +986,7 @@ function onupdate(delta)
 endfunction
 
 EndClass
+
 ```
 
 ## Level3Scene.bas
@@ -1004,7 +1016,6 @@ function onenter()
   self.cleared = false
   self.clearTimer = 0
   gamedata.setLevelTime(2, 0)
-  particles.setup()
 
   dim tm as tilemapset
   tm = new tilemapset("map3.stm")
@@ -1032,6 +1043,12 @@ function onenter()
   camera.follow(p, 0.1)
 
   self.setupHud()
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, and mobs — PIXI draws worldContainer's
+  ' children in insertion order (no zIndex is set anywhere), so anything
+  ' added earlier renders underneath what's added later.
+  particles.setup()
 endfunction
 
 function wallLayers()
@@ -1111,6 +1128,7 @@ function onupdate(delta)
 endfunction
 
 EndClass
+
 ```
 
 ## WinScene.bas
