@@ -3,6 +3,7 @@ Extends animatedsprite
 
 dim vy
 dim grounded
+dim wasGrounded
 dim level
 dim startX
 dim startY
@@ -15,6 +16,9 @@ Constructor(x, y)
   self.addAnim("land", 3, 3, 4, false)
   self.vy = 0
   self.grounded = false
+  ' Starts true, not false — the player spawns standing on the ground, and
+  ' this must not read as a landing transition on the very first frame.
+  self.wasGrounded = true
   self.startX = x
   self.startY = y
   self.transform.setPosition(x, y)
@@ -78,6 +82,7 @@ function onupdate(delta)
     if self.grounded then
       self.vy = -140
       self.play("jump")
+      particles.burstJumpPuff(x, y + 4)
     endif
   endif
 
@@ -92,6 +97,11 @@ function onupdate(delta)
     self.vy = 0
     self.grounded = true
   endif
+
+  if not self.wasGrounded and self.grounded then
+    particles.burstLandPuff(x, y + 4)
+  endif
+  self.wasGrounded = self.grounded
 
   self.transform.setPosition(x, y)
 

@@ -7,6 +7,7 @@ dim coins(0)
 dim coinCounter
 dim game
 dim finished
+dim finishTimer
 
 Constructor(gameData)
   self.game = gameData
@@ -14,6 +15,7 @@ EndConstructor
 
 function onenter()
   self.finished = false
+  self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level1.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 52)
@@ -25,6 +27,11 @@ function onenter()
   self.spawnCoins()
 
   self.coinCounter = levelhelpers.spawnCoinCounter(self.game)
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, enemies, and coins (see Bullet Hell
+  ' Shooter's Particles.bas for why this ordering matters).
+  particles.setup()
 endfunction
 
 function spawnCoins()
@@ -55,6 +62,11 @@ function onupdate(delta)
   if not self.finished then
     if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then
       self.finished = true
+      particles.burstLevelComplete(self.player.transform.x(), self.player.transform.y())
+    endif
+  else
+    self.finishTimer = self.finishTimer + delta / 1000
+    if self.finishTimer >= 0.6 then
       scenemanager.switch("level2")
     endif
   endif

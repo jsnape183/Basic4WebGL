@@ -16,6 +16,8 @@ softBASIC's `Extends` only supports single-level inheritance — a class that al
 
 Reaching the right edge of a level calls `scenemanager.switch(...)` to the next one. `GameData` is a single shared object, constructed once in `Main.bas` and passed to every scene's constructor, so the coin count survives every scene switch. On reaching the final `WinScene`, the run's total is inserted into a small in-memory leaderboard (capped at the top 5, newest ties keeping their place) and persisted with `save.set("leaderboard", self.scores)` — so it survives a page reload. (Insertion is done by hand rather than with `array.sort()`, since that function sorts alphanumerically — correct for strings, but "20" would sort before "9".)
 
+Particle effects (built on the `Emitter` class) fire at three moments — jumping (a small dust puff), landing (a bigger one), and reaching the end of a level (a gold burst) — via a small shared-emitter module, **`Particles.bas`**, following the same pattern as Bullet Hell Shooter's own particle integration. Each level's `onenter()` calls `particles.setup()` as its very last statement, after every other `world.add()` call — PIXI renders a container's children in the order they were added, and there's no explicit z-index anywhere in this engine, so particles created before the tilemap would render underneath it and never be seen. Reaching a level's end also needs a short delay (`finishTimer`) before the actual `scenemanager.switch(...)` — switching scenes clears the world immediately, so bursting a particle effect and switching scenes in the very same frame would destroy the burst before it ever renders a single frame.
+
 ---
 
 ## Required assets
@@ -26,6 +28,7 @@ Reaching the right edge of a level calls `scenemanager.switch(...)` to the next 
 | `enemy.png` | 8×8 static sprite |
 | `coin.png` | 8×8 static sprite |
 | `tilemap_trimmed.png` | 8×8 tileset — tile ID `3` is solid ground |
+| `particle.png` | 16×16 soft-edged white dot, tinted per-effect via `setColorOverLife` |
 | `level1.stm` / `level2.stm` / `level3.stm` | Multi-layer tilemap data for each level (a single "ground" layer here), loaded by `tilemapset`'s constructor |
 
 ---
@@ -148,6 +151,7 @@ Extends animatedsprite
 
 dim vy
 dim grounded
+dim wasGrounded
 dim level
 dim startX
 dim startY
@@ -160,6 +164,9 @@ Constructor(x, y)
   self.addAnim("land", 3, 3, 4, false)
   self.vy = 0
   self.grounded = false
+  ' Starts true, not false — the player spawns standing on the ground, and
+  ' this must not read as a landing transition on the very first frame.
+  self.wasGrounded = true
   self.startX = x
   self.startY = y
   self.transform.setPosition(x, y)
@@ -223,6 +230,7 @@ function onupdate(delta)
     if self.grounded then
       self.vy = -140
       self.play("jump")
+      particles.burstJumpPuff(x, y + 4)
     endif
   endif
 
@@ -237,6 +245,11 @@ function onupdate(delta)
     self.vy = 0
     self.grounded = true
   endif
+
+  if not self.wasGrounded and self.grounded then
+    particles.burstLandPuff(x, y + 4)
+  endif
+  self.wasGrounded = self.grounded
 
   self.transform.setPosition(x, y)
 
@@ -254,6 +267,7 @@ function onupdate(delta)
 endfunction
 
 EndClass
+
 ```
 
 ## LevelHelpers.bas
@@ -332,6 +346,67 @@ function reachedLevelEnd(player as player, tm as tilemaplayer)
 endfunction
 ```
 
+## Particles.bas
+
+```bas
+' demo-src/coins-platformer/Particles.bas
+dim jumpPuffEmitter as Emitter
+dim landPuffEmitter as Emitter
+dim levelCompleteEmitter as Emitter
+
+function setup()
+  jumpPuffEmitter = new Emitter("particle.png")
+  jumpPuffEmitter.setLifetime(0.25, 0.35)
+  jumpPuffEmitter.setSpeed(20, 40)
+  jumpPuffEmitter.setDirection(0, 360)
+  jumpPuffEmitter.setGravity(0, 40)
+  jumpPuffEmitter.setScaleOverLife(0.6, 0.1)
+  jumpPuffEmitter.setAlphaOverLife(0.8, 0)
+  jumpPuffEmitter.setColorOverLife(13811350, 9205850)
+  jumpPuffEmitter.setMaxParticles(40)
+  world.add(jumpPuffEmitter)
+
+  landPuffEmitter = new Emitter("particle.png")
+  landPuffEmitter.setLifetime(0.3, 0.45)
+  landPuffEmitter.setSpeed(30, 70)
+  landPuffEmitter.setDirection(0, 360)
+  landPuffEmitter.setGravity(0, 60)
+  landPuffEmitter.setScaleOverLife(0.9, 0.1)
+  landPuffEmitter.setAlphaOverLife(0.9, 0)
+  landPuffEmitter.setColorOverLife(13811350, 9205850)
+  landPuffEmitter.setMaxParticles(60)
+  world.add(landPuffEmitter)
+
+  levelCompleteEmitter = new Emitter("particle.png")
+  levelCompleteEmitter.setLifetime(0.6, 1)
+  levelCompleteEmitter.setSpeed(60, 160)
+  levelCompleteEmitter.setDirection(0, 360)
+  levelCompleteEmitter.setGravity(0, 150)
+  levelCompleteEmitter.setScaleOverLife(1.2, 0.1)
+  levelCompleteEmitter.setAlphaOverLife(1, 0)
+  levelCompleteEmitter.setColorOverLife(16766720, 16747520)
+  levelCompleteEmitter.setMaxParticles(100)
+  world.add(levelCompleteEmitter)
+endfunction
+
+function burstJumpPuff(x, y)
+  jumpPuffEmitter.transform.setPosition(x, y)
+  jumpPuffEmitter.burst(4)
+endfunction
+
+function burstLandPuff(x, y)
+  landPuffEmitter.transform.setPosition(x, y)
+  landPuffEmitter.burst(10)
+endfunction
+
+function burstLevelComplete(x, y)
+  levelCompleteEmitter.transform.setPosition(x, y)
+  levelCompleteEmitter.burst(20)
+endfunction
+```
+
+---
+
 ## Level1Scene.bas
 
 ```bas
@@ -344,6 +419,7 @@ dim coins(0)
 dim coinCounter
 dim game
 dim finished
+dim finishTimer
 
 Constructor(gameData)
   self.game = gameData
@@ -351,6 +427,7 @@ EndConstructor
 
 function onenter()
   self.finished = false
+  self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level1.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 52)
@@ -362,6 +439,11 @@ function onenter()
   self.spawnCoins()
 
   self.coinCounter = levelhelpers.spawnCoinCounter(self.game)
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, enemies, and coins (see Bullet Hell
+  ' Shooter's Particles.bas for why this ordering matters).
+  particles.setup()
 endfunction
 
 function spawnCoins()
@@ -392,12 +474,18 @@ function onupdate(delta)
   if not self.finished then
     if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then
       self.finished = true
+      particles.burstLevelComplete(self.player.transform.x(), self.player.transform.y())
+    endif
+  else
+    self.finishTimer = self.finishTimer + delta / 1000
+    if self.finishTimer >= 0.6 then
       scenemanager.switch("level2")
     endif
   endif
 endfunction
 
 EndClass
+
 ```
 
 ## Level2Scene.bas
@@ -412,6 +500,7 @@ dim coins(0)
 dim coinCounter
 dim game
 dim finished
+dim finishTimer
 
 Constructor(gameData)
   self.game = gameData
@@ -419,6 +508,7 @@ EndConstructor
 
 function onenter()
   self.finished = false
+  self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level2.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 68)
@@ -432,6 +522,11 @@ function onenter()
   self.spawnCoins()
 
   self.coinCounter = levelhelpers.spawnCoinCounter(self.game)
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, enemies, and coins (see Bullet Hell
+  ' Shooter's Particles.bas for why this ordering matters).
+  particles.setup()
 endfunction
 
 function spawnCoins()
@@ -464,12 +559,18 @@ function onupdate(delta)
   if not self.finished then
     if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then
       self.finished = true
+      particles.burstLevelComplete(self.player.transform.x(), self.player.transform.y())
+    endif
+  else
+    self.finishTimer = self.finishTimer + delta / 1000
+    if self.finishTimer >= 0.6 then
       scenemanager.switch("level3")
     endif
   endif
 endfunction
 
 EndClass
+
 ```
 
 ## Level3Scene.bas
@@ -484,6 +585,7 @@ dim coins(0)
 dim coinCounter
 dim game
 dim finished
+dim finishTimer
 
 Constructor(gameData)
   self.game = gameData
@@ -491,6 +593,7 @@ EndConstructor
 
 function onenter()
   self.finished = false
+  self.finishTimer = 0
 
   self.tilemap = levelhelpers.beginLevel("level3.stm")
   self.player = levelhelpers.spawnPlayer(self.tilemap, 16, 84)
@@ -506,6 +609,11 @@ function onenter()
   self.spawnCoins()
 
   self.coinCounter = levelhelpers.spawnCoinCounter(self.game)
+
+  ' Added after every other world.add() call above so particle bursts render
+  ' on top of the tilemap, player, enemies, and coins (see Bullet Hell
+  ' Shooter's Particles.bas for why this ordering matters).
+  particles.setup()
 endfunction
 
 function spawnCoins()
@@ -542,12 +650,18 @@ function onupdate(delta)
   if not self.finished then
     if levelhelpers.reachedLevelEnd(self.player, self.tilemap) then
       self.finished = true
+      particles.burstLevelComplete(self.player.transform.x(), self.player.transform.y())
+    endif
+  else
+    self.finishTimer = self.finishTimer + delta / 1000
+    if self.finishTimer >= 0.6 then
       scenemanager.switch("winscene")
     endif
   endif
 endfunction
 
 EndClass
+
 ```
 
 ## WinScene.bas
