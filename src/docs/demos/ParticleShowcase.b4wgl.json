@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "project": {
+    "name": "ParticleShowcase"
+  },
+  "folders": [],
+  "files": [
+    {
+      "id": "af5b2972-4e56-42ba-ba53-8920195fd431",
+      "name": "Main.bas",
+      "source": "' demo-src/particle-showcase/Main.bas\ndim showcasescene = new ShowcaseScene()\n\nscenemanager.register(\"showcase\", showcasescene)\nscenemanager.switch(\"showcase\")\n",
+      "folderId": null,
+      "fullName": "Main.bas"
+    },
+    {
+      "id": "1f430c2c-51ed-45e7-a85c-1090b9d7eb3e",
+      "name": "ShowcaseScene.bas",
+      "source": "Class extends scene\n\ndim emitter as Emitter\ndim wasMouseDown\n\nfunction onenter()\n  stage.setBackground(18, 18, 26)\n\n  dim e as Emitter\n  e = new Emitter(\"particle.png\")\n  e.setLifetime(0.6, 1)\n  e.setSpeed(60, 180)\n  e.setDirection(0, 360)\n  e.setGravity(0, 200)\n  e.setScaleOverLife(1.5, 0.1)\n  e.setAlphaOverLife(1, 0)\n  e.setColorOverLife(16768120, 11801600)\n  e.setMaxParticles(300)\n  world.add(e)\n  self.emitter = e\n\n  self.wasMouseDown = false\n\n  dim label as text\n  label = new text(\"Click anywhere to burst fire particles\", 20, 20)\n  label.setStyle(16, 255, 255, 255)\n  hud.add(label)\nendfunction\n\nfunction onupdate(delta)\n  dim down\n  down = input.mouseDown()\n  if not self.wasMouseDown and down then\n    self.emitter.transform.setPosition(input.mouseX(), input.mouseY())\n    self.emitter.burst(30)\n  endif\n  self.wasMouseDown = down\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "ShowcaseScene.bas"
+    }
+  ],
+  "assets": [
+    {
+      "id": "de91fde1-659a-4774-9c8f-5d3fbcbf03d9",
+      "name": "particle.png",
+      "content": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA1ElEQVR4nKWTMQ6CQBBF3xJrKxITejsqCipv4Jm4g/ew9gZWFFZ01JCQaOMFvlmdNURiXLO/IjvzX2Z3PpAo93kgaQ3UwBbI7fgK9EDrnLt/BUiqgD2wA0pgY6UJ6IAzcHLOXRajSKokHSQN+q7BeqrF2JKaH+Y5pLGrkhmjtrGLiHcrrLeeA7Z251iV5iEA8tmDxWgTNpSRqGy2Z7+qWE3mIQB623OsOvMQAK2FZIwwj9bbvgHuFc8TcPwB8TXf49P4jPQqVHw8JfnP2z9RTv6ZkvUAXx6VoelCZxUAAAAASUVORK5CYII=",
+      "folderId": null,
+      "fullName": "particle.png"
+    }
+  ],
+  "fileOrder": {
+    ":root": [
+      "af5b2972-4e56-42ba-ba53-8920195fd431",
+      "1f430c2c-51ed-45e7-a85c-1090b9d7eb3e"
+    ]
+  },
+  "assetOrder": {
+    ":root": [
+      "de91fde1-659a-4774-9c8f-5d3fbcbf03d9"
+    ]
+  }
+}
