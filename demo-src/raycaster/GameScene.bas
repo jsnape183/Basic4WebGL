@@ -1,0 +1,505 @@
+Class
+Extends scene
+
+' Screen
+dim STRIP
+dim RAYS
+dim SW
+dim SH
+dim SCY
+
+' Texture sizes
+dim TEXW
+dim ENIW
+
+' Weapon
+dim weaponSprite as Sprite
+dim flashTimer
+
+' weaponSprite is a plain Sprite. `sprite` is now centre-anchored (matching
+' animatedsprite), so weaponSprite.transform.x()/y() reports the CENTRE of
+' the underlying 256x256 gun.png, not its top-left corner. The muzzle
+' opening sits at roughly (122, 36) from that image's top-left, found by
+' locating the dark pixel cluster at the tip of the barrel -- converted to
+' an offset from the image's centre (128, 128), that's (122 - 128, 36 - 128)
+' = (-6, -92), so muzzleFlashEmitter can still be positioned relative to
+' weaponSprite's own transform rather than a second, independent hardcoded
+' screen coordinate that has to be kept in sync with it by hand.
+dim muzzleOffsetX
+dim muzzleOffsetY
+
+' Particles -- added to the HUD layer, not the world. castRays() calls
+' drawing.clear() and redraws the ceiling/floor/walls into the world
+' container fresh every single frame, so anything world.add()'d would get
+' painted over the instant the next frame's walls go up. HUD is a
+' separate container that always renders on top of the world, which is
+' also why the gun sprite and health text below stay visible -- placing
+' the emitters there sidesteps the redraw entirely. There's no camera in
+' this demo, so HUD/world/screen coordinates are all the same thing.
+dim muzzleFlashEmitter as Emitter
+dim enemyHitEmitter as Emitter
+dim enemyDeathEmitter as Emitter
+
+' Player state
+dim posX
+dim posY
+dim dirX
+dim dirY
+dim planeX
+dim planeY
+dim playerHealth
+dim damageCooldown
+
+' Hud
+dim mapW
+dim cells(64)
+dim healthText as Text
+dim gameOverText as Text
+
+' Enemy
+dim enemyX
+dim enemyY
+dim enemyScreenX
+dim enemyTransformY
+dim enemyAlive
+dim enemyHealth
+dim enemyHit
+dim enemyHitTimer
+dim enemySpeed
+
+' Z-buffer
+dim zbuffer(200)
+
+' Movement speeds
+dim moveSpeed
+dim rotSpeed
+
+Constructor()
+  self.STRIP = 4
+  self.RAYS = 200
+  self.SW = 800
+  self.SH = 600
+  self.SCY = 300
+  self.TEXW = 64
+  self.ENIW = 64
+  self.flashTimer = 4
+  self.muzzleOffsetX = -6
+  self.muzzleOffsetY = -92
+  self.posX = 1.5
+  self.posY = 4.5
+  self.dirX = 1.0
+  self.dirY = 0.0
+  self.planeX = 0.0
+  self.planeY = 0.66
+  self.playerHealth = 100
+  self.damageCooldown = 0
+  self.mapW = 8
+  self.enemyX = 5.5
+  self.enemyY = 3.5
+  self.enemyScreenX = -999
+  self.enemyTransformY = 0
+  self.enemyAlive = true
+  self.enemyHealth = 10
+  self.enemyHit = false
+  self.enemyHitTimer = 0
+  self.enemySpeed = 0.02
+  self.moveSpeed = 0.05
+  self.rotSpeed = 0.04
+EndConstructor
+
+function buildMap()
+    dim i
+    for i = 0 to 63
+        self.cells(i) = 0
+    next i
+    dim x
+    for x = 0 to 7
+        self.cells(x) = 1
+        self.cells(56 + x) = 1
+        self.cells(x * 8) = 1
+        self.cells(x * 8 + 7) = 1
+    next x
+    ' Interior pillars
+    self.cells(18) = 1
+    self.cells(45) = 1
+endfunction
+
+function getCell(mx, my)
+    return self.cells(my * self.mapW + mx)
+endfunction
+
+function checkHit()
+    dim aimCol = self.RAYS / 2
+    dim hitX
+    if self.enemyAlive = 1 and self.enemyTransformY > 0 then
+        if math.abs(self.enemyScreenX - aimCol) < 15 then
+            if self.zbuffer(aimCol) > self.enemyTransformY then
+                self.enemyHit = true
+                self.enemyHitTimer = 10
+                self.enemyHealth = self.enemyHealth - 1
+
+                ' enemyScreenX is a ray/column index (0..RAYS), not a pixel --
+                ' converting it the same way castRays()/renderEnemy() convert
+                ' a column to its actual destX puts the burst exactly where
+                ' the enemy sprite is drawn. SCY is the fixed vertical anchor
+                ' every wall/enemy strip is centred on (no look up/down in
+                ' this demo), so it's also the correct burst height.
+                hitX = self.enemyScreenX * self.STRIP + self.STRIP / 2
+
+                if self.enemyHealth < 1
+                    self.enemyAlive = false
+                    self.enemyDeathEmitter.transform.setPosition(hitX, self.SCY)
+                    self.enemyDeathEmitter.burst(24)
+                else
+                    self.enemyHitEmitter.transform.setPosition(hitX, self.SCY)
+                    self.enemyHitEmitter.burst(8)
+                endif
+            endif
+        endif
+    endif
+endfunction
+
+function handleInput()
+    dim nx
+    dim ny
+    dim oldDirX
+    dim oldPlaneX
+    dim negRot
+
+    if input.getKeyDown(87) then
+        nx = self.posX + self.dirX * self.moveSpeed
+        ny = self.posY + self.dirY * self.moveSpeed
+        if self.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if self.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
+    if input.getKeyDown(83) then
+        nx = self.posX - self.dirX * self.moveSpeed
+        ny = self.posY - self.dirY * self.moveSpeed
+        if self.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if self.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
+    if input.getKeyDown(68) then
+        oldDirX = self.dirX
+        self.dirX = self.dirX * math.cos(self.rotSpeed) - self.dirY * math.sin(self.rotSpeed)
+        self.dirY = oldDirX * math.sin(self.rotSpeed) + self.dirY * math.cos(self.rotSpeed)
+        oldPlaneX = self.planeX
+        self.planeX = self.planeX * math.cos(self.rotSpeed) - self.planeY * math.sin(self.rotSpeed)
+        self.planeY = oldPlaneX * math.sin(self.rotSpeed) + self.planeY * math.cos(self.rotSpeed)
+    endif
+
+    if input.getKeyDown(65) then
+        negRot = 0 - self.rotSpeed
+        oldDirX = self.dirX
+        self.dirX = self.dirX * math.cos(negRot) - self.dirY * math.sin(negRot)
+        self.dirY = oldDirX * math.sin(negRot) + self.dirY * math.cos(negRot)
+        oldPlaneX = self.planeX
+        self.planeX = self.planeX * math.cos(negRot) - self.planeY * math.sin(negRot)
+        self.planeY = oldPlaneX * math.sin(negRot) + self.planeY * math.cos(negRot)
+    endif
+
+    if input.getKeyDown(32) then
+        if self.flashTimer = 0 then
+            self.flashTimer = 4
+            self.muzzleFlashEmitter.transform.setPosition(self.weaponSprite.transform.x() + self.muzzleOffsetX, self.weaponSprite.transform.y() + self.muzzleOffsetY)
+            self.muzzleFlashEmitter.burst(18)
+            self.checkHit()
+        endif
+    endif
+endfunction
+
+function castRays()
+    dim col
+    dim cameraX
+    dim rayDirX
+    dim rayDirY
+    dim mapX
+    dim mapY
+    dim deltaDistX
+    dim deltaDistY
+    dim stepX
+    dim stepY
+    dim sideDistX
+    dim sideDistY
+    dim hit
+    dim side
+    dim perpWallDist
+    dim lineHeight
+    dim wallX
+    dim texX
+    dim destX
+
+    drawing.clear()
+
+    ' Ceiling
+    pen.setFillColor(60, 60, 80)
+    pen.setLineWidth(0)
+    drawing.drawRect(400, 150, 800, 300)
+
+    ' Floor
+    pen.setFillColor(80, 70, 55)
+    drawing.drawRect(400, 450, 800, 300)
+
+    for col = 0 to self.RAYS - 1
+        cameraX = (2.0 * col / self.RAYS) - 1.0
+        rayDirX = self.dirX + self.planeX * cameraX
+        rayDirY = self.dirY + self.planeY * cameraX
+
+        mapX = math.floor(self.posX)
+        mapY = math.floor(self.posY)
+
+        if math.abs(rayDirX) < 0.0001 then
+            deltaDistX = 1000000
+        else
+            deltaDistX = math.abs(1.0 / rayDirX)
+        endif
+        if math.abs(rayDirY) < 0.0001 then
+            deltaDistY = 1000000
+        else
+            deltaDistY = math.abs(1.0 / rayDirY)
+        endif
+
+        if rayDirX < 0 then
+            stepX = -1
+            sideDistX = (self.posX - mapX) * deltaDistX
+        else
+            stepX = 1
+            sideDistX = (mapX + 1.0 - self.posX) * deltaDistX
+        endif
+
+        if rayDirY < 0 then
+            stepY = -1
+            sideDistY = (self.posY - mapY) * deltaDistY
+        else
+            stepY = 1
+            sideDistY = (mapY + 1.0 - self.posY) * deltaDistY
+        endif
+
+        hit = 0
+        side = 0
+        while hit = 0
+            if sideDistX < sideDistY then
+                sideDistX = sideDistX + deltaDistX
+                mapX = mapX + stepX
+                side = 0
+            else
+                sideDistY = sideDistY + deltaDistY
+                mapY = mapY + stepY
+                side = 1
+            endif
+            if self.getCell(mapX, mapY) > 0 then
+                hit = 1
+            endif
+        endwhile
+
+        if side = 0 then
+            perpWallDist = sideDistX - deltaDistX
+        else
+            perpWallDist = sideDistY - deltaDistY
+        endif
+
+        if perpWallDist < 0.1 then
+            perpWallDist = 0.1
+        endif
+
+        lineHeight = math.floor(self.SH / perpWallDist)
+
+        if side = 0 then
+            wallX = self.posY + perpWallDist * rayDirY
+        else
+            wallX = self.posX + perpWallDist * rayDirX
+        endif
+        wallX = wallX - math.floor(wallX)
+
+        texX = math.floor(wallX * self.TEXW)
+        if side = 0 and rayDirX > 0 then
+            texX = self.TEXW - texX - 1
+        endif
+        if side = 1 and rayDirY < 0 then
+            texX = self.TEXW - texX - 1
+        endif
+
+        self.zbuffer(col) = perpWallDist
+
+        destX = col * self.STRIP + self.STRIP / 2
+        drawing.drawImageStrip("wall.png", texX, destX, self.SCY, self.STRIP, lineHeight)
+    next col
+endfunction
+
+function moveEnemy()
+    if self.enemyAlive = 0 then
+        return
+    endif
+    dim dx = self.posX - self.enemyX
+    dim dy = self.posY - self.enemyY
+    dim dist = math.distance(0, 0, dx, dy)
+    if dist < 0.6 then
+        return
+    endif
+    dim nx = self.enemyX + (dx / dist) * self.enemySpeed
+    dim ny = self.enemyY + (dy / dist) * self.enemySpeed
+    if self.getCell(math.floor(nx), math.floor(self.enemyY)) = 0 then
+        self.enemyX = nx
+    endif
+    if self.getCell(math.floor(self.enemyX), math.floor(ny)) = 0 then
+        self.enemyY = ny
+    endif
+
+    if self.damageCooldown > 0 then
+        self.damageCooldown = self.damageCooldown - 1
+    endif
+    if dist < 0.8 and self.damageCooldown = 0 then
+        self.playerHealth = self.playerHealth - 10
+        self.damageCooldown = 60
+    endif
+endfunction
+
+function renderEnemy()
+    dim spriteX
+    dim spriteY
+    dim invDet
+    dim transformX
+    dim transformY
+    dim spriteScreenX
+    dim spriteH
+    dim spriteWCols
+    dim drawLeft
+    dim drawRight
+    dim sc
+    dim texCol
+    dim destX
+
+    spriteX = self.enemyX - self.posX
+    spriteY = self.enemyY - self.posY
+
+    invDet = 1.0 / (self.planeX * self.dirY - self.dirX * self.planeY)
+    transformX = invDet * (self.dirY * spriteX - self.dirX * spriteY)
+    transformY = invDet * ((0 - self.planeY) * spriteX + self.planeX * spriteY)
+
+    if transformY <= 0 then
+        return
+    endif
+
+    spriteScreenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
+    spriteH = math.floor(self.SH / transformY)
+    ' spriteH is real screen pixels; drawLeft/drawRight/texCol below are in
+    ' ray-column-index units (the same units spriteScreenX and the
+    ' wall-casting loop's `col` use), and each column is STRIP (4) screen
+    ' pixels wide. Using spriteH directly as a column-index delta made the
+    ' enemy 4x too wide relative to its height at every distance --
+    ' confirmed by simulating this exact algorithm against the real
+    ' enemy.png offline before touching this code. Dividing by STRIP
+    ' converts the pixel-scale width into the matching column-index scale.
+    spriteWCols = spriteH / self.STRIP
+
+    drawLeft = math.floor(spriteScreenX - spriteWCols / 2)
+    drawRight = math.floor(spriteScreenX + spriteWCols / 2)
+
+    if transformY <= 0 then
+        return
+    endif
+    spriteScreenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
+    self.enemyScreenX = spriteScreenX        ' store for hit detection
+    self.enemyTransformY = transformY
+
+    for sc = drawLeft to drawRight - 1
+        if sc >= 0 and sc < self.RAYS then
+            if self.zbuffer(sc) > transformY then
+                texCol = math.floor((sc - drawLeft) * self.ENIW / spriteWCols)
+                destX = sc * self.STRIP + self.STRIP / 2
+
+                if self.enemyAlive = true
+                    if self.enemyHitTimer > 0
+                        drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+                    else
+                        drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+                    endif
+                else
+                    drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+                endif
+            endif
+        endif
+    next sc
+
+    if self.enemyHitTimer > 0
+        self.enemyHitTimer = self.enemyHitTimer - 1
+    endif
+endfunction
+
+function updateFlashCooldown()
+    ' flashTimer now only gates fire rate (see handleInput) -- the visible
+    ' flash itself is muzzleFlashEmitter's burst, fired once at the moment
+    ' of the shot rather than redrawn every frame the cooldown is active.
+    if self.flashTimer > 0 then
+        self.flashTimer = self.flashTimer - 1
+    endif
+endfunction
+
+function onenter()
+    self.buildMap()
+    self.weaponSprite = new Sprite("gun.png")
+    hud.add(self.weaponSprite)
+    'weaponSprite.setScale(4, 4)
+    ' `sprite` is centre-anchored, so this places the CENTRE of the 256x256
+    ' gun.png here; +128 on each axis keeps its top-left corner at the same
+    ' screen spot (stage.width()/2, stage.height()-200) it sat at before.
+    self.weaponSprite.transform.setPosition(stage.width() / 2 + 128, stage.height() - 200 + 128)
+    self.healthText = new Text("Health: 100",10,10)
+    hud.add(self.healthText)
+    self.gameOverText = new Text("GAME OVER!",stage.width() / 2, stage.height() / 2)
+
+    self.muzzleFlashEmitter = new Emitter("particle.png")
+    self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
+    self.muzzleFlashEmitter.setSpeed(80, 160)
+    self.muzzleFlashEmitter.setDirection(0, 360)
+    self.muzzleFlashEmitter.setScaleOverLife(0.6, 0.08)
+    self.muzzleFlashEmitter.setAlphaOverLife(1, 0)
+    self.muzzleFlashEmitter.setColorOverLife(16777120, 16744448)
+    self.muzzleFlashEmitter.setMaxParticles(30)
+    hud.add(self.muzzleFlashEmitter)
+
+    self.enemyHitEmitter = new Emitter("particle.png")
+    self.enemyHitEmitter.setLifetime(0.15, 0.25)
+    self.enemyHitEmitter.setSpeed(60, 140)
+    self.enemyHitEmitter.setDirection(0, 360)
+    self.enemyHitEmitter.setScaleOverLife(0.5, 0.05)
+    self.enemyHitEmitter.setAlphaOverLife(1, 0)
+    self.enemyHitEmitter.setColorOverLife(16777215, 16711680)
+    self.enemyHitEmitter.setMaxParticles(40)
+    hud.add(self.enemyHitEmitter)
+
+    self.enemyDeathEmitter = new Emitter("particle.png")
+    self.enemyDeathEmitter.setLifetime(0.4, 0.6)
+    self.enemyDeathEmitter.setSpeed(80, 200)
+    self.enemyDeathEmitter.setDirection(0, 360)
+    self.enemyDeathEmitter.setScaleOverLife(0.7, 0.1)
+    self.enemyDeathEmitter.setAlphaOverLife(1, 0)
+    self.enemyDeathEmitter.setColorOverLife(16711680, 4473924)
+    self.enemyDeathEmitter.setMaxParticles(80)
+    hud.add(self.enemyDeathEmitter)
+endfunction
+
+function onupdate()
+    if self.playerHealth < 1
+        hud.add(self.gameOverText)
+        return
+    endif
+
+    self.handleInput()
+    self.castRays()
+    self.moveEnemy()
+    self.renderEnemy()
+    self.healthText.setText("Health: " + string.str(self.playerHealth))
+    self.updateFlashCooldown()
+endfunction
+
+EndClass
