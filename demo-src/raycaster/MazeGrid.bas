@@ -31,9 +31,15 @@ function generate()
   dim cy
   dim nx
   dim ny
+  ' Sized for a 16x16 logical-cell maze (mapW/mapH = 33 = 2*16 + 1) -- the
+  ' backtracker's stack depth is bounded by the total logical cell count,
+  ' so 256 is exactly enough here. If mapW/mapH ever change, this needs to
+  ' grow to match: ((mapW - 1) / 2) * ((mapH - 1) / 2).
   dim stackX(256)
   dim stackY(256)
   dim stackTop
+  ' 0=up 1=down 2=left 3=right -- established here, consumed by the two
+  ' matching if-chains below (candidate collection, then carving).
   dim dirs(4)
   dim dirCount
   dim d
