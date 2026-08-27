@@ -17,16 +17,16 @@ export const demoRegistry: DemoEntry[] = [
   {
     slug: 'raycaster',
     name: 'Wolfenstein-Style Raycaster',
-    tags: ['Raycasting', 'DDA', 'Sprites', 'Z-buffer'],
-    description: `A single-file demo that renders a textured 3D maze using DDA raycasting.
+    tags: ['Raycasting', 'DDA', 'Sprites', 'Z-buffer', 'Procedural Generation'],
+    description: `A textured 3D maze rendered with DDA raycasting, starting from a title screen and regenerating a fresh maze layout every time you play.
 
-Casts 200 rays per frame, drawing textured wall strips scaled by distance to create a 3D perspective. A **z-buffer** tracks wall distances so a billboard enemy sprite is correctly occluded by walls. One enemy chases the player, deals melee damage on contact, and dies after 10 hits.
+Casts 200 rays per frame, drawing textured wall strips scaled by distance to create a 3D perspective. The maze itself is generated fresh each run by a randomized recursive backtracker, producing a fully-connected "perfect maze" rather than a fixed layout. A **z-buffer** tracks wall distances so billboard enemy sprites are correctly occluded by walls. Four enemies patrol the maze independently and switch to chasing the player when they get close, each dealing melee damage on contact and taking 3 hits to kill.
 
-**Spacebar** fires — hit detection checks if the centre ray is within 15 columns of the enemy's projected screen position and that the z-buffer confirms it's visible. The HUD weapon, health counter, game-over screen, and every particle emitter are rendered via \`hud.add()\` so they always sit above the world layer, which this demo redraws from scratch every frame.
+**Spacebar** fires — hit detection checks all four enemies and picks the closest one whose projected screen position is within 15 columns of the centre ray and confirmed visible by the z-buffer. The HUD weapon, health counter, game-over screen, and every particle emitter are rendered via \`hud.add()\` so they always sit above the world layer, which this demo redraws from scratch every frame.
 
-Firing, landing a hit, and killing the enemy each burst an \`Emitter\` — a particle muzzle flash replacing the old \`drawing.drawCircle\` flash, plus a hit spark and a death burst, positioned using the same projected screen coordinates the enemy billboard itself already computes.
+Firing, landing a hit, and killing an enemy each burst an \`Emitter\` — a particle muzzle flash, plus a hit spark and a death burst, positioned using the same projected screen coordinates the enemy billboards themselves already compute.
 
-**Key techniques:** DDA raycasting, perpendicular wall distance (no fisheye), texture column sampling via \`drawing.drawImageStrip\`, camera-plane billboard projection, separate x/y wall-sliding collision, particle effects via a shared \`Emitter\` module added to \`hud\` instead of \`world\`.
+**Key techniques:** DDA raycasting, perpendicular wall distance (no fisheye), texture column sampling via \`drawing.drawImageStrip\`, camera-plane billboard projection with depth sorting, a randomized recursive-backtracker maze generator, simple per-axis patrol/chase enemy movement, particle effects via a shared \`Emitter\` module added to \`hud\` instead of \`world\`.
 
 **Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\`, \`particle.png\` — **Controls:** WASD to move, Space to fire`,
     docsSlug: 'raycaster',
