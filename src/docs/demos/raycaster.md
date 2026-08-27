@@ -1021,7 +1021,7 @@ EndClass
 
 ### Enemy billboards
 
-`projectEnemy` projects an enemy's world position onto the screen using the same camera-space transform the raycaster itself relies on, storing the result back onto the enemy via `setProjection()`. `drawEnemy` then draws that enemy column by column, but only for columns where the z-buffer says the wall is *farther away* than the enemy — this is what stops an enemy from appearing through walls. `renderEnemies` projects and depth-sorts all four enemies (farthest first) before drawing them, so a closer enemy correctly overlaps one standing behind it.
+`projectEnemy` projects an enemy's world position onto the screen using the same camera-space transform the raycaster itself relies on, storing the result back onto the enemy via `setProjection()`. `drawEnemy` then draws that enemy column by column, but only for columns where the z-buffer says the wall is *farther away* than the enemy — this is what stops an enemy from appearing through walls. `renderEnemies` projects and depth-sorts all four enemies (farthest first) before drawing them, so a closer enemy correctly overlaps one standing behind it. `drawEnemy`'s billboard width is converted from screen pixels to ray-column units via `STRIP` to fix a 4x stretch bug (see "How it works").
 
 ### Hit detection
 
@@ -1050,4 +1050,4 @@ Three `Emitter`s are set up once in `onenter()`: `muzzleFlashEmitter`, `enemyHit
 
 ### Getter/setter workaround for cross-instance field access
 
-`Enemy.bas` exposes `isDead()`, `getX()`, `getY()`, `getScreenX()`, `getTransformY()`, `isFlashing()`, and `setProjection()` instead of letting `GameScene` touch its fields directly. Reading a field straight off an external class-typed instance inside a comparison or `and`/`or` expression type-checks against the generic `Object` type and fails to compile — a getter's return type is inferred correctly because it reads the field from inside its own class. This is the same documented pattern Dungeon Explorer's `Boss.isDead()` uses.
+`Enemy.bas`'s `isDead()`/`getX()`/`getY()`/`getScreenX()`/`getTransformY()`/`isFlashing()`/`setProjection()` methods work around a compiler type-inference limitation on external class-typed field reads, per Dungeon Explorer's `Boss.isDead()` precedent (see "How it works").
