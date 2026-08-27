@@ -54,16 +54,8 @@ dim damageCooldown
 dim healthText as Text
 dim gameOverText as Text
 
-' Enemy
-dim enemyX
-dim enemyY
-dim enemyScreenX
-dim enemyTransformY
-dim enemyAlive
-dim enemyHealth
-dim enemyHit
-dim enemyHitTimer
-dim enemySpeed
+' Enemies
+dim enemies(4) as Enemy
 
 ' Z-buffer
 dim zbuffer(200)
@@ -89,47 +81,52 @@ Constructor()
   self.planeY = 0.66
   self.playerHealth = 100
   self.damageCooldown = 0
-  self.enemyX = 5.5
-  self.enemyY = 3.5
-  self.enemyScreenX = -999
-  self.enemyTransformY = 0
-  self.enemyAlive = true
-  self.enemyHealth = 10
-  self.enemyHit = false
-  self.enemyHitTimer = 0
-  self.enemySpeed = 0.02
   self.moveSpeed = 0.05
   self.rotSpeed = 0.04
 EndConstructor
 
 function checkHit()
     dim aimCol = self.RAYS / 2
+    dim i
+    dim e as Enemy
+    dim bestIndex
+    dim bestDist
     dim hitX
-    if self.enemyAlive = 1 and self.enemyTransformY > 0 then
-        if math.abs(self.enemyScreenX - aimCol) < 15 then
-            if self.zbuffer(aimCol) > self.enemyTransformY then
-                self.enemyHit = true
-                self.enemyHitTimer = 10
-                self.enemyHealth = self.enemyHealth - 1
 
-                ' enemyScreenX is a ray/column index (0..RAYS), not a pixel --
-                ' converting it the same way castRays()/renderEnemy() convert
-                ' a column to its actual destX puts the burst exactly where
-                ' the enemy sprite is drawn. SCY is the fixed vertical anchor
-                ' every wall/enemy strip is centred on (no look up/down in
-                ' this demo), so it's also the correct burst height.
-                hitX = self.enemyScreenX * self.STRIP + self.STRIP / 2
+    bestIndex = -1
+    bestDist = 999999
 
-                if self.enemyHealth < 1
-                    self.enemyAlive = false
-                    self.enemyDeathEmitter.transform.setPosition(hitX, self.SCY)
-                    self.enemyDeathEmitter.burst(24)
-                else
-                    self.enemyHitEmitter.transform.setPosition(hitX, self.SCY)
-                    self.enemyHitEmitter.burst(8)
-                endif
+    for i = 0 to 3
+      e = self.enemies(i)
+      if not e.dead and e.getTransformY() > 0 then
+        if math.abs(e.getScreenX() - aimCol) < 15 then
+          if self.zbuffer(aimCol) > e.getTransformY() then
+            if e.getTransformY() < bestDist then
+              bestDist = e.getTransformY()
+              bestIndex = i
             endif
+          endif
         endif
+      endif
+    next i
+
+    if bestIndex >= 0 then
+      e = self.enemies(bestIndex)
+      ' e.getScreenX() is a ray/column index (0..RAYS), not a pixel --
+      ' converting it the same way castRays()/drawEnemy() convert
+      ' a column to its actual destX puts the burst exactly where
+      ' the enemy sprite is drawn. SCY is the fixed vertical anchor
+      ' every wall/enemy strip is centred on (no look up/down in
+      ' this demo), so it's also the correct burst height.
+      hitX = e.getScreenX() * self.STRIP + self.STRIP / 2
+      e.hit(1)
+      if e.isDead() then
+        self.enemyDeathEmitter.transform.setPosition(hitX, self.SCY)
+        self.enemyDeathEmitter.burst(24)
+      else
+        self.enemyHitEmitter.transform.setPosition(hitX, self.SCY)
+        self.enemyHitEmitter.burst(8)
+      endif
     endif
 endfunction
 
@@ -309,104 +306,141 @@ function castRays()
     next col
 endfunction
 
-function moveEnemy()
-    if self.enemyAlive = 0 then
-        return
-    endif
-    dim dx = self.posX - self.enemyX
-    dim dy = self.posY - self.enemyY
-    dim dist = math.distance(0, 0, dx, dy)
-    if dist < 0.6 then
-        return
-    endif
-    dim nx = self.enemyX + (dx / dist) * self.enemySpeed
-    dim ny = self.enemyY + (dy / dist) * self.enemySpeed
-    if mazegrid.getCell(math.floor(nx), math.floor(self.enemyY)) = 0 then
-        self.enemyX = nx
-    endif
-    if mazegrid.getCell(math.floor(self.enemyX), math.floor(ny)) = 0 then
-        self.enemyY = ny
-    endif
-
-    if self.damageCooldown > 0 then
-        self.damageCooldown = self.damageCooldown - 1
-    endif
-    if dist < 0.8 and self.damageCooldown = 0 then
-        self.playerHealth = self.playerHealth - 10
-        self.damageCooldown = 60
-    endif
+function pickEnemySpawn()
+  dim spawn
+  dim ex
+  dim ey
+  dim tries
+  dim result(2)
+  tries = 0
+  spawn = mazegrid.randomOpenCell()
+  ex = spawn(0) + 0.5
+  ey = spawn(1) + 0.5
+  while math.distance(ex, ey, self.posX, self.posY) < 8 and tries < 20
+    spawn = mazegrid.randomOpenCell()
+    ex = spawn(0) + 0.5
+    ey = spawn(1) + 0.5
+    tries = tries + 1
+  endwhile
+  result(0) = ex
+  result(1) = ey
+  return result
 endfunction
 
-function renderEnemy()
-    dim spriteX
-    dim spriteY
-    dim invDet
-    dim transformX
-    dim transformY
-    dim spriteScreenX
-    dim spriteH
-    dim spriteWCols
-    dim drawLeft
-    dim drawRight
-    dim sc
-    dim texCol
-    dim destX
+function projectEnemy(e as Enemy)
+  dim spriteX
+  dim spriteY
+  dim invDet
+  dim transformX
+  dim transformY
 
-    spriteX = self.enemyX - self.posX
-    spriteY = self.enemyY - self.posY
+  spriteX = e.getX() - self.posX
+  spriteY = e.getY() - self.posY
 
-    invDet = 1.0 / (self.planeX * self.dirY - self.dirX * self.planeY)
-    transformX = invDet * (self.dirY * spriteX - self.dirX * spriteY)
-    transformY = invDet * ((0 - self.planeY) * spriteX + self.planeX * spriteY)
+  invDet = 1.0 / (self.planeX * self.dirY - self.dirX * self.planeY)
+  transformX = invDet * (self.dirY * spriteX - self.dirX * spriteY)
+  transformY = invDet * ((0 - self.planeY) * spriteX + self.planeX * spriteY)
 
-    if transformY <= 0 then
-        return
-    endif
+  if transformY <= 0 then
+    e.transformY = -1
+    return
+  endif
 
-    spriteScreenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
-    spriteH = math.floor(self.SH / transformY)
-    ' spriteH is real screen pixels; drawLeft/drawRight/texCol below are in
-    ' ray-column-index units (the same units spriteScreenX and the
-    ' wall-casting loop's `col` use), and each column is STRIP (4) screen
-    ' pixels wide. Using spriteH directly as a column-index delta made the
-    ' enemy 4x too wide relative to its height at every distance --
-    ' confirmed by simulating this exact algorithm against the real
-    ' enemy.png offline before touching this code. Dividing by STRIP
-    ' converts the pixel-scale width into the matching column-index scale.
-    spriteWCols = spriteH / self.STRIP
+  e.screenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
+  e.transformY = transformY
+endfunction
 
-    drawLeft = math.floor(spriteScreenX - spriteWCols / 2)
-    drawRight = math.floor(spriteScreenX + spriteWCols / 2)
+function drawEnemy(e as Enemy)
+  ' spriteH is real screen pixels; drawLeft/drawRight/texCol below are in
+  ' ray-column-index units (the same units e.screenX and the wall-casting
+  ' loop's `col` use), and each column is STRIP (4) screen pixels wide.
+  ' Using spriteH directly as a column-index delta made the enemy 4x too
+  ' wide relative to its height at every distance -- confirmed by
+  ' simulating this exact algorithm against the real enemy.png offline
+  ' before touching this code. Dividing by STRIP converts the pixel-scale
+  ' width into the matching column-index scale.
+  dim spriteH
+  dim spriteWCols
+  dim drawLeft
+  dim drawRight
+  dim sc
+  dim texCol
+  dim destX
 
-    if transformY <= 0 then
-        return
-    endif
-    spriteScreenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
-    self.enemyScreenX = spriteScreenX        ' store for hit detection
-    self.enemyTransformY = transformY
+  if e.getTransformY() <= 0 then
+    return
+  endif
 
-    for sc = drawLeft to drawRight - 1
-        if sc >= 0 and sc < self.RAYS then
-            if self.zbuffer(sc) > transformY then
-                texCol = math.floor((sc - drawLeft) * self.ENIW / spriteWCols)
-                destX = sc * self.STRIP + self.STRIP / 2
+  spriteH = math.floor(self.SH / e.getTransformY())
+  spriteWCols = spriteH / self.STRIP
 
-                if self.enemyAlive = true
-                    if self.enemyHitTimer > 0
-                        drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
-                    else
-                        drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
-                    endif
-                else
-                    drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
-                endif
-            endif
+  drawLeft = math.floor(e.getScreenX() - spriteWCols / 2)
+  drawRight = math.floor(e.getScreenX() + spriteWCols / 2)
+
+  for sc = drawLeft to drawRight - 1
+    if sc >= 0 and sc < self.RAYS then
+      if self.zbuffer(sc) > e.getTransformY() then
+        texCol = math.floor((sc - drawLeft) * self.ENIW / spriteWCols)
+        destX = sc * self.STRIP + self.STRIP / 2
+
+        if e.isDead() then
+          drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+        elseif e.isFlashing() then
+          drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+        else
+          drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         endif
-    next sc
-
-    if self.enemyHitTimer > 0
-        self.enemyHitTimer = self.enemyHitTimer - 1
+      endif
     endif
+  next sc
+endfunction
+
+function renderEnemies()
+  dim i
+  dim j
+  dim order(4)
+  dim tmp
+  ' Reading a field straight off an EXTERNAL Enemy instance (whether via a
+  ' self.<array>(idx) chain, a local `dim ... as Enemy`, or a typed function
+  ' parameter) inside a comparison type-checks against the generic Object
+  ' type instead of the field's real declared type and fails to compile
+  ' ("Expected type(s) Number but got Object") -- confirmed live. A getter
+  ' (Enemy.getTransformY()) resolves correctly because it reads the field
+  ' from WITHIN its own class. See Enemy.bas's getters section for the full
+  ' explanation and Dungeon Explorer's DungeonScene.bas onupdate comment for
+  ' the same documented limitation elsewhere in this codebase.
+  dim a as Enemy
+  dim b as Enemy
+  dim keepSorting
+
+  for i = 0 to 3
+    self.projectEnemy(self.enemies(i))
+  next i
+
+  order(0) = 0
+  order(1) = 1
+  order(2) = 2
+  order(3) = 3
+  for i = 1 to 3
+    j = i
+    keepSorting = true
+    while j > 0 and keepSorting
+      a = self.enemies(order(j - 1))
+      b = self.enemies(order(j))
+      if a.getTransformY() < b.getTransformY() then
+        tmp = order(j - 1)
+        order(j - 1) = order(j)
+        order(j) = tmp
+        j = j - 1
+      else
+        keepSorting = false
+      endif
+    endwhile
+  next i
+
+  for i = 0 to 3
+    self.drawEnemy(self.enemies(order(i)))
+  next i
 endfunction
 
 function updateFlashCooldown()
@@ -422,6 +456,14 @@ function onenter()
     mazegrid.generate()
     self.posX = 1.5
     self.posY = 1.5
+
+    dim i
+    dim spawn
+    for i = 0 to 3
+      spawn = self.pickEnemySpawn()
+      self.enemies(i) = new Enemy(spawn(0), spawn(1))
+    next i
+
     self.weaponSprite = new Sprite("gun.png")
     hud.add(self.weaponSprite)
     'weaponSprite.setScale(4, 4)
@@ -464,7 +506,11 @@ function onenter()
     hud.add(self.enemyDeathEmitter)
 endfunction
 
-function onupdate()
+function onupdate(delta)
+    dim i
+    dim e as Enemy
+    dim dist
+
     if self.playerHealth < 1
         hud.add(self.gameOverText)
         return
@@ -472,8 +518,23 @@ function onupdate()
 
     self.handleInput()
     self.castRays()
-    self.moveEnemy()
-    self.renderEnemy()
+
+    for i = 0 to 3
+      e = self.enemies(i)
+      e.update(delta / 1000, self.posX, self.posY)
+      if not e.dead then
+        dist = math.distance(e.x, e.y, self.posX, self.posY)
+        if dist < 0.8 and self.damageCooldown = 0 then
+          self.playerHealth = self.playerHealth - 10
+          self.damageCooldown = 60
+        endif
+      endif
+    next i
+    if self.damageCooldown > 0 then
+      self.damageCooldown = self.damageCooldown - 1
+    endif
+
+    self.renderEnemies()
     self.healthText.setText("Health: " + string.str(self.playerHealth))
     self.updateFlashCooldown()
 endfunction
