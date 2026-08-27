@@ -337,7 +337,7 @@ function renderEnemy()
     dim transformY
     dim spriteScreenX
     dim spriteH
-    dim spriteW
+    dim spriteWCols
     dim drawLeft
     dim drawRight
     dim sc
@@ -357,10 +357,18 @@ function renderEnemy()
 
     spriteScreenX = math.floor((RAYS / 2) * (1.0 + transformX / transformY))
     spriteH = math.floor(SH / transformY)
-    spriteW = spriteH
+    ' spriteH is real screen pixels; drawLeft/drawRight/texCol below are in
+    ' ray-column-index units (the same units spriteScreenX and the
+    ' wall-casting loop's `col` use), and each column is STRIP (4) screen
+    ' pixels wide. Using spriteH directly as a column-index delta made the
+    ' enemy 4x too wide relative to its height at every distance --
+    ' confirmed by simulating this exact algorithm against the real
+    ' enemy.png offline before touching this code. Dividing by STRIP
+    ' converts the pixel-scale width into the matching column-index scale.
+    spriteWCols = spriteH / STRIP
 
-    drawLeft = math.floor(spriteScreenX - spriteW / 2)
-    drawRight = math.floor(spriteScreenX + spriteW / 2)
+    drawLeft = math.floor(spriteScreenX - spriteWCols / 2)
+    drawRight = math.floor(spriteScreenX + spriteWCols / 2)
 
     if transformY <= 0 then
         return
@@ -372,7 +380,7 @@ function renderEnemy()
     for sc = drawLeft to drawRight - 1
         if sc >= 0 and sc < RAYS then
             if zbuffer(sc) > transformY then
-                texCol = math.floor((sc - drawLeft) * ENIW / spriteW)
+                texCol = math.floor((sc - drawLeft) * ENIW / spriteWCols)
                 destX = sc * STRIP + STRIP / 2
 
                 if enemyAlive = true 
