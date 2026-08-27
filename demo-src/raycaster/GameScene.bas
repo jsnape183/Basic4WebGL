@@ -51,8 +51,6 @@ dim playerHealth
 dim damageCooldown
 
 ' Hud
-dim mapW
-dim cells(64)
 dim healthText as Text
 dim gameOverText as Text
 
@@ -85,15 +83,12 @@ Constructor()
   self.flashTimer = 4
   self.muzzleOffsetX = -6
   self.muzzleOffsetY = -92
-  self.posX = 1.5
-  self.posY = 4.5
   self.dirX = 1.0
   self.dirY = 0.0
   self.planeX = 0.0
   self.planeY = 0.66
   self.playerHealth = 100
   self.damageCooldown = 0
-  self.mapW = 8
   self.enemyX = 5.5
   self.enemyY = 3.5
   self.enemyScreenX = -999
@@ -106,27 +101,6 @@ Constructor()
   self.moveSpeed = 0.05
   self.rotSpeed = 0.04
 EndConstructor
-
-function buildMap()
-    dim i
-    for i = 0 to 63
-        self.cells(i) = 0
-    next i
-    dim x
-    for x = 0 to 7
-        self.cells(x) = 1
-        self.cells(56 + x) = 1
-        self.cells(x * 8) = 1
-        self.cells(x * 8 + 7) = 1
-    next x
-    ' Interior pillars
-    self.cells(18) = 1
-    self.cells(45) = 1
-endfunction
-
-function getCell(mx, my)
-    return self.cells(my * self.mapW + mx)
-endfunction
 
 function checkHit()
     dim aimCol = self.RAYS / 2
@@ -169,10 +143,10 @@ function handleInput()
     if input.getKeyDown(87) then
         nx = self.posX + self.dirX * self.moveSpeed
         ny = self.posY + self.dirY * self.moveSpeed
-        if self.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
             self.posX = nx
         endif
-        if self.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
             self.posY = ny
         endif
     endif
@@ -180,10 +154,10 @@ function handleInput()
     if input.getKeyDown(83) then
         nx = self.posX - self.dirX * self.moveSpeed
         ny = self.posY - self.dirY * self.moveSpeed
-        if self.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
             self.posX = nx
         endif
-        if self.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
             self.posY = ny
         endif
     endif
@@ -296,7 +270,7 @@ function castRays()
                 mapY = mapY + stepY
                 side = 1
             endif
-            if self.getCell(mapX, mapY) > 0 then
+            if mazegrid.getCell(mapX, mapY) > 0 then
                 hit = 1
             endif
         endwhile
@@ -347,10 +321,10 @@ function moveEnemy()
     endif
     dim nx = self.enemyX + (dx / dist) * self.enemySpeed
     dim ny = self.enemyY + (dy / dist) * self.enemySpeed
-    if self.getCell(math.floor(nx), math.floor(self.enemyY)) = 0 then
+    if mazegrid.getCell(math.floor(nx), math.floor(self.enemyY)) = 0 then
         self.enemyX = nx
     endif
-    if self.getCell(math.floor(self.enemyX), math.floor(ny)) = 0 then
+    if mazegrid.getCell(math.floor(self.enemyX), math.floor(ny)) = 0 then
         self.enemyY = ny
     endif
 
@@ -445,7 +419,9 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
-    self.buildMap()
+    mazegrid.generate()
+    self.posX = 1.5
+    self.posY = 1.5
     self.weaponSprite = new Sprite("gun.png")
     hud.add(self.weaponSprite)
     'weaponSprite.setScale(4, 4)
