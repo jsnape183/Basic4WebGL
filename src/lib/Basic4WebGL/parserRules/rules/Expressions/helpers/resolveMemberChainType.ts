@@ -2,6 +2,7 @@ import Symbols, { Symbol } from '@CompilerLib/symbols';
 import BuiltInType from '@CompilerLib/builtInTypes';
 import { symbolTypes } from '../../../../symbolTypes';
 import resolveSelfMember from './resolveSelfMember';
+import findMemberInClassChain from './findMemberInClassChain';
 
 /**
  * Resolve the dataType of a dotted member chain rooted at `self`
@@ -63,27 +64,4 @@ export default function resolveMemberChainType(
   }
 
   return symbol.dataType;
-}
-
-/** Kind-agnostic member lookup scoped to a specific class, walking that
- * class's own inheritance chain — mirrors resolveSelfMember's ancestor walk,
- * but starting from an arbitrary class name rather than the current scope,
- * and matching any symbol kind (Variable, Object, Array, Dictionary) since
- * the caller doesn't know in advance what kind the next segment will be. */
-function findMemberInClassChain(
-  symbolTable: Symbols,
-  className: string,
-  memberName: string
-): Symbol | undefined {
-  let searchClass: string | undefined = className;
-  while (searchClass !== undefined) {
-    const found = symbolTable.findAnyInScope(memberName, searchClass);
-    if (found) return found;
-    try {
-      searchClass = symbolTable.get(searchClass, symbolTypes.Class).parentClassName;
-    } catch {
-      return undefined;
-    }
-  }
-  return undefined;
 }

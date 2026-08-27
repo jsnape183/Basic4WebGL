@@ -17,6 +17,7 @@ import { CompilationError } from '@CompilerLib/errors';
 import { symbolTypes } from '../../../symbolTypes';
 import resolveSelfMember from './helpers/resolveSelfMember';
 import resolveMemberChainType from './helpers/resolveMemberChainType';
+import resolveClassMemberChainType from './helpers/resolveClassMemberChainType';
 
 @RegisterParserRule('SelfFactor')
 class SelfFactorRule implements IParserRule {
@@ -87,8 +88,18 @@ class SelfFactorRule implements IParserRule {
               loc
             );
           }
+          // self.enemies(i).transformY — a plain field read off the element,
+          // not a method call. Resolve the field's real dataType against the
+          // array's own element class, walking its inheritance chain, so
+          // strict type checks (bare `if`, comparisons, `and`/`or`) see the
+          // field's actual type instead of the generic default.
+          const dataType = resolveClassMemberChainType(
+            symbolTable,
+            (arraySymbol as any).classSymbol.name,
+            [innerMember]
+          );
           return new TypedElementAccessNode(
-            { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+            { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false, dataType },
             [args],
             loc
           );

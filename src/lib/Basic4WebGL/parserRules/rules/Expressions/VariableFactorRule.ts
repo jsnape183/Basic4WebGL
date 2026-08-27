@@ -19,6 +19,7 @@ import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import resolveIndexableSymbol from './helpers/resolveIndexableSymbol';
+import resolveClassMemberChainType from './helpers/resolveClassMemberChainType';
 import { formatSymbol } from '@Basic4WebGL/transpilerRules/jsRules/helpers/transpilerHelpers';
 import { CompilationError, SymbolError } from '@CompilerLib/errors';
 
@@ -121,8 +122,16 @@ class VariableFactorRule implements IParserRule {
                 loc
               );
             }
+            // obj.enemies(i).transformY — a plain field read off the
+            // element, not a method call. Resolve the field's real dataType
+            // against the array's own element class (mirrors SelfFactorRule).
+            const dataType = resolveClassMemberChainType(
+              symbolTable,
+              (arraySymbol as any).classSymbol.name,
+              [innerMember]
+            );
             return new TypedElementAccessNode(
-              { chain: elementChain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false },
+              { chain: elementChain, name: memberName, memberName: innerMember, kind: 'array', isStatement: false, dataType },
               [args],
               loc
             );
@@ -148,12 +157,23 @@ class VariableFactorRule implements IParserRule {
         return node;
       }
 
-      // Property chain read: build the full chain
+      // Property chain read: build the full chain. Also track each segment
+      // name so a plain field read (no trailing method call) can resolve its
+      // real dataType against the instance's own class — e.g. `e.transformY`
+      // where `e` is `dim e as Enemy` (a local variable or typed function
+      // parameter), or `e.boss.dead` for a further nested field. Without
+      // this, the chain's type defaulted to a generic Object type and failed
+      // strict boolean/numeric/string type checks (bare `if`, comparisons,
+      // `and`/`or`) even though the field's real type is known statically —
+      // the non-`self` counterpart of resolveMemberChainType's fix.
       let chain = `${ownerFormatted}.${memberName}`;
+      const segments = [memberName];
       while (check(tokens.Dot, tokenStream.current())) {
         matchAndMove(tokens.Dot, tokenStream);
         matchAndMove(tokens.Variable, tokenStream);
-        chain += `.${tokenStream.prev().text.toLowerCase()}`;
+        const segment = tokenStream.prev().text.toLowerCase();
+        segments.push(segment);
+        chain += `.${segment}`;
 
         // Chained method call: obj.prop.method(args) in expression context
         if (check(tokens.OpenParen, tokenStream.current())) {
@@ -165,7 +185,11 @@ class VariableFactorRule implements IParserRule {
           return new PropertyMethodTermNode(chain, args, loc);
         }
       }
-      return new PropertyTermNode(chain, loc);
+      const ownerClassSymbol = (ownerSymbol as any).classSymbol;
+      const dataType = ownerClassSymbol
+        ? resolveClassMemberChainType(symbolTable, ownerClassSymbol.name, segments)
+        : undefined;
+      return new PropertyTermNode(chain, loc, dataType);
     }
     if (symbolTable.check(name, symbolTypes.Function)) {
       return getParserRule('FunctionFactor').parse(tokenStream, symbolTable, {
@@ -195,8 +219,10 @@ class VariableFactorRule implements IParserRule {
             loc
           );
         }
+        // dict["key"].transformY — a plain field read, not a method call.
+        const dictDataType = resolveClassMemberChainType(symbolTable, dictSym.classSymbol.name, [memberName]);
         return new TypedElementAccessNode(
-          { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: false },
+          { collectionSymbol: dictSym, memberName, kind: 'dict', isStatement: false, dataType: dictDataType },
           [keyExpr],
           loc
         );
@@ -251,8 +277,12 @@ class VariableFactorRule implements IParserRule {
           loc
         );
       }
+      // enemies(i).transformY — a plain field read off the element, not a
+      // method call. Resolve the field's real dataType against the array's
+      // own element class (mirrors SelfFactorRule's identical case).
+      const dataType = resolveClassMemberChainType(symbolTable, arraySym.classSymbol.name, [memberName]);
       return new TypedElementAccessNode(
-        { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false },
+        { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false, dataType },
         [elems],
         loc
       );
