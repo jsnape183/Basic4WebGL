@@ -55,6 +55,14 @@ dim healthText as Text
 dim gameOverText as Text
 
 ' Enemies
+' ENEMY_COUNT mirrors the array size below (dim enemies(4) as Enemy) -- the
+' sized-array declaration itself needs a compile-time literal (array dims
+' can't take a self.* field as their size, the same reason MazeGrid.bas's
+' dim stackX(256) is a literal, not a field reference), so that one
+' declaration keeps the bare 4. Every LOOP BOUND that walks the array uses
+' this constant instead, so the loop bound isn't a second bare literal that
+' could drift out of sync with the array's actual size.
+dim ENEMY_COUNT
 dim enemies(4) as Enemy
 
 ' Z-buffer
@@ -65,6 +73,7 @@ dim moveSpeed
 dim rotSpeed
 
 Constructor()
+  self.ENEMY_COUNT = 4
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -96,7 +105,7 @@ function checkHit()
     bestIndex = -1
     bestDist = 999999
 
-    for i = 0 to 3
+    for i = 0 to self.ENEMY_COUNT - 1
       e = self.enemies(i)
       if not e.dead and e.getTransformY() > 0 then
         if math.abs(e.getScreenX() - aimCol) < 15 then
@@ -342,12 +351,11 @@ function projectEnemy(e as Enemy)
   transformY = invDet * ((0 - self.planeY) * spriteX + self.planeX * spriteY)
 
   if transformY <= 0 then
-    e.transformY = -1
+    e.setProjection(-1, -1)
     return
   endif
 
-  e.screenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
-  e.transformY = transformY
+  e.setProjection(math.floor((self.RAYS / 2) * (1.0 + transformX / transformY)), transformY)
 endfunction
 
 function drawEnemy(e as Enemy)
@@ -413,7 +421,7 @@ function renderEnemies()
   dim b as Enemy
   dim keepSorting
 
-  for i = 0 to 3
+  for i = 0 to self.ENEMY_COUNT - 1
     self.projectEnemy(self.enemies(i))
   next i
 
@@ -421,7 +429,7 @@ function renderEnemies()
   order(1) = 1
   order(2) = 2
   order(3) = 3
-  for i = 1 to 3
+  for i = 1 to self.ENEMY_COUNT - 1
     j = i
     keepSorting = true
     while j > 0 and keepSorting
@@ -438,7 +446,7 @@ function renderEnemies()
     endwhile
   next i
 
-  for i = 0 to 3
+  for i = 0 to self.ENEMY_COUNT - 1
     self.drawEnemy(self.enemies(order(i)))
   next i
 endfunction
@@ -459,7 +467,7 @@ function onenter()
 
     dim i
     dim spawn
-    for i = 0 to 3
+    for i = 0 to self.ENEMY_COUNT - 1
       spawn = self.pickEnemySpawn()
       self.enemies(i) = new Enemy(spawn(0), spawn(1))
     next i
@@ -519,7 +527,7 @@ function onupdate(delta)
     self.handleInput()
     self.castRays()
 
-    for i = 0 to 3
+    for i = 0 to self.ENEMY_COUNT - 1
       e = self.enemies(i)
       e.update(delta / 1000, self.posX, self.posY)
       if not e.dead then

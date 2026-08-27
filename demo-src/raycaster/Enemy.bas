@@ -139,6 +139,17 @@ function hit(damage)
   endif
 endfunction
 
+' Setter -- GameScene's projectEnemy() computes this enemy's billboard
+' screen position every frame and needs to store it back onto the enemy.
+' Routing that write through a method (rather than assigning self.screenX/
+' self.transformY directly from outside) keeps this class's internals
+' behind its own interface, matching every other cross-instance access in
+' this file (see the getters below).
+function setProjection(newScreenX, newTransformY)
+  self.screenX = newScreenX
+  self.transformY = newTransformY
+endfunction
+
 ' Getters -- GameScene reads these fields from an EXTERNAL Enemy instance
 ' (a local `dim e as Enemy`, a function parameter `e as Enemy`, or an array
 ' element) inside comparisons/if-conditions/and-or expressions. A bare
