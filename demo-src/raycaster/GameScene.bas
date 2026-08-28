@@ -71,7 +71,11 @@ dim gameOverText as Text
 ' this constant instead, so the loop bound isn't a second bare literal that
 ' could drift out of sync with the array's actual size.
 dim ENEMY_COUNT
-dim enemies(10) as Enemy
+dim enemies(20) as Enemy
+
+' Level progression
+dim level
+dim setupDone
 
 ' Z-buffer
 dim zbuffer(200)
@@ -82,7 +86,7 @@ dim rotSpeed
 
 Constructor(gameData as GameData)
   self.gameData = gameData
-  self.ENEMY_COUNT = 10
+  self.setupDone = false
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -415,7 +419,7 @@ endfunction
 function renderEnemies()
   dim i
   dim j
-  dim order(10)
+  dim order(20)
   dim tmp
   ' Reading a field straight off an EXTERNAL Enemy instance (whether via a
   ' self.<array>(idx) chain, a local `dim ... as Enemy`, or a typed function
@@ -469,24 +473,32 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
-    ' 33 -- today's fixed maze size -- is a placeholder, not a permanent
-    ' choice: a later level-progression task replaces this with a
-    ' level-dependent formula (see the ENEMY_COUNT field's own comment
-    ' above for why this file calls out bare literals like this one).
-    mazegrid.generate(33)
-    self.posX = 1.5
-    self.posY = 1.5
+    if not self.setupDone then
+      self.setupDone = true
+      self.setupHud()
+    endif
 
-    dim i
-    dim spawn
-    for i = 0 to self.ENEMY_COUNT - 1
-      spawn = self.pickEnemySpawn()
-      self.enemies(i) = new Enemy(spawn(0), spawn(1))
-    next i
+    self.playerHealth = 100
+    self.damageCooldown = 0
+    self.flashTimer = 4
+    self.dirX = 1.0
+    self.dirY = 0.0
+    self.planeX = 0.0
+    self.planeY = 0.66
+    self.level = 1
 
+    self.startLevel()
+endfunction
+
+function setupHud()
+    ' Runs exactly once, ever (guarded by self.setupDone in onenter()) --
+    ' these are screen-fixed HUD elements that never need recreating
+    ' between levels or between restarts after death. Recreating them on
+    ' every onenter() would add duplicate sprites/emitters to hud every
+    ' time the player restarts, since onenter() itself now runs more than
+    ' once per page load (previously it only ever ran once).
     self.weaponSprite = new Sprite("gun.png")
     hud.add(self.weaponSprite)
-    'weaponSprite.setScale(4, 4)
     ' `sprite` is centre-anchored, so this places the CENTRE of the 256x256
     ' gun.png here; +128 on each axis keeps its top-left corner at the same
     ' screen spot (stage.width()/2, stage.height()-200) it sat at before.
@@ -504,8 +516,6 @@ function onenter()
     self.hpLabel = new Text("HP", 20, 36)
     self.hpLabel.setStyle(12, 255, 255, 255)
     hud.add(self.hpLabel)
-
-    self.gameOverText = new Text("GAME OVER!",stage.width() / 2, stage.height() / 2)
 
     self.muzzleFlashEmitter = new Emitter("particle.png")
     self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
@@ -539,6 +549,32 @@ function onenter()
     self.enemyDeathEmitter.setColorOverLife(16711680, 4473924)
     self.enemyDeathEmitter.setMaxParticles(80)
     hud.add(self.enemyDeathEmitter)
+endfunction
+
+function startLevel()
+    ' Runs once at the start of every level (both the very first, from
+    ' onenter(), and every subsequent one, from nextLevel() below) --
+    ' regenerates the maze at this level's size, respawns the player and
+    ' a fresh enemy roster sized for this level, and picks a new exit.
+    dim mapSize
+    dim i
+    dim spawn
+
+    mapSize = 2 * math.min(4 + (self.level - 1), 16) + 1
+    mazegrid.generate(mapSize)
+    self.posX = 1.5
+    self.posY = 1.5
+
+    self.ENEMY_COUNT = math.min(4 + 2 * (self.level - 1), 20)
+    for i = 0 to self.ENEMY_COUNT - 1
+      spawn = self.pickEnemySpawn()
+      self.enemies(i) = new Enemy(spawn(0), spawn(1))
+    next i
+endfunction
+
+function nextLevel()
+    self.level = self.level + 1
+    self.startLevel()
 endfunction
 
 function onupdate(delta)
