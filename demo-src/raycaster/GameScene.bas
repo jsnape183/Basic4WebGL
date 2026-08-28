@@ -69,13 +69,16 @@ dim gameOverText as Text
 ' dim stackX(256) is a literal, not a field reference), so that one
 ' declaration keeps the bare 10. Every LOOP BOUND that walks the array uses
 ' this constant instead, so the loop bound isn't a second bare literal that
-' could drift out of sync with the array's actual size.
+' could drift out of sync with the array's actual size. This also means
+' every such loop stays correct even if ENEMY_COUNT were ever smaller than
+' the array's fixed 20 slots -- e.g. a future formula that decreased
+' between levels -- since nothing loops over the array's raw size.
 dim ENEMY_COUNT
 dim enemies(20) as Enemy
 
 ' Level progression
 dim level
-dim setupDone
+dim hudSetupDone
 
 ' Z-buffer
 dim zbuffer(200)
@@ -86,7 +89,7 @@ dim rotSpeed
 
 Constructor(gameData as GameData)
   self.gameData = gameData
-  self.setupDone = false
+  self.hudSetupDone = false
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -473,8 +476,8 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
-    if not self.setupDone then
-      self.setupDone = true
+    if not self.hudSetupDone then
+      self.hudSetupDone = true
       self.setupHud()
     endif
 
@@ -491,7 +494,7 @@ function onenter()
 endfunction
 
 function setupHud()
-    ' Runs exactly once, ever (guarded by self.setupDone in onenter()) --
+    ' Runs exactly once, ever (guarded by self.hudSetupDone in onenter()) --
     ' these are screen-fixed HUD elements that never need recreating
     ' between levels or between restarts after death. Recreating them on
     ' every onenter() would add duplicate sprites/emitters to hud every
@@ -551,21 +554,38 @@ function setupHud()
     hud.add(self.enemyDeathEmitter)
 endfunction
 
+function mazeSizeForLevel(lvl)
+  ' Maze grids must be odd -- the recursive backtracker carves through
+  ' even-coordinate walls between odd-coordinate logical cells (see
+  ' MazeGrid.bas). Grows from 9x9 at level 1 by 2 real-grid units per
+  ' level (1 logical cell), capping at 33x33 (16 logical cells, today's
+  ' original fixed size) at level 13.
+  return 2 * math.min(4 + (lvl - 1), 16) + 1
+endfunction
+
+function enemyCountForLevel(lvl)
+  ' Grows from 4 at level 1 by 2 per level, capping at 20 by level 9 --
+  ' past that point, more enemies stopped meaningfully adding to
+  ' difficulty and mostly just meant more array bookkeeping.
+  return math.min(4 + 2 * (lvl - 1), 20)
+endfunction
+
 function startLevel()
     ' Runs once at the start of every level (both the very first, from
     ' onenter(), and every subsequent one, from nextLevel() below) --
-    ' regenerates the maze at this level's size, respawns the player and
-    ' a fresh enemy roster sized for this level, and picks a new exit.
+    ' regenerates the maze at this level's size, and respawns the player
+    ' and a fresh enemy roster sized for this level. (Exit placement
+    ' arrives in a later task.)
     dim mapSize
     dim i
     dim spawn
 
-    mapSize = 2 * math.min(4 + (self.level - 1), 16) + 1
+    mapSize = self.mazeSizeForLevel(self.level)
     mazegrid.generate(mapSize)
     self.posX = 1.5
     self.posY = 1.5
 
-    self.ENEMY_COUNT = math.min(4 + 2 * (self.level - 1), 20)
+    self.ENEMY_COUNT = self.enemyCountForLevel(self.level)
     for i = 0 to self.ENEMY_COUNT - 1
       spawn = self.pickEnemySpawn()
       self.enemies(i) = new Enemy(spawn(0), spawn(1))
