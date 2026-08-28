@@ -12,26 +12,15 @@ Constructor(gameData as GameData)
 EndConstructor
 
 function onenter()
-  ' Same save.exists/save.get/save.set persisted-best pattern Bullet
-  ' Hell Shooter's own GameData.bas already uses for its best-time.
+  ' The exists/get/compare/set persisted-best sequence lives in
+  ' GameData.updateBestLevel(), not here -- mirrors Bullet Hell Shooter's
+  ' own GameData.bas, where WinScene/TitleScene never touch `save`
+  ' directly either, only call a GameData method.
   dim reached
-  dim best
   dim isNewBest
 
   reached = self.gameData.levelReached
-  isNewBest = false
-
-  if save.exists("raycasterBestLevel") then
-    best = save.get("raycasterBestLevel")
-  else
-    best = 0
-  endif
-
-  if reached > best then
-    best = reached
-    save.set("raycasterBestLevel", best)
-    isNewBest = true
-  endif
+  isNewBest = self.gameData.updateBestLevel(reached)
 
   world.setBackground(0, 0, 0)
 
@@ -42,7 +31,7 @@ function onenter()
   if isNewBest then
     self.bestText = new Text("New best!", stage.width() / 2 - 60, stage.height() / 2 - 10)
   else
-    self.bestText = new Text("Best: Level " + string.str(best), stage.width() / 2 - 80, stage.height() / 2 - 10)
+    self.bestText = new Text("Best: Level " + string.str(self.gameData.bestLevel), stage.width() / 2 - 80, stage.height() / 2 - 10)
   endif
   self.bestText.setStyle(20, 255, 255, 255)
   hud.add(self.bestText)
