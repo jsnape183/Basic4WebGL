@@ -20,6 +20,8 @@ Firing, landing a hit, and killing an enemy all trigger an `Emitter` burst — t
 
 Enemies (`Enemy.bas`) patrol a nearby open cell until the player comes within `chaseRadius` (6 tiles), then switch to chasing, giving up back to patrol once the player is more than `giveUpRadius` (9 tiles) away. Movement is a straight-line step toward the current target each frame, checked against the maze one axis at a time (`tryMove()`) — the same wall-sliding trick `GameScene.handleInput()` uses for the player. This is deliberately simpler than the engine's real `pathfinding` module, which Dungeon Explorer's enemies use: `pathfinding` needs a genuine `TileMapSet` to navigate, and Raycaster has no visual tilemap at all — the maze only exists as `MazeGrid`'s flat array of wall/floor cells, walked by DDA and drawn as textured strips, never as tiles PIXI itself knows about. Straight-line movement plus per-axis wall collision is close enough over the short patrol/chase distances involved here, without needing a `TileMapSet` this demo has no other reason to build.
 
+A chasing enemy doesn't walk all the way onto the player's exact position — `stopDistance` (1 tile) halts its approach a little short, so it never visually sits on top of the player in a first-person view where that would be impossible to read. `GameScene`'s own contact-damage check (`dist < 0.8`) sits just inside that stop distance, so damage now mostly comes from the player choosing to close that last bit of distance themselves rather than an enemy automatically closing it the instant it catches up. A single cooldown shared across every enemy (not one per enemy) still caps how often that damage can land regardless of how many enemies are nearby at once — with 10 enemies now able to be adjacent simultaneously, a per-enemy cooldown would let a swarm land far more hits than intended, the opposite of the point of having one.
+
 `Enemy.bas` also uses a getter-based interface (`isDead()`, `getX()`, `getY()`, `getScreenX()`, `getTransformY()`, `isFlashing()`, and a `setProjection()` setter) instead of letting `GameScene` read and write its fields directly. That's a workaround for a real compiler limitation: reading a field straight off an external class-typed instance (a `dim e as Enemy` local, a typed parameter, or an array element) inside a comparison or an `and`/`or` expression type-checks against the generic `Object` type rather than the field's real declared type, and fails to compile. A getter's return type is inferred correctly because it reads the field from inside its own class. The same pattern shows up in Dungeon Explorer's `Boss.isDead()` — see that file's comments for the fuller explanation.
 
 ---
@@ -275,6 +277,7 @@ dim speed
 dim patrolSpeed
 dim chaseRadius
 dim giveUpRadius
+dim stopDistance
 dim patrolTargetX
 dim patrolTargetY
 dim patrolTimer
@@ -288,10 +291,22 @@ Constructor(startX, startY)
   self.hp = 3
   self.dead = false
   self.state = "patrol"
-  self.speed = 1.2
+  ' Chase speed lowered from an earlier 1.2 -- confirmed live it read as
+  ' uncomfortably fast when a chasing enemy rounded a corner unannounced,
+  ' with no animation to soften the sudden close-distance approach.
+  self.speed = 0.85
   self.patrolSpeed = 0.6
   self.chaseRadius = 6
   self.giveUpRadius = 9
+  ' A chasing enemy stops here rather than closing the rest of the way
+  ' onto the player's exact position -- without this it would walk fully
+  ' on top of the player (visually indistinguishable from the player's own
+  ' sprite in a first-person view). Left deliberately a bit larger than
+  ' GameScene's own dist < 0.8 contact-damage threshold, so a stopped
+  ' enemy waits just outside contact range; damage still lands, but only
+  ' if the PLAYER chooses to close that last bit of distance themselves,
+  ' not automatically the instant the enemy catches up.
+  self.stopDistance = 1.0
   self.patrolTargetX = startX
   self.patrolTargetY = startY
   self.patrolTimer = 0
@@ -366,8 +381,15 @@ function update(dt, playerX, playerY)
   endif
 
   if self.state = "chase" then
-    dx = playerX - self.x
-    dy = playerY - self.y
+    if dist <= self.stopDistance then
+      ' Already as close as it's allowed to get -- hold position rather
+      ' than continuing to close in on the player's exact coordinates.
+      dx = 0
+      dy = 0
+    else
+      dx = playerX - self.x
+      dy = playerY - self.y
+    endif
     moveSpeed = self.speed
   else
     self.patrolTimer = self.patrolTimer - dt
@@ -958,7 +980,10 @@ function onenter()
     self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
     self.muzzleFlashEmitter.setSpeed(80, 160)
     self.muzzleFlashEmitter.setDirection(0, 360)
-    self.muzzleFlashEmitter.setScaleOverLife(0.6, 0.08)
+    ' Peak scale 200% bigger than the original 0.6 (i.e. 3x) per feedback
+    ' that the flash read as too small; end-of-life scale left small so it
+    ' still tapers down to a point rather than fading out oversized.
+    self.muzzleFlashEmitter.setScaleOverLife(1.8, 0.08)
     self.muzzleFlashEmitter.setAlphaOverLife(1, 0)
     self.muzzleFlashEmitter.setColorOverLife(16777120, 16744448)
     self.muzzleFlashEmitter.setMaxParticles(30)
@@ -1004,9 +1029,17 @@ function onupdate(delta)
       e.update(delta / 1000, self.posX, self.posY)
       if not e.dead then
         dist = math.distance(e.x, e.y, self.posX, self.posY)
+        ' A single shared cooldown across every enemy, not one per enemy --
+        ' with 10 enemies now able to be adjacent at once, a per-enemy
+        ' cooldown would let each land its own hit independently and
+        ' actually make a swarm MORE punishing, the opposite of the point.
+        ' Enemy.stopDistance already keeps a chasing enemy from closing
+        ' onto the player's exact position, so this now mostly fires when
+        ' the player themselves closes the last bit of distance onto a
+        ' waiting enemy, not automatically the instant one catches up.
         if dist < 0.8 and self.damageCooldown = 0 then
           self.playerHealth = self.playerHealth - 10
-          self.damageCooldown = 60
+          self.damageCooldown = 90
         endif
       endif
     next i

@@ -504,7 +504,10 @@ function onenter()
     self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
     self.muzzleFlashEmitter.setSpeed(80, 160)
     self.muzzleFlashEmitter.setDirection(0, 360)
-    self.muzzleFlashEmitter.setScaleOverLife(0.6, 0.08)
+    ' Peak scale 200% bigger than the original 0.6 (i.e. 3x) per feedback
+    ' that the flash read as too small; end-of-life scale left small so it
+    ' still tapers down to a point rather than fading out oversized.
+    self.muzzleFlashEmitter.setScaleOverLife(1.8, 0.08)
     self.muzzleFlashEmitter.setAlphaOverLife(1, 0)
     self.muzzleFlashEmitter.setColorOverLife(16777120, 16744448)
     self.muzzleFlashEmitter.setMaxParticles(30)
@@ -550,9 +553,17 @@ function onupdate(delta)
       e.update(delta / 1000, self.posX, self.posY)
       if not e.dead then
         dist = math.distance(e.x, e.y, self.posX, self.posY)
+        ' A single shared cooldown across every enemy, not one per enemy --
+        ' with 10 enemies now able to be adjacent at once, a per-enemy
+        ' cooldown would let each land its own hit independently and
+        ' actually make a swarm MORE punishing, the opposite of the point.
+        ' Enemy.stopDistance already keeps a chasing enemy from closing
+        ' onto the player's exact position, so this now mostly fires when
+        ' the player themselves closes the last bit of distance onto a
+        ' waiting enemy, not automatically the instant one catches up.
         if dist < 0.8 and self.damageCooldown = 0 then
           self.playerHealth = self.playerHealth - 10
-          self.damageCooldown = 60
+          self.damageCooldown = 90
         endif
       endif
     next i

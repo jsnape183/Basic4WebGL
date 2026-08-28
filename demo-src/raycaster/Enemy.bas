@@ -17,6 +17,7 @@ dim speed
 dim patrolSpeed
 dim chaseRadius
 dim giveUpRadius
+dim stopDistance
 dim patrolTargetX
 dim patrolTargetY
 dim patrolTimer
@@ -30,10 +31,22 @@ Constructor(startX, startY)
   self.hp = 3
   self.dead = false
   self.state = "patrol"
-  self.speed = 1.2
+  ' Chase speed lowered from an earlier 1.2 -- confirmed live it read as
+  ' uncomfortably fast when a chasing enemy rounded a corner unannounced,
+  ' with no animation to soften the sudden close-distance approach.
+  self.speed = 0.85
   self.patrolSpeed = 0.6
   self.chaseRadius = 6
   self.giveUpRadius = 9
+  ' A chasing enemy stops here rather than closing the rest of the way
+  ' onto the player's exact position -- without this it would walk fully
+  ' on top of the player (visually indistinguishable from the player's own
+  ' sprite in a first-person view). Left deliberately a bit larger than
+  ' GameScene's own dist < 0.8 contact-damage threshold, so a stopped
+  ' enemy waits just outside contact range; damage still lands, but only
+  ' if the PLAYER chooses to close that last bit of distance themselves,
+  ' not automatically the instant the enemy catches up.
+  self.stopDistance = 1.0
   self.patrolTargetX = startX
   self.patrolTargetY = startY
   self.patrolTimer = 0
@@ -108,8 +121,15 @@ function update(dt, playerX, playerY)
   endif
 
   if self.state = "chase" then
-    dx = playerX - self.x
-    dy = playerY - self.y
+    if dist <= self.stopDistance then
+      ' Already as close as it's allowed to get -- hold position rather
+      ' than continuing to close in on the player's exact coordinates.
+      dx = 0
+      dy = 0
+    else
+      dx = playerX - self.x
+      dy = playerY - self.y
+    endif
     moveSpeed = self.speed
   else
     self.patrolTimer = self.patrolTimer - dt
