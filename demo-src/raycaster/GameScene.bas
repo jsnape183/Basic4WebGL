@@ -713,9 +713,8 @@ endfunction
 function startLevel()
     ' Runs once at the start of every level (both the very first, from
     ' onenter(), and every subsequent one, from nextLevel() below) --
-    ' regenerates the maze at this level's size, and respawns the player
-    ' and a fresh enemy roster sized for this level. (Exit placement
-    ' arrives in a later task.)
+    ' regenerates the maze at this level's size, respawns the player and
+    ' a fresh enemy roster sized for this level, and picks a new exit.
     dim mapSize
     dim i
     dim spawn
