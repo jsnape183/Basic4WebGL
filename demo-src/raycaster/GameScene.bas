@@ -466,6 +466,10 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
+    ' 33 -- today's fixed maze size -- is a placeholder, not a permanent
+    ' choice: a later level-progression task replaces this with a
+    ' level-dependent formula (see the ENEMY_COUNT field's own comment
+    ' above for why this file calls out bare literals like this one).
     mazegrid.generate(33)
     self.posX = 1.5
     self.posY = 1.5
