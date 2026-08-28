@@ -25,12 +25,15 @@ function isOpen(mx, my)
   return getCell(mx, my) = 0
 endfunction
 
-function generate()
+function generate(size)
   dim i
   dim cx
   dim cy
   dim nx
   dim ny
+
+  mapW = size
+  mapH = size
   ' Sized for a 16x16 logical-cell maze (mapW/mapH = 33 = 2*16 + 1) -- the
   ' backtracker's stack depth is bounded by the total logical cell count,
   ' so 256 is exactly enough here. If mapW/mapH ever change, this needs to
@@ -138,4 +141,12 @@ function randomOpenCell()
   result(0) = x
   result(1) = y
   return result
+endfunction
+
+function getMapW()
+  return mapW
+endfunction
+
+function getMapH()
+  return mapH
 endfunction

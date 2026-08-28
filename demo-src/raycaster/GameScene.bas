@@ -466,7 +466,7 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
-    mazegrid.generate()
+    mazegrid.generate(33)
     self.posX = 1.5
     self.posY = 1.5
 
