@@ -9,6 +9,8 @@ Constructor()
 EndConstructor
 
 function onenter()
+  world.setBackground(0, 0, 0)
+
   self.titleText = new Text("RAYCASTER", stage.width() / 2 - 140, stage.height() / 2 - 100)
   self.titleText.setStyle(48, 255, 220, 120)
   hud.add(self.titleText)

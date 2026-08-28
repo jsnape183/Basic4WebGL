@@ -33,7 +33,7 @@ dim muzzleOffsetY
 ' container fresh every single frame, so anything world.add()'d would get
 ' painted over the instant the next frame's walls go up. HUD is a
 ' separate container that always renders on top of the world, which is
-' also why the gun sprite and health text below stay visible -- placing
+' also why the gun sprite and health bar below stay visible -- placing
 ' the emitters there sidesteps the redraw entirely. There's no camera in
 ' this demo, so HUD/world/screen coordinates are all the same thing.
 dim muzzleFlashEmitter as Emitter
@@ -51,19 +51,25 @@ dim playerHealth
 dim damageCooldown
 
 ' Hud
-dim healthText as Text
+' healthbar_bg.png/healthbar_fill.png are 1x1 pixel images stretched via
+' setScale into a bar shape -- the same pattern Bullet Hell Shooter uses.
+' `sprite` is centre-anchored, so each bar's setPosition must be its
+' CENTRE, not its top-left corner.
+dim hpBg as Sprite
+dim hpFill as Sprite
+dim hpLabel as Text
 dim gameOverText as Text
 
 ' Enemies
-' ENEMY_COUNT mirrors the array size below (dim enemies(4) as Enemy) -- the
+' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
 ' can't take a self.* field as their size, the same reason MazeGrid.bas's
 ' dim stackX(256) is a literal, not a field reference), so that one
-' declaration keeps the bare 4. Every LOOP BOUND that walks the array uses
+' declaration keeps the bare 10. Every LOOP BOUND that walks the array uses
 ' this constant instead, so the loop bound isn't a second bare literal that
 ' could drift out of sync with the array's actual size.
 dim ENEMY_COUNT
-dim enemies(4) as Enemy
+dim enemies(10) as Enemy
 
 ' Z-buffer
 dim zbuffer(200)
@@ -73,7 +79,7 @@ dim moveSpeed
 dim rotSpeed
 
 Constructor()
-  self.ENEMY_COUNT = 4
+  self.ENEMY_COUNT = 10
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -406,7 +412,7 @@ endfunction
 function renderEnemies()
   dim i
   dim j
-  dim order(4)
+  dim order(10)
   dim tmp
   ' Reading a field straight off an EXTERNAL Enemy instance (whether via a
   ' self.<array>(idx) chain, a local `dim ... as Enemy`, or a typed function
@@ -425,10 +431,9 @@ function renderEnemies()
     self.projectEnemy(self.enemies(i))
   next i
 
-  order(0) = 0
-  order(1) = 1
-  order(2) = 2
-  order(3) = 3
+  for i = 0 to self.ENEMY_COUNT - 1
+    order(i) = i
+  next i
   for i = 1 to self.ENEMY_COUNT - 1
     j = i
     keepSorting = true
@@ -479,8 +484,20 @@ function onenter()
     ' gun.png here; +128 on each axis keeps its top-left corner at the same
     ' screen spot (stage.width()/2, stage.height()-200) it sat at before.
     self.weaponSprite.transform.setPosition(stage.width() / 2 + 128, stage.height() - 200 + 128)
-    self.healthText = new Text("Health: 100",10,10)
-    hud.add(self.healthText)
+    self.hpBg = new Sprite("healthbar_bg.png")
+    self.hpBg.transform.setPosition(70, 27)
+    self.hpBg.setScale(100, 14)
+    hud.add(self.hpBg)
+
+    self.hpFill = new Sprite("healthbar_fill.png")
+    self.hpFill.transform.setPosition(70, 27)
+    self.hpFill.setScale(100, 14)
+    hud.add(self.hpFill)
+
+    self.hpLabel = new Text("HP", 20, 36)
+    self.hpLabel.setStyle(12, 255, 255, 255)
+    hud.add(self.hpLabel)
+
     self.gameOverText = new Text("GAME OVER!",stage.width() / 2, stage.height() / 2)
 
     self.muzzleFlashEmitter = new Emitter("particle.png")
@@ -518,6 +535,7 @@ function onupdate(delta)
     dim i
     dim e as Enemy
     dim dist
+    dim hpFillWidth
 
     if self.playerHealth < 1
         hud.add(self.gameOverText)
@@ -543,7 +561,14 @@ function onupdate(delta)
     endif
 
     self.renderEnemies()
-    self.healthText.setText("Health: " + string.str(self.playerHealth))
+
+    hpFillWidth = 100 * (self.playerHealth / 100)
+    if hpFillWidth < 0 then
+      hpFillWidth = 0
+    endif
+    self.hpFill.transform.setPosition(20 + hpFillWidth / 2, 27)
+    self.hpFill.setScale(hpFillWidth, 14)
+
     self.updateFlashCooldown()
 endfunction
 

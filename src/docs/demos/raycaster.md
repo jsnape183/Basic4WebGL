@@ -1,6 +1,6 @@
 # Wolfenstein-Style Raycaster
 
-Textured walls, a title screen, a generated maze, and four patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, player health, and a game-over screen. WASD to move, spacebar to fire.
+Textured walls, a title screen, a generated maze, and ten patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, a health bar, and a game-over screen. WASD to move, spacebar to fire.
 
 ---
 
@@ -26,7 +26,7 @@ Enemies (`Enemy.bas`) patrol a nearby open cell until the player comes within `c
 
 ## Required assets
 
-Upload six PNG files to your project's asset library before running:
+Upload eight PNG files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -36,6 +36,8 @@ Upload six PNG files to your project's asset library before running:
 | `enemy_dead.png` | 64×64 enemy death frame |
 | `gun.png` | Weapon sprite for the HUD |
 | `particle.png` | Small square sprite used by every `Emitter` — muzzle flash, enemy hit spark, enemy death burst |
+| `healthbar_bg.png` | 1×1 pixel, stretched via `setScale` into the health bar's background |
+| `healthbar_fill.png` | 1×1 pixel, stretched via `setScale` into the health bar's fill — same pattern Bullet Hell Shooter uses |
 
 ---
 
@@ -81,6 +83,8 @@ Constructor()
 EndConstructor
 
 function onenter()
+  world.setBackground(0, 0, 0)
+
   self.titleText = new Text("RAYCASTER", stage.width() / 2 - 140, stage.height() / 2 - 100)
   self.titleText.setStyle(48, 255, 220, 120)
   hud.add(self.titleText)
@@ -483,7 +487,7 @@ dim muzzleOffsetY
 ' container fresh every single frame, so anything world.add()'d would get
 ' painted over the instant the next frame's walls go up. HUD is a
 ' separate container that always renders on top of the world, which is
-' also why the gun sprite and health text below stay visible -- placing
+' also why the gun sprite and health bar below stay visible -- placing
 ' the emitters there sidesteps the redraw entirely. There's no camera in
 ' this demo, so HUD/world/screen coordinates are all the same thing.
 dim muzzleFlashEmitter as Emitter
@@ -501,19 +505,25 @@ dim playerHealth
 dim damageCooldown
 
 ' Hud
-dim healthText as Text
+' healthbar_bg.png/healthbar_fill.png are 1x1 pixel images stretched via
+' setScale into a bar shape -- the same pattern Bullet Hell Shooter uses.
+' `sprite` is centre-anchored, so each bar's setPosition must be its
+' CENTRE, not its top-left corner.
+dim hpBg as Sprite
+dim hpFill as Sprite
+dim hpLabel as Text
 dim gameOverText as Text
 
 ' Enemies
-' ENEMY_COUNT mirrors the array size below (dim enemies(4) as Enemy) -- the
+' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
 ' can't take a self.* field as their size, the same reason MazeGrid.bas's
 ' dim stackX(256) is a literal, not a field reference), so that one
-' declaration keeps the bare 4. Every LOOP BOUND that walks the array uses
+' declaration keeps the bare 10. Every LOOP BOUND that walks the array uses
 ' this constant instead, so the loop bound isn't a second bare literal that
 ' could drift out of sync with the array's actual size.
 dim ENEMY_COUNT
-dim enemies(4) as Enemy
+dim enemies(10) as Enemy
 
 ' Z-buffer
 dim zbuffer(200)
@@ -523,7 +533,7 @@ dim moveSpeed
 dim rotSpeed
 
 Constructor()
-  self.ENEMY_COUNT = 4
+  self.ENEMY_COUNT = 10
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -856,7 +866,7 @@ endfunction
 function renderEnemies()
   dim i
   dim j
-  dim order(4)
+  dim order(10)
   dim tmp
   ' Reading a field straight off an EXTERNAL Enemy instance (whether via a
   ' self.<array>(idx) chain, a local `dim ... as Enemy`, or a typed function
@@ -875,10 +885,9 @@ function renderEnemies()
     self.projectEnemy(self.enemies(i))
   next i
 
-  order(0) = 0
-  order(1) = 1
-  order(2) = 2
-  order(3) = 3
+  for i = 0 to self.ENEMY_COUNT - 1
+    order(i) = i
+  next i
   for i = 1 to self.ENEMY_COUNT - 1
     j = i
     keepSorting = true
@@ -929,8 +938,20 @@ function onenter()
     ' gun.png here; +128 on each axis keeps its top-left corner at the same
     ' screen spot (stage.width()/2, stage.height()-200) it sat at before.
     self.weaponSprite.transform.setPosition(stage.width() / 2 + 128, stage.height() - 200 + 128)
-    self.healthText = new Text("Health: 100",10,10)
-    hud.add(self.healthText)
+    self.hpBg = new Sprite("healthbar_bg.png")
+    self.hpBg.transform.setPosition(70, 27)
+    self.hpBg.setScale(100, 14)
+    hud.add(self.hpBg)
+
+    self.hpFill = new Sprite("healthbar_fill.png")
+    self.hpFill.transform.setPosition(70, 27)
+    self.hpFill.setScale(100, 14)
+    hud.add(self.hpFill)
+
+    self.hpLabel = new Text("HP", 20, 36)
+    self.hpLabel.setStyle(12, 255, 255, 255)
+    hud.add(self.hpLabel)
+
     self.gameOverText = new Text("GAME OVER!",stage.width() / 2, stage.height() / 2)
 
     self.muzzleFlashEmitter = new Emitter("particle.png")
@@ -968,6 +989,7 @@ function onupdate(delta)
     dim i
     dim e as Enemy
     dim dist
+    dim hpFillWidth
 
     if self.playerHealth < 1
         hud.add(self.gameOverText)
@@ -993,7 +1015,14 @@ function onupdate(delta)
     endif
 
     self.renderEnemies()
-    self.healthText.setText("Health: " + string.str(self.playerHealth))
+
+    hpFillWidth = 100 * (self.playerHealth / 100)
+    if hpFillWidth < 0 then
+      hpFillWidth = 0
+    endif
+    self.hpFill.transform.setPosition(20 + hpFillWidth / 2, 27)
+    self.hpFill.setScale(hpFillWidth, 14)
+
     self.updateFlashCooldown()
 endfunction
 
@@ -1021,11 +1050,11 @@ EndClass
 
 ### Enemy billboards
 
-`projectEnemy` projects an enemy's world position onto the screen using the same camera-space transform the raycaster itself relies on, storing the result back onto the enemy via `setProjection()`. `drawEnemy` then draws that enemy column by column, but only for columns where the z-buffer says the wall is *farther away* than the enemy — this is what stops an enemy from appearing through walls. `renderEnemies` projects and depth-sorts all four enemies (farthest first) before drawing them, so a closer enemy correctly overlaps one standing behind it. `drawEnemy`'s billboard width is converted from screen pixels to ray-column units via `STRIP` to fix a 4x stretch bug (see "How it works").
+`projectEnemy` projects an enemy's world position onto the screen using the same camera-space transform the raycaster itself relies on, storing the result back onto the enemy via `setProjection()`. `drawEnemy` then draws that enemy column by column, but only for columns where the z-buffer says the wall is *farther away* than the enemy — this is what stops an enemy from appearing through walls. `renderEnemies` projects and depth-sorts all ten enemies (farthest first) before drawing them, so a closer enemy correctly overlaps one standing behind it. `drawEnemy`'s billboard width is converted from screen pixels to ray-column units via `STRIP` to fix a 4x stretch bug (see "How it works").
 
 ### Hit detection
 
-Firing (spacebar) calls `checkHit`, which scans all four enemies and picks the closest one that qualifies. A shot registers against a given enemy if:
+Firing (spacebar) calls `checkHit`, which scans all ten enemies and picks the closest one that qualifies. A shot registers against a given enemy if:
 - It's alive and facing the camera (`getTransformY() > 0`).
 - The centre ray column is within 15 columns of its `getScreenX()`.
 - The z-buffer at the centre column is deeper than the enemy (it isn't hidden behind a wall).
@@ -1038,9 +1067,9 @@ Each `Enemy` patrols a randomly-chosen nearby open cell (`pickPatrolTarget`), pi
 
 ### HUD layering
 
-The weapon sprite, health text, and all three particle emitters are added to `hud`, not `world`. This keeps them always on top of the 3D view, which is drawn each frame via `drawing.drawImageStrip` into the world layer.
+The weapon sprite, the health bar (background, fill, and label), and all three particle emitters are added to `hud`, not `world`. This keeps them always on top of the 3D view, which is drawn each frame via `drawing.drawImageStrip` into the world layer.
 
-For the emitters specifically, this isn't just a visual preference — it's required. `castRays` calls `drawing.clear()` and redraws the ceiling, floor, and every wall strip into the world container from scratch every single frame. Anything added to `world` (the normal place an `Emitter` goes in the other particle-enabled demos) would get painted over the instant the next frame's walls went up, since the freshly-redrawn strips are added after it every time. `hud` is a separate container that always renders on top of `world` regardless of what's redrawn there, which is also why the gun sprite and health text stay visible — routing the emitters through it sidesteps the redraw entirely. There's no `camera` anywhere in this demo, so `hud`, `world`, and screen coordinates are all the same thing here, unlike in a scrolling demo where they'd diverge.
+For the emitters specifically, this isn't just a visual preference — it's required. `castRays` calls `drawing.clear()` and redraws the ceiling, floor, and every wall strip into the world container from scratch every single frame. Anything added to `world` (the normal place an `Emitter` goes in the other particle-enabled demos) would get painted over the instant the next frame's walls went up, since the freshly-redrawn strips are added after it every time. `hud` is a separate container that always renders on top of `world` regardless of what's redrawn there, which is also why the gun sprite and health bar stay visible — routing the emitters through it sidesteps the redraw entirely. There's no `camera` anywhere in this demo, so `hud`, `world`, and screen coordinates are all the same thing here, unlike in a scrolling demo where they'd diverge.
 
 ### Muzzle flash and hit particles
 
