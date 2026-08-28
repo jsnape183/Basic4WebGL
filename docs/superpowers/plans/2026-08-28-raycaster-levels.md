@@ -134,6 +134,7 @@ This task only wires up the plumbing (`GameData` exists, is passed into `GameSce
 - [ ] **Step 1: Write `demo-src/raycaster/GameData.bas`**
 
 ```bas
+Class
 ' demo-src/raycaster/GameData.bas
 '
 ' A plain Class (no Extends) -- mirrors Coins Platformer's own
@@ -141,7 +142,6 @@ This task only wires up the plumbing (`GameData` exists, is passed into `GameSce
 ' scene switch (constructed once in Main.bas, passed into every scene's
 ' constructor that needs it) rather than scenes reading each other's
 ' fields directly.
-Class
 
 dim levelReached
 
@@ -796,9 +796,16 @@ enemies while leaving player health untouched."
 - [ ] **Step 1: Write `demo-src/raycaster/GameOverScene.bas`**
 
 ```bas
-' demo-src/raycaster/GameOverScene.bas
 Class
 Extends scene
+' demo-src/raycaster/GameOverScene.bas
+' NOTE: the `Class` keyword must be the literal first line of the file --
+' Task 2's implementer discovered live that a header comment placed
+' before `Class` fails to compile ("Class declaration must appear at the
+' top of the file"), unlike GameData.bas's plan snippet which had the
+' same mistake and needed the identical fix. Every other file in this
+' demo (Enemy.bas, GameScene.bas, etc.) already puts `Class`/`Extends`
+' first and any header comment after -- follow that same order here.
 
 dim gameData as GameData
 dim levelText as Text
