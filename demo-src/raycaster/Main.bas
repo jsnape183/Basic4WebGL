@@ -5,7 +5,9 @@ endfunction
 dim gamedata = new GameData()
 dim titlescene = new TitleScene()
 dim gamescene = new GameScene(gamedata)
+dim gameoverscene = new GameOverScene(gamedata)
 
 scenemanager.register("title", titlescene)
 scenemanager.register("game", gamescene)
+scenemanager.register("gameover", gameoverscene)
 scenemanager.switch("title")

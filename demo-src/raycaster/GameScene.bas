@@ -60,7 +60,6 @@ dim damageCooldown
 dim hpBg as Sprite
 dim hpFill as Sprite
 dim hpLabel as Text
-dim gameOverText as Text
 
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
@@ -753,8 +752,9 @@ function onupdate(delta)
     dim dist
     dim hpFillWidth
 
-    if self.playerHealth < 1
-        hud.add(self.gameOverText)
+    if self.playerHealth < 1 then
+        self.gameData.levelReached = self.level
+        scenemanager.switch("gameover")
         return
     endif
 
