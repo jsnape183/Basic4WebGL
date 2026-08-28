@@ -532,20 +532,29 @@ function drawCompass()
   dim leftY
   dim rightX
   dim rightY
+  dim margin
+  dim arrowLen
+  dim arrowHalfWidth
+  dim arrowSpread
+
+  margin = 40
+  arrowLen = 15
+  arrowHalfWidth = 10
+  arrowSpread = 2.6
 
   angleToExit = math.atan2(self.exitY - self.posY, self.exitX - self.posX)
   playerAngle = math.atan2(self.dirY, self.dirX)
   relAngle = angleToExit - playerAngle
 
-  cx = self.SW - 40
-  cy = 40
+  cx = self.SW - margin
+  cy = margin
 
-  tipX = cx + math.cos(relAngle) * 15
-  tipY = cy + math.sin(relAngle) * 15
-  leftX = cx + math.cos(relAngle + 2.6) * 10
-  leftY = cy + math.sin(relAngle + 2.6) * 10
-  rightX = cx + math.cos(relAngle - 2.6) * 10
-  rightY = cy + math.sin(relAngle - 2.6) * 10
+  tipX = cx + math.cos(relAngle) * arrowLen
+  tipY = cy + math.sin(relAngle) * arrowLen
+  leftX = cx + math.cos(relAngle + arrowSpread) * arrowHalfWidth
+  leftY = cy + math.sin(relAngle + arrowSpread) * arrowHalfWidth
+  rightX = cx + math.cos(relAngle - arrowSpread) * arrowHalfWidth
+  rightY = cy + math.sin(relAngle - arrowSpread) * arrowHalfWidth
 
   pen.setLineColor(255, 215, 0)
   pen.setLineWidth(3)
@@ -782,6 +791,9 @@ function onupdate(delta)
 
     if math.distance(self.posX, self.posY, self.exitX, self.exitY) < 1.0 then
       self.nextLevel()
+      ' Skips the HP bar update below for this one frame -- harmless,
+      ' since playerHealth is untouched by a level transition, so the bar
+      ' just keeps showing last frame's (still-correct) width.
       return
     endif
 
