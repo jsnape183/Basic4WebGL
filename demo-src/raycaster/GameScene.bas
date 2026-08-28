@@ -80,6 +80,12 @@ dim enemies(20) as Enemy
 dim level
 dim hudSetupDone
 
+' Exit
+dim exitX
+dim exitY
+dim exitScreenX
+dim exitTransformY
+
 ' Z-buffer
 dim zbuffer(200)
 
@@ -352,6 +358,32 @@ function pickEnemySpawn()
   return result
 endfunction
 
+function pickExitPosition()
+  ' Rerolls (same pattern pickEnemySpawn() already uses) until the exit
+  ' is a real trek from the player's spawn corner, not just "not right on
+  ' top of it" -- at least 60% of the maze's diagonal away.
+  dim tries
+  dim spawn
+  dim ex
+  dim ey
+  dim minDist
+
+  minDist = mazegrid.getMapW() * 0.6
+
+  tries = 0
+  spawn = mazegrid.randomOpenCell()
+  ex = spawn(0) + 0.5
+  ey = spawn(1) + 0.5
+  while math.distance(ex, ey, self.posX, self.posY) < minDist and tries < 30
+    spawn = mazegrid.randomOpenCell()
+    ex = spawn(0) + 0.5
+    ey = spawn(1) + 0.5
+    tries = tries + 1
+  endwhile
+  self.exitX = ex
+  self.exitY = ey
+endfunction
+
 function projectEnemy(e as Enemy)
   dim spriteX
   dim spriteY
@@ -417,6 +449,114 @@ function drawEnemy(e as Enemy)
       endif
     endif
   next sc
+endfunction
+
+function projectExit()
+  ' Mirrors projectEnemy()'s billboard camera-transform math exactly --
+  ' same formula, one object instead of a loop. No getter-workaround
+  ' needed here (unlike Enemy's fields) since exitX/exitY/etc. are plain
+  ' self.* fields on GameScene itself, never stored in an array or passed
+  ' around as a typed parameter -- the compiler bug that pattern hits
+  ' only affects reads of an EXTERNAL class-typed instance's fields.
+  dim spriteX
+  dim spriteY
+  dim invDet
+  dim transformX
+  dim transformY
+
+  spriteX = self.exitX - self.posX
+  spriteY = self.exitY - self.posY
+
+  invDet = 1.0 / (self.planeX * self.dirY - self.dirX * self.planeY)
+  transformX = invDet * (self.dirY * spriteX - self.dirX * spriteY)
+  transformY = invDet * ((0 - self.planeY) * spriteX + self.planeX * spriteY)
+
+  if transformY <= 0 then
+    self.exitTransformY = -1
+    return
+  endif
+
+  self.exitScreenX = math.floor((self.RAYS / 2) * (1.0 + transformX / transformY))
+  self.exitTransformY = transformY
+endfunction
+
+function drawExit()
+  ' Mirrors drawEnemy()'s column-by-column loop and z-buffer occlusion
+  ' check, but draws a solid-color drawing.drawRect per visible column
+  ' instead of sampling drawing.drawImageStrip from a texture -- no image
+  ' asset needed for the exit at all.
+  dim spriteH
+  dim spriteWCols
+  dim drawLeft
+  dim drawRight
+  dim sc
+  dim destX
+
+  if self.exitTransformY <= 0 then
+    return
+  endif
+
+  spriteH = math.floor(self.SH / self.exitTransformY)
+  spriteWCols = spriteH / self.STRIP
+
+  drawLeft = math.floor(self.exitScreenX - spriteWCols / 2)
+  drawRight = math.floor(self.exitScreenX + spriteWCols / 2)
+
+  pen.setFillColor(255, 215, 0)
+  pen.setLineWidth(0)
+
+  for sc = drawLeft to drawRight - 1
+    if sc >= 0 and sc < self.RAYS then
+      if self.zbuffer(sc) > self.exitTransformY then
+        destX = sc * self.STRIP + self.STRIP / 2
+        drawing.drawRect(destX, self.SCY, self.STRIP, spriteH)
+      endif
+    endif
+  next sc
+endfunction
+
+function drawCompass()
+  ' A small hand-rotated arrow (no image asset) always pointing toward
+  ' the exit's direction relative to the player's current facing, drawn
+  ' near the top-right corner of the screen -- always visible regardless
+  ' of whether the exit itself is currently on-screen, so a big maze
+  ' stays navigable.
+  dim angleToExit
+  dim playerAngle
+  dim relAngle
+  dim cx
+  dim cy
+  dim tipX
+  dim tipY
+  dim leftX
+  dim leftY
+  dim rightX
+  dim rightY
+
+  angleToExit = math.atan2(self.exitY - self.posY, self.exitX - self.posX)
+  playerAngle = math.atan2(self.dirY, self.dirX)
+  relAngle = angleToExit - playerAngle
+
+  cx = self.SW - 40
+  cy = 40
+
+  tipX = cx + math.cos(relAngle) * 15
+  tipY = cy + math.sin(relAngle) * 15
+  leftX = cx + math.cos(relAngle + 2.6) * 10
+  leftY = cy + math.sin(relAngle + 2.6) * 10
+  rightX = cx + math.cos(relAngle - 2.6) * 10
+  rightY = cy + math.sin(relAngle - 2.6) * 10
+
+  pen.setLineColor(255, 215, 0)
+  pen.setLineWidth(3)
+  ' drawing.drawLine(x, y, x2, y2) draws from (x, y) to (x + x2, y + y2)
+  ' -- x2/y2 are a LOCAL offset from the start point, not a second
+  ' absolute coordinate (confirmed by reading src/components/Runner/
+  ' engine/drawing.js: it builds the line from local (0,0) to (x2,y2),
+  ' THEN positions the whole object at (x,y)) -- so each call below
+  ' subtracts the start point back out to get an absolute-endpoint line.
+  drawing.drawLine(leftX, leftY, tipX - leftX, tipY - leftY)
+  drawing.drawLine(tipX, tipY, rightX - tipX, rightY - tipY)
 endfunction
 
 function renderEnemies()
@@ -590,6 +730,8 @@ function startLevel()
       spawn = self.pickEnemySpawn()
       self.enemies(i) = new Enemy(spawn(0), spawn(1))
     next i
+
+    self.pickExitPosition()
 endfunction
 
 function nextLevel()
@@ -635,6 +777,14 @@ function onupdate(delta)
     endif
 
     self.renderEnemies()
+    self.projectExit()
+    self.drawExit()
+    self.drawCompass()
+
+    if math.distance(self.posX, self.posY, self.exitX, self.exitY) < 1.0 then
+      self.nextLevel()
+      return
+    endif
 
     hpFillWidth = 100 * (self.playerHealth / 100)
     if hpFillWidth < 0 then
