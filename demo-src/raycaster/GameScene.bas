@@ -1,6 +1,8 @@
 Class
 Extends scene
 
+dim gameData as GameData
+
 ' Screen
 dim STRIP
 dim RAYS
@@ -78,7 +80,8 @@ dim zbuffer(200)
 dim moveSpeed
 dim rotSpeed
 
-Constructor()
+Constructor(gameData as GameData)
+  self.gameData = gameData
   self.ENEMY_COUNT = 10
   self.STRIP = 4
   self.RAYS = 200
