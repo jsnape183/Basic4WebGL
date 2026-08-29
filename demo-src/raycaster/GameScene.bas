@@ -200,6 +200,35 @@ function handleInput()
         endif
     endif
 
+    ' Strafe -- moves perpendicular to facing direction rather than turning.
+    ' (-dirY, dirX) is dir rotated +90 degrees, which is the same direction
+    ' the camera plane (planeX, planeY) already points -- confirmed from the
+    ' initial dir=(1,0)/plane=(0,0.66) values, where plane is dir rotated
+    ' +90 and scaled -- so E (strafe toward that side) uses it directly,
+    ' and Q (the opposite side) negates it. Same per-axis wall-slide
+    ' collision check as W/S above, just with a different movement vector.
+    if input.getKeyDown(69) then
+        nx = self.posX + (0 - self.dirY) * self.moveSpeed
+        ny = self.posY + self.dirX * self.moveSpeed
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
+    if input.getKeyDown(81) then
+        nx = self.posX + self.dirY * self.moveSpeed
+        ny = self.posY + (0 - self.dirX) * self.moveSpeed
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
     if input.getKeyDown(68) then
         oldDirX = self.dirX
         self.dirX = self.dirX * math.cos(self.rotSpeed) - self.dirY * math.sin(self.rotSpeed)

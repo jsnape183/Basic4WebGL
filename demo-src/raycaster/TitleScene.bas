@@ -15,7 +15,7 @@ function onenter()
   self.titleText.setStyle(48, 255, 220, 120)
   hud.add(self.titleText)
 
-  self.controlsText = new Text("WASD to move   Space to fire", stage.width() / 2 - 150, stage.height() / 2)
+  self.controlsText = new Text("WASD to move   Q/E to strafe   Space to fire", stage.width() / 2 - 220, stage.height() / 2)
   self.controlsText.setStyle(20, 255, 255, 255)
   hud.add(self.controlsText)
 

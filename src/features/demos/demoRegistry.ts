@@ -28,7 +28,7 @@ Firing, landing a hit, and killing an enemy each burst an \`Emitter\` — a part
 
 **Key techniques:** DDA raycasting, perpendicular wall distance (no fisheye), texture column sampling via \`drawing.drawImageStrip\`, camera-plane billboard projection with depth sorting (reused for a code-drawn exit billboard), a randomized recursive-backtracker maze generator parametrized per level, simple per-axis patrol/chase enemy movement, a hand-rotated HUD compass via \`drawing.drawLine\`, persisted high scores via \`save\`, particle effects via a shared \`Emitter\` module added to \`hud\` instead of \`world\`.
 
-**Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_attack.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\`, \`particle.png\`, \`healthbar_bg.png\`, \`healthbar_fill.png\` — **Controls:** WASD to move, Space to fire`,
+**Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_attack.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\`, \`particle.png\`, \`healthbar_bg.png\`, \`healthbar_fill.png\` — **Controls:** WASD to move, Q/E to strafe, Space to fire`,
     docsSlug: 'raycaster',
     json: raycasterJson as ProjectExportJson,
   },

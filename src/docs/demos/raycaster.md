@@ -1,6 +1,6 @@
 # Wolfenstein-Style Raycaster
 
-Textured walls, a title screen, a generated maze that grows bigger and busier with every level you clear, and patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, a health bar with a screen flash on every hit, a level counter, a HUD compass pointing toward the exit, and a persisted-best-level game-over screen. WASD to move, spacebar to fire.
+Textured walls, a title screen, a generated maze that grows bigger and busier with every level you clear, and patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, a health bar with a screen flash on every hit, a level counter, a HUD compass pointing toward the exit, and a persisted-best-level game-over screen. WASD to move, Q/E to strafe, spacebar to fire.
 
 ---
 
@@ -102,6 +102,8 @@ The exit billboard and the compass arrow are both drawn purely with `drawing`/`p
 | S | Walk backward |
 | A | Turn left |
 | D | Turn right |
+| Q | Strafe left |
+| E | Strafe right |
 | Space | Fire |
 | Any key (title screen) | Start the game |
 | Any key (game-over screen) | Try again |
@@ -675,6 +677,35 @@ function handleInput()
     if input.getKeyDown(83) then
         nx = self.posX - self.dirX * self.moveSpeed
         ny = self.posY - self.dirY * self.moveSpeed
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
+    ' Strafe -- moves perpendicular to facing direction rather than turning.
+    ' (-dirY, dirX) is dir rotated +90 degrees, which is the same direction
+    ' the camera plane (planeX, planeY) already points -- confirmed from the
+    ' initial dir=(1,0)/plane=(0,0.66) values, where plane is dir rotated
+    ' +90 and scaled -- so E (strafe toward that side) uses it directly,
+    ' and Q (the opposite side) negates it. Same per-axis wall-slide
+    ' collision check as W/S above, just with a different movement vector.
+    if input.getKeyDown(69) then
+        nx = self.posX + (0 - self.dirY) * self.moveSpeed
+        ny = self.posY + self.dirX * self.moveSpeed
+        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
+            self.posX = nx
+        endif
+        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
+            self.posY = ny
+        endif
+    endif
+
+    if input.getKeyDown(81) then
+        nx = self.posX + self.dirY * self.moveSpeed
+        ny = self.posY + (0 - self.dirX) * self.moveSpeed
         if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
             self.posX = nx
         endif
@@ -1570,7 +1601,7 @@ function onenter()
   self.titleText.setStyle(48, 255, 220, 120)
   hud.add(self.titleText)
 
-  self.controlsText = new Text("WASD to move   Space to fire", stage.width() / 2 - 150, stage.height() / 2)
+  self.controlsText = new Text("WASD to move   Q/E to strafe   Space to fire", stage.width() / 2 - 220, stage.height() / 2)
   self.controlsText.setStyle(20, 255, 255, 255)
   hud.add(self.controlsText)
 
@@ -1593,6 +1624,10 @@ EndClass
 ### The maze
 
 `MazeGrid.bas` is a plain module, not a `Class` — both `GameScene` and `Enemy` need grid state and wall lookups, so it's shared rather than duplicated. `generate(size)` sets `mapW`/`mapH` to `size` and runs a randomized recursive backtracker over that `size`×`size` cell grid (odd coordinates are the logical cells; even coordinates are the walls/passages between them), producing a fully-connected "perfect maze" fresh every level, sized by `GameScene.mazeSizeForLevel()` — from 9×9 at level 1 up to 33×33 (16×16 logical cells, today's original fixed size) once a run reaches level 13. `randomOpenCell()` samples only odd coordinates, since those are exactly the cells `generate()` guarantees are open and reachable.
+
+### Movement and strafing
+
+`handleInput` moves the player two ways: **W/S** walk forward/backward along the facing vector (`dirX`/`dirY`); **Q/E** strafe sideways instead, without turning. The strafe vector is `dirX`/`dirY` rotated 90 degrees — `(-dirY, dirX)` for E, `(dirY, -dirX)` for Q — which is the same direction the camera plane (`planeX`/`planeY`) already points (confirmed from the initial `dir = (1, 0)` / `plane = (0, 0.66)` values, where `plane` is `dir` rotated +90 and scaled), so E strafes toward the same side of the screen the plane vector represents. Both use the exact per-axis wall-slide collision check W/S already use (`mazegrid.getCell` against the destination cell on each axis independently) — strafing can't walk through a wall any more than walking forward can. **A/D** are turning, not strafing: they rotate both `dirX`/`dirY` and `planeX`/`planeY` by `rotSpeed` using a standard 2D rotation matrix.
 
 ### DDA raycasting
 
