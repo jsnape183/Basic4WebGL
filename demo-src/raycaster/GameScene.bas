@@ -133,6 +133,9 @@ function checkHit()
     dim bestIndex
     dim bestDist
     dim hitX
+    dim spriteH
+    dim spriteWCols
+    dim aimTolerance
 
     bestIndex = -1
     bestDist = 999999
@@ -140,7 +143,23 @@ function checkHit()
     for i = 0 to self.ENEMY_COUNT - 1
       e = self.enemies(i)
       if not e.dead and e.getTransformY() > 0 then
-        if math.abs(e.getScreenX() - aimCol) < 15 then
+        ' aimTolerance used to be a flat 15 columns regardless of how big
+        ' the enemy actually looks on screen -- fine at typical mid-range
+        ' distances, but it made close-range shots feel unfairly finicky:
+        ' a nearby enemy's billboard can span FAR more than 30 columns
+        ' (see drawEnemy()'s own spriteWCols), yet a shot landing well
+        ' inside that visible width, just more than 15 columns off dead
+        ' centre, still missed. Basing the tolerance on half the enemy's
+        ' actual rendered width instead means "the crosshair is visually
+        ' over the enemy" and "it counts as aimed at" agree with each
+        ' other at any distance. math.max keeps a distant, narrow enemy
+        ' from becoming impossibly precise to hit as spriteWCols shrinks
+        ' toward zero -- 8 columns is roughly the old flat tolerance's
+        ' floor for a typical mid-to-far shot.
+        spriteH = math.floor(self.SH / e.getTransformY())
+        spriteWCols = spriteH / self.STRIP
+        aimTolerance = math.max(spriteWCols / 2, 8)
+        if math.abs(e.getScreenX() - aimCol) < aimTolerance then
           if self.zbuffer(aimCol) > e.getTransformY() then
             if e.getTransformY() < bestDist then
               bestDist = e.getTransformY()
@@ -171,6 +190,43 @@ function checkHit()
     endif
 endfunction
 
+function tryMovePlayer(nx, ny)
+  ' Mirrors Enemy.tryMove()'s wallMargin exactly (see that function's own
+  ' comment for the full reasoning) -- checks a point wallMargin further
+  ' along than the actual destination, in whichever direction that axis
+  ' is moving, rather than the bare destination cell. Without it, posX/
+  ' posY could walk right up to a wall cell's edge (distance zero), which
+  ' let the player's camera get close enough to a wall to visually clip
+  ' into it -- most noticeable as a wall's near edge appearing to poke
+  ' into view at a glancing angle right at the boundary. A smaller margin
+  ' than the enemies' 0.3 -- the player has no rendered billboard of its
+  ' own to keep clear of a wall, just the camera itself, so it doesn't
+  ' need as much clearance to look right.
+  dim wallMargin
+  dim checkX
+  dim checkY
+
+  wallMargin = 0.2
+
+  if nx >= self.posX then
+    checkX = nx + wallMargin
+  else
+    checkX = nx - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(checkX), math.floor(self.posY)) = 0 then
+    self.posX = nx
+  endif
+
+  if ny >= self.posY then
+    checkY = ny + wallMargin
+  else
+    checkY = ny - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(self.posX), math.floor(checkY)) = 0 then
+    self.posY = ny
+  endif
+endfunction
+
 function handleInput()
     dim nx
     dim ny
@@ -181,23 +237,13 @@ function handleInput()
     if input.getKeyDown(87) then
         nx = self.posX + self.dirX * self.moveSpeed
         ny = self.posY + self.dirY * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(83) then
         nx = self.posX - self.dirX * self.moveSpeed
         ny = self.posY - self.dirY * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     ' Strafe -- moves perpendicular to facing direction rather than turning.
@@ -205,28 +251,17 @@ function handleInput()
     ' the camera plane (planeX, planeY) already points -- confirmed from the
     ' initial dir=(1,0)/plane=(0,0.66) values, where plane is dir rotated
     ' +90 and scaled -- so E (strafe toward that side) uses it directly,
-    ' and Q (the opposite side) negates it. Same per-axis wall-slide
-    ' collision check as W/S above, just with a different movement vector.
+    ' and Q (the opposite side) negates it.
     if input.getKeyDown(69) then
         nx = self.posX + (0 - self.dirY) * self.moveSpeed
         ny = self.posY + self.dirX * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(81) then
         nx = self.posX + self.dirY * self.moveSpeed
         ny = self.posY + (0 - self.dirX) * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(68) then
@@ -592,7 +627,17 @@ function drawCompass()
 
   angleToExit = math.atan2(self.exitY - self.posY, self.exitX - self.posX)
   playerAngle = math.atan2(self.dirY, self.dirX)
-  relAngle = angleToExit - playerAngle
+  ' Subtracting an extra quarter turn here makes relAngle = 0 (exit dead
+  ' ahead) point straight UP on screen, not right. cos/sin(0) is (1, 0),
+  ' which is "right" in screen space -- correct for measuring an angle,
+  ' wrong for drawing a compass, where "dead ahead" should read as "up"
+  ' (the same convention every compass/waypoint HUD uses). Confirmed live
+  ' by forcing the exit due east of spawn (dead ahead, since the player
+  ' always starts facing dirX=1/dirY=0): before this fix the arrow's
+  ' pixels formed a wide, short cluster (23px x 11px) consistent with a
+  ' sideways-pointing chevron; after it, the same setup produces a
+  ' narrow, tall cluster pointing up instead.
+  relAngle = angleToExit - playerAngle - (math.pi() / 2)
 
   ' Anchored to the ACTUAL canvas size, not self.SW/self.SH -- those are
   ' fixed 800x600 constants the raycasting math itself depends on, but
