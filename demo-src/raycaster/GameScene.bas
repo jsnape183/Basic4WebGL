@@ -86,7 +86,6 @@ dim enemies(20) as Enemy
 
 ' Level progression
 dim level
-dim hudSetupDone
 
 ' Exit
 dim exitX
@@ -103,7 +102,6 @@ dim rotSpeed
 
 Constructor(gameData as GameData)
   self.gameData = gameData
-  self.hudSetupDone = false
   ' STRIP/SW/SH/SCY are placeholders here -- onenter() overwrites all four
   ' with values derived from the actual canvas before they're ever used
   ' (see the comment there). RAYS is the one genuinely fixed constant: it
@@ -455,6 +453,15 @@ function drawEnemy(e as Enemy)
           drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         elseif e.isFlashing() then
           drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+        elseif e.isAttacking() then
+          ' enemy_attack.png is a single still frame, not a multi-frame
+          ' animation strip -- shown for the same brief 0.15s window as
+          ' enemy_hit.png above (Enemy.attack()/isAttacking()), just for
+          ' the enemy's own swing rather than its got-hit reaction. Takes
+          ' priority over the plain idle sprite but not over isDead()/
+          ' isFlashing() -- a dying or just-hit enemy shows that instead,
+          ' even if it also happened to land a hit the same frame.
+          drawing.drawImageStrip("enemy_attack.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         else
           drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         endif
@@ -666,10 +673,17 @@ function onenter()
     self.SCY = self.SH / 2
     self.STRIP = self.SW / self.RAYS
 
-    if not self.hudSetupDone then
-      self.hudSetupDone = true
-      self.setupHud()
-    endif
+    ' setupHud() runs on every onenter(), not just the first -- entering
+    ' "game" is always a full scenemanager.switch() (the very first title
+    ' screen -> game switch, and every restart from GameOverScene alike),
+    ' and _sbScene._applySwitch() calls stage.clear() before onenter() ever
+    ' runs, wiping both the world AND hud containers unconditionally. A
+    ' one-time guard here (as this used to have) meant a restart after
+    ' death re-entered onenter() with the guard already tripped, so
+    ' setupHud() never ran again -- hud stayed empty (no gun, no health
+    ' bar, no level text) for the rest of that browser session, even
+    ' though everything had genuinely just been cleared out from under it.
+    self.setupHud()
 
     self.playerHealth = 100
     self.damageCooldown = 0
@@ -688,12 +702,10 @@ function onenter()
 endfunction
 
 function setupHud()
-    ' Runs exactly once, ever (guarded by self.hudSetupDone in onenter()) --
-    ' these are screen-fixed HUD elements that never need recreating
-    ' between levels or between restarts after death. Recreating them on
-    ' every onenter() would add duplicate sprites/emitters to hud every
-    ' time the player restarts, since onenter() itself now runs more than
-    ' once per page load (previously it only ever ran once).
+    ' Called fresh from onenter() every time the game scene is entered --
+    ' the switch into "game" (first play, and every restart after death)
+    ' always clears the hud container first (see onenter()'s comment), so
+    ' these need recreating every time, not just once.
     self.weaponSprite = new Sprite("gun.png")
     hud.add(self.weaponSprite)
     ' `sprite` is centre-anchored, so this places the CENTRE of the 256x256
@@ -839,6 +851,7 @@ function onupdate(delta)
           self.playerHealth = self.playerHealth - 10
           self.damageCooldown = 90
           self.damageFlashTimer = 18
+          e.attack()
         endif
       endif
     next i
