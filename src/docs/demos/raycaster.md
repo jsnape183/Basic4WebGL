@@ -22,7 +22,7 @@ Enemies (`Enemy.bas`) patrol a nearby open cell until the player comes within `c
 
 A chasing enemy doesn't walk all the way onto the player's exact position — `stopDistance` (1 tile) halts its approach a little short, so it never visually sits on top of the player in a first-person view where that would be impossible to read. `GameScene`'s own contact-damage check (`dist < 0.8`) sits just inside that stop distance, so damage now mostly comes from the player choosing to close that last bit of distance themselves rather than an enemy automatically closing it the instant it catches up. A single cooldown shared across every enemy (not one per enemy) still caps how often that damage can land regardless of how many enemies are nearby at once — with as many as 20 enemies now able to be adjacent simultaneously at the higher levels (see the enemy-count formula below), a per-enemy cooldown would let a swarm land far more hits than intended, the opposite of the point of having one.
 
-`Enemy.bas` also uses a getter-based interface (`isDead()`, `getX()`, `getY()`, `getScreenX()`, `getTransformY()`, `isFlashing()`, and a `setProjection()` setter) instead of letting `GameScene` read and write its fields directly. That's a workaround for a real compiler limitation: reading a field straight off an external class-typed instance (a `dim e as Enemy` local, a typed parameter, or an array element) inside a comparison or an `and`/`or` expression type-checks against the generic `Object` type rather than the field's real declared type, and fails to compile. A getter's return type is inferred correctly because it reads the field from inside its own class. The same pattern shows up in Dungeon Explorer's `Boss.isDead()` — see that file's comments for the fuller explanation.
+`Enemy.bas` also uses a getter-based interface (`isDead()`, `getX()`, `getY()`, `getScreenX()`, `getTransformY()`, `isFlashing()`, `isAttacking()`, and a `setProjection()` setter) instead of letting `GameScene` read and write its fields directly. That's a workaround for a real compiler limitation: reading a field straight off an external class-typed instance (a `dim e as Enemy` local, a typed parameter, or an array element) inside a comparison or an `and`/`or` expression type-checks against the generic `Object` type rather than the field's real declared type, and fails to compile. A getter's return type is inferred correctly because it reads the field from inside its own class. The same pattern shows up in Dungeon Explorer's `Boss.isDead()` — see that file's comments for the fuller explanation.
 
 ### Level progression: bigger mazes, more enemies
 
@@ -65,7 +65,9 @@ The HUD also now shows the current level: a `levelHudText` field, created once i
 
 ### Death, `GameOverScene`, and the persisted best level
 
-Death is a real scene switch now, not a frozen overlay drawn in place. `GameScene.onupdate()` still owns the death check (`playerHealth < 1`); on death it records `self.gameData.levelReached = self.level` and calls `scenemanager.switch("gameover")`, instead of adding a static "GAME OVER!" `Text` to `hud` and simply returning early forever. Because scenes in this engine are constructed once in `Main.bas` and reused across switches rather than recreated each time, `GameScene.onenter()` now has to fully reset every field that matters at the start of a run — health, facing direction, `level` — on *every* re-entry, not just the first, since it's no longer a "runs exactly once per page load" scene the way it was before endless levels existed. `setupHud()` stays guarded behind a `hudSetupDone` flag so the screen-fixed HUD widgets (weapon sprite, health bar, particle emitters) are still only ever created once, rather than duplicated onto `hud` on every restart.
+Death is a real scene switch now, not a frozen overlay drawn in place. `GameScene.onupdate()` still owns the death check (`playerHealth < 1`); on death it records `self.gameData.levelReached = self.level` and calls `scenemanager.switch("gameover")`, instead of adding a static "GAME OVER!" `Text` to `hud` and simply returning early forever. Because scenes in this engine are constructed once in `Main.bas` and reused across switches rather than recreated each time, `GameScene.onenter()` now has to fully reset every field that matters at the start of a run — health, facing direction, `level` — on *every* re-entry, not just the first, since it's no longer a "runs exactly once per page load" scene the way it was before endless levels existed.
+
+`setupHud()` now runs fresh from `onenter()` on *every* entry too, not just the first — it originally stayed guarded behind a one-time `hudSetupDone` flag on the theory that the screen-fixed HUD widgets (weapon sprite, health bar, particle emitters) never need recreating. That reasoning missed something: the engine's own `_sbScene._applySwitch()` calls `stage.clear()` before `onenter()` ever runs, on *every* scene switch — wiping both the world and hud containers unconditionally, including the very switch back into `"game"` on a restart. With the guard in place, that restart re-entered `onenter()` with `hudSetupDone` already tripped from the first play-through, so `setupHud()` never ran again — the gun, health bar, and level text stayed permanently gone for the rest of that browser session, even though everything had genuinely just been cleared out from under them a moment earlier. Removing the guard (accepting that `setupHud()` recreates these every restart, which is correct now that a restart always means a genuinely empty hud) fixed it.
 
 `GameData.bas` is the one piece of state built to survive that scene switch: a plain `Class` with no `Extends`, mirroring Coins Platformer's own `GameData.bas` — the established pattern in this project for "a small piece of state needs to outlive a scene switch." It's constructed once in `Main.bas` and passed into both `GameScene`'s and `GameOverScene`'s constructors, and it holds `levelReached` alongside the persisted `bestLevel`. `GameOverScene.onenter()` calls `self.gameData.updateBestLevel(reached)`, which owns the entire `save.exists("raycasterBestLevel")` / `save.get(...)` / compare / `save.set(...)` sequence itself — the same pattern Bullet Hell Shooter's own `GameData.bas` uses for its persisted best time — so neither scene touches `save` directly. `updateBestLevel()` returns whether this run set a new best, which `GameOverScene` uses to show either "New best!" or the previous "Best: Level N"; pressing any key on the game-over screen switches back to `"game"`, re-entering `GameScene` and running its now-idempotent `onenter()` for a genuinely fresh level-1 start.
 
@@ -73,12 +75,13 @@ Death is a real scene switch now, not a frozen overlay drawn in place. `GameScen
 
 ## Required assets
 
-Upload nine PNG files to your project's asset library before running:
+Upload ten PNG files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
 | `wall.png` | 64×64 tileable wall texture |
 | `enemy.png` | 64×64 enemy idle/walk sprite |
+| `enemy_attack.png` | 64×64 enemy melee-attack frame |
 | `enemy_hit.png` | 64×64 enemy hit-flash frame |
 | `enemy_dead.png` | 64×64 enemy death frame |
 | `gun.png` | Weapon sprite for the HUD |
@@ -87,7 +90,7 @@ Upload nine PNG files to your project's asset library before running:
 | `healthbar_fill.png` | 1×1 pixel, stretched via `setScale` into the health bar's fill — same pattern Bullet Hell Shooter uses |
 | `damage_flash.png` | 8×8 solid red square, stretched via `setScale` into the full-screen damage vignette |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new assets beyond these nine.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new assets beyond these ten.
 
 ---
 
@@ -132,6 +135,7 @@ dim patrolTargetX
 dim patrolTargetY
 dim patrolTimer
 dim hitFlashTimer
+dim attackFlashTimer
 dim screenX
 dim transformY
 
@@ -161,6 +165,7 @@ Constructor(startX, startY)
   self.patrolTargetY = startY
   self.patrolTimer = 0
   self.hitFlashTimer = 0
+  self.attackFlashTimer = 0
   self.screenX = -999
   self.transformY = -1
 EndConstructor
@@ -193,10 +198,41 @@ function pickPatrolTarget()
 endfunction
 
 function tryMove(nx, ny)
-  if mazegrid.getCell(math.floor(nx), math.floor(self.y)) = 0 then
+  ' wallMargin checks a point a little further along than the actual
+  ' destination -- in whichever direction this axis is moving -- rather
+  ' than the bare destination cell itself. An enemy is drawn as a wide
+  ' billboard (see GameScene.drawEnemy()), not a single point, so letting
+  ' its CENTRE walk right up to a wall cell's edge (the old behaviour: the
+  ' bare destination check with no margin at all) let its rendered width
+  ' visibly overlap the neighbouring wall texture -- reported as enemies
+  ' appearing to "clip through walls". Checking a point wallMargin further
+  ' out keeps every enemy's centre at least that far from any wall it's
+  ' walking toward, without affecting how close it can get to a wall it's
+  ' NOT currently moving toward (this only touches the axis/direction
+  ' actually being tested), so normal corridor navigation (this maze's
+  ' corridors are always exactly 1 cell wide) is unaffected as long as
+  ' wallMargin stays well under half a cell.
+  dim wallMargin
+  dim checkX
+  dim checkY
+
+  wallMargin = 0.3
+
+  if nx >= self.x then
+    checkX = nx + wallMargin
+  else
+    checkX = nx - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(checkX), math.floor(self.y)) = 0 then
     self.x = nx
   endif
-  if mazegrid.getCell(math.floor(self.x), math.floor(ny)) = 0 then
+
+  if ny >= self.y then
+    checkY = ny + wallMargin
+  else
+    checkY = ny - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(self.x), math.floor(checkY)) = 0 then
     self.y = ny
   endif
 endfunction
@@ -216,6 +252,10 @@ function update(dt, playerX, playerY)
 
   if self.hitFlashTimer > 0 then
     self.hitFlashTimer = self.hitFlashTimer - dt
+  endif
+
+  if self.attackFlashTimer > 0 then
+    self.attackFlashTimer = self.attackFlashTimer - dt
   endif
 
   dist = math.distance(self.x, self.y, playerX, playerY)
@@ -269,6 +309,14 @@ function hit(damage)
   endif
 endfunction
 
+' Called by GameScene the instant this enemy lands a melee hit on the
+' player -- mirrors hit()'s hitFlashTimer exactly (a plain countdown,
+' decremented in update() above), just for the enemy's own attack
+' animation rather than its got-hit reaction.
+function attack()
+  self.attackFlashTimer = 0.15
+endfunction
+
 ' Setter -- GameScene's projectEnemy() computes this enemy's billboard
 ' screen position every frame and needs to store it back onto the enemy.
 ' Routing that write through a method (rather than assigning self.screenX/
@@ -316,6 +364,10 @@ endfunction
 
 function isFlashing()
   return self.hitFlashTimer > 0
+endfunction
+
+function isAttacking()
+  return self.attackFlashTimer > 0
 endfunction
 
 EndClass
@@ -517,7 +569,6 @@ dim enemies(20) as Enemy
 
 ' Level progression
 dim level
-dim hudSetupDone
 
 ' Exit
 dim exitX
@@ -534,7 +585,6 @@ dim rotSpeed
 
 Constructor(gameData as GameData)
   self.gameData = gameData
-  self.hudSetupDone = false
   ' STRIP/SW/SH/SCY are placeholders here -- onenter() overwrites all four
   ' with values derived from the actual canvas before they're ever used
   ' (see the comment there). RAYS is the one genuinely fixed constant: it
@@ -886,6 +936,15 @@ function drawEnemy(e as Enemy)
           drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         elseif e.isFlashing() then
           drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+        elseif e.isAttacking() then
+          ' enemy_attack.png is a single still frame, not a multi-frame
+          ' animation strip -- shown for the same brief 0.15s window as
+          ' enemy_hit.png above (Enemy.attack()/isAttacking()), just for
+          ' the enemy's own swing rather than its got-hit reaction. Takes
+          ' priority over the plain idle sprite but not over isDead()/
+          ' isFlashing() -- a dying or just-hit enemy shows that instead,
+          ' even if it also happened to land a hit the same frame.
+          drawing.drawImageStrip("enemy_attack.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         else
           drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
         endif
@@ -1097,10 +1156,17 @@ function onenter()
     self.SCY = self.SH / 2
     self.STRIP = self.SW / self.RAYS
 
-    if not self.hudSetupDone then
-      self.hudSetupDone = true
-      self.setupHud()
-    endif
+    ' setupHud() runs on every onenter(), not just the first -- entering
+    ' "game" is always a full scenemanager.switch() (the very first title
+    ' screen -> game switch, and every restart from GameOverScene alike),
+    ' and _sbScene._applySwitch() calls stage.clear() before onenter() ever
+    ' runs, wiping both the world AND hud containers unconditionally. A
+    ' one-time guard here (as this used to have) meant a restart after
+    ' death re-entered onenter() with the guard already tripped, so
+    ' setupHud() never ran again -- hud stayed empty (no gun, no health
+    ' bar, no level text) for the rest of that browser session, even
+    ' though everything had genuinely just been cleared out from under it.
+    self.setupHud()
 
     self.playerHealth = 100
     self.damageCooldown = 0
@@ -1119,12 +1185,10 @@ function onenter()
 endfunction
 
 function setupHud()
-    ' Runs exactly once, ever (guarded by self.hudSetupDone in onenter()) --
-    ' these are screen-fixed HUD elements that never need recreating
-    ' between levels or between restarts after death. Recreating them on
-    ' every onenter() would add duplicate sprites/emitters to hud every
-    ' time the player restarts, since onenter() itself now runs more than
-    ' once per page load (previously it only ever ran once).
+    ' Called fresh from onenter() every time the game scene is entered --
+    ' the switch into "game" (first play, and every restart after death)
+    ' always clears the hud container first (see onenter()'s comment), so
+    ' these need recreating every time, not just once.
     self.weaponSprite = new Sprite("gun.png")
     hud.add(self.weaponSprite)
     ' `sprite` is centre-anchored, so this places the CENTRE of the 256x256
@@ -1270,6 +1334,7 @@ function onupdate(delta)
           self.playerHealth = self.playerHealth - 10
           self.damageCooldown = 90
           self.damageFlashTimer = 18
+          e.attack()
         endif
       endif
     next i
@@ -1551,11 +1616,15 @@ Firing (spacebar) calls `checkHit`, which scans every enemy in the current level
 - The centre ray column is within 15 columns of its `getScreenX()`.
 - The z-buffer at the centre column is deeper than the enemy (it isn't hidden behind a wall).
 
-Each hit does 1 damage; an enemy has 3 hit points, so it takes 3 hits to kill.
+Each hit does 1 damage; an enemy has 3 hit points, so it takes 3 hits to kill. Landing a hit briefly shows `enemy_hit.png` (`Enemy.hitFlashTimer`/`isFlashing()`); the enemy itself does the mirror-image thing back at the player — see "Enemy AI" below.
 
 ### Enemy AI
 
 Each `Enemy` patrols a randomly-chosen nearby open cell (`pickPatrolTarget`), picked within a small radius rather than maze-wide so the straight-line walk in `tryMove` actually reaches it without full pathfinding. When the player comes within `chaseRadius` (6 tiles) it switches to chasing, giving up back to patrol once the player is more than `giveUpRadius` (9 tiles) away. Movement steps straight toward the current target and checks each axis separately for wall collisions (`tryMove`) — the same wall-sliding trick used for player movement — rather than using the engine's real `pathfinding` module, which needs a genuine `TileMapSet` this demo (having no visual tilemap at all) doesn't have.
+
+`tryMove`'s wall check tests a point `wallMargin` (0.3 tiles) further along than the actual destination, in whichever direction that axis is moving, rather than the bare destination cell. An enemy is drawn as a wide billboard (see "Enemy billboards" above), not a single point — letting its centre walk right up to a wall cell's edge (the original behaviour) let its rendered width visibly overlap the neighbouring wall texture, reported as enemies appearing to clip through walls. `wallMargin` only affects the axis/direction actually being tested, so it doesn't change how close an enemy can get to a wall it *isn't* currently moving toward, and normal corridor navigation is unaffected as long as it stays well under half a tile (this maze's corridors are always exactly 1 tile wide).
+
+The instant an enemy lands its own melee hit on the player, `GameScene.onupdate()` calls `Enemy.attack()`, which briefly shows `enemy_attack.png` (`attackFlashTimer`/`isAttacking()`) the same way `hit()` shows `enemy_hit.png` for the enemy's own got-hit reaction — a single still frame, not a multi-frame animation strip. In `drawEnemy`, `isAttacking()` is checked after `isDead()`/`isFlashing()`, so a dying or just-hit enemy still shows that instead, even if it also happened to land a hit the same frame.
 
 ### Level progression, the exit, and the compass
 
@@ -1569,10 +1638,10 @@ For the emitters specifically, this isn't just a visual preference — it's requ
 
 ### Muzzle flash and hit particles
 
-Three `Emitter`s are set up once, in `setupHud()` (called once ever, guarded by `hudSetupDone`, since `onenter()` now runs again on every restart): `muzzleFlashEmitter`, `enemyHitEmitter`, and `enemyDeathEmitter`. `muzzleFlashEmitter.burst(18)` fires once, at the moment of the shot, positioned relative to `weaponSprite.transform` rather than an independent hardcoded screen coordinate. `Sprite` is centre-anchored, so `weaponSprite.transform.x()`/`y()` reports the centre of the underlying 256×256 `gun.png` — the muzzle opening sits at roughly (122, 36) from that image's top-left, found by locating the dark pixel cluster at the tip of the barrel, which converts to `muzzleOffsetX`/`muzzleOffsetY` of (-6, -92) from the image's centre. Tying the flash to the gun's own transform means the two can't drift out of sync if the gun's position ever changes.
+Three `Emitter`s are set up in `setupHud()` (called fresh on every `onenter()` — see "Death, `GameOverScene`, and the persisted best level" above for why that's every restart, not just the first): `muzzleFlashEmitter`, `enemyHitEmitter`, and `enemyDeathEmitter`. `muzzleFlashEmitter.burst(18)` fires once, at the moment of the shot, positioned relative to `weaponSprite.transform` rather than an independent hardcoded screen coordinate. `Sprite` is centre-anchored, so `weaponSprite.transform.x()`/`y()` reports the centre of the underlying 256×256 `gun.png` — the muzzle opening sits at roughly (122, 36) from that image's top-left, found by locating the dark pixel cluster at the tip of the barrel, which converts to `muzzleOffsetX`/`muzzleOffsetY` of (-6, -92) from the image's centre. Tying the flash to the gun's own transform means the two can't drift out of sync if the gun's position ever changes.
 
 `checkHit`'s hit and death bursts need a screen position, not a world one, since this demo has no camera to convert one into the other. An enemy's `getScreenX()` is a ray/column index (0 to `RAYS`), not a pixel — converting it with the same `getScreenX() * STRIP + STRIP / 2` expression `castRays`/`drawEnemy` already use for their own `destX` puts the burst exactly where the enemy sprite is actually drawn. `SCY`, the fixed vertical anchor every wall and enemy strip is centred on (there's no vertical look in this demo), is the correct burst height for the same reason.
 
 ### Getter/setter workaround for cross-instance field access
 
-`Enemy.bas`'s `isDead()`/`getX()`/`getY()`/`getScreenX()`/`getTransformY()`/`isFlashing()`/`setProjection()` methods work around a compiler type-inference limitation on external class-typed field reads, per Dungeon Explorer's `Boss.isDead()` precedent (see "How it works"). `GameScene`'s own `exitX`/`exitY`/`exitScreenX`/`exitTransformY` fields don't need this treatment — they're plain `self.*` fields read from within `GameScene` itself, never stored in an array or passed around as a typed parameter, so they never hit the external-instance case the workaround exists for.
+`Enemy.bas`'s `isDead()`/`getX()`/`getY()`/`getScreenX()`/`getTransformY()`/`isFlashing()`/`isAttacking()`/`setProjection()` methods work around a compiler type-inference limitation on external class-typed field reads, per Dungeon Explorer's `Boss.isDead()` precedent (see "How it works"). `GameScene`'s own `exitX`/`exitY`/`exitScreenX`/`exitTransformY` fields don't need this treatment — they're plain `self.*` fields read from within `GameScene` itself, never stored in an array or passed around as a typed parameter, so they never hit the external-instance case the workaround exists for.
