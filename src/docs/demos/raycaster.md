@@ -41,9 +41,17 @@ The maze exit needed no new image. `pickExitPosition()` places it with the same 
 
 `drawCompass()` draws a small hand-rotated arrow near the top-right corner of the screen every frame, always pointing toward the exit's direction relative to the player's current facing — regardless of whether the exit itself is currently on screen, which matters once mazes started growing past the original 33×33, since a distant exit can sit many cells outside the player's view for most of a level. The arrow is two `drawing.drawLine` calls forming a chevron, rotated with plain `math.cos`/`math.sin` from `math.atan2(exitY - posY, exitX - posX)` relative to the player's own facing angle (`atan2(dirY, dirX)`) — no image asset, same reasoning as the exit billboard above.
 
-The arrow's anchor point is `stage.width() - margin, margin` — deliberately **not** `self.SW - margin`. `self.SW`/`self.SH` are fixed `800`/`600` constants the raycasting math itself (`RAYS`, `STRIP`, wall projection) depends on, but the actual game canvas is a responsive PIXI canvas (`resizeTo: window` in `bootstrapper.html`) and isn't guaranteed to match those constants — a canvas smaller than 800×600, which is what the editor's own Run panel produces, put an `self.SW`-anchored compass entirely outside the visible canvas, so it silently never appeared during play despite compiling and running with zero console errors. Anchoring to `stage.width()`/`stage.height()` instead — the same approach `weaponSprite` already uses a few lines above for its own position — keeps the compass inside whatever canvas is actually rendered. This was caught only by reading back actual rendered pixel colours from the WebGL canvas and confirming none of them were the compass's gold; "no console errors" alone, the verification method used everywhere else in this plan, doesn't catch a silently-off-canvas draw.
+The arrow's anchor point is `stage.width() - margin, margin`, matching how `weaponSprite` already positions itself a few lines above. Originally this compass instead read `self.SW - margin`, and `self.SW` was a fixed `800` constant — a canvas smaller than 800×600, which is what the editor's own Run panel produces, put the arrow entirely outside the visible canvas, so it silently never appeared during play despite compiling and running with zero console errors. That was caught only by reading back actual rendered pixel colours from the WebGL canvas and confirming none of them were the compass's gold; "no console errors" alone, the verification method used everywhere else in this plan, doesn't catch a silently-off-canvas draw. See "The raycast now matches the real canvas size" below for how `self.SW` itself stopped being a fixed constant shortly after this fix.
 
 Worth calling out explicitly, the way the muzzle-flash offset and the billboard-width-stretch bug are already documented elsewhere in this file: `drawing.drawLine(x, y, x2, y2)` does **not** take two absolute endpoints. Reading `src/components/Runner/engine/drawing.js` confirms it builds the line from local `(0, 0)` to `(x2, y2)` and *then* positions the whole result at `(x, y)` — so `x2`/`y2` are a local offset from the start point, not a second absolute coordinate, and passing a second absolute point straight through draws a wildly wrong (usually far too long, wrongly angled) line. `drawCompass()` works out each arrow segment's absolute tip/left/right points first using trig against the arrow's centre, then subtracts the segment's own start point back out before calling `drawLine`, to turn those absolute points back into the offset the function actually expects.
+
+### The raycast now matches the real canvas size
+
+The compass fix above only moved one HUD element; it didn't touch the raycasting math itself, which still assumed a fixed 800×600 "design resolution" (`self.SW`/`self.SH` set once to literal `800`/`600` in the `Constructor`, `self.RAYS = 200` rays each `self.STRIP = 4` pixels wide, `self.SCY = 300`). On any canvas that wasn't exactly 800×600 — a smaller editor Run panel, or a much larger fullscreen window — the raycast view rendered at a fixed 800-pixel width regardless, while `weaponSprite` (and now the compass) tracked the *real* canvas width via `stage.width()`. The two visibly drifted apart the further the real canvas size was from 800×600: at a canvas wider than 800, the raycast stayed pinned to a fixed-width region on the left while the gun, centred on the real (wider) canvas, drifted off to one side of it.
+
+The fix: `onenter()` now sets `self.SW = stage.width()`, `self.SH = stage.height()`, `self.SCY = self.SH / 2`, and `self.STRIP = self.SW / self.RAYS` every time a run starts (a fresh play, or a restart after death) — the same one-time-per-run timing already used for the other per-run resets (health, facing direction) just above. `self.RAYS` stays a fixed `200`, since it's also the size of the `zbuffer(200)` array below it, and array sizes need a compile-time literal in this language, not a runtime expression — the same reason `self.ENEMY_COUNT` stays a separate field from the `enemies(20)` array's own literal size. Deriving `STRIP` (the pixel width of one ray's column) from the real width instead keeps those 200 columns spanning exactly `self.SW` on any canvas. `castRays()`'s ceiling and floor rectangles, previously hardcoded to `drawing.drawRect(400, 150, 800, 300)` and `drawing.drawRect(400, 450, 800, 300)`, became `self.SW / 2, self.SH / 4, self.SW, self.SH / 2` and `self.SW / 2, self.SH * 3 / 4, self.SW, self.SH / 2` for the same reason.
+
+This doesn't handle a resize that happens *mid-run* without a restart — there's no resize event in this engine to react to, so `self.SW`/etc. are only ever re-derived at the start of a run. In practice this means: go fullscreen (or resize the window) before hitting "Try again" (or before the very first "Press any key to start"), and the raycast, the gun, and the compass will all agree on the same canvas size for that run.
 
 ### Health carries across levels
 
@@ -527,6 +535,10 @@ dim rotSpeed
 Constructor(gameData as GameData)
   self.gameData = gameData
   self.hudSetupDone = false
+  ' STRIP/SW/SH/SCY are placeholders here -- onenter() overwrites all four
+  ' with values derived from the actual canvas before they're ever used
+  ' (see the comment there). RAYS is the one genuinely fixed constant: it
+  ' matches the zbuffer(200) array's compile-time-literal size below.
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -676,11 +688,11 @@ function castRays()
     ' Ceiling
     pen.setFillColor(60, 60, 80)
     pen.setLineWidth(0)
-    drawing.drawRect(400, 150, 800, 300)
+    drawing.drawRect(self.SW / 2, self.SH / 4, self.SW, self.SH / 2)
 
     ' Floor
     pen.setFillColor(80, 70, 55)
-    drawing.drawRect(400, 450, 800, 300)
+    drawing.drawRect(self.SW / 2, self.SH * 3 / 4, self.SW, self.SH / 2)
 
     for col = 0 to self.RAYS - 1
         cameraX = (2.0 * col / self.RAYS) - 1.0
@@ -1064,6 +1076,27 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
+    ' Derived from the ACTUAL canvas every time a run starts (fresh play or
+    ' a restart after death), not fixed literals -- the game canvas is
+    ' responsive (bootstrapper.html's PIXI Application uses resizeTo:
+    ' window), so its real size depends on whatever the player's browser/
+    ' preview panel happens to be, including a mid-session switch to
+    ' fullscreen followed by hitting "try again". self.RAYS stays a fixed
+    ' 200 (it's also the zbuffer(200) array's compile-time-literal size,
+    ' which can't itself be a runtime expression), so STRIP -- the pixel
+    ' width of one ray's screen column -- is the value derived from actual
+    ' width instead, keeping RAYS columns spanning exactly self.SW either
+    ' way. Without this, this raycasting math previously stayed pinned to
+    ' a hardcoded 800x600 "design resolution" regardless of the real
+    ' canvas size, while HUD elements positioned via stage.width()/
+    ' height() (the weapon sprite, the compass) tracked the real canvas --
+    ' the two would visibly drift apart on any canvas that wasn't exactly
+    ' 800x600, most obviously when going fullscreen.
+    self.SW = stage.width()
+    self.SH = stage.height()
+    self.SCY = self.SH / 2
+    self.STRIP = self.SW / self.RAYS
+
     if not self.hudSetupDone then
       self.hudSetupDone = true
       self.setupHud()
@@ -1526,7 +1559,7 @@ Each `Enemy` patrols a randomly-chosen nearby open cell (`pickPatrolTarget`), pi
 
 ### Level progression, the exit, and the compass
 
-`GameScene.startLevel()` regenerates the maze, respawns the enemy roster, repositions the exit, and updates the HUD's level text at the start of every level — level 1 from `onenter()`, every level after from `nextLevel()`, triggered by `onupdate()` noticing the player is within 1 tile of `exitX`/`exitY`. `mazeSizeForLevel()` and `enemyCountForLevel()` both scale with `level` and both cap (33×33/16 logical cells by level 13, 20 enemies by level 9). The exit itself is a code-drawn billboard (`projectExit`/`drawExit`, no image asset), and a HUD compass (`drawCompass`, two `drawing.drawLine` calls forming a hand-rotated chevron), anchored to `stage.width()`/`stage.height()` rather than the raycaster's fixed `SW`/`SH` constants, always points toward it. Taking damage briefly fades in a full-screen red `Sprite` (`damageFlash`) via a frame-counter timer, the same convention `flashTimer`/`damageCooldown` already use in this file. Player health is never reset between levels — only a real death (`playerHealth < 1`) ends a run. See "How it works" above for the full formulas, the `drawLine` offset gotcha, the `stage`-vs-`SW`/`SH` compass fix, and the `GameOverScene`/`GameData`/persisted-best-level flow.
+`GameScene.onenter()` derives `SW`/`SH`/`SCY`/`STRIP` from the real canvas (`stage.width()`/`stage.height()`) at the start of every run, so the raycast, the gun, and the compass all agree on the same canvas size — see "The raycast now matches the real canvas size" above for why that wasn't always true. `startLevel()` regenerates the maze, respawns the enemy roster, repositions the exit, and updates the HUD's level text at the start of every level — level 1 from `onenter()`, every level after from `nextLevel()`, triggered by `onupdate()` noticing the player is within 1 tile of `exitX`/`exitY`. `mazeSizeForLevel()` and `enemyCountForLevel()` both scale with `level` and both cap (33×33/16 logical cells by level 13, 20 enemies by level 9). The exit itself is a code-drawn billboard (`projectExit`/`drawExit`, no image asset), and a HUD compass (`drawCompass`, two `drawing.drawLine` calls forming a hand-rotated chevron) always points toward it. Taking damage briefly fades in a full-screen red `Sprite` (`damageFlash`) via a frame-counter timer, the same convention `flashTimer`/`damageCooldown` already use in this file. Player health is never reset between levels — only a real death (`playerHealth < 1`) ends a run. See "How it works" above for the full formulas, the `drawLine` offset gotcha, the responsive-canvas fix, and the `GameOverScene`/`GameData`/persisted-best-level flow.
 
 ### HUD layering
 

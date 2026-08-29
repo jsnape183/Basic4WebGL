@@ -104,6 +104,10 @@ dim rotSpeed
 Constructor(gameData as GameData)
   self.gameData = gameData
   self.hudSetupDone = false
+  ' STRIP/SW/SH/SCY are placeholders here -- onenter() overwrites all four
+  ' with values derived from the actual canvas before they're ever used
+  ' (see the comment there). RAYS is the one genuinely fixed constant: it
+  ' matches the zbuffer(200) array's compile-time-literal size below.
   self.STRIP = 4
   self.RAYS = 200
   self.SW = 800
@@ -253,11 +257,11 @@ function castRays()
     ' Ceiling
     pen.setFillColor(60, 60, 80)
     pen.setLineWidth(0)
-    drawing.drawRect(400, 150, 800, 300)
+    drawing.drawRect(self.SW / 2, self.SH / 4, self.SW, self.SH / 2)
 
     ' Floor
     pen.setFillColor(80, 70, 55)
-    drawing.drawRect(400, 450, 800, 300)
+    drawing.drawRect(self.SW / 2, self.SH * 3 / 4, self.SW, self.SH / 2)
 
     for col = 0 to self.RAYS - 1
         cameraX = (2.0 * col / self.RAYS) - 1.0
@@ -641,6 +645,27 @@ function updateFlashCooldown()
 endfunction
 
 function onenter()
+    ' Derived from the ACTUAL canvas every time a run starts (fresh play or
+    ' a restart after death), not fixed literals -- the game canvas is
+    ' responsive (bootstrapper.html's PIXI Application uses resizeTo:
+    ' window), so its real size depends on whatever the player's browser/
+    ' preview panel happens to be, including a mid-session switch to
+    ' fullscreen followed by hitting "try again". self.RAYS stays a fixed
+    ' 200 (it's also the zbuffer(200) array's compile-time-literal size,
+    ' which can't itself be a runtime expression), so STRIP -- the pixel
+    ' width of one ray's screen column -- is the value derived from actual
+    ' width instead, keeping RAYS columns spanning exactly self.SW either
+    ' way. Without this, this raycasting math previously stayed pinned to
+    ' a hardcoded 800x600 "design resolution" regardless of the real
+    ' canvas size, while HUD elements positioned via stage.width()/
+    ' height() (the weapon sprite, the compass) tracked the real canvas --
+    ' the two would visibly drift apart on any canvas that wasn't exactly
+    ' 800x600, most obviously when going fullscreen.
+    self.SW = stage.width()
+    self.SH = stage.height()
+    self.SCY = self.SH / 2
+    self.STRIP = self.SW / self.RAYS
+
     if not self.hudSetupDone then
       self.hudSetupDone = true
       self.setupHud()
