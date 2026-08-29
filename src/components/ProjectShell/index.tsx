@@ -120,23 +120,27 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
           {editor}
         </main>
 
-        {/* Preview pane -- the header bar (with the fullscreen toggle) is
-            always present, even before Run is ever clicked, so there's
-            somewhere for that toggle to live pre-run. Only the body swaps
-            between a placeholder and the actual running preview. */}
-        <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
-          <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
+        {/* Preview pane. Before Run is ever clicked, only the header bar
+            (with the fullscreen toggle) shows, as a slim self-sized strip
+            docked to the right -- the editor keeps the full width, same as
+            when there's no preview at all. Clicking Run opens the full
+            panel (40% width, header + body) exactly as before. */}
+        {preview ? (
+          <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
+            <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
+              <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
+              {previewHeaderActions}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              {preview}
+            </div>
+          </aside>
+        ) : (
+          <div className="self-start flex-shrink-0 px-3 py-1 flex items-center gap-3 bg-ds-surface border-l border-b border-ds-border">
             <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
             {previewHeaderActions}
           </div>
-          <div className="flex-1 overflow-hidden">
-            {preview ?? (
-              <div className="h-full flex items-center justify-center text-sm text-ds-text-dim">
-                Click Run to preview
-              </div>
-            )}
-          </div>
-        </aside>
+        )}
       </div>
 
       {/* Bottom panel */}
