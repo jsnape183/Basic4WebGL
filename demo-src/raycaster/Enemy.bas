@@ -22,6 +22,7 @@ dim patrolTargetX
 dim patrolTargetY
 dim patrolTimer
 dim hitFlashTimer
+dim attackFlashTimer
 dim screenX
 dim transformY
 
@@ -51,6 +52,7 @@ Constructor(startX, startY)
   self.patrolTargetY = startY
   self.patrolTimer = 0
   self.hitFlashTimer = 0
+  self.attackFlashTimer = 0
   self.screenX = -999
   self.transformY = -1
 EndConstructor
@@ -83,10 +85,41 @@ function pickPatrolTarget()
 endfunction
 
 function tryMove(nx, ny)
-  if mazegrid.getCell(math.floor(nx), math.floor(self.y)) = 0 then
+  ' wallMargin checks a point a little further along than the actual
+  ' destination -- in whichever direction this axis is moving -- rather
+  ' than the bare destination cell itself. An enemy is drawn as a wide
+  ' billboard (see GameScene.drawEnemy()), not a single point, so letting
+  ' its CENTRE walk right up to a wall cell's edge (the old behaviour: the
+  ' bare destination check with no margin at all) let its rendered width
+  ' visibly overlap the neighbouring wall texture -- reported as enemies
+  ' appearing to "clip through walls". Checking a point wallMargin further
+  ' out keeps every enemy's centre at least that far from any wall it's
+  ' walking toward, without affecting how close it can get to a wall it's
+  ' NOT currently moving toward (this only touches the axis/direction
+  ' actually being tested), so normal corridor navigation (this maze's
+  ' corridors are always exactly 1 cell wide) is unaffected as long as
+  ' wallMargin stays well under half a cell.
+  dim wallMargin
+  dim checkX
+  dim checkY
+
+  wallMargin = 0.3
+
+  if nx >= self.x then
+    checkX = nx + wallMargin
+  else
+    checkX = nx - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(checkX), math.floor(self.y)) = 0 then
     self.x = nx
   endif
-  if mazegrid.getCell(math.floor(self.x), math.floor(ny)) = 0 then
+
+  if ny >= self.y then
+    checkY = ny + wallMargin
+  else
+    checkY = ny - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(self.x), math.floor(checkY)) = 0 then
     self.y = ny
   endif
 endfunction
@@ -106,6 +139,10 @@ function update(dt, playerX, playerY)
 
   if self.hitFlashTimer > 0 then
     self.hitFlashTimer = self.hitFlashTimer - dt
+  endif
+
+  if self.attackFlashTimer > 0 then
+    self.attackFlashTimer = self.attackFlashTimer - dt
   endif
 
   dist = math.distance(self.x, self.y, playerX, playerY)
@@ -159,6 +196,14 @@ function hit(damage)
   endif
 endfunction
 
+' Called by GameScene the instant this enemy lands a melee hit on the
+' player -- mirrors hit()'s hitFlashTimer exactly (a plain countdown,
+' decremented in update() above), just for the enemy's own attack
+' animation rather than its got-hit reaction.
+function attack()
+  self.attackFlashTimer = 0.15
+endfunction
+
 ' Setter -- GameScene's projectEnemy() computes this enemy's billboard
 ' screen position every frame and needs to store it back onto the enemy.
 ' Routing that write through a method (rather than assigning self.screenX/
@@ -206,6 +251,10 @@ endfunction
 
 function isFlashing()
   return self.hitFlashTimer > 0
+endfunction
+
+function isAttacking()
+  return self.attackFlashTimer > 0
 endfunction
 
 EndClass
