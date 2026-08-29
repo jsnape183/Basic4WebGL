@@ -45,6 +45,8 @@ The arrow's anchor point is `stage.width() - margin, margin`, matching how `weap
 
 Worth calling out explicitly, the way the muzzle-flash offset and the billboard-width-stretch bug are already documented elsewhere in this file: `drawing.drawLine(x, y, x2, y2)` does **not** take two absolute endpoints. Reading `src/components/Runner/engine/drawing.js` confirms it builds the line from local `(0, 0)` to `(x2, y2)` and *then* positions the whole result at `(x, y)` — so `x2`/`y2` are a local offset from the start point, not a second absolute coordinate, and passing a second absolute point straight through draws a wildly wrong (usually far too long, wrongly angled) line. `drawCompass()` works out each arrow segment's absolute tip/left/right points first using trig against the arrow's centre, then subtracts the segment's own start point back out before calling `drawLine`, to turn those absolute points back into the offset the function actually expects.
 
+The relative angle fed into that trig is offset by an extra quarter turn — `relAngle = angleToExit - playerAngle - (math.pi() / 2)`, not just `angleToExit - playerAngle`. Without it, `relAngle = 0` (exit dead ahead) drew the arrow pointing screen-*right*, since `cos(0)`/`sin(0)` is `(1, 0)` — mathematically correct for measuring an angle, but not what "dead ahead" should look like on a compass, where every convention (and every waypoint HUD) reads "straight ahead" as "up". This was confirmed live rather than just reasoned about: forcing the exit due east of spawn (dead ahead, since the player always starts facing `dirX = 1`/`dirY = 0`) and reading back the arrow's pixels showed a wide, short cluster (23px × 11px, consistent with a sideways chevron) before the fix, and a narrow, tall cluster pointing up (11px × 23px) after it.
+
 ### The raycast now matches the real canvas size
 
 The compass fix above only moved one HUD element; it didn't touch the raycasting math itself, which still assumed a fixed 800×600 "design resolution" (`self.SW`/`self.SH` set once to literal `800`/`600` in the `Constructor`, `self.RAYS = 200` rays each `self.STRIP = 4` pixels wide, `self.SCY = 300`). On any canvas that wasn't exactly 800×600 — a smaller editor Run panel, or a much larger fullscreen window — the raycast view rendered at a fixed 800-pixel width regardless, while `weaponSprite` (and now the compass) tracked the *real* canvas width via `stage.width()`. The two visibly drifted apart the further the real canvas size was from 800×600: at a canvas wider than 800, the raycast stayed pinned to a fixed-width region on the left while the gun, centred on the real (wider) canvas, drifted off to one side of it.
@@ -618,6 +620,9 @@ function checkHit()
     dim bestIndex
     dim bestDist
     dim hitX
+    dim spriteH
+    dim spriteWCols
+    dim aimTolerance
 
     bestIndex = -1
     bestDist = 999999
@@ -625,7 +630,23 @@ function checkHit()
     for i = 0 to self.ENEMY_COUNT - 1
       e = self.enemies(i)
       if not e.dead and e.getTransformY() > 0 then
-        if math.abs(e.getScreenX() - aimCol) < 15 then
+        ' aimTolerance used to be a flat 15 columns regardless of how big
+        ' the enemy actually looks on screen -- fine at typical mid-range
+        ' distances, but it made close-range shots feel unfairly finicky:
+        ' a nearby enemy's billboard can span FAR more than 30 columns
+        ' (see drawEnemy()'s own spriteWCols), yet a shot landing well
+        ' inside that visible width, just more than 15 columns off dead
+        ' centre, still missed. Basing the tolerance on half the enemy's
+        ' actual rendered width instead means "the crosshair is visually
+        ' over the enemy" and "it counts as aimed at" agree with each
+        ' other at any distance. math.max keeps a distant, narrow enemy
+        ' from becoming impossibly precise to hit as spriteWCols shrinks
+        ' toward zero -- 8 columns is roughly the old flat tolerance's
+        ' floor for a typical mid-to-far shot.
+        spriteH = math.floor(self.SH / e.getTransformY())
+        spriteWCols = spriteH / self.STRIP
+        aimTolerance = math.max(spriteWCols / 2, 8)
+        if math.abs(e.getScreenX() - aimCol) < aimTolerance then
           if self.zbuffer(aimCol) > e.getTransformY() then
             if e.getTransformY() < bestDist then
               bestDist = e.getTransformY()
@@ -656,6 +677,43 @@ function checkHit()
     endif
 endfunction
 
+function tryMovePlayer(nx, ny)
+  ' Mirrors Enemy.tryMove()'s wallMargin exactly (see that function's own
+  ' comment for the full reasoning) -- checks a point wallMargin further
+  ' along than the actual destination, in whichever direction that axis
+  ' is moving, rather than the bare destination cell. Without it, posX/
+  ' posY could walk right up to a wall cell's edge (distance zero), which
+  ' let the player's camera get close enough to a wall to visually clip
+  ' into it -- most noticeable as a wall's near edge appearing to poke
+  ' into view at a glancing angle right at the boundary. A smaller margin
+  ' than the enemies' 0.3 -- the player has no rendered billboard of its
+  ' own to keep clear of a wall, just the camera itself, so it doesn't
+  ' need as much clearance to look right.
+  dim wallMargin
+  dim checkX
+  dim checkY
+
+  wallMargin = 0.2
+
+  if nx >= self.posX then
+    checkX = nx + wallMargin
+  else
+    checkX = nx - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(checkX), math.floor(self.posY)) = 0 then
+    self.posX = nx
+  endif
+
+  if ny >= self.posY then
+    checkY = ny + wallMargin
+  else
+    checkY = ny - wallMargin
+  endif
+  if mazegrid.getCell(math.floor(self.posX), math.floor(checkY)) = 0 then
+    self.posY = ny
+  endif
+endfunction
+
 function handleInput()
     dim nx
     dim ny
@@ -666,23 +724,13 @@ function handleInput()
     if input.getKeyDown(87) then
         nx = self.posX + self.dirX * self.moveSpeed
         ny = self.posY + self.dirY * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(83) then
         nx = self.posX - self.dirX * self.moveSpeed
         ny = self.posY - self.dirY * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     ' Strafe -- moves perpendicular to facing direction rather than turning.
@@ -690,28 +738,17 @@ function handleInput()
     ' the camera plane (planeX, planeY) already points -- confirmed from the
     ' initial dir=(1,0)/plane=(0,0.66) values, where plane is dir rotated
     ' +90 and scaled -- so E (strafe toward that side) uses it directly,
-    ' and Q (the opposite side) negates it. Same per-axis wall-slide
-    ' collision check as W/S above, just with a different movement vector.
+    ' and Q (the opposite side) negates it.
     if input.getKeyDown(69) then
         nx = self.posX + (0 - self.dirY) * self.moveSpeed
         ny = self.posY + self.dirX * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(81) then
         nx = self.posX + self.dirY * self.moveSpeed
         ny = self.posY + (0 - self.dirX) * self.moveSpeed
-        if mazegrid.getCell(math.floor(nx), math.floor(self.posY)) = 0 then
-            self.posX = nx
-        endif
-        if mazegrid.getCell(math.floor(self.posX), math.floor(ny)) = 0 then
-            self.posY = ny
-        endif
+        self.tryMovePlayer(nx, ny)
     endif
 
     if input.getKeyDown(68) then
@@ -1077,7 +1114,17 @@ function drawCompass()
 
   angleToExit = math.atan2(self.exitY - self.posY, self.exitX - self.posX)
   playerAngle = math.atan2(self.dirY, self.dirX)
-  relAngle = angleToExit - playerAngle
+  ' Subtracting an extra quarter turn here makes relAngle = 0 (exit dead
+  ' ahead) point straight UP on screen, not right. cos/sin(0) is (1, 0),
+  ' which is "right" in screen space -- correct for measuring an angle,
+  ' wrong for drawing a compass, where "dead ahead" should read as "up"
+  ' (the same convention every compass/waypoint HUD uses). Confirmed live
+  ' by forcing the exit due east of spawn (dead ahead, since the player
+  ' always starts facing dirX=1/dirY=0): before this fix the arrow's
+  ' pixels formed a wide, short cluster (23px x 11px) consistent with a
+  ' sideways-pointing chevron; after it, the same setup produces a
+  ' narrow, tall cluster pointing up instead.
+  relAngle = angleToExit - playerAngle - (math.pi() / 2)
 
   ' Anchored to the ACTUAL canvas size, not self.SW/self.SH -- those are
   ' fixed 800x600 constants the raycasting math itself depends on, but
@@ -1627,7 +1674,9 @@ EndClass
 
 ### Movement and strafing
 
-`handleInput` moves the player two ways: **W/S** walk forward/backward along the facing vector (`dirX`/`dirY`); **Q/E** strafe sideways instead, without turning. The strafe vector is `dirX`/`dirY` rotated 90 degrees — `(-dirY, dirX)` for E, `(dirY, -dirX)` for Q — which is the same direction the camera plane (`planeX`/`planeY`) already points (confirmed from the initial `dir = (1, 0)` / `plane = (0, 0.66)` values, where `plane` is `dir` rotated +90 and scaled), so E strafes toward the same side of the screen the plane vector represents. Both use the exact per-axis wall-slide collision check W/S already use (`mazegrid.getCell` against the destination cell on each axis independently) — strafing can't walk through a wall any more than walking forward can. **A/D** are turning, not strafing: they rotate both `dirX`/`dirY` and `planeX`/`planeY` by `rotSpeed` using a standard 2D rotation matrix.
+`handleInput` moves the player two ways: **W/S** walk forward/backward along the facing vector (`dirX`/`dirY`); **Q/E** strafe sideways instead, without turning. The strafe vector is `dirX`/`dirY` rotated 90 degrees — `(-dirY, dirX)` for E, `(dirY, -dirX)` for Q — which is the same direction the camera plane (`planeX`/`planeY`) already points (confirmed from the initial `dir = (1, 0)` / `plane = (0, 0.66)` values, where `plane` is `dir` rotated +90 and scaled), so E strafes toward the same side of the screen the plane vector represents. **A/D** are turning, not strafing: they rotate both `dirX`/`dirY` and `planeX`/`planeY` by `rotSpeed` using a standard 2D rotation matrix.
+
+All four movement directions go through `tryMovePlayer(nx, ny)`, which mirrors `Enemy.tryMove()`'s own `wallMargin` (see "Enemy AI" below for the fuller reasoning): it checks a point `wallMargin` (0.2 tiles) further along than the actual destination, in whichever direction that axis is moving, rather than the bare destination cell `posX`/`posY` could otherwise walk right up to. The player has no rendered billboard of its own to keep clear of a wall the way an enemy does — the visible symptom here was a wall's near edge appearing to visually clip into view at a glancing angle right at a wall's boundary — so its margin is smaller than the enemies' 0.3.
 
 ### DDA raycasting
 
@@ -1648,8 +1697,10 @@ EndClass
 
 Firing (spacebar) calls `checkHit`, which scans every enemy in the current level's roster and picks the closest one that qualifies. A shot registers against a given enemy if:
 - It's alive and facing the camera (`getTransformY() > 0`).
-- The centre ray column is within 15 columns of its `getScreenX()`.
+- The centre ray column is within `aimTolerance` columns of its `getScreenX()`.
 - The z-buffer at the centre column is deeper than the enemy (it isn't hidden behind a wall).
+
+`aimTolerance` used to be a flat 15 columns regardless of how big the enemy actually looks on screen — fine at typical mid-range distances, but unfairly finicky up close: a nearby enemy's billboard can span far more than 30 columns (the same `spriteWCols` `drawEnemy` computes for its own width), yet a shot landing well inside that visible width, just more than 15 columns off dead centre, still missed. `aimTolerance` is now `math.max(spriteWCols / 2, 8)` computed per enemy — half its actual rendered width, so "the crosshair is visually over the enemy" and "it counts as aimed at" agree with each other at any distance, with `math.max`'s `8` floor keeping a distant, narrow enemy from becoming impossibly precise to hit as `spriteWCols` shrinks toward zero.
 
 Each hit does 1 damage; an enemy has 3 hit points, so it takes 3 hits to kill. Landing a hit briefly shows `enemy_hit.png` (`Enemy.hitFlashTimer`/`isFlashing()`); the enemy itself does the mirror-image thing back at the player — see "Enemy AI" below.
 
