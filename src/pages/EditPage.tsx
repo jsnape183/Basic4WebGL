@@ -93,7 +93,7 @@ const EditPage: React.FC = () => {
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsPreviewFullscreen(document.fullscreenElement === previewIframeRef.current);
+      setIsPreviewFullscreen(document.fullscreenElement === document.documentElement);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -154,12 +154,18 @@ const EditPage: React.FC = () => {
   };
 
   const toggleFullscreen = () => {
-    if (document.fullscreenElement === previewIframeRef.current) {
+    // Targets the whole page (document.documentElement), not just the
+    // preview iframe -- this button needs to work before the game is even
+    // running (the preview pane, and its iframe, don't exist until Run is
+    // clicked), and fullscreening the whole page keeps the Run button and
+    // the rest of the editor reachable while fullscreen too, rather than
+    // hiding everything outside a narrower fullscreened element.
+    if (document.fullscreenElement) {
       document.exitFullscreen().catch((err) => {
         console.warn('Failed to exit fullscreen:', err);
       });
     } else {
-      previewIframeRef.current?.requestFullscreen().catch((err) => {
+      document.documentElement.requestFullscreen().catch((err) => {
         console.warn('Failed to enter fullscreen:', err);
       });
     }
@@ -270,6 +276,14 @@ const EditPage: React.FC = () => {
           >
             Docs
           </a>
+          <button
+            onClick={toggleFullscreen}
+            className="text-ds-text-dim hover:text-ds-text transition-colors focus:outline-none focus:ring-2 focus:ring-ds-accent rounded mr-2"
+            aria-label={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            title={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {isPreviewFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+          </button>
           {!isRunning ? (
             <button
               onClick={run}
@@ -373,18 +387,6 @@ const EditPage: React.FC = () => {
           >
             <Preview ref={previewIframeRef} transpiled={transpiled} projectId={project.id} />
           </ErrorBoundary>
-        ) : undefined
-      }
-      previewHeaderActions={
-        isRunning ? (
-          <button
-            onClick={toggleFullscreen}
-            className="text-ds-text-dim hover:text-ds-text transition-colors focus:outline-none focus:ring-2 focus:ring-ds-accent rounded"
-            aria-label={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            title={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          >
-            {isPreviewFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
-          </button>
         ) : undefined
       }
       panel={<BottomPanel logs={logs} onJumpToLoc={handleJumpToLoc} />}
