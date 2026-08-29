@@ -60,6 +60,15 @@ dim damageCooldown
 dim hpBg as Sprite
 dim hpFill as Sprite
 dim hpLabel as Text
+dim levelHudText as Text
+
+' Damage flash -- a full-screen red vignette that briefly appears when the
+' player takes damage, same 1x1-pixel-stretched-via-setScale pattern as the
+' health bar above. damageFlashTimer counts down in frames (mirroring
+' flashTimer/damageCooldown's existing frame-counter convention in this
+' file), driving the sprite's alpha back down to 0 as it expires.
+dim damageFlash as Sprite
+dim damageFlashTimer
 
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
@@ -545,7 +554,15 @@ function drawCompass()
   playerAngle = math.atan2(self.dirY, self.dirX)
   relAngle = angleToExit - playerAngle
 
-  cx = self.SW - margin
+  ' Anchored to the ACTUAL canvas size, not self.SW/self.SH -- those are
+  ' fixed 800x600 constants the raycasting math itself depends on, but
+  ' the real game canvas is responsive (bootstrapper.html's PIXI
+  ' Application uses resizeTo: window) and is not guaranteed to match
+  ' them. A canvas smaller than 800x600 (as seen in the editor's Run
+  ' panel) put this arrow's old self.SW-anchored position off the
+  ' visible canvas entirely. stage.width()/height() match how
+  ' weaponSprite already positions itself below, in real screen space.
+  cx = stage.width() - margin
   cy = margin
 
   tipX = cx + math.cos(relAngle) * arrowLen
@@ -631,6 +648,10 @@ function onenter()
 
     self.playerHealth = 100
     self.damageCooldown = 0
+    self.damageFlashTimer = 0
+    ' setupHud() above (this call or an earlier one) always runs before this
+    ' point, so self.damageFlash already exists here on every onenter().
+    self.damageFlash.setAlpha(0)
     self.flashTimer = 4
     self.dirX = 1.0
     self.dirY = 0.0
@@ -667,6 +688,20 @@ function setupHud()
     self.hpLabel = new Text("HP", 20, 36)
     self.hpLabel.setStyle(12, 255, 255, 255)
     hud.add(self.hpLabel)
+
+    self.levelHudText = new Text("Level 1", 20, 50)
+    self.levelHudText.setStyle(12, 255, 255, 255)
+    hud.add(self.levelHudText)
+
+    ' damage_flash.png is an 8x8 solid red square -- setScale stretches it
+    ' to cover the whole screen. Starts fully transparent; onupdate() drives
+    ' its alpha up on a hit and back down as damageFlashTimer expires.
+    self.damageFlash = new Sprite("damage_flash.png")
+    self.damageFlash.transform.setPosition(stage.width() / 2, stage.height() / 2)
+    self.damageFlash.setScale(stage.width() / 8, stage.height() / 8)
+    self.damageFlash.setAlpha(0)
+    hud.add(self.damageFlash)
+    self.damageFlashTimer = 0
 
     self.muzzleFlashEmitter = new Emitter("particle.png")
     self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
@@ -739,6 +774,7 @@ function startLevel()
     next i
 
     self.pickExitPosition()
+    self.levelHudText.setText("Level " + string.str(self.level))
 endfunction
 
 function nextLevel()
@@ -777,11 +813,17 @@ function onupdate(delta)
         if dist < 0.8 and self.damageCooldown = 0 then
           self.playerHealth = self.playerHealth - 10
           self.damageCooldown = 90
+          self.damageFlashTimer = 18
         endif
       endif
     next i
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - 1
+    endif
+
+    if self.damageFlashTimer > 0 then
+      self.damageFlashTimer = self.damageFlashTimer - 1
+      self.damageFlash.setAlpha(0.35 * self.damageFlashTimer / 18)
     endif
 
     self.renderEnemies()

@@ -1,6 +1,6 @@
 # Wolfenstein-Style Raycaster
 
-Textured walls, a title screen, a generated maze that grows bigger and busier with every level you clear, and patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, a health bar, a HUD compass pointing toward the exit, and a persisted-best-level game-over screen. WASD to move, spacebar to fire.
+Textured walls, a title screen, a generated maze that grows bigger and busier with every level you clear, and patrolling/chasing enemies — hit detection, a HUD weapon with a particle muzzle flash, hit sparks, a death burst, a health bar with a screen flash on every hit, a level counter, a HUD compass pointing toward the exit, and a persisted-best-level game-over screen. WASD to move, spacebar to fire.
 
 ---
 
@@ -41,11 +41,19 @@ The maze exit needed no new image. `pickExitPosition()` places it with the same 
 
 `drawCompass()` draws a small hand-rotated arrow near the top-right corner of the screen every frame, always pointing toward the exit's direction relative to the player's current facing — regardless of whether the exit itself is currently on screen, which matters once mazes started growing past the original 33×33, since a distant exit can sit many cells outside the player's view for most of a level. The arrow is two `drawing.drawLine` calls forming a chevron, rotated with plain `math.cos`/`math.sin` from `math.atan2(exitY - posY, exitX - posX)` relative to the player's own facing angle (`atan2(dirY, dirX)`) — no image asset, same reasoning as the exit billboard above.
 
+The arrow's anchor point is `stage.width() - margin, margin` — deliberately **not** `self.SW - margin`. `self.SW`/`self.SH` are fixed `800`/`600` constants the raycasting math itself (`RAYS`, `STRIP`, wall projection) depends on, but the actual game canvas is a responsive PIXI canvas (`resizeTo: window` in `bootstrapper.html`) and isn't guaranteed to match those constants — a canvas smaller than 800×600, which is what the editor's own Run panel produces, put an `self.SW`-anchored compass entirely outside the visible canvas, so it silently never appeared during play despite compiling and running with zero console errors. Anchoring to `stage.width()`/`stage.height()` instead — the same approach `weaponSprite` already uses a few lines above for its own position — keeps the compass inside whatever canvas is actually rendered. This was caught only by reading back actual rendered pixel colours from the WebGL canvas and confirming none of them were the compass's gold; "no console errors" alone, the verification method used everywhere else in this plan, doesn't catch a silently-off-canvas draw.
+
 Worth calling out explicitly, the way the muzzle-flash offset and the billboard-width-stretch bug are already documented elsewhere in this file: `drawing.drawLine(x, y, x2, y2)` does **not** take two absolute endpoints. Reading `src/components/Runner/engine/drawing.js` confirms it builds the line from local `(0, 0)` to `(x2, y2)` and *then* positions the whole result at `(x, y)` — so `x2`/`y2` are a local offset from the start point, not a second absolute coordinate, and passing a second absolute point straight through draws a wildly wrong (usually far too long, wrongly angled) line. `drawCompass()` works out each arrow segment's absolute tip/left/right points first using trig against the arrow's centre, then subtracts the segment's own start point back out before calling `drawLine`, to turn those absolute points back into the offset the function actually expects.
 
 ### Health carries across levels
 
 `startLevel()` regenerates the maze, respawns the enemy roster, and picks a new exit on every level transition, but it never touches `playerHealth`. That's deliberate: resetting health every time the player reaches the exit would make dying from attrition nearly impossible, since death could then only ever come from damage taken within a single level — undermining the entire "how many levels before you die" premise the endless structure exists to support. A run's health total is the one thing that's meant to persist and eventually run out.
+
+### Damage flash and the level HUD text
+
+Taking a hit now has visual feedback beyond the health bar shrinking: `damage_flash.png` is a solid red 8×8 square, stretched via `setScale(stage.width() / 8, stage.height() / 8)` into a full-screen `Sprite`, the same "tiny image stretched into a shape" trick the health bar itself already uses. It's created once in `setupHud()` at `setAlpha(0)` (invisible), and the same block in `onupdate()` that applies melee damage also sets `damageFlashTimer = 18` — a frame counter, mirroring `flashTimer`/`damageCooldown`'s existing convention in this file rather than introducing delta-time math. Each frame it's nonzero, `onupdate()` decrements it and sets `damageFlash`'s alpha to `0.35 * damageFlashTimer / 18`, fading the flash from a low peak back to fully transparent over about 18 frames (~0.3s at 60fps) — a brief, subtle vignette rather than something that obscures enemies or walls underneath.
+
+The HUD also now shows the current level: a `levelHudText` field, created once in `setupHud()` directly below the existing "HP" label, and updated via `Text`'s existing `setText()` method at the end of `startLevel()` — so it's current the instant a new level begins, both on the very first level and every one after.
 
 ### Death, `GameOverScene`, and the persisted best level
 
@@ -57,7 +65,7 @@ Death is a real scene switch now, not a frozen overlay drawn in place. `GameScen
 
 ## Required assets
 
-Upload eight PNG files to your project's asset library before running:
+Upload nine PNG files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -69,8 +77,9 @@ Upload eight PNG files to your project's asset library before running:
 | `particle.png` | Small square sprite used by every `Emitter` — muzzle flash, enemy hit spark, enemy death burst |
 | `healthbar_bg.png` | 1×1 pixel, stretched via `setScale` into the health bar's background |
 | `healthbar_fill.png` | 1×1 pixel, stretched via `setScale` into the health bar's fill — same pattern Bullet Hell Shooter uses |
+| `damage_flash.png` | 8×8 solid red square, stretched via `setScale` into the full-screen damage vignette |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new assets beyond these eight.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new assets beyond these nine.
 
 ---
 
@@ -474,6 +483,15 @@ dim damageCooldown
 dim hpBg as Sprite
 dim hpFill as Sprite
 dim hpLabel as Text
+dim levelHudText as Text
+
+' Damage flash -- a full-screen red vignette that briefly appears when the
+' player takes damage, same 1x1-pixel-stretched-via-setScale pattern as the
+' health bar above. damageFlashTimer counts down in frames (mirroring
+' flashTimer/damageCooldown's existing frame-counter convention in this
+' file), driving the sprite's alpha back down to 0 as it expires.
+dim damageFlash as Sprite
+dim damageFlashTimer
 
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
@@ -959,7 +977,15 @@ function drawCompass()
   playerAngle = math.atan2(self.dirY, self.dirX)
   relAngle = angleToExit - playerAngle
 
-  cx = self.SW - margin
+  ' Anchored to the ACTUAL canvas size, not self.SW/self.SH -- those are
+  ' fixed 800x600 constants the raycasting math itself depends on, but
+  ' the real game canvas is responsive (bootstrapper.html's PIXI
+  ' Application uses resizeTo: window) and is not guaranteed to match
+  ' them. A canvas smaller than 800x600 (as seen in the editor's Run
+  ' panel) put this arrow's old self.SW-anchored position off the
+  ' visible canvas entirely. stage.width()/height() match how
+  ' weaponSprite already positions itself below, in real screen space.
+  cx = stage.width() - margin
   cy = margin
 
   tipX = cx + math.cos(relAngle) * arrowLen
@@ -1045,6 +1071,10 @@ function onenter()
 
     self.playerHealth = 100
     self.damageCooldown = 0
+    self.damageFlashTimer = 0
+    ' setupHud() above (this call or an earlier one) always runs before this
+    ' point, so self.damageFlash already exists here on every onenter().
+    self.damageFlash.setAlpha(0)
     self.flashTimer = 4
     self.dirX = 1.0
     self.dirY = 0.0
@@ -1081,6 +1111,20 @@ function setupHud()
     self.hpLabel = new Text("HP", 20, 36)
     self.hpLabel.setStyle(12, 255, 255, 255)
     hud.add(self.hpLabel)
+
+    self.levelHudText = new Text("Level 1", 20, 50)
+    self.levelHudText.setStyle(12, 255, 255, 255)
+    hud.add(self.levelHudText)
+
+    ' damage_flash.png is an 8x8 solid red square -- setScale stretches it
+    ' to cover the whole screen. Starts fully transparent; onupdate() drives
+    ' its alpha up on a hit and back down as damageFlashTimer expires.
+    self.damageFlash = new Sprite("damage_flash.png")
+    self.damageFlash.transform.setPosition(stage.width() / 2, stage.height() / 2)
+    self.damageFlash.setScale(stage.width() / 8, stage.height() / 8)
+    self.damageFlash.setAlpha(0)
+    hud.add(self.damageFlash)
+    self.damageFlashTimer = 0
 
     self.muzzleFlashEmitter = new Emitter("particle.png")
     self.muzzleFlashEmitter.setLifetime(0.1, 0.15)
@@ -1153,6 +1197,7 @@ function startLevel()
     next i
 
     self.pickExitPosition()
+    self.levelHudText.setText("Level " + string.str(self.level))
 endfunction
 
 function nextLevel()
@@ -1191,11 +1236,17 @@ function onupdate(delta)
         if dist < 0.8 and self.damageCooldown = 0 then
           self.playerHealth = self.playerHealth - 10
           self.damageCooldown = 90
+          self.damageFlashTimer = 18
         endif
       endif
     next i
     if self.damageCooldown > 0 then
       self.damageCooldown = self.damageCooldown - 1
+    endif
+
+    if self.damageFlashTimer > 0 then
+      self.damageFlashTimer = self.damageFlashTimer - 1
+      self.damageFlash.setAlpha(0.35 * self.damageFlashTimer / 18)
     endif
 
     self.renderEnemies()
@@ -1475,7 +1526,7 @@ Each `Enemy` patrols a randomly-chosen nearby open cell (`pickPatrolTarget`), pi
 
 ### Level progression, the exit, and the compass
 
-`GameScene.startLevel()` regenerates the maze, respawns the enemy roster, and repositions the exit at the start of every level — level 1 from `onenter()`, every level after from `nextLevel()`, triggered by `onupdate()` noticing the player is within 1 tile of `exitX`/`exitY`. `mazeSizeForLevel()` and `enemyCountForLevel()` both scale with `level` and both cap (33×33/16 logical cells by level 13, 20 enemies by level 9). The exit itself is a code-drawn billboard (`projectExit`/`drawExit`, no image asset), and a HUD compass (`drawCompass`, two `drawing.drawLine` calls forming a hand-rotated chevron) always points toward it. Player health is never reset between levels — only a real death (`playerHealth < 1`) ends a run. See "How it works" above for the full formulas, the `drawLine` offset gotcha, and the `GameOverScene`/`GameData`/persisted-best-level flow.
+`GameScene.startLevel()` regenerates the maze, respawns the enemy roster, repositions the exit, and updates the HUD's level text at the start of every level — level 1 from `onenter()`, every level after from `nextLevel()`, triggered by `onupdate()` noticing the player is within 1 tile of `exitX`/`exitY`. `mazeSizeForLevel()` and `enemyCountForLevel()` both scale with `level` and both cap (33×33/16 logical cells by level 13, 20 enemies by level 9). The exit itself is a code-drawn billboard (`projectExit`/`drawExit`, no image asset), and a HUD compass (`drawCompass`, two `drawing.drawLine` calls forming a hand-rotated chevron), anchored to `stage.width()`/`stage.height()` rather than the raycaster's fixed `SW`/`SH` constants, always points toward it. Taking damage briefly fades in a full-screen red `Sprite` (`damageFlash`) via a frame-counter timer, the same convention `flashTimer`/`damageCooldown` already use in this file. Player health is never reset between levels — only a real death (`playerHealth < 1`) ends a run. See "How it works" above for the full formulas, the `drawLine` offset gotcha, the `stage`-vs-`SW`/`SH` compass fix, and the `GameOverScene`/`GameData`/persisted-best-level flow.
 
 ### HUD layering
 
