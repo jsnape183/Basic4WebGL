@@ -78,6 +78,14 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
         {header}
       </header>
 
+      {/* Preview bar -- full width, always present (even before Run is
+          ever clicked), sitting above the file tabs and the rest of the
+          main area so the fullscreen toggle always has somewhere to live. */}
+      <div className="h-7 flex-shrink-0 flex items-center justify-end gap-3 px-3 bg-ds-surface border-b border-ds-border">
+        <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
+        {previewHeaderActions}
+      </div>
+
       {/* Main area */}
       <div className="flex flex-1 overflow-hidden">
 
@@ -120,26 +128,15 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
           {editor}
         </main>
 
-        {/* Preview pane. Before Run is ever clicked, only the header bar
-            (with the fullscreen toggle) shows, as a slim self-sized strip
-            docked to the right -- the editor keeps the full width, same as
-            when there's no preview at all. Clicking Run opens the full
-            panel (40% width, header + body) exactly as before. */}
-        {preview ? (
+        {/* Preview pane body -- its header (the "Preview" label and the
+            fullscreen toggle) now lives in the full-width bar above,
+            always visible. Only this body is conditional: nothing renders
+            at all until Run is clicked, so the editor keeps the full
+            width until then, exactly as when there's no preview concept. */}
+        {preview && (
           <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
-            <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
-              <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
-              {previewHeaderActions}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              {preview}
-            </div>
+            {preview}
           </aside>
-        ) : (
-          <div className="self-start flex-shrink-0 px-3 py-1 flex items-center gap-3 bg-ds-surface border-l border-b border-ds-border">
-            <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
-            {previewHeaderActions}
-          </div>
         )}
       </div>
 

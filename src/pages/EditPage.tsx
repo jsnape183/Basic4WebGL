@@ -59,12 +59,14 @@ const EditPage: React.FC = () => {
   const [jumpTarget, setJumpTarget] = useState<{ line: number; col: number } | null>(null);
   const [isTilemapModalOpen, setIsTilemapModalOpen] = useState(false);
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  // Whether the game itself is currently the real fullscreen element --
+  // only meaningful once running.
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
-  // Set by the fullscreen toggle when clicked before the game is running --
-  // read once by the effect below when isRunning next flips true, so a run
-  // started while pre-armed retargets fullscreen from the editor itself
-  // onto the freshly-mounted preview iframe.
-  const pendingFullscreenOnRunRef = useRef(false);
+  // The toggle's own on/off state before a run starts. Clicking it while
+  // not running doesn't call the Fullscreen API at all -- it just flips
+  // this, and the effect below reads it once Run is actually clicked and
+  // the game mounts.
+  const [fullscreenArmed, setFullscreenArmed] = useState(false);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
   const { diagnostics, symbols } = useLiveAnalysis(id ?? '');
@@ -98,24 +100,23 @@ const EditPage: React.FC = () => {
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      // Tracks ANY fullscreen target, not just one specific element -- this
-      // same flag both drives the toggle's icon and, before a run starts,
-      // doubles as "the next run should retarget fullscreen onto the game"
-      // (see pendingFullscreenOnRunRef / handleRunClick below).
-      setIsPreviewFullscreen(!!document.fullscreenElement);
+      setIsPreviewFullscreen(document.fullscreenElement === previewIframeRef.current);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // If the toggle was armed before Run was clicked, request fullscreen on
+  // the game once it's actually mounted and running -- this is the only
+  // place the toggle's "on" state ever leads to an actual Fullscreen API
+  // call while not already running.
   useEffect(() => {
-    if (isRunning && pendingFullscreenOnRunRef.current) {
-      pendingFullscreenOnRunRef.current = false;
+    if (isRunning && fullscreenArmed && !document.fullscreenElement) {
       previewIframeRef.current?.requestFullscreen().catch((err) => {
         console.warn('Failed to enter fullscreen:', err);
       });
     }
-  }, [isRunning]);
+  }, [isRunning, fullscreenArmed]);
 
   // Regular file edits auto-save (see useAutoSave) and are never at risk on
   // navigation, but an asset like a tilemap only persists on an explicit
@@ -172,34 +173,23 @@ const EditPage: React.FC = () => {
   };
 
   const toggleFullscreen = () => {
+    if (!isRunning) {
+      // Not running yet -- there's no game to fullscreen, so this button is
+      // purely a toggle here: it doesn't call the Fullscreen API at all,
+      // just arms/disarms it for whenever Run is next clicked (see the
+      // effect above).
+      setFullscreenArmed((prev) => !prev);
+      return;
+    }
     if (document.fullscreenElement) {
       document.exitFullscreen().catch((err) => {
         console.warn('Failed to exit fullscreen:', err);
       });
-    } else if (isRunning) {
-      // Already running -- fullscreen the game itself directly, same as
-      // this button always has.
+    } else {
       previewIframeRef.current?.requestFullscreen().catch((err) => {
         console.warn('Failed to enter fullscreen:', err);
       });
-    } else {
-      // Not running yet -- there's no preview iframe to fullscreen, so this
-      // just fullscreens the editor itself. Clicking Run while this is
-      // still active passes that along (see handleRunClick), which
-      // retargets fullscreen onto the game once it mounts.
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.warn('Failed to enter fullscreen:', err);
-      });
     }
-  };
-
-  const handleRunClick = () => {
-    // Threads the fullscreen toggle's current state into the run: if the
-    // editor is fullscreen because the toggle was armed before Run was
-    // clicked, the effect watching isRunning picks this up and retargets
-    // fullscreen onto the preview iframe once it mounts.
-    pendingFullscreenOnRunRef.current = isPreviewFullscreen;
-    run();
   };
 
   const handleTabSelect = (fileId: string) => {
@@ -309,7 +299,7 @@ const EditPage: React.FC = () => {
           </a>
           {!isRunning ? (
             <button
-              onClick={handleRunClick}
+              onClick={run}
               className="bg-accent-gradient text-white text-sm font-semibold px-4 py-1.5 rounded-md hover:opacity-90 transition focus:outline-none focus:ring-2 focus:ring-ds-accent"
               aria-label="Run project"
             >
@@ -415,11 +405,23 @@ const EditPage: React.FC = () => {
       previewHeaderActions={
         <button
           onClick={toggleFullscreen}
-          className="text-ds-text-dim hover:text-ds-text transition-colors focus:outline-none focus:ring-2 focus:ring-ds-accent rounded"
-          aria-label={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-          title={isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          className={`transition-colors focus:outline-none focus:ring-2 focus:ring-ds-accent rounded ${
+            (isRunning ? isPreviewFullscreen : fullscreenArmed)
+              ? 'text-ds-accent'
+              : 'text-ds-text-dim hover:text-ds-text'
+          }`}
+          aria-label={
+            isRunning
+              ? (isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen')
+              : (fullscreenArmed ? 'Fullscreen on run: on' : 'Fullscreen on run: off')
+          }
+          title={
+            isRunning
+              ? (isPreviewFullscreen ? 'Exit fullscreen' : 'Enter fullscreen')
+              : (fullscreenArmed ? 'Fullscreen on run: on (click to disable)' : 'Fullscreen on run: off (click to enable)')
+          }
         >
-          {isPreviewFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
+          {(isRunning ? isPreviewFullscreen : fullscreenArmed) ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
         </button>
       }
       panel={<BottomPanel logs={logs} onJumpToLoc={handleJumpToLoc} />}
