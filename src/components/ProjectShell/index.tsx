@@ -120,18 +120,23 @@ const ProjectShell: React.FC<ProjectShellProps> = ({
           {editor}
         </main>
 
-        {/* Preview pane */}
-        {preview && (
-          <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
-            <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
-              <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
-              {previewHeaderActions}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              {preview}
-            </div>
-          </aside>
-        )}
+        {/* Preview pane -- the header bar (with the fullscreen toggle) is
+            always present, even before Run is ever clicked, so there's
+            somewhere for that toggle to live pre-run. Only the body swaps
+            between a placeholder and the actual running preview. */}
+        <aside className="w-2/5 flex-shrink-0 bg-ds-bg border-l border-ds-border flex flex-col overflow-hidden">
+          <div className="px-3 py-1 flex items-center justify-between bg-ds-surface border-b border-ds-border flex-shrink-0">
+            <span className="text-[10px] text-ds-text-dim uppercase tracking-wider">Preview</span>
+            {previewHeaderActions}
+          </div>
+          <div className="flex-1 overflow-hidden">
+            {preview ?? (
+              <div className="h-full flex items-center justify-center text-sm text-ds-text-dim">
+                Click Run to preview
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
 
       {/* Bottom panel */}
