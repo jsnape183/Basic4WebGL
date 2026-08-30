@@ -218,3 +218,82 @@ describe('_sbInput._pollGamepads — disconnect flushes releases', () => {
     expect(inp._justReleased['h1']).toBe(true);
   });
 });
+
+describe('_sbInput.held', () => {
+  test('keyboard source: true while the key is down', () => {
+    const inp = loadInput();
+    inp.bind('jump', 'key', 32);
+    expect(inp.held('jump')).toBe(false);
+    inp.registerKey(32, true);
+    expect(inp.held('jump')).toBe(true);
+  });
+  test('button source: true while the pad button is pressed', () => {
+    const inp = loadInput();
+    inp.bind('fire', 'button', 0);
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    expect(inp.held('fire')).toBe(true);
+  });
+  test('axis source: true once the half-strength reaches the threshold', () => {
+    const inp = loadInput();
+    inp.bind('move_right', 'axis', 1);
+    setPads([makePad({ axes: [0.4, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.held('move_right')).toBe(false);
+    inp._resetFrameInput();
+    setPads([makePad({ axes: [0.9, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.held('move_right')).toBe(true);
+  });
+  test('OR across sources: either the key or the button activates it', () => {
+    const inp = loadInput();
+    inp.bind('jump', 'key', 32);
+    inp.bind('jump', 'button', 0);
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    expect(inp.held('jump')).toBe(true);
+  });
+  test('unbound action is never held', () => {
+    const inp = loadInput();
+    expect(inp.held('nothing')).toBe(false);
+  });
+});
+
+describe('_sbInput.pressed / released', () => {
+  test('pressed: true only on the key-down edge', () => {
+    const inp = loadInput();
+    inp.bind('jump', 'key', 32);
+    inp.registerKey(32, true);
+    expect(inp.pressed('jump')).toBe(true);
+    inp._resetFrameInput();
+    expect(inp.pressed('jump')).toBe(false);
+  });
+  test('pressed: true on the button-down edge (b# namespace)', () => {
+    const inp = loadInput();
+    inp.bind('fire', 'button', 0);
+    setPads([makePad({ buttons: [0] })]);
+    inp._pollGamepads();
+    inp._resetFrameInput();
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    expect(inp.pressed('fire')).toBe(true);
+  });
+  test('pressed: true on the axis threshold-crossing edge (h# namespace)', () => {
+    const inp = loadInput();
+    inp.bind('move_right', 'axis', 1);
+    setPads([makePad({ axes: [0, 0, 0, 0] })]);
+    inp._pollGamepads();
+    inp._resetFrameInput();
+    setPads([makePad({ axes: [1, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.pressed('move_right')).toBe(true);
+  });
+  test('released: true on the key-up edge', () => {
+    const inp = loadInput();
+    inp.bind('jump', 'key', 32);
+    inp.registerKey(32, true);
+    inp._resetFrameInput();
+    inp.registerKey(32, false);
+    expect(inp.released('jump')).toBe(true);
+  });
+});

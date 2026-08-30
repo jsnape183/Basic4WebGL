@@ -103,6 +103,59 @@ const _sbInput = {
     }
   },
 
+  _digital(action) {
+    const list = this._actions[action];
+    if (!list) return false;
+    for (let i = 0; i < list.length; i++) {
+      const src = list[i];
+      if (src.device === 'key') {
+        if (this._keys[src.code]) return true;
+      } else if (src.device === 'button') {
+        const b = this._padButtons[src.code];
+        if (b && b.pressed) return true;
+      } else if (src.device === 'axis') {
+        if ((this._padAxisHalves[src.code] || 0) >= this._axisThreshold) return true;
+      }
+    }
+    return false;
+  },
+
+  held(action) {
+    return this._digital(action);
+  },
+
+  pressed(action) {
+    const list = this._actions[action];
+    if (!list) return false;
+    for (let i = 0; i < list.length; i++) {
+      const src = list[i];
+      if (src.device === 'key') {
+        if (this._justPressed[src.code]) return true;
+      } else if (src.device === 'button') {
+        if (this._justPressed['b' + src.code]) return true;
+      } else if (src.device === 'axis') {
+        if (this._justPressed['h' + src.code]) return true;
+      }
+    }
+    return false;
+  },
+
+  released(action) {
+    const list = this._actions[action];
+    if (!list) return false;
+    for (let i = 0; i < list.length; i++) {
+      const src = list[i];
+      if (src.device === 'key') {
+        if (this._justReleased[src.code]) return true;
+      } else if (src.device === 'button') {
+        if (this._justReleased['b' + src.code]) return true;
+      } else if (src.device === 'axis') {
+        if (this._justReleased['h' + src.code]) return true;
+      }
+    }
+    return false;
+  },
+
   _resetFrameInput() {
     this._justPressed = {};
     this._justReleased = {};
