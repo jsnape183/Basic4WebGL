@@ -10,6 +10,12 @@ export function dataUrlToBlob(dataUrl: string): Blob {
     throw new Error('dataUrlToBlob: not a data URL');
   }
   const header = dataUrl.slice(0, comma); // e.g. "data:image/png;base64"
+  if (!header.includes(';base64')) {
+    // Every asset path here (readAsDataURL, .b4wgl.json exports) emits a
+    // base64 payload; a plain (percent-encoded) data URL isn't something we
+    // produce, and decoding one as base64 would silently corrupt the bytes.
+    throw new Error('dataUrlToBlob: expected a ;base64 data URL');
+  }
   const semi = header.indexOf(';');
   const mime = header.slice(5, semi === -1 ? undefined : semi) || 'application/octet-stream';
   const binary = atob(dataUrl.slice(comma + 1));

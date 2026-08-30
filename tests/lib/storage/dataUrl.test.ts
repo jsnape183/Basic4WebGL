@@ -17,6 +17,9 @@ describe('dataUrlToBlob', () => {
     const blob = dataUrlToBlob('data:;base64,aGk=');
     expect(blob.type).toBe('application/octet-stream');
   });
+  test('rejects a non-base64 (plain) data URL rather than corrupting bytes', () => {
+    expect(() => dataUrlToBlob('data:text/plain,hello')).toThrow(/base64/);
+  });
 });
 
 describe('blobToDataUrl', () => {
