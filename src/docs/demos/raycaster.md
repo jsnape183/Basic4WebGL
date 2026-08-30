@@ -89,11 +89,17 @@ Note the `if not X() and Y then` order, not `if Y and not X() then` — this lan
 
 Death explicitly calls `zombieGroan.stop()` before `scenemanager.switch("gameover")`. `stage.clear()` (triggered by that switch) wipes the `hud`/`world` display containers, but `zombieGroan` is a PIXI.sound instance, not a display object — switching scenes does nothing to it on its own, so a groan already playing at the moment of death would otherwise keep playing right over the game-over screen. Confirmed live: forced a death via a temporary probe timed to land while the groan was actively playing (`playing=true`), and the very next log line after `stop()` read `playing=false`.
 
+### Footsteps
+
+A short (~0.1s) `footstep_concrete_002.ogg` one-shot plays on a cadence while the player is actually walking. `onupdate()` checks `input.getKeyDown()` directly against W/S/Q/E (walk and strafe) — **not** A/D (turning in place, which doesn't move the player and shouldn't sound like it does) — rather than having `handleInput()` report back whether it moved, since a blocked move (walking straight into a wall) should still sound like footsteps: the player is walking in place against it, not standing still. `footstepTimer` counts down in real seconds (`delta / 1000`, same as `zombieGroanCooldown`) and gates each `footstepSound.play()` to once every `FOOTSTEP_INTERVAL` (0.35s) rather than every frame a movement key happens to be held.
+
+Unlike `zombieGroan`, this uses `play()` rather than the same isPlaying()-gated pattern — each footstep is a short, independent one-shot rather than something that needs to avoid overlapping itself, and `play()` already supports overlapping instances of the same sound natively (see `src/docs/api-reference/audio.md`). Confirmed live: zero footsteps while idle, zero while turning only (A held), and roughly the expected count — 11 over a 4s hold of W, matching a ~0.35s cadence — while actually walking.
+
 ---
 
 ## Required assets
 
-Upload ten PNG files and one MP3 to your project's asset library before running:
+Upload ten PNG files and two sound files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -108,8 +114,9 @@ Upload ten PNG files and one MP3 to your project's asset library before running:
 | `healthbar_fill.png` | 1×1 pixel, stretched via `setScale` into the health bar's fill — same pattern Bullet Hell Shooter uses |
 | `damage_flash.png` | 8×8 solid red square, stretched via `setScale` into the full-screen damage vignette |
 | `dragon-studio-zombie-sound-357975.mp3` | ~8s zombie groan, played while the nearest living enemy is within range (see "Zombie groan" below) |
+| `footstep_concrete_002.ogg` | ~0.1s footstep, replayed on a cadence while the player is walking (see "Footsteps" below) |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan is this demo's first sound of any kind.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan and the footstep are this demo's only sounds.
 
 ---
 
@@ -589,6 +596,17 @@ dim ZOMBIE_GROAN_CUTOFF
 dim ZOMBIE_GROAN_COOLDOWN
 dim ZOMBIE_GROAN_MAX_VOLUME
 
+' Footstep -- plays via play(), not playLoop(), so each step is an
+' independent, possibly-overlapping one-shot rather than a single
+' instance being restarted (audio.bas's playLoop() calls stop() first,
+' which would cut off the tail of the previous step). At footstepTimer's
+' short interval that overlap risk is theoretical, not audible in
+' practice, but play() is also just the simpler, more direct match for
+' "trigger a short clip repeatedly" than looping ever was.
+dim footstepSound as Audio
+dim footstepTimer
+dim FOOTSTEP_INTERVAL
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -658,6 +676,8 @@ Constructor(gameData as GameData)
   ' Volume at distance 0 -- capped well under 1.0 so even a zombie right
   ' on top of the player isn't jarringly loud.
   self.ZOMBIE_GROAN_MAX_VOLUME = 0.6
+  ' Seconds between footstep sounds while a movement key is held.
+  self.FOOTSTEP_INTERVAL = 0.35
 EndConstructor
 
 function checkHit()
@@ -1313,6 +1333,7 @@ function onenter()
     self.damageCooldown = 0
     self.damageFlashTimer = 0
     self.zombieGroanCooldown = 0
+    self.footstepTimer = 0
     ' setupHud() above (this call or an earlier one) always runs before this
     ' point, so self.damageFlash already exists here on every onenter().
     self.damageFlash.setAlpha(0)
@@ -1404,6 +1425,7 @@ function setupHud()
     ' this function's own established "everything gets set up fresh on
     ' every onenter()" convention rather than carving out a special case.
     self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
+    self.footstepSound = new Audio("footstep_concrete_002.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
@@ -1458,6 +1480,7 @@ function onupdate(delta)
     dim hpFillWidth
     dim nearestEnemyDist
     dim zombieGroanVolume
+    dim isMoving
 
     if self.playerHealth < 1 then
         ' stage.clear() (triggered by the scenemanager.switch() below)
@@ -1473,6 +1496,22 @@ function onupdate(delta)
     endif
 
     self.handleInput()
+
+    ' Footsteps -- W/S/Q/E (walk or strafe) count as moving; A/D (turning
+    ' in place) don't. Checked directly against the same key codes
+    ' handleInput() itself checks, rather than having handleInput() report
+    ' back whether it moved, since a blocked move (walking straight into a
+    ' wall) should still sound like footsteps -- the player is still
+    ' walking in place against it, not standing still.
+    isMoving = input.getKeyDown(87) or input.getKeyDown(83) or input.getKeyDown(69) or input.getKeyDown(81)
+    if self.footstepTimer > 0 then
+      self.footstepTimer = self.footstepTimer - (delta / 1000)
+    endif
+    if isMoving and self.footstepTimer <= 0 then
+      self.footstepSound.play()
+      self.footstepTimer = self.FOOTSTEP_INTERVAL
+    endif
+
     self.castRays()
 
     ' Starting above ZOMBIE_GROAN_CUTOFF guarantees "no living enemy found
