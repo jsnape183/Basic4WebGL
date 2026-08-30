@@ -412,16 +412,32 @@ function castRays()
 endfunction
 
 function pickEnemySpawn()
+  ' minDist used to be a flat 8 tiles, regardless of the current maze's
+  ' actual size -- fine at level 13's 33x33, but at level 1's 9x9 (and
+  ' every small early maze after it) 8 tiles is close to the whole map's
+  ' diagonal, so almost every candidate cell failed the "far enough"
+  ' check and the loop burned all 20 tries without ever finding one that
+  ' passed, silently falling back to whatever candidate it last tried --
+  ' which could easily still be right next to the player's spawn corner.
+  ' Reported live as getting hit almost the instant a level starts.
+  ' Scaling minDist off mazegrid.getMapW() (same pattern
+  ' pickExitPosition() already uses for the exit, just a smaller
+  ' fraction -- enemies only need to not be adjacent, not be a trek away
+  ' like the exit) keeps the requirement satisfiable at every maze size.
   dim spawn
   dim ex
   dim ey
   dim tries
+  dim minDist
   dim result(2)
+
+  minDist = mazegrid.getMapW() * 0.35
+
   tries = 0
   spawn = mazegrid.randomOpenCell()
   ex = spawn(0) + 0.5
   ey = spawn(1) + 0.5
-  while math.distance(ex, ey, self.posX, self.posY) < 8 and tries < 20
+  while math.distance(ex, ey, self.posX, self.posY) < minDist and tries < 30
     spawn = mazegrid.randomOpenCell()
     ex = spawn(0) + 0.5
     ey = spawn(1) + 0.5
