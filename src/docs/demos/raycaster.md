@@ -103,11 +103,17 @@ Unlike `zombieGroan`, this uses `play()` rather than the same isPlaying()-gated 
 
 `zombieDeathSound.play()` fires in `checkHit()`'s existing `e.isDead()` branch, right alongside `enemyDeathEmitter.burst(24)` — the same place that already knows a kill (not just a hit) just landed. Up to 20 enemies could in principle die in close succession, but unlike `zombieGroan`'s single shared, distance-gated channel, this needs no cooldown or overlap handling of its own: `play()` already supports overlapping instances of the same sound natively (see "Footsteps" above), so simultaneous deaths just layer rather than needing to queue or cut each other off. Confirmed live: pre-damaged an enemy to 1 HP via a temporary probe call to `Enemy.hit(2)` (a real method already on the class, not a new one added for the test) so a single following shot would land the kill, then fired once and confirmed `checkHit()`'s branch actually ran by print-logging inside it — the death sprite, the burst, and the log all fired together.
 
+### Background music
+
+`yd_Searching.ogg` (~105s) is the one sound in this file that genuinely is meant to loop seamlessly, so `bgMusic.playLoop()` — not `play()` — is the right call here, the opposite choice from every other sound above. `onenter()` calls `bgMusic.setVolume(BG_MUSIC_VOLUME)` (0.2) then `playLoop()` right after `setupHud()`, on every run — the very first level 1, and every retry after death alike — since `playLoop()` restarts the track from the beginning if it's already looping (see `src/docs/api-reference/audio.md`), so this is a deliberate fresh start each time rather than a stale loop bleeding across runs. `BG_MUSIC_VOLUME` is kept low enough to sit under the gunshot, the groan, and the footsteps (all left at their default full volume) without muffling them, while staying clearly audible as ambience.
+
+Death explicitly calls `bgMusic.stop()` alongside `zombieGroan.stop()`, for the same reason: `stage.clear()` only wipes the `hud`/`world` display containers, not PIXI.sound instances, so without it the music would keep playing under the game-over screen. Confirmed live: `playing=true` right after `onenter()` starts the loop, and `playing=false` immediately after `stop()` runs in the death branch on the very next frame (forced via a temporary probe setting `playerHealth = 0` in `onenter()`).
+
 ---
 
 ## Required assets
 
-Upload ten PNG files and four sound files to your project's asset library before running:
+Upload ten PNG files and five sound files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -125,8 +131,9 @@ Upload ten PNG files and four sound files to your project's asset library before
 | `footstep_concrete_002.ogg` | ~0.1s footstep, replayed on a cadence while the player is walking (see "Footsteps" below) |
 | `impactPlate_heavy_004.ogg` | Gunshot one-shot, played alongside the muzzle flash every time the player fires (see "Gunshot" below) |
 | `freesound_community-zombie-6851.mp3` | Death cry one-shot, played once whenever an enemy is killed (see "Zombie death cry" below) |
+| `yd_Searching.ogg` | ~105s ambient background music, looped quietly for the whole run (see "Background music" below) |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan, the footstep, the gunshot, and the death cry are this demo's only sounds.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan, the footstep, the gunshot, the death cry, and the background music are this demo's only sounds.
 
 ---
 
@@ -637,6 +644,15 @@ dim gunshotSound as Audio
 ' zombieGroan's.
 dim zombieDeathSound as Audio
 
+' Background music -- unlike every other sound in this file, this one
+' genuinely IS meant to loop seamlessly (it's a proper ~105s ambient
+' track, not a short effect), so playLoop() is the right call here where
+' it wasn't for zombieGroan/footstepSound/gunshotSound/zombieDeathSound.
+' Kept deliberately quiet (see BG_MUSIC_VOLUME) so it adds atmosphere
+' without competing with the gunshot, the groan, or the footsteps.
+dim bgMusic as Audio
+dim BG_MUSIC_VOLUME
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -681,6 +697,10 @@ Constructor(gameData as GameData)
   self.TEXW = 64
   self.ENIW = 64
   self.FIRE_COOLDOWN_FRAMES = 20
+  ' Low enough to sit under the gunshot/groan/footstep effects (all at
+  ' their default full volume) rather than muffling them, but still
+  ' clearly audible as ambience rather than fading into silence.
+  self.BG_MUSIC_VOLUME = 0.2
   self.flashTimer = self.FIRE_COOLDOWN_FRAMES
   self.muzzleOffsetX = -6
   self.muzzleOffsetY = -92
@@ -1362,6 +1382,14 @@ function onenter()
     ' though everything had genuinely just been cleared out from under it.
     self.setupHud()
 
+    ' playLoop() restarts the track from the beginning if it's already
+    ' looping (see audio.md), so this genuinely does restart the music
+    ' fresh on every run -- the very first level 1, and every retry after
+    ' death alike -- rather than leaving a stale loop from a previous
+    ' attempt playing under a freshly-constructed bgMusic instance.
+    self.bgMusic.setVolume(self.BG_MUSIC_VOLUME)
+    self.bgMusic.playLoop()
+
     self.playerHealth = 100
     self.damageCooldown = 0
     self.damageFlashTimer = 0
@@ -1461,6 +1489,7 @@ function setupHud()
     self.footstepSound = new Audio("footstep_concrete_002.ogg")
     self.gunshotSound = new Audio("impactPlate_heavy_004.ogg")
     self.zombieDeathSound = new Audio("freesound_community-zombie-6851.mp3")
+    self.bgMusic = new Audio("yd_Searching.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
@@ -1519,12 +1548,13 @@ function onupdate(delta)
 
     if self.playerHealth < 1 then
         ' stage.clear() (triggered by the scenemanager.switch() below)
-        ' wipes the hud/world display containers, but zombieGroan is a
-        ' PIXI.sound instance, not a display object -- switching away
-        ' from GameScene does nothing to it on its own, so without this
-        ' explicit stop() a groan already playing at the moment of death
-        ' would keep right on playing over the game-over screen.
+        ' wipes the hud/world display containers, but zombieGroan and
+        ' bgMusic are PIXI.sound instances, not display objects --
+        ' switching away from GameScene does nothing to them on its own,
+        ' so without these explicit stop() calls both would keep right on
+        ' playing over the game-over screen.
         self.zombieGroan.stop()
+        self.bgMusic.stop()
         self.gameData.levelReached = self.level
         scenemanager.switch("gameover")
         return
