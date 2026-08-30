@@ -230,3 +230,19 @@ describe('const — assignment and shadowing rules', () => {
     expectError('const MAX = 1\nfunction test()\n  dim MAX\nendfunction\n', 'constant');
   });
 });
+
+describe('const — for-loop and parameter shadowing', () => {
+  const expectError = (src: string, fragment: string) => {
+    const result = compiler.transpile({ files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message.toLowerCase()).toContain(fragment.toLowerCase());
+  };
+
+  test('a constant name as a for-loop variable is rejected', () => {
+    expectError('const MAX = 5\nfunction test()\n  dim i\n  for MAX = 1 to 3\n  next\nendfunction\n', 'constant');
+  });
+
+  test('a constant name as a function parameter is rejected', () => {
+    expectError('const MAX = 5\nfunction test(MAX)\nendfunction\n', 'constant');
+  });
+});

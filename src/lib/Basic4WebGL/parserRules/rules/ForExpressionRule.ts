@@ -11,6 +11,7 @@ import { symbolTypes } from '../../symbolTypes';
 import InNode from '../../nodes/InNode';
 import ToNode from '../../nodes/ToNode';
 import builtInTypes from '../../builtInTypes';
+import { CompilationError } from '@CompilerLib/errors';
 
 @RegisterParserRule('ForExpression')
 class ForExpressionRule implements IParserRule {
@@ -18,6 +19,11 @@ class ForExpressionRule implements IParserRule {
     const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
+    if (symbolTable.check(name, symbolTypes.Constant)) {
+      throw new CompilationError(
+        `'${name}' is a constant and cannot be used as a loop variable.`
+      );
+    }
     const currentScope = symbolTable.getScope();
     const currentFullScope = symbolTable.getFullScopeName();
     const forSymbol = symbolTable.check(name, symbolTypes.Variable, currentScope, currentFullScope)

@@ -10,6 +10,7 @@ import tokens from '../../tokens';
 import VariableListNode from '../../nodes/VariableLIstNode';
 import TermNode from '../../nodes/TermNode';
 import VariableNode from '../../nodes/VariableNode';
+import { CompilationError } from '@CompilerLib/errors';
 
 @RegisterParserRule('VariableList')
 class VariableListRule implements IParserRule {
@@ -21,6 +22,11 @@ class VariableListRule implements IParserRule {
     while (check(tokens.Variable, tokenStream.current())) {
       matchAndMove(tokens.Variable, tokenStream);
       const name = tokenStream.prev().text;
+      if (symbolTable.check(name.toLowerCase(), symbolTypes.Constant)) {
+        throw new CompilationError(
+          `'${name.toLowerCase()}' is a constant and cannot be used as a parameter name.`
+        );
+      }
       let sym: any;
 
       if (check(tokens.OpenParen, tokenStream.current())) {
