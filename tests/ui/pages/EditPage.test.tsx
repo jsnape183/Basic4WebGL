@@ -4,7 +4,8 @@ import { render, act, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { vi, afterEach } from 'vitest';
+import { vi, afterEach, beforeEach } from 'vitest';
+import { putAssetBlob, _clearAllAssetBlobsForTests } from '../../../src/lib/storage/assetBlobStore';
 import sessionReducer, { addLog, setIsRunning } from '../../../src/features/session/sessionSlice';
 import filesReducer, { addFile } from '../../../src/features/files/filesSlice';
 import projectsReducer, { addProject } from '../../../src/features/projects/projectsSlice';
@@ -59,8 +60,19 @@ const renderEditPage = (projectId: string, store: ReturnType<typeof makeStore>) 
     </Provider>,
   );
 
+beforeEach(async () => {
+  await _clearAllAssetBlobsForTests();
+  URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+  URL.revokeObjectURL = vi.fn();
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+const STM_DOC_JSON = JSON.stringify({
+  tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png',
+  layers: { background: [[1, 1], [1, 1]] },
 });
 
 test('captures window messages while not running', async () => {
@@ -197,17 +209,14 @@ test('opening a non-tilemap asset does not stop a running preview', async () => 
   expect(store.getState().session.isRunning).toBe(true);
 });
 
-const addDirtyTilemapProject = (projectId: string) => {
+const addDirtyTilemapProject = async (projectId: string) => {
   const store = makeStore(projectId);
   store.dispatch(addFile({ id: 'file-main', name: 'Main', source: '', projectId }));
   store.dispatch(selectFile({ projectId, fileId: 'file-main' }));
-  const stmDoc = { tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png', layers: { background: [[1, 1], [1, 1]] } };
-  const stmContent =
-    'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(stmDoc))));
+  await putAssetBlob('asset-level', new Blob([STM_DOC_JSON], { type: 'application/json' }));
   store.dispatch(addAsset({
     id: 'asset-level',
     name: 'level.stm',
-    content: stmContent,
     projectId,
     folderId: null,
     fullName: 'level.stm',
@@ -215,16 +224,14 @@ const addDirtyTilemapProject = (projectId: string) => {
   return store;
 };
 
-// Skipped in Task 6: these drive "dirty" state by painting a tilemap cell, which
-// requires the editor to decode asset content (now stubbed to an empty doc).
-// Task 12 rewires TileMapEditor through the blob store and un-skips these.
-test.skip('switching to a file tab with unsaved tilemap changes prompts, and stays put if declined', async () => {
+test('switching to a file tab with unsaved tilemap changes prompts, and stays put if declined', async () => {
   const user = userEvent.setup();
   const projectId = 'proj-6';
-  const store = addDirtyTilemapProject(projectId);
+  const store = await addDirtyTilemapProject(projectId);
   renderEditPage(projectId, store);
 
   await user.dblClick(screen.getByText('level.stm'));
+  await screen.findByLabelText('Row 0, Column 1');
   fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1')); // paints a cell, marks dirty
 
   const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -234,13 +241,14 @@ test.skip('switching to a file tab with unsaved tilemap changes prompts, and sta
   expect(screen.getByLabelText('Eraser')).toBeInTheDocument(); // still on the tilemap editor
 });
 
-test.skip('switching to a file tab with unsaved tilemap changes proceeds if confirmed', async () => {
+test('switching to a file tab with unsaved tilemap changes proceeds if confirmed', async () => {
   const user = userEvent.setup();
   const projectId = 'proj-7';
-  const store = addDirtyTilemapProject(projectId);
+  const store = await addDirtyTilemapProject(projectId);
   renderEditPage(projectId, store);
 
   await user.dblClick(screen.getByText('level.stm'));
+  await screen.findByLabelText('Row 0, Column 1');
   fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
 
   vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -249,10 +257,10 @@ test.skip('switching to a file tab with unsaved tilemap changes proceeds if conf
   expect(screen.queryByLabelText('Eraser')).not.toBeInTheDocument();
 });
 
-test.skip('switching to another asset tab with unsaved tilemap changes prompts first', async () => {
+test('switching to another asset tab with unsaved tilemap changes prompts first', async () => {
   const user = userEvent.setup();
   const projectId = 'proj-8';
-  const store = addDirtyTilemapProject(projectId);
+  const store = await addDirtyTilemapProject(projectId);
   store.dispatch(addAsset({
     id: 'asset-sprite',
     name: 'hero.png',
@@ -264,6 +272,7 @@ test.skip('switching to another asset tab with unsaved tilemap changes prompts f
   renderEditPage(projectId, store);
 
   await user.dblClick(screen.getByText('level.stm'));
+  await screen.findByLabelText('Row 0, Column 1');
   fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
 
   const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -273,13 +282,14 @@ test.skip('switching to another asset tab with unsaved tilemap changes prompts f
   expect(screen.getByLabelText('Eraser')).toBeInTheDocument(); // still the tilemap editor
 });
 
-test.skip('clicking Export project with unsaved tilemap changes prompts before exporting', async () => {
+test('clicking Export project with unsaved tilemap changes prompts before exporting', async () => {
   const user = userEvent.setup();
   const projectId = 'proj-9';
-  const store = addDirtyTilemapProject(projectId);
+  const store = await addDirtyTilemapProject(projectId);
   renderEditPage(projectId, store);
 
   await user.dblClick(screen.getByText('level.stm'));
+  await screen.findByLabelText('Row 0, Column 1');
   fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
 
   const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -288,13 +298,14 @@ test.skip('clicking Export project with unsaved tilemap changes prompts before e
   expect(confirmSpy).toHaveBeenCalled();
 });
 
-test.skip('warns before the browser tab closes/navigates away while a tilemap has unsaved changes', async () => {
+test('warns before the browser tab closes/navigates away while a tilemap has unsaved changes', async () => {
   const user = userEvent.setup();
   const projectId = 'proj-10';
-  const store = addDirtyTilemapProject(projectId);
+  const store = await addDirtyTilemapProject(projectId);
   renderEditPage(projectId, store);
 
   await user.dblClick(screen.getByText('level.stm'));
+  await screen.findByLabelText('Row 0, Column 1');
   fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
 
   const event = new Event('beforeunload', { cancelable: true });

@@ -1,8 +1,11 @@
 // src/components/TileMapEditor/index.tsx
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { IAsset, updateAsset } from '../../features/assets/assetsSlice';
-import { AppDispatch, RootState } from '../../store';
+import { useSelector } from 'react-redux';
+import { IAsset } from '../../features/assets/assetsSlice';
+import { RootState } from '../../store';
+import { useAssetText } from '../../hooks/useAssetText';
+import { useAssetObjectUrl } from '../../hooks/useAssetObjectUrl';
+import { putAssetBlob } from '../../lib/storage/assetBlobStore';
 import { useTilesetSlices } from './useTilesetSlices';
 import { CELL_SIZE } from './constants';
 import Palette from './Palette';
@@ -24,12 +27,10 @@ type StmLayerValue =
   | { type: 'markers'; markers: MarkerEntry[] }
   | { type: 'collision'; data: number[][] };
 
-export function decodeStmContent(content: string): StmDoc {
-  const comma = content.indexOf(',');
-  const raw = comma === -1 ? '{}' : decodeURIComponent(escape(atob(content.slice(comma + 1))));
+export function decodeStmText(raw: string): StmDoc {
   let parsed: { tileWidth?: number; tileHeight?: number; tileImage?: string; layers?: Record<string, StmLayerValue> };
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(raw || '{}');
   } catch {
     parsed = {};
   }
@@ -44,6 +45,11 @@ export function decodeStmContent(content: string): StmDoc {
       return { key: crypto.randomUUID(), name, kind: 'marker', markers: value.markers };
     }),
   };
+}
+
+export function decodeStmContent(content: string): StmDoc {
+  const comma = content.indexOf(',');
+  return decodeStmText(comma === -1 ? '{}' : decodeURIComponent(escape(atob(content.slice(comma + 1)))));
 }
 
 function buildStmLayers(doc: StmDoc): Record<string, StmLayerValue> {
@@ -88,10 +94,9 @@ export function encodeStmContent(doc: StmDoc, originalContent: string): string {
 }
 
 const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { text: stmText, loading: stmLoading } = useAssetText(asset.id);
 
-  // TODO(Task 12): decode real .stm blob bytes instead of the empty shim
-  const [draftDoc, setDraftDoc] = useState<StmDoc>(() => decodeStmContent(''));
+  const [draftDoc, setDraftDoc] = useState<StmDoc>(() => decodeStmText(''));
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -103,12 +108,12 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
 
   useEffect(() => {
-    // TODO(Task 12): decode real .stm blob bytes instead of the empty shim
-    setDraftDoc(decodeStmContent(''));
+    if (stmLoading) return;
+    setDraftDoc(decodeStmText(stmText ?? ''));
     setActiveIndex(0);
     setIsDirty(false);
     setHiddenLayerKeys(new Set());
-  }, [asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [asset.id, stmLoading, stmText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tilesetAsset = useSelector((state: RootState) =>
     Object.values(state.assets.byId).find(
@@ -116,9 +121,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     )
   );
 
-  // TODO(Task 12): pass tilesetAsset's object URL instead of undefined
-  void tilesetAsset;
-  const { slices } = useTilesetSlices(undefined, draftDoc.tileWidth, draftDoc.tileHeight);
+  const tilesetUrl = useAssetObjectUrl(tilesetAsset?.id);
+  const { slices } = useTilesetSlices(tilesetUrl, draftDoc.tileWidth, draftDoc.tileHeight);
 
   useEffect(() => {
     onDirtyChange?.(asset.id, isDirty);
@@ -241,10 +245,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     }
   };
 
-  const handleSave = () => {
-    // TODO(Task 12): putAssetBlob(asset.id, new Blob([exportStmDoc(draftDoc)], { type: 'application/json' }))
-    void encodeStmContent(draftDoc, '');
-    dispatch(updateAsset({ ...asset }));
+  const handleSave = async () => {
+    await putAssetBlob(asset.id, new Blob([exportStmDoc(draftDoc)], { type: 'application/json' }));
     setIsDirty(false);
   };
 
@@ -255,6 +257,10 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     activeLayer?.kind === 'marker'
       ? Array.from(new Set([...activeLayer.markers.map((m) => m.tag), ...(selectedTag ? [selectedTag] : [])]))
       : [];
+
+  if (stmLoading) {
+    return <div className="p-4 text-ds-text-dim text-sm">Loading tilemap…</div>;
+  }
 
   return (
     <div className="flex h-full">

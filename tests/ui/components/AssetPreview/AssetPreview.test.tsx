@@ -56,12 +56,13 @@ describe('AssetPreview', () => {
     expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
-  test('renders TileMapEditor for .stm assets', () => {
+  test('renders TileMapEditor for .stm assets', async () => {
+    await putAssetBlob('a3', new Blob(['{}'], { type: 'application/json' }));
     render(
       <Provider store={makeStore()}>
         <AssetPreview asset={tilemapAsset} onDirtyChange={vi.fn()} />
       </Provider>
     );
-    expect(screen.getByLabelText('Tilemap canvas')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Tilemap canvas')).toBeInTheDocument();
   });
 });
