@@ -28,84 +28,20 @@
 // half of the bug that a "did it print?" assertion alone would miss.
 // ---------------------------------------------------------------------------
 
-const PIXEL_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+import { seedAndRun } from '../support/seedProject';
 
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  assetNames: string[] = []
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const assetsById: Record<string, object> = {};
-  const assetOrder: string[] = [];
-  assetNames.forEach((name) => {
-    const id = `asset-${name.replace('.', '-')}`;
-    assetsById[id] = {
-      id,
-      name,
-      content: PIXEL_PNG,
-      projectId,
-      folderId: null,
-      fullName: name,
-    };
-    assetOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
 function run(
-  projectId: string,
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 4000
 ) {
-  const persistedState = buildPersistedState(projectId, projectName, files, assetNames);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+  seedAndRun({ name: projectName, files, assets: assetNames }, waitMs);
 }
 
 function consoleLines(): Cypress.Chainable<string[]> {
@@ -192,7 +128,7 @@ EndClass
 `.trim();
 
   it('keeps updating an object the incoming scene added in onenter', () => {
-    run('instupd01', 'Instance Update Scene Switch', [
+    run('Instance Update Scene Switch', [
       { name: 'CounterEntity', source: COUNTER_ENTITY },
       { name: 'BootScene', source: BOOT_SCENE },
       { name: 'PlayScene', source: PLAY_SCENE },
@@ -240,7 +176,7 @@ endfunction
 `.trim();
 
   it('keeps the survivor updating, stops the removed one, and picks up later arrivals', () => {
-    run('instupd02', 'Instance Update World Remove', [
+    run('Instance Update World Remove', [
       { name: 'CounterEntity', source: COUNTER_ENTITY },
       { name: 'Main', source: MAIN },
     ]);
@@ -287,7 +223,7 @@ endfunction
 `.trim();
 
   it('drops only world objects and keeps updating everything else', () => {
-    run('instupd03', 'Instance Update World Clear', [
+    run('Instance Update World Clear', [
       { name: 'CounterEntity', source: COUNTER_ENTITY },
       { name: 'Main', source: MAIN },
     ]);
@@ -332,7 +268,7 @@ endfunction
 `.trim();
 
   it('drops only hud objects and keeps updating everything else', () => {
-    run('instupd04', 'Instance Update Hud Clear', [
+    run('Instance Update Hud Clear', [
       { name: 'CounterEntity', source: COUNTER_ENTITY },
       { name: 'Main', source: MAIN },
     ]);

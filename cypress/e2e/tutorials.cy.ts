@@ -1,18 +1,11 @@
 /// <reference types="cypress" />
 
-// ---------------------------------------------------------------------------
-// Minimal 1×1 white pixel PNG — used as a stand-in for ship.png / enemy.png
-// ---------------------------------------------------------------------------
-const PIXEL_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+import { seedAndRun } from '../support/seedProject';
 
 // ---------------------------------------------------------------------------
 // Run helper — seed via the app's real project-creation path (assets now live
-// in IndexedDB, not localStorage), then visit, click Run, wait, assert no ERR.
-//
-// `window.__seedProject` is registered by src/devSeed.ts (imported by App) and
-// is dev/Cypress-only. It does addProject + addFile per file + (putAssetBlob +
-// addAsset) per asset, and resolves with the new project id.
+// in IndexedDB, not localStorage — see cypress/support/seedProject.ts), then
+// visit the editor, click Run, wait, and assert no ERR in the console panel.
 // ---------------------------------------------------------------------------
 
 interface FileSpec {
@@ -20,35 +13,15 @@ interface FileSpec {
   source: string;
 }
 
-type SeedProject = (spec: {
-  name: string;
-  files: FileSpec[];
-  assets?: Array<{ name: string; dataUrl: string }>;
-}) => Promise<string>;
-
 function runTutorial(
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 3000
 ) {
-  cy.visit('/projects'); // any route that mounts the app + the seed hook
-  cy.window().its('__seedProject').should('be.a', 'function');
-  cy.window()
-    .then((win) =>
-      (win as unknown as { __seedProject: SeedProject }).__seedProject({
-        name: projectName,
-        files,
-        assets: assetNames.map((name) => ({ name, dataUrl: PIXEL_PNG })),
-      }),
-    )
-    .then((projectId) => {
-      cy.visit(`/projects/${projectId}/edit`);
-      cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-      cy.wait(waitMs);
-      // Assert no ERR entries in the bottom panel — that is what the user sees
-      cy.get('span').contains('ERR').should('not.exist');
-    });
+  seedAndRun({ name: projectName, files, assets: assetNames }, waitMs);
+  // Assert no ERR entries in the bottom panel — that is what the user sees
+  cy.get('span').contains('ERR').should('not.exist');
 }
 
 // ---------------------------------------------------------------------------

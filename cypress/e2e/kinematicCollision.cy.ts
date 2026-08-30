@@ -10,78 +10,22 @@
 // feature's design doc's Testing section for why this spec exists.
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Minimal 1×1 white pixel PNG — same stand-in tutorials.cy.ts uses for
-// ship.png / enemy.png. A sprite constructor calls _sb.createSprite, which
-// needs a real preloaded asset to succeed, so this must be seeded.
-// ---------------------------------------------------------------------------
-const PIXEL_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+import { seedAndRun } from '../support/seedProject';
 
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  assetNames: string[] = []
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = { id, name: f.name, source: f.source, projectId, folderId: null, fullName: f.name };
-    fileOrder.push(id);
-  });
-
-  const assetsById: Record<string, object> = {};
-  const assetOrder: string[] = [];
-  assetNames.forEach((name) => {
-    const id = `asset-${name.replace('.', '-')}`;
-    assetsById[id] = {
-      id,
-      name,
-      content: PIXEL_PNG,
-      projectId,
-      folderId: null,
-      fullName: name,
-    };
-    assetOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({ byId: filesById, dirtyFileIds: [], fileOrder: { [`${projectId}:root`]: fileOrder } }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
+// A sprite constructor calls _sb.createSprite, which needs a real preloaded
+// asset — the helper seeds each named asset with a 1x1 PNG in the blob store.
 function run(
-  projectId: string,
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 3000
 ) {
-  const persistedState = buildPersistedState(projectId, projectName, files, assetNames);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+  seedAndRun({ name: projectName, files, assets: assetNames }, waitMs);
 }
 
 function consoleLines(): Cypress.Chainable<string[]> {
@@ -123,7 +67,7 @@ function onupdate(delta)
 endfunction
 `.trim();
 
-    run('kinematic01', 'Kinematic Free Move', [{ name: 'Main', source }], ['dot.png'], 4000);
+    run('Kinematic Free Move', [{ name: 'Main', source }], ['dot.png'], 4000);
     cy.get('span').contains('ERR').should('not.exist');
     consoleLines().then((lines) => {
       const line = findLine(lines, 'x=');
@@ -173,7 +117,7 @@ function onupdate(delta)
 endfunction
 `.trim();
 
-    run('kinematic02', 'Kinematic Tile Block', [{ name: 'Main', source }], ['dot.png']);
+    run('Kinematic Tile Block', [{ name: 'Main', source }], ['dot.png']);
     cy.get('span').contains('ERR').should('not.exist');
 
     // Install a synthetic solid-tile grid directly against the running
@@ -262,7 +206,7 @@ function onupdate(delta)
 endfunction
 `.trim();
 
-    run('kinematic03', 'Kinematic Boundary Rest', [{ name: 'Main', source }], ['dot.png']);
+    run('Kinematic Boundary Rest', [{ name: 'Main', source }], ['dot.png']);
     cy.get('span').contains('ERR').should('not.exist');
 
     // Same synthetic wall shape as the previous test (solid tile at col 2,

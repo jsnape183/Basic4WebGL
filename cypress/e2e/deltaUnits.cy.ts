@@ -39,61 +39,15 @@
 //    by any fixed constant — it pins the *units*, not a magic number.
 // ---------------------------------------------------------------------------
 
+import { seedAndRun } from '../support/seedProject';
+
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[]
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({ byId: {}, assetOrder: { [`${projectId}:root`]: [] } }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
-function run(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  waitMs = 5000
-) {
-  const persistedState = buildPersistedState(projectId, projectName, files);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+function run(projectName: string, files: FileSpec[], waitMs = 5000) {
+  seedAndRun({ name: projectName, files }, waitMs);
 }
 
 function consoleLines(): Cypress.Chainable<string[]> {
@@ -182,7 +136,7 @@ endfunction
   }
 
   it('hands a module onupdate a per-frame delta in milliseconds', () => {
-    run('deltaunits01', 'Delta Units Module', [
+    run('Delta Units Module', [
       { name: 'Main', source: MODULE_PROBE },
     ]);
 
@@ -193,7 +147,7 @@ endfunction
   });
 
   it('hands an instance onupdate a per-frame delta in milliseconds', () => {
-    run('deltaunits02', 'Delta Units Instance', [
+    run('Delta Units Instance', [
       { name: 'DeltaProbe', source: INSTANCE_PROBE },
       { name: 'Main', source: MAIN_WITH_INSTANCE },
     ]);
@@ -211,7 +165,7 @@ endfunction
   // handed out against real elapsed time measured in the same window. No fixed
   // constant can satisfy this — it pins the units themselves.
   it('accumulates to the real elapsed wall-clock time in milliseconds', () => {
-    run('deltaunits03', 'Delta Units Wall Clock', [
+    run('Delta Units Wall Clock', [
       { name: 'Main', source: MODULE_PROBE },
     ], 2000);
 
@@ -265,7 +219,7 @@ endfunction
   // The user-facing contract from tutorial 7: "the score should tick up by one
   // every second". Pre-fix this branch never fired even once in a 5s window.
   it('drives the documented once-per-second timer pattern in real time', () => {
-    run('deltaunits04', 'Delta Units Timer', [
+    run('Delta Units Timer', [
       {
         name: 'Main',
         source: `

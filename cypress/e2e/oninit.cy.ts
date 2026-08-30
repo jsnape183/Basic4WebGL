@@ -8,84 +8,20 @@
 // proves the real sequence in a real browser.
 // ---------------------------------------------------------------------------
 
-const PIXEL_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+import { seedAndRun } from '../support/seedProject';
 
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  assetNames: string[] = []
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const assetsById: Record<string, object> = {};
-  const assetOrder: string[] = [];
-  assetNames.forEach((name) => {
-    const id = `asset-${name.replace('.', '-')}`;
-    assetsById[id] = {
-      id,
-      name,
-      content: PIXEL_PNG,
-      projectId,
-      folderId: null,
-      fullName: name,
-    };
-    assetOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
 function run(
-  projectId: string,
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 3000
 ) {
-  const persistedState = buildPersistedState(projectId, projectName, files, assetNames);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+  seedAndRun({ name: projectName, files, assets: assetNames }, waitMs);
 }
 
 // Reads the bottom console panel as an ordered list of log lines.
@@ -113,7 +49,7 @@ endfunction
 `.trim();
 
   it('runs oninit, then the module top-level statements, then onenter', () => {
-    run('oninit01', 'OnInit Order', [{ name: 'Main', source: MAIN }], ['ship.png']);
+    run('OnInit Order', [{ name: 'Main', source: MAIN }], ['ship.png']);
 
     cy.get('span').contains('ERR').should('not.exist');
     consoleLines().then((lines) => {
@@ -149,14 +85,14 @@ endfunction
 `.trim();
 
   it('reports a timing error for an asset used inside oninit', () => {
-    run('oninit02', 'OnInit Too Early', [{ name: 'Main', source: TOO_EARLY }], ['ship.png']);
+    run('OnInit Too Early', [{ name: 'Main', source: TOO_EARLY }], ['ship.png']);
 
     cy.get('span').contains('ERR').should('exist');
     cy.contains('cannot be used inside oninit()').should('exist');
   });
 
   it('loads the very same asset without error from onenter', () => {
-    run('oninit03', 'OnInit In Time', [{ name: 'Main', source: IN_TIME }], ['ship.png']);
+    run('OnInit In Time', [{ name: 'Main', source: IN_TIME }], ['ship.png']);
 
     cy.get('span').contains('ERR').should('not.exist');
     cy.contains('asset-ok').should('exist');
@@ -182,7 +118,6 @@ endfunction
 
   it('fires on each module, all of them before onenter', () => {
     run(
-      'oninit04',
       'OnInit Multi Module',
       [
         { name: 'Settings', source: SETTINGS },
@@ -230,7 +165,6 @@ endfunction
 
   it('creates a sprite from a module top-level statement with no oninit anywhere', () => {
     run(
-      'oninit05',
       'No OnInit',
       [
         { name: 'Player', source: PLAYER },

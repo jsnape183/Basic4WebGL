@@ -4,7 +4,7 @@ import { AppDispatch } from './store';
 import { seedPackages } from './features/packages/packagesSlice';
 import { firstPartyPackages } from './constants/firstPartyPackages';
 import Routes from "./components/Routes";
-import "./devSeed"; // registers dev/Cypress-only window.__seedProject (tree-shaken in prod)
+import "./devSeed"; // registers dev/Cypress-only window.__seedProject (hook body never runs in prod)
 
 export default function App() {
   const dispatch = useDispatch<AppDispatch>();

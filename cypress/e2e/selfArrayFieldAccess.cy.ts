@@ -25,56 +25,15 @@
 // reads, so the expected output is exact and asset-independent.
 // ---------------------------------------------------------------------------
 
+import { seedAndRun } from '../support/seedProject';
+
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[]
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({ byId: {}, assetOrder: { [`${projectId}:root`]: [] } }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
-function run(projectId: string, projectName: string, files: FileSpec[], waitMs = 3000) {
-  const persistedState = buildPersistedState(projectId, projectName, files);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+function run(projectName: string, files: FileSpec[], waitMs = 3000) {
+  seedAndRun({ name: projectName, files }, waitMs);
 }
 
 describe('class-scope array fields: indexed reads via self work at runtime', () => {
@@ -146,7 +105,7 @@ endfunction
 `.trim();
 
   it('reads class array fields by index from every expression position', () => {
-    run('selfarr01', 'Self Array Fields', [
+    run('Self Array Fields', [
       { name: 'Bag', source: BAG },
       { name: 'Main', source: MAIN },
     ]);
@@ -229,7 +188,7 @@ endfunction
 `.trim();
 
   it('indexes an inherited array field while still calling an inherited method', () => {
-    run('selfarr02', 'Self Array Inherited', [
+    run('Self Array Inherited', [
       { name: 'Base', source: BASE },
       { name: 'Child', source: CHILD },
       { name: 'Main', source: MAIN },
@@ -281,7 +240,7 @@ endfunction
 `.trim();
 
   it('resolves self.field against the class, and the bare name against the local', () => {
-    run('selfarr03', 'Self Array Shadowing', [
+    run('Self Array Shadowing', [
       { name: 'Holder', source: HOLDER },
       { name: 'Main', source: MAIN },
     ]);

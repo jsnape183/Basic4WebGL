@@ -1,52 +1,18 @@
 /// <reference types="cypress" />
 
-interface FileSpec {
-  name: string;
-  source: string;
-}
+import { seedProject } from '../support/seedProject';
 
-function buildPersistedState(projectId: string, projectName: string, files: FileSpec[]): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({ byId: {}, assetOrder: {} }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
+// These tests deliberately reuse a fixed project id per describe block: `save.*`
+// / `file.*` runtime storage is keyed by project id in localStorage (not the
+// redux-persist store), so reusing the id is how a later run — or a reload —
+// sees data an earlier run wrote. `seedProject` with an explicit `id` replaces
+// the project's files without touching that runtime storage.
 function visitAndRun(projectId: string, projectName: string, source: string) {
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', buildPersistedState(projectId, projectName, [
-        { name: 'Main', source },
-      ]));
-    },
+  seedProject({ id: projectId, name: projectName, files: [{ name: 'Main', source }] }).then(() => {
+    cy.visit(`/projects/${projectId}/edit`);
+    cy.get('[aria-label="Run project"]', { timeout: 15000 }).click();
+    cy.wait(1500);
   });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(1500);
 }
 
 const VISIT_COUNTER_SOURCE = `

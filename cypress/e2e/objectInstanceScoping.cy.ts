@@ -21,84 +21,20 @@
 // depends on texture dimensions or load timing.
 // ---------------------------------------------------------------------------
 
-const PIXEL_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+import { seedAndRun } from '../support/seedProject';
 
 interface FileSpec {
   name: string;
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  assetNames: string[] = []
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const assetsById: Record<string, object> = {};
-  const assetOrder: string[] = [];
-  assetNames.forEach((name) => {
-    const id = `asset-${name.replace('.', '-')}`;
-    assetsById[id] = {
-      id,
-      name,
-      content: PIXEL_PNG,
-      projectId,
-      folderId: null,
-      fullName: name,
-    };
-    assetOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
 function run(
-  projectId: string,
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 3000
 ) {
-  const persistedState = buildPersistedState(projectId, projectName, files, assetNames);
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
+  seedAndRun({ name: projectName, files, assets: assetNames }, waitMs);
 }
 
 // A plain user-defined class: no engine/asset dependency, so every value the
@@ -153,7 +89,7 @@ endfunction
 `.trim();
 
   it('reads method return values from every declaration form without throwing', () => {
-    run('objscope01', 'Object Scoping', [
+    run('Object Scoping', [
       { name: 'Counter', source: COUNTER },
       { name: 'Main', source: MAIN },
     ]);
@@ -195,7 +131,7 @@ endfunction
 `.trim();
 
   it('keeps two same-typed locals in one function independent', () => {
-    run('objscope02', 'Object Scoping Two', [
+    run('Object Scoping Two', [
       { name: 'Counter', source: COUNTER },
       { name: 'Main', source: MAIN },
     ]);
@@ -229,7 +165,7 @@ endfunction
 `.trim();
 
   it('resolves a shared local name per enclosing function', () => {
-    run('objscope03', 'Object Scoping Names', [
+    run('Object Scoping Names', [
       { name: 'Counter', source: COUNTER },
       { name: 'Main', source: MAIN },
     ]);
@@ -256,7 +192,6 @@ endfunction
 
   it('reads a sprite method return value from a function-scoped local', () => {
     run(
-      'objscope04',
       'Object Scoping Sprite',
       [{ name: 'Main', source: MAIN }],
       ['ship.png']
