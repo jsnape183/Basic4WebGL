@@ -379,6 +379,13 @@ class Symbols {
     return result ?? new Array<symbol>();
   }
 
+  /** Every symbol of the given kind, across all scopes. Used by the
+   *  constant-emission pass, which needs to group all Constant symbols by
+   *  module regardless of the current scope. */
+  getAllOfType(type: string): Array<Symbol> {
+    return this.table.filter((s) => s.type === type);
+  }
+
   /**
    * Serializable snapshot of the entire flat symbol table, for editor-side
    * tooling (autocomplete/hover/signature help) to resolve user-defined
