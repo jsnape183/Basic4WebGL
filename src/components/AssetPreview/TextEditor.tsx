@@ -1,60 +1,47 @@
 // src/components/AssetPreview/TextEditor.tsx
-import React, { useState, useMemo, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { IAsset, updateAsset } from '../../features/assets/assetsSlice';
-import { AppDispatch } from '../../store';
+import React, { useState, useEffect } from 'react';
+import { IAsset } from '../../features/assets/assetsSlice';
+import { useAssetText } from '../../hooks/useAssetText';
+import { putAssetBlob } from '../../lib/storage/assetBlobStore';
 
 type Props = {
   asset: IAsset;
   onDirtyChange?: (assetId: string, dirty: boolean) => void;
 };
 
-// TODO(Task 9): replaces the old data-URL MIME sniff; used when writing blobs back.
+// Used when writing blobs back: .json / .stm are treated as JSON, everything
+// else as plain text.
 function mimeFromName(name: string): string {
   if (name.endsWith('.json')) return 'application/json';
   if (name.endsWith('.stm')) return 'application/json';
   return 'text/plain';
 }
 
-function decodeContent(content: string): string {
-  const comma = content.indexOf(',');
-  if (comma === -1) return '';
-  try {
-    return decodeURIComponent(escape(atob(content.slice(comma + 1))));
-  } catch (e) {
-    console.error('TextEditor: failed to decode asset content', e);
-    return '';
-  }
-}
-
 const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  // TODO(Task 9): decode real blob bytes instead of the empty shim
-  const [draftText, setDraftText] = useState(() => decodeContent(''));
+  const { text: storedText, loading } = useAssetText(asset.id);
+  const [draftText, setDraftText] = useState('');
+  // Tracks the last-saved text so the dirty flag clears after Save without a
+  // remount — the blob store lives outside Redux, so useAssetText will not
+  // re-fetch on its own.
+  const [savedText, setSavedText] = useState<string | null>(null);
 
-  // C1: memoize decoded content so it is not recomputed on every render
-  // TODO(Task 9): decode real blob bytes instead of the empty shim
-  const storedText = useMemo(() => decodeContent(''), [asset.id]);
-
-  // I1: reset draft when the asset switches
   useEffect(() => {
-    // TODO(Task 9): decode real blob bytes instead of the empty shim
-    setDraftText(decodeContent(''));
-  }, [asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!loading) setDraftText(storedText ?? '');
+    setSavedText(null);
+  }, [asset.id, loading, storedText]);
 
-  // I2: explicit dirty flag
-  const isDirty = draftText !== storedText;
+  const baseline = savedText ?? storedText ?? '';
+  const isDirty = !loading && draftText !== baseline;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setDraftText(newText);
-    onDirtyChange?.(asset.id, newText !== storedText);
+    onDirtyChange?.(asset.id, newText !== baseline);
   };
 
-  const handleSave = () => {
-    // TODO(Task 9): putAssetBlob(asset.id, new Blob([draftText], { type: mimeFromName(asset.name) }))
-    void mimeFromName(asset.name);
-    dispatch(updateAsset({ ...asset }));
+  const handleSave = async () => {
+    await putAssetBlob(asset.id, new Blob([draftText], { type: mimeFromName(asset.name) }));
+    setSavedText(draftText);
     onDirtyChange?.(asset.id, false);
   };
 
@@ -64,6 +51,7 @@ const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         aria-label="Asset text content"
         value={draftText}
         onChange={handleChange}
+        disabled={loading}
         className="flex-1 resize-none bg-ds-bg text-ds-text border border-ds-border rounded p-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ds-accent"
       />
       <div className="flex justify-end">

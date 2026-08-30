@@ -1,17 +1,19 @@
 // @vitest-environment jsdom
 // tests/ui/components/AssetPreview/TextEditor.test.tsx
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, test, it, expect, vi } from 'vitest';
+import { describe, test, it, expect, vi, beforeEach } from 'vitest';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import assetsReducer, { IAsset } from '../../../../src/features/assets/assetsSlice';
 import TextEditor from '../../../../src/components/AssetPreview/TextEditor';
+import {
+  putAssetBlob,
+  getAssetBlob,
+  _clearAllAssetBlobsForTests,
+} from '../../../../src/lib/storage/assetBlobStore';
 
-// Build an IAsset from plain-text content (encodes it to base64 data URI)
-// Task 6: asset binaries no longer live in Redux state. `text` is retained in the
-// signature (ignored for now) so Task 9 can restore blob-backed assertions.
-const makeAsset = (id = 'a1', name = 'notes.txt', _text = 'hello'): IAsset => ({
+const makeAsset = (id = 'a1', name = 'notes.txt'): IAsset => ({
   id,
   name,
   projectId: 'p1',
@@ -31,16 +33,21 @@ function renderEditor(asset = makeAsset(), onDirtyChange = vi.fn()) {
   return { store };
 }
 
+beforeEach(async () => {
+  await _clearAllAssetBlobsForTests();
+  await putAssetBlob('a1', new Blob(['hello'], { type: 'text/plain' }));
+});
+
 describe('TextEditor', () => {
-  test('renders decoded asset content in textarea on mount', () => {
+  test('renders the blob text in the textarea once it loads', async () => {
     renderEditor();
-    // updated in Task 9: content is read from the blob store; shim decodes '' -> ''.
-    expect(screen.getByRole('textbox')).toHaveValue('');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
   });
 
-  test('does not call onDirtyChange on initial render', () => {
+  test('does not call onDirtyChange on initial render', async () => {
     const onDirtyChange = vi.fn();
     renderEditor(makeAsset(), onDirtyChange);
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
     expect(onDirtyChange).not.toHaveBeenCalled();
   });
 
@@ -48,53 +55,51 @@ describe('TextEditor', () => {
     const user = userEvent.setup();
     const onDirtyChange = vi.fn();
     renderEditor(makeAsset(), onDirtyChange);
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
     await user.type(screen.getByRole('textbox'), ' world');
     expect(onDirtyChange).toHaveBeenCalledWith('a1', true);
   });
 
-  test('clicking Save dispatches updateAsset with re-encoded content', async () => {
+  test('clicking Save writes the edited text to the blob store', async () => {
     const user = userEvent.setup();
-    const { store } = renderEditor();
+    renderEditor();
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), 'world');
     await user.click(screen.getByRole('button', { name: /save/i }));
-    const state = store.getState() as ReturnType<typeof store.getState>;
-    // updated in Task 9: Save will write draft bytes via putAssetBlob. For now it
-    // only dispatches metadata, so the asset survives with no content field.
-    expect(state.assets.byId['a1']).toBeDefined();
-    expect('content' in state.assets.byId['a1']!).toBe(false);
+    await waitFor(async () => {
+      expect(await (await getAssetBlob('a1'))!.text()).toBe('world');
+    });
   });
 
-  // M3: use toHaveBeenLastCalledWith
   test('calls onDirtyChange(id, false) after saving', async () => {
     const user = userEvent.setup();
     const onDirtyChange = vi.fn();
     renderEditor(makeAsset(), onDirtyChange);
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
     await user.type(screen.getByRole('textbox'), ' world');
     onDirtyChange.mockClear();
     await user.click(screen.getByRole('button', { name: /save/i }));
     expect(onDirtyChange).toHaveBeenLastCalledWith('a1', false);
   });
 
-  // I3: asset-switch resets draft
-  // Skipped in Task 6: the assertion is entirely about decoded content, which no
-  // longer lives in Redux. Task 9 restores it against the blob store.
-  it.skip('resets draft text when asset prop changes', async () => {
-    const asset1 = makeAsset('a1', 'first.txt', 'First content');
-    const asset2 = makeAsset('a2', 'second.txt', 'Second content');
+  it('resets draft text when asset prop changes', async () => {
+    await putAssetBlob('a2', new Blob(['Second content'], { type: 'text/plain' }));
+    const asset1 = makeAsset('a1', 'first.txt');
+    const asset2 = makeAsset('a2', 'second.txt');
     const store = makeStore();
     const { rerender } = render(
       <Provider store={store}>
         <TextEditor asset={asset1} />
       </Provider>
     );
-    expect(screen.getByRole('textbox')).toHaveValue('First content');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('hello'));
 
     rerender(
       <Provider store={store}>
         <TextEditor asset={asset2} />
       </Provider>
     );
-    expect(screen.getByRole('textbox')).toHaveValue('Second content');
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue('Second content'));
   });
 });
