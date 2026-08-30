@@ -96,6 +96,12 @@ dim footstepSound as Audio
 dim footstepTimer
 dim FOOTSTEP_INTERVAL
 
+' Gunshot -- a plain play() one-shot, same reasoning as footstepSound:
+' each shot is independent, and flashTimer (see handleInput()) already
+' rate-limits firing to once every 4 frames, so there's no realistic way
+' for this to overlap itself badly enough to matter.
+dim gunshotSound as Audio
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -331,6 +337,7 @@ function handleInput()
             self.flashTimer = 4
             self.muzzleFlashEmitter.transform.setPosition(self.weaponSprite.transform.x() + self.muzzleOffsetX, self.weaponSprite.transform.y() + self.muzzleOffsetY)
             self.muzzleFlashEmitter.burst(18)
+            self.gunshotSound.play()
             self.checkHit()
         endif
     endif
@@ -915,6 +922,7 @@ function setupHud()
     ' every onenter()" convention rather than carving out a special case.
     self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
     self.footstepSound = new Audio("footstep_concrete_002.ogg")
+    self.gunshotSound = new Audio("impactPlate_heavy_004.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
