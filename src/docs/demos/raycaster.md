@@ -97,13 +97,17 @@ Unlike `zombieGroan`, this uses `play()` rather than the same isPlaying()-gated 
 
 ### Gunshot
 
-`gunshotSound.play()` fires alongside `muzzleFlashEmitter.burst(18)` in `handleInput()`'s existing spacebar branch — same `flashTimer = 0` rate-limit gate as the muzzle flash and `checkHit()` already share, so the shot sound, the flash, and hit detection all stay in lockstep with the same one-shot-per-4-frames fire rate rather than needing a separate cooldown of its own. Confirmed live: holding spacebar for 60 frames logged exactly 15 shots — `60 / 4 = 15`, matching `flashTimer`'s existing rate limit precisely.
+`gunshotSound.play()` fires alongside `muzzleFlashEmitter.burst(18)` in `handleInput()`'s existing spacebar branch — same `flashTimer = 0` rate-limit gate as the muzzle flash and `checkHit()` already share, so the shot sound, the flash, and hit detection all stay in lockstep with the same fire rate rather than needing a separate cooldown of its own. That rate is now `FIRE_COOLDOWN_FRAMES` (20 frames, 3 shots/sec) rather than a bare `4` — the original 4 frames (15 shots/sec) played live as an automatic weapon despite `gun.png` being a handgun; 20 reads as a deliberate semi-auto pace instead. Confirmed live: holding spacebar for 100 frames logged exactly 5 shots — `100 / 20 = 5`, matching the new rate precisely.
+
+### Zombie death cry
+
+`zombieDeathSound.play()` fires in `checkHit()`'s existing `e.isDead()` branch, right alongside `enemyDeathEmitter.burst(24)` — the same place that already knows a kill (not just a hit) just landed. Up to 20 enemies could in principle die in close succession, but unlike `zombieGroan`'s single shared, distance-gated channel, this needs no cooldown or overlap handling of its own: `play()` already supports overlapping instances of the same sound natively (see "Footsteps" above), so simultaneous deaths just layer rather than needing to queue or cut each other off. Confirmed live: pre-damaged an enemy to 1 HP via a temporary probe call to `Enemy.hit(2)` (a real method already on the class, not a new one added for the test) so a single following shot would land the kill, then fired once and confirmed `checkHit()`'s branch actually ran by print-logging inside it — the death sprite, the burst, and the log all fired together.
 
 ---
 
 ## Required assets
 
-Upload ten PNG files and three sound files to your project's asset library before running:
+Upload ten PNG files and four sound files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -120,8 +124,9 @@ Upload ten PNG files and three sound files to your project's asset library befor
 | `dragon-studio-zombie-sound-357975.mp3` | ~8s zombie groan, played while the nearest living enemy is within range (see "Zombie groan" below) |
 | `footstep_concrete_002.ogg` | ~0.1s footstep, replayed on a cadence while the player is walking (see "Footsteps" below) |
 | `impactPlate_heavy_004.ogg` | Gunshot one-shot, played alongside the muzzle flash every time the player fires (see "Gunshot" below) |
+| `freesound_community-zombie-6851.mp3` | Death cry one-shot, played once whenever an enemy is killed (see "Zombie death cry" below) |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan, the footstep, and the gunshot are this demo's only sounds.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan, the footstep, the gunshot, and the death cry are this demo's only sounds.
 
 ---
 
@@ -533,6 +538,10 @@ dim ENIW
 ' Weapon
 dim weaponSprite as Sprite
 dim flashTimer
+' Frames between shots -- was a bare 4 (15 shots/sec, played live as an
+' automatic weapon despite being a handgun); 20 (3 shots/sec) reads as a
+' deliberate semi-auto pistol pace instead.
+dim FIRE_COOLDOWN_FRAMES
 
 ' weaponSprite is a plain Sprite. `sprite` is now centre-anchored (matching
 ' animatedsprite), so weaponSprite.transform.x()/y() reports the CENTRE of
@@ -614,9 +623,19 @@ dim FOOTSTEP_INTERVAL
 
 ' Gunshot -- a plain play() one-shot, same reasoning as footstepSound:
 ' each shot is independent, and flashTimer (see handleInput()) already
-' rate-limits firing to once every 4 frames, so there's no realistic way
-' for this to overlap itself badly enough to matter.
+' rate-limits firing to once every FIRE_COOLDOWN_FRAMES frames, so
+' there's no realistic way for this to overlap itself badly enough to
+' matter.
 dim gunshotSound as Audio
+
+' Zombie death cry -- a plain play() one-shot in checkHit()'s existing
+' e.isDead() branch, the same place enemyDeathEmitter already bursts.
+' Up to 20 enemies could die in close succession in principle, but
+' play() already supports overlapping instances of the same sound (see
+' footstepSound's own comment), so simultaneous deaths just layer
+' naturally rather than needing a shared-channel/cooldown scheme like
+' zombieGroan's.
+dim zombieDeathSound as Audio
 
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
@@ -661,7 +680,8 @@ Constructor(gameData as GameData)
   self.SCY = 300
   self.TEXW = 64
   self.ENIW = 64
-  self.flashTimer = 4
+  self.FIRE_COOLDOWN_FRAMES = 20
+  self.flashTimer = self.FIRE_COOLDOWN_FRAMES
   self.muzzleOffsetX = -6
   self.muzzleOffsetY = -92
   self.dirX = 1.0
@@ -748,6 +768,7 @@ function checkHit()
       if e.isDead() then
         self.enemyDeathEmitter.transform.setPosition(hitX, self.SCY)
         self.enemyDeathEmitter.burst(24)
+        self.zombieDeathSound.play()
       else
         self.enemyHitEmitter.transform.setPosition(hitX, self.SCY)
         self.enemyHitEmitter.burst(8)
@@ -850,7 +871,7 @@ function handleInput()
 
     if input.getKeyDown(32) then
         if self.flashTimer = 0 then
-            self.flashTimer = 4
+            self.flashTimer = self.FIRE_COOLDOWN_FRAMES
             self.muzzleFlashEmitter.transform.setPosition(self.weaponSprite.transform.x() + self.muzzleOffsetX, self.weaponSprite.transform.y() + self.muzzleOffsetY)
             self.muzzleFlashEmitter.burst(18)
             self.gunshotSound.play()
@@ -1349,7 +1370,7 @@ function onenter()
     ' setupHud() above (this call or an earlier one) always runs before this
     ' point, so self.damageFlash already exists here on every onenter().
     self.damageFlash.setAlpha(0)
-    self.flashTimer = 4
+    self.flashTimer = self.FIRE_COOLDOWN_FRAMES
     self.dirX = 1.0
     self.dirY = 0.0
     self.planeX = 0.0
@@ -1439,6 +1460,7 @@ function setupHud()
     self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
     self.footstepSound = new Audio("footstep_concrete_002.ogg")
     self.gunshotSound = new Audio("impactPlate_heavy_004.ogg")
+    self.zombieDeathSound = new Audio("freesound_community-zombie-6851.mp3")
 endfunction
 
 function mazeSizeForLevel(lvl)
