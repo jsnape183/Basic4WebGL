@@ -31,9 +31,9 @@ describe('const — block form', () => {
     ].join('\n');
     const result = transpile(src);
     expect(result.diagnostics).toHaveLength(0);
-    // TODO(Task 7): expect(result.code).toContain(
-    //   'const _const_main = Object.freeze({ max_health: 100, game_title: "Space Blaster", debug_mode: false, gravity: -9 });'
-    // );
+    expect(result.code).toContain(
+      'const _const_main = Object.freeze({ max_health: 100, game_title: "Space Blaster", debug_mode: false, gravity: -9 });'
+    );
   });
 
   test('single-constant block compiles', () => {
@@ -48,7 +48,8 @@ describe('const — block form', () => {
     ].join('\n');
     const result = transpile(src);
     expect(result.diagnostics).toHaveLength(0);
-    // TODO(Task 7/8): expect(result.code).toContain('_const_main.max_health');
+    // TODO(Task 8): bare-ref resolution (`x = MAX_HEALTH` -> `_const_main.max_health`)
+    // needs VariableFactorRule; assertion re-added there.
   });
 });
 
@@ -63,7 +64,7 @@ describe('const — single-line form', () => {
     ].join('\n');
     const result = transpile(src);
     expect(result.diagnostics).toHaveLength(0);
-    // TODO(Task 7): expect(result.code).toContain('const _const_main = Object.freeze({ max_health: 100 });');
+    expect(result.code).toContain('const _const_main = Object.freeze({ max_health: 100 });');
   });
 });
 
@@ -83,8 +84,8 @@ describe('const — multiple blocks in one file', () => {
     ].join('\n');
     const result = transpile(src);
     expect(result.diagnostics).toHaveLength(0);
-    // TODO(Task 7): expect(result.code).toContain('const _const_main = Object.freeze({ a: 1, b: 2 });');
-    // TODO(Task 7): expect(result.code.match(/_const_main =/g) ?? []).toHaveLength(1);
+    expect(result.code).toContain('const _const_main = Object.freeze({ a: 1, b: 2 });');
+    expect(result.code.match(/_const_main =/g) ?? []).toHaveLength(1);
   });
 });
 

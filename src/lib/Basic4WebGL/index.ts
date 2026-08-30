@@ -29,8 +29,10 @@ const transpile = (project: CompilerProject): CompileResult => {
       parseResult.symbolTable,
       new SymbolScope('', '')
     );
+    const constants = transpilerRules.constantRules(parseResult.symbolTable);
     const code =
       globals +
+      constants +
       transpilerInstance.transpile(parseResult, parseResult.symbolTable, transpilerRules);
     return { code, diagnostics: [], symbols: parseResult.symbolTable.getSnapshot() };
   } catch (e: unknown) {
