@@ -87,3 +87,12 @@ describe('const — multiple blocks in one file', () => {
     // TODO(Task 7): expect(result.code.match(/_const_main =/g) ?? []).toHaveLength(1);
   });
 });
+
+describe('const — malformed block', () => {
+  test('block with no endconst produces a diagnostic (does not hang)', () => {
+    const result = compiler.transpile({
+      files: [{ name: 'Main.bas', source: 'const\n  A = 1\n' }],
+    });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+  });
+});

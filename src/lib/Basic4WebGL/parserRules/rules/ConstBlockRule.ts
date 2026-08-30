@@ -40,11 +40,10 @@ function readLiteral(
     matchAndMove(tokens.BoolFalse, tokenStream);
     return { value: false, valueKind: 'boolean' };
   }
-  const err = new CompilationError(
-    'A const value must be a plain number, string, true, or false — expressions and other names are not allowed.'
+  throw new CompilationError(
+    'A const value must be a plain number, string, true, or false — expressions and other names are not allowed.',
+    loc
   );
-  (err as any).loc = loc;
-  throw err;
 }
 
 @RegisterParserRule('Const')
@@ -53,11 +52,10 @@ class ConstBlockRule implements IParserRule {
     const loc = tokenStream.current().loc();
 
     if (symbolTable.getScopeType() !== scopeTypes.Globals) {
-      const err = new CompilationError(
-        'const declarations are only allowed at the top level of a file, not inside a function, class, or block.'
+      throw new CompilationError(
+        'const declarations are only allowed at the top level of a file, not inside a function, class, or block.',
+        loc
       );
-      (err as any).loc = loc;
-      throw err;
     }
 
     matchAndMove(tokens.Const, tokenStream);
@@ -72,11 +70,10 @@ class ConstBlockRule implements IParserRule {
         declaredHere.has(name) ||
         symbolTable.findAnyInScope(name, moduleName) !== undefined
       ) {
-        const err = new CompilationError(
-          `'${name}' is already declared — a constant cannot be redeclared.`
+        throw new CompilationError(
+          `'${name}' is already declared — a constant cannot be redeclared.`,
+          declLoc
         );
-        (err as any).loc = declLoc;
-        throw err;
       }
       matchAndMove(tokens.Equals, tokenStream);
       const { value, valueKind } = readLiteral(tokenStream, declLoc);
@@ -102,7 +99,10 @@ class ConstBlockRule implements IParserRule {
 
     // Block form.
     matchAndMove(newLines, tokenStream);
-    while (!check(tokens.EndConst, tokenStream.current())) {
+    while (
+      !check(tokens.EndConst, tokenStream.current()) &&
+      !check(tokens.EndOfFile, tokenStream.current())
+    ) {
       if (check(newLines, tokenStream.current())) {
         matchAndMove(newLines, tokenStream);
         continue;
