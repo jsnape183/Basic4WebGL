@@ -2,9 +2,11 @@
 
 **Date:** 2026-08-30
 **Status:** Design approved, not yet implemented
-**Scope:** The constant-declaration mechanism only. The controller/gamepad
-input module that motivates it is a **separate spec** — this spec adds one
-small illustrative constant set as a worked example, not the full `PAD_*` API.
+**Scope:** The constant-declaration mechanism, plus one worked-example
+consumer: a new `keyboard` def module that is purely a block of key-code
+constants. The `controller` constants module and the `input` gamepad /
+action-map API that also motivate the mechanism are a **separate spec** — the
+full `PAD_*` / axis API is not built here.
 
 ---
 
@@ -233,8 +235,8 @@ _const_<module>.<NAME>
 ```
 
 Both reference forms compile to this:
-- bare `PAD_A` inside `input.bas` → `_const_input.PAD_A`
-- `input.PAD_A` from any other file → `_const_input.PAD_A`
+- bare `SPACE` inside `keyboard.bas` → `_const_keyboard.SPACE`
+- `keyboard.SPACE` from any other file → `_const_keyboard.SPACE`
 
 `ConstBlockNode` itself emits **nothing** at its source position — all output
 is the hoisted holder in §6.1.
@@ -270,17 +272,17 @@ the six steps are N/A and that is called out rather than skipped silently:
 
 | Step | Applies? | Notes |
 |------|----------|-------|
-| 1. `.bas` def file | Partial | Library constant sets are authored directly in **hand-written** `defs/*.bas` files as `const … endconst` blocks. No new def file for the mechanism itself. |
-| 2. Engine JS file | **No** | Constants are compile-time only. They never call `_sb.*` and never touch the runtime engine. |
-| 3. Bootstrapper wiring | **No** | Nothing to register. |
-| 4. Tests | Yes | See §9. |
-| 5. Docs | Yes | New **Language Guide** topic `Constants` (`src/docs/language-guide/constants.md` + `src/docs/manifest.ts` entry, placed after `Operators`). Not an API Reference page — the mechanism is language-level. |
-| 6. Roadmap | Yes | Add a tracked item to `docs/language/library-roadmap.md`: constant mechanism shipped; the controller/gamepad module (first real consumer) is a separate spec still open. Update the `src/docs/roadmap.md` public summary to match. |
+| 1. `.bas` def file | Yes | Two: no new def file for the *mechanism*, but the worked example is a new hand-written def `src/lib/Basic4WebGL/defs/keyboard.bas` (§10) — a `const … endconst` block, no functions. Library constant sets in general are authored directly in hand-written `defs/*.bas`. |
+| 2. Engine JS file | **No** | Constants are compile-time only. They never call `_sb.*` and never touch the runtime engine. `keyboard` needs no engine file. |
+| 3. Bootstrapper wiring | Partial | No engine module to register. But the new `keyboard` def must be registered as a package: `import` + entry in `src/constants/packageModules.ts`, and added to the `softcore` package's `moduleNames` (see `src/constants/firstPartyPackages.ts` / `packagesSlice`). |
+| 4. Tests | Yes | See §9 — plus a check that `packageModules['keyboard']` resolves and a project compiling `keyboard.SPACE` produces zero diagnostics. |
+| 5. Docs | Yes | (a) New **Language Guide** topic `Constants` (`src/docs/language-guide/constants.md` + `src/docs/manifest.ts` entry, after `Operators`) for the mechanism. (b) New **API Reference** page `src/docs/api-reference/keyboard.md` (+ manifest group entry) for the `keyboard` module — a short "Key constants" reference with the full name→value table and one example. |
+| 6. Roadmap | Yes | Add a tracked item to `docs/language/library-roadmap.md`: constant mechanism + `keyboard` module shipped; the `controller` constants module and `input` gamepad/action-map API (next consumers) are a separate spec still open. Update the `src/docs/roadmap.md` public summary to match. |
 
 ### Descriptor-generated `.bas` files
 
-`input.bas` — where the worked example lands (§10) — is **hand-written**, not
-in `src/lib/Basic4WebGL/library/registry.ts`, so it is edited directly.
+`keyboard.bas` (§10) is **hand-written**, not in
+`src/lib/Basic4WebGL/library/registry.ts`, so it is authored directly.
 
 If a *future* descriptor-generated module (`sprite`, `stage`, `gfx`, …) ever
 needs a constant set, its `.descriptor.ts` and the generator would need a
@@ -313,47 +315,109 @@ actually needs constants.
 test file): a `Constant` symbol appears in bare-word completion in its file,
 in dot-completion after `module.`, and hover returns name + value.
 
+`keyboard` module: a test that `packageModules['keyboard']` resolves to real
+source and that a project compiling `input.getKeyDown(keyboard.SPACE)` through
+the resolved `softcore` lib produces zero diagnostics (mirrors the existing
+`dict` registration test noted in `docs/roadmap.md`).
+
 No Cypress e2e change is required for the mechanism itself. When the
-controller module ships (separate spec) it brings its own `demos.cy.ts` /
+`controller` module ships (separate spec) it brings its own `demos.cy.ts` /
 tutorial coverage.
 
 ---
 
-## 10. Worked example in this spec's scope
+## 10. Worked example in this spec's scope — the `keyboard` module
 
-Add a **small, real** constant set to the hand-written `input.bas` — three
-keyboard key codes, genuinely useful today and in the same module the future
-gamepad constants will join:
+The worked example is a **new dedicated def module**,
+`src/lib/Basic4WebGL/defs/keyboard.bas`, that is *purely* a `const … endconst`
+block of keyboard key codes — no functions in the file. It is a real shipped
+module, useful immediately (`input.getKeyDown(keyboard.SPACE)`), and it is the
+first real consumer of the constant mechanism. A sibling `controller`
+constants module and the `input` action-map / gamepad API (separate spec)
+will reference `keyboard.*` and `controller.*` the same way, e.g.
+`input.bind("jump", "key", keyboard.SPACE)`.
+
+Building it exercises the entire path end to end: a new hand-written def file,
+module registration in `src/constants/packageModules.ts` (and the `softcore`
+package's `moduleNames`), cross-file `keyboard.SPACE` name resolution through
+the extended `ModuleRule`, the frozen-holder emission
+(`const _const_keyboard = Object.freeze({ … })`), editor completion/hover on a
+constants-only module, and its own docs page.
+
+### Values
+
+Engine key state is keyed by the DOM legacy **`keyCode`** number
+(`src/components/Runner/engine/input.js`: `getKeyDown(keyCode)` indexes
+`this._keys[keyCode]`), so every constant is a legacy `keyCode` integer.
+Digit names are prefixed `NUM_` because an identifier cannot start with a
+digit; letters `A`–`Z` are bare.
+
+| Name(s) | Value(s) | Notes |
+|---------|----------|-------|
+| `LEFT` `UP` `RIGHT` `DOWN` | 37 38 39 40 | arrow keys |
+| `SPACE` | 32 | |
+| `ENTER` | 13 | |
+| `ESCAPE` | 27 | |
+| `TAB` | 9 | |
+| `BACKSPACE` | 8 | |
+| `SHIFT` | 16 | |
+| `CTRL` | 17 | |
+| `ALT` | 18 | |
+| `A`–`Z` | 65–90 | `keyboard.A` … `keyboard.Z` |
+| `NUM_0`–`NUM_9` | 48–57 | top-row digits; `keyboard.NUM_0` … `keyboard.NUM_9` |
+
+Total: 4 + 6 + 26 + 10 = **46 constants**, one `const … endconst` block.
+
+Full `.bas` file sketch:
 
 ```basic
+' keyboard — named key codes for input.getKeyDown / keyPressed / keyReleased
 const
-    KEY_SPACE = 32
-    KEY_LEFT = 37
-    KEY_RIGHT = 39
+    LEFT = 37
+    UP = 38
+    RIGHT = 39
+    DOWN = 40
+    SPACE = 32
+    ENTER = 13
+    ESCAPE = 27
+    TAB = 9
+    BACKSPACE = 8
+    SHIFT = 16
+    CTRL = 17
+    ALT = 18
+    A = 65
+    B = 66
+    ' … C–Y …
+    Z = 90
+    NUM_0 = 48
+    NUM_1 = 49
+    ' … NUM_2–NUM_8 …
+    NUM_9 = 57
 endconst
 ```
 
-Used as `input.KEY_SPACE` with `input.getKeyDown(input.KEY_SPACE)`.
+### Docs for `keyboard`
 
-This exercises the entire path for real: a hand-written def change, the
-frozen-holder emission, namespaced resolution, a docs line in the new
-Constants topic, and the roadmap update. The full `PAD_*` / axis set is
-**explicitly not authored here** — it belongs to the controller module spec.
+`keyboard` is a **hand-written (non-descriptor)** def module — not in
+`src/lib/Basic4WebGL/library/registry.ts` — so the `.bas` file is authored and
+edited directly. A module of only constants still needs doc coverage: it gets
+its own **API Reference page** (`src/docs/api-reference/keyboard.md` + a
+`manifest.ts` group entry), a short "Key constants" reference — a one-line
+intro, the full name→value table above, and one usage example
+(`if input.getKeyDown(keyboard.SPACE) then …`). This is in addition to the
+language-level Constants topic in the Language Guide (§8 step 5).
 
-> Open confirmation needed from the coordinator: adding `KEY_*` to `input.bas`
-> is a (minor) shipped-API addition and needs a one-line entry in the
-> `input` module's docs. If the coordinator prefers zero shipped-API change
-> in this spec, the alternative is to keep the worked example purely in
-> tests and the Constants doc topic (using a fictional `input.KEY_SPACE`
-> illustratively) and touch no def file. Recommendation: ship the real
-> `KEY_*` block — it is small, correct, and immediately useful.
+The full `PAD_*` / axis set is **explicitly not authored here** — it belongs to
+the separate controller spec (§11).
 
 ---
 
 ## 11. Out of scope
 
-- The controller/gamepad input module and its constant set (`PAD_*`,
-  `PAD_LEFT_X`, …) — separate spec.
+- The `controller` constants module (`PAD_*`, `PAD_LEFT_X`, …) and the
+  `input` gamepad / action-map API (`input.bind(...)`, etc.) — the next
+  consumers of this mechanism, specified separately. They will reference
+  `keyboard.*` and `controller.*` constants exactly as designed here.
 - Migrating `math.pi()` / `math.euler()` or any existing accessor to `const`.
 - Compile-time constant expressions (`const TAU = PI * 2`).
 - Constants inside class or function scope (local `const`).
@@ -379,5 +443,6 @@ Constants topic, and the roadmap update. The full `PAD_*` / axis set is
 | Shadowing | A local `dim` may not shadow a constant — compile error |
 | Override | No syntax path for user code to override a library constant |
 | Editor | Completion (bare + dot), hover (name + value), diagnostics via standard path |
-| Engine / bootstrapper | No change — constants are compile-time only |
-| Worked example | 3-value `KEY_*` block added to `input.bas` (pending coordinator confirmation) |
+| Engine / bootstrapper | No engine change (compile-time only); the new `keyboard` def is registered as a package in `constants/packageModules.ts` + `softcore` moduleNames |
+| Worked example | New hand-written `defs/keyboard.bas` — a 46-constant `const … endconst` block (arrows, space, enter, escape, tab, backspace, shift, ctrl, alt, A–Z, NUM_0–NUM_9), legacy `keyCode` values, its own API Reference page |
+| Next consumers | `controller` constants module + `input` gamepad/action-map API — separate spec |
