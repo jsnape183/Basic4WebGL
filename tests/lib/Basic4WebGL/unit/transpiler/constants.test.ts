@@ -104,6 +104,53 @@ describe('const — single-line form', () => {
   });
 });
 
+describe('const — colon separator', () => {
+  test('colon-separated entries in a block register both constants', () => {
+    const src = [
+      'const',
+      '  A = 1 : B = 2',
+      'endconst',
+      'function test()',
+      '  dim x',
+      '  x = A + B',
+      'endfunction',
+    ].join('\n');
+    const result = transpile(src);
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('const _const_main = Object.freeze({ a: 1, b: 2 });');
+  });
+});
+
+describe('const — strict-typed positions', () => {
+  test('a boolean constant works directly as an if condition', () => {
+    const src = [
+      'const READY = true',
+      'function test()',
+      '  dim x',
+      '  if READY then',
+      '    x = 1',
+      '  endif',
+      'endfunction',
+    ].join('\n');
+    const result = transpile(src);
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_const_main.ready');
+  });
+
+  test('a number constant works in arithmetic', () => {
+    const src = [
+      'const SPEED = 5',
+      'function test()',
+      '  dim x',
+      '  x = SPEED * 2',
+      'endfunction',
+    ].join('\n');
+    const result = transpile(src);
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_const_main.speed*2');
+  });
+});
+
 describe('const — multiple blocks in one file', () => {
   test('two blocks parse with no diagnostics', () => {
     const src = [
@@ -220,6 +267,14 @@ describe('const — assignment and shadowing rules', () => {
 
   test('assigning to a bare constant name is rejected', () => {
     expectError('const MAX = 1\nfunction test()\n  MAX = 2\nendfunction\n', 'constant');
+  });
+
+  test('a bare constant used as a statement on its own is rejected', () => {
+    const result = compiler.transpile({
+      files: [{ name: 'Main.bas', source: 'const MAX = 1\nfunction test()\n  MAX\nendfunction\n' }],
+    });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message.toLowerCase()).toContain('statement');
   });
 
   test('dim with a constant name at module level is rejected', () => {

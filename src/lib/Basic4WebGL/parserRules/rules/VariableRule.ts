@@ -37,7 +37,13 @@ class VariableRule implements IParserRule {
     }
 
     if (symbolTable.check(name, symbolTypes.Constant)) {
-      throw new CompilationError(`'${name}' is a constant and cannot be assigned.`);
+      // Mirror ModuleRule's constant guard: distinguish an attempted assignment
+      // (`MAX = 2`) from a bare constant used as a statement on its own (`MAX`).
+      throw new CompilationError(
+        check(tokens.Equals, tokenStream.current())
+          ? `'${name}' is a constant and cannot be assigned.`
+          : `'${name}' is a constant — it can't be used as a statement on its own.`
+      );
     }
 
     if (symbolTable.check(name, symbolTypes.Object)) {
