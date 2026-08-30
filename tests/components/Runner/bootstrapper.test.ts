@@ -180,3 +180,17 @@ describe('checked dict/array runtime accessors', () => {
     );
   });
 });
+
+describe('bootstrapper — gamepad connectivity listeners', () => {
+  const html = readFileSync('src/components/Runner/bootstrapper.html', 'utf-8');
+  const template = html;
+
+  test('registers a gamepadconnected listener that sets _padConnected true', () => {
+    expect(template).toContain("addEventListener('gamepadconnected'");
+    expect(template).toMatch(/gamepadconnected[\s\S]{0,120}_sb\._padConnected\s*=\s*true/);
+  });
+  test('registers a gamepaddisconnected listener', () => {
+    expect(template).toContain("addEventListener('gamepaddisconnected'");
+    expect(template).toMatch(/gamepaddisconnected[\s\S]{0,160}navigator\.getGamepads/);
+  });
+});

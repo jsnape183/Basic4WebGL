@@ -197,6 +197,19 @@
             _sb._sbInstances.slice().forEach((inst) => { if (inst.onkeyup) inst.onkeyup(e.keyCode); });
           });
 
+          // Gamepad connectivity. These events are only a hint so that
+          // input.padConnected() can answer before the first _pollGamepads()
+          // runs — the poll itself (top of every fixed step) is authoritative
+          // once the game loop is running and re-derives _padConnected from
+          // navigator.getGamepads().
+          window.addEventListener('gamepadconnected', () => {
+            _sb._padConnected = true;
+          });
+          window.addEventListener('gamepaddisconnected', () => {
+            const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+            _sb._padConnected = Array.prototype.some.call(pads, (p) => p != null);
+          });
+
           // `deltaMS`, not `deltaTime`. PIXI exposes both: `deltaTime` is
           // normalised to a 60fps frame count (~1.0 per frame), `deltaMS` is the
           // same quantity in milliseconds (exactly deltaTime * 1000/60, carrying
