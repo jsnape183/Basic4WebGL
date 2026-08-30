@@ -297,3 +297,75 @@ describe('_sbInput.pressed / released', () => {
     expect(inp.released('jump')).toBe(true);
   });
 });
+
+describe('_sbInput.strength', () => {
+  test('digital key source: 1 when down, 0 when up', () => {
+    const inp = loadInput();
+    inp.bind('fire', 'key', 32);
+    expect(inp.strength('fire')).toBe(0);
+    inp.registerKey(32, true);
+    expect(inp.strength('fire')).toBe(1);
+  });
+  test('button source: the analog button value (e.g. a trigger)', () => {
+    const inp = loadInput();
+    inp.bind('fire', 'button', 7);
+    setPads([makePad({ buttons: (() => { const a: any[] = []; a[7] = { pressed: true, value: 0.3 }; return a; })() })]);
+    inp._pollGamepads();
+    expect(inp.strength('fire')).toBeCloseTo(0.3);
+  });
+  test('axis source: the deadzoned half-strength', () => {
+    const inp = loadInput();
+    inp.bind('move_right', 'axis', 1);
+    setPads([makePad({ axes: [0.575, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.strength('move_right')).toBeCloseTo(0.5, 5);
+  });
+  test('max across sources: key down (1) beats a weak stick push', () => {
+    const inp = loadInput();
+    inp.bind('move_right', 'key', 39);
+    inp.bind('move_right', 'axis', 1);
+    inp.registerKey(39, true);
+    setPads([makePad({ axes: [0.3, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.strength('move_right')).toBe(1);
+  });
+  test('unbound action has strength 0', () => {
+    const inp = loadInput();
+    expect(inp.strength('nope')).toBe(0);
+  });
+});
+
+describe('_sbInput.axis', () => {
+  test('returns strength(pos) - strength(neg)', () => {
+    const inp = loadInput();
+    inp.bind('left', 'axis', 0);
+    inp.bind('right', 'axis', 1);
+    setPads([makePad({ axes: [0.575, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.axis('left', 'right')).toBeCloseTo(0.5, 5);
+  });
+  test('is negative when the neg action wins', () => {
+    const inp = loadInput();
+    inp.bind('left', 'key', 37);
+    inp.bind('right', 'key', 39);
+    inp.registerKey(37, true);
+    expect(inp.axis('left', 'right')).toBe(-1);
+  });
+  test('clamps to [-1, 1]', () => {
+    const inp = loadInput();
+    inp.bind('right', 'key', 39);
+    inp.bind('right', 'button', 0);
+    inp.registerKey(39, true);
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    expect(inp.axis('left', 'right')).toBe(1);
+  });
+  test('rest position is 0', () => {
+    const inp = loadInput();
+    inp.bind('left', 'axis', 0);
+    inp.bind('right', 'axis', 1);
+    setPads([makePad({ axes: [0, 0, 0, 0] })]);
+    inp._pollGamepads();
+    expect(inp.axis('left', 'right')).toBe(0);
+  });
+});

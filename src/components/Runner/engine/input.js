@@ -156,6 +156,31 @@ const _sbInput = {
     return false;
   },
 
+  strength(action) {
+    const list = this._actions[action];
+    if (!list) return 0;
+    let max = 0;
+    for (let i = 0; i < list.length; i++) {
+      const src = list[i];
+      let s = 0;
+      if (src.device === 'key') {
+        s = this._keys[src.code] ? 1 : 0;
+      } else if (src.device === 'button') {
+        const b = this._padButtons[src.code];
+        s = b ? b.value : 0;
+      } else if (src.device === 'axis') {
+        s = this._padAxisHalves[src.code] || 0;
+      }
+      if (s > max) max = s;
+    }
+    return max;
+  },
+
+  axis(negAction, posAction) {
+    const v = this.strength(posAction) - this.strength(negAction);
+    return Math.min(Math.max(v, -1), 1);
+  },
+
   _resetFrameInput() {
     this._justPressed = {};
     this._justReleased = {};
