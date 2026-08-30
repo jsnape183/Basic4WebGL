@@ -35,6 +35,7 @@ export const docsManifest: DocSection[] = [
       { slug: 'variable-scoping',  title: 'Variable Scoping',    file: 'language-guide/variable-scoping.md' },
       { slug: 'functions',         title: 'Functions',           file: 'language-guide/functions.md' },
       { slug: 'lifecycle',         title: 'Lifecycle Functions', file: 'language-guide/lifecycle.md' },
+      { slug: 'input',             title: 'Input',               file: 'language-guide/input.md' },
       { slug: 'constructors',      title: 'Constructors',        file: 'language-guide/constructors.md' },
       { slug: 'inheritance',       title: 'Inheritance',         file: 'language-guide/inheritance.md' },
       { slug: 'multi-file',        title: 'Multi-file Projects', file: 'language-guide/multi-file.md' },
