@@ -201,6 +201,7 @@ Constructor(gameData as GameData)
   self.ZOMBIE_GROAN_MAX_VOLUME = 0.6
   ' Seconds between footstep sounds while a movement key is held.
   self.FOOTSTEP_INTERVAL = 0.35
+  self.setupInput()
 EndConstructor
 
 function checkHit()
@@ -305,22 +306,47 @@ function tryMovePlayer(nx, ny)
   endif
 endfunction
 
+function setupInput()
+    ' Keyboard controls are unchanged: WASD move/turn, QE strafe, Space fire.
+    ' Controller: left stick moves and strafes, right stick turns, right
+    ' trigger or A fires. input.bind() appends, so this runs once from the
+    ' Constructor -- never from onenter(), which re-runs on every respawn and
+    ' would stack duplicate bindings.
+    input.bind("forward", "key", keyboard.W)
+    input.bind("forward", "axis", controller.LSTICK_UP)
+    input.bind("back", "key", keyboard.S)
+    input.bind("back", "axis", controller.LSTICK_DOWN)
+    input.bind("strafe_left", "key", keyboard.Q)
+    input.bind("strafe_left", "axis", controller.LSTICK_LEFT)
+    input.bind("strafe_right", "key", keyboard.E)
+    input.bind("strafe_right", "axis", controller.LSTICK_RIGHT)
+    input.bind("turn_left", "key", keyboard.A)
+    input.bind("turn_left", "axis", controller.RSTICK_LEFT)
+    input.bind("turn_right", "key", keyboard.D)
+    input.bind("turn_right", "axis", controller.RSTICK_RIGHT)
+    input.bind("fire", "key", keyboard.SPACE)
+    input.bind("fire", "button", controller.RT)
+    input.bind("fire", "button", controller.A)
+endfunction
+
 function handleInput()
     dim nx
     dim ny
     dim oldDirX
     dim oldPlaneX
-    dim negRot
+    dim fwd
+    dim strafe
+    dim turn
+    dim rot
 
-    if input.getKeyDown(87) then
-        nx = self.posX + self.dirX * self.moveSpeed
-        ny = self.posY + self.dirY * self.moveSpeed
-        self.tryMovePlayer(nx, ny)
-    endif
-
-    if input.getKeyDown(83) then
-        nx = self.posX - self.dirX * self.moveSpeed
-        ny = self.posY - self.dirY * self.moveSpeed
+    ' A held key gives strength 1, so input.axis() returns exactly -1 / 0 / 1
+    ' for keyboard play and the movement below is identical to before. An
+    ' analog stick gives a fractional value, scaling move and turn speed
+    ' proportionally.
+    fwd = input.axis("back", "forward")
+    if fwd <> 0 then
+        nx = self.posX + self.dirX * self.moveSpeed * fwd
+        ny = self.posY + self.dirY * self.moveSpeed * fwd
         self.tryMovePlayer(nx, ny)
     endif
 
@@ -328,40 +354,27 @@ function handleInput()
     ' (-dirY, dirX) is dir rotated +90 degrees, which is the same direction
     ' the camera plane (planeX, planeY) already points -- confirmed from the
     ' initial dir=(1,0)/plane=(0,0.66) values, where plane is dir rotated
-    ' +90 and scaled -- so E (strafe toward that side) uses it directly,
-    ' and Q (the opposite side) negates it.
-    if input.getKeyDown(69) then
-        nx = self.posX + (0 - self.dirY) * self.moveSpeed
-        ny = self.posY + self.dirX * self.moveSpeed
+    ' +90 and scaled -- so strafe_right (toward that side) uses it directly,
+    ' and strafe_left (the opposite side) negates it via the axis sign.
+    strafe = input.axis("strafe_left", "strafe_right")
+    if strafe <> 0 then
+        nx = self.posX + (0 - self.dirY) * self.moveSpeed * strafe
+        ny = self.posY + self.dirX * self.moveSpeed * strafe
         self.tryMovePlayer(nx, ny)
     endif
 
-    if input.getKeyDown(81) then
-        nx = self.posX + self.dirY * self.moveSpeed
-        ny = self.posY + (0 - self.dirX) * self.moveSpeed
-        self.tryMovePlayer(nx, ny)
-    endif
-
-    if input.getKeyDown(68) then
+    turn = input.axis("turn_left", "turn_right")
+    if turn <> 0 then
+        rot = self.rotSpeed * turn
         oldDirX = self.dirX
-        self.dirX = self.dirX * math.cos(self.rotSpeed) - self.dirY * math.sin(self.rotSpeed)
-        self.dirY = oldDirX * math.sin(self.rotSpeed) + self.dirY * math.cos(self.rotSpeed)
+        self.dirX = self.dirX * math.cos(rot) - self.dirY * math.sin(rot)
+        self.dirY = oldDirX * math.sin(rot) + self.dirY * math.cos(rot)
         oldPlaneX = self.planeX
-        self.planeX = self.planeX * math.cos(self.rotSpeed) - self.planeY * math.sin(self.rotSpeed)
-        self.planeY = oldPlaneX * math.sin(self.rotSpeed) + self.planeY * math.cos(self.rotSpeed)
+        self.planeX = self.planeX * math.cos(rot) - self.planeY * math.sin(rot)
+        self.planeY = oldPlaneX * math.sin(rot) + self.planeY * math.cos(rot)
     endif
 
-    if input.getKeyDown(65) then
-        negRot = 0 - self.rotSpeed
-        oldDirX = self.dirX
-        self.dirX = self.dirX * math.cos(negRot) - self.dirY * math.sin(negRot)
-        self.dirY = oldDirX * math.sin(negRot) + self.dirY * math.cos(negRot)
-        oldPlaneX = self.planeX
-        self.planeX = self.planeX * math.cos(negRot) - self.planeY * math.sin(negRot)
-        self.planeY = oldPlaneX * math.sin(negRot) + self.planeY * math.cos(negRot)
-    endif
-
-    if input.getKeyDown(32) then
+    if input.held("fire") then
         if self.flashTimer = 0 then
             self.flashTimer = self.FIRE_COOLDOWN_FRAMES
             self.muzzleFlashEmitter.transform.setPosition(self.weaponSprite.transform.x() + self.muzzleOffsetX, self.weaponSprite.transform.y() + self.muzzleOffsetY)
@@ -1034,13 +1047,12 @@ function onupdate(delta)
 
     self.handleInput()
 
-    ' Footsteps -- W/S/Q/E (walk or strafe) count as moving; A/D (turning
-    ' in place) don't. Checked directly against the same key codes
-    ' handleInput() itself checks, rather than having handleInput() report
-    ' back whether it moved, since a blocked move (walking straight into a
-    ' wall) should still sound like footsteps -- the player is still
-    ' walking in place against it, not standing still.
-    isMoving = input.getKeyDown(87) or input.getKeyDown(83) or input.getKeyDown(69) or input.getKeyDown(81)
+    ' Footsteps -- the forward/back/strafe actions (walk or strafe) count as
+    ' moving; turning in place doesn't. Checked against the actions directly
+    ' rather than having handleInput() report back whether it moved, since a
+    ' blocked move (walking into a wall) should still sound like footsteps --
+    ' the player is still walking in place against it, not standing still.
+    isMoving = input.held("forward") or input.held("back") or input.held("strafe_left") or input.held("strafe_right")
     if self.footstepTimer > 0 then
       self.footstepTimer = self.footstepTimer - (delta / 1000)
     endif
