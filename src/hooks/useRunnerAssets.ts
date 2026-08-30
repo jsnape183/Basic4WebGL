@@ -31,9 +31,14 @@ export function useRunnerAssets(projectId: string, enabled: boolean): { assets: 
     (async () => {
       const resolved = await Promise.all(
         metaAll.map(async (a) => {
-          const blob = await getAssetBlob(a.id);
-          if (!blob) return null;
-          return { name: a.fullName ?? a.name, src: await blobToDataUrl(blob) };
+          try {
+            const blob = await getAssetBlob(a.id);
+            if (!blob) return null;
+            return { name: a.fullName ?? a.name, src: await blobToDataUrl(blob) };
+          } catch (err) {
+            console.error(`useRunnerAssets: failed to resolve asset ${a.fullName ?? a.name}`, err);
+            return null;
+          }
         }),
       );
       if (!cancelled) setAssets(resolved.filter((x): x is RunnerAsset => x !== null));
