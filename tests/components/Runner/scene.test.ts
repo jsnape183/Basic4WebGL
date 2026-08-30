@@ -19,6 +19,7 @@ function loadScene() {
   scene._tweenUpdate = vi.fn();
   scene._particlesUpdate = vi.fn();
   scene._resetFrameInput = vi.fn();
+  scene._pollGamepads = vi.fn();
   return scene;
 }
 
@@ -52,5 +53,19 @@ describe('_sbScene._fixedStep — particles wiring', () => {
 
     expect(scene._particlesUpdate).toHaveBeenCalledWith(16.67);
     expect(scene._cameraUpdate).toHaveBeenCalledWith(16.67);
+  });
+});
+
+describe('_sbScene._fixedStep — gamepad polling wiring', () => {
+  test('calls _pollGamepads() once at the top of the step, before _update', () => {
+    const scene = loadScene();
+    const calls: string[] = [];
+    scene._pollGamepads = vi.fn(() => calls.push('poll'));
+    scene._resetFrameInput = vi.fn(() => calls.push('reset'));
+
+    scene._fixedStep(16.67);
+
+    expect(scene._pollGamepads).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['poll', 'reset']);
   });
 });

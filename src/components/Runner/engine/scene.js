@@ -43,6 +43,7 @@ const _sbScene = {
   // possibly zero times. Everything that advances game state belongs here;
   // nothing that draws does. See engine/frameloop.js for the driver.
   _fixedStep(delta) {
+    this._pollGamepads();
     _sbLifecycle._update.call(this, delta);
     if (this._activeScene && this._activeScene.onupdate) {
       try { this._activeScene.onupdate(delta); } catch(e) { _throwError(e); }
