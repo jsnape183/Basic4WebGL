@@ -21,6 +21,9 @@ import sbFrameLoop from './engine/frameloop.js?raw';
 import softBasicEngine from './softBasicEngine.js?raw';
 import bootstrapper from './bootstrapper.html?raw';
 
+const AUDIO_EXTS = ['.mp3', '.wav', '.ogg'];
+const isAudio = (name: string) => AUDIO_EXTS.some((e) => name.toLowerCase().endsWith(e));
+
 type RunnerProps = {
   width: string;
   height: string;
@@ -51,9 +54,10 @@ const Runner = React.forwardRef<HTMLIFrameElement, RunnerProps>(({
           )
           .replace('//${transpiled}', transpiled)
           .replace('//${projectId}', `let _sbProjectId = "${projectId}";`)
-          .replace('//${inlineAssets}', assets?.length
-            ? `await _sb.preload(${JSON.stringify(assets)});`
-            : '')}
+          .replace('//${inlineAssets}', [
+            `await _sb.preload(${JSON.stringify((assets ?? []).filter((a) => !isAudio(a.name)))});`,
+            `await _sb.preloadAudioManifest(${JSON.stringify((assets ?? []).filter((a) => isAudio(a.name)))});`,
+          ].join('\n'))}
       ></iframe>
     </div>
   );

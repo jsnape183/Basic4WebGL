@@ -9,6 +9,7 @@ import { packageModules } from '../../constants/packageModules';
 import { addProject } from '../../features/projects/projectsSlice';
 import { addFile } from '../../features/files/filesSlice';
 import { addAsset } from '../../features/assets/assetsSlice';
+import { putAssetBlob } from '../../lib/storage/assetBlobStore';
 import { AppDispatch } from '../../store';
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
@@ -74,16 +75,6 @@ const DEMO_ASSETS = [
   { name: 'bullet.png', src: '/bullet.png' },
 ];
 
-const fetchAsDataUrl = async (url: string): Promise<string> => {
-  const resp = await fetch(url);
-  const blob = await resp.blob();
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.readAsDataURL(blob);
-  });
-};
-
 const LandingHero: React.FC = () => {
   const [transpiled, setTranspiled] = useState('');
   const [launching, setLaunching] = useState(false);
@@ -111,9 +102,10 @@ const LandingHero: React.FC = () => {
       { name: 'bullet.png', src: '/bullet.png' },
     ];
     for (const { name, src } of assetDefs) {
-      // TODO(Task 16): write the fetched demo asset bytes to the blob store here
-      void (await fetchAsDataUrl(src));
-      dispatch(addAsset({ id: uuidv4(), name, projectId, folderId: null, fullName: name }));
+      const id = uuidv4();
+      const blob = await (await fetch(src)).blob();
+      await putAssetBlob(id, blob);
+      dispatch(addAsset({ id, name, projectId, folderId: null, fullName: name }));
     }
 
     navigate(`/projects/${projectId}/edit`);

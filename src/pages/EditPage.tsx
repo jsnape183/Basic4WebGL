@@ -23,6 +23,7 @@ import BottomPanel from '../components/BottomPanel';
 import AssetPreview from '../components/AssetPreview';
 import { getAssetType } from '../components/AssetPreview/getAssetType';
 import TilemapChooserModal from '../components/TileMapEditor/TilemapChooserModal';
+import { useRunnerAssets } from '../hooks/useRunnerAssets';
 
 const EnterFullscreenIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -69,6 +70,7 @@ const EditPage: React.FC = () => {
   const [fullscreenArmed, setFullscreenArmed] = useState(false);
 
   const { run, stop, isRunning } = useCompiler(id ?? '');
+  const { assets: runnerAssets } = useRunnerAssets(id ?? '', isRunning);
   const { diagnostics, symbols } = useLiveAnalysis(id ?? '');
   useRunnerMessages(id);
   useAutoSave();
@@ -394,12 +396,16 @@ const EditPage: React.FC = () => {
       }
       preview={
         isRunning ? (
-          <ErrorBoundary
-            key={project.id}
-            fallback={<p className="p-4 text-ds-error text-sm">Preview failed to load.</p>}
-          >
-            <Preview ref={previewIframeRef} transpiled={transpiled} projectId={project.id} />
-          </ErrorBoundary>
+          runnerAssets === null ? (
+            <div className="p-4 text-ds-text-dim text-sm">Loading assets…</div>
+          ) : (
+            <ErrorBoundary
+              key={project.id}
+              fallback={<p className="p-4 text-ds-error text-sm">Preview failed to load.</p>}
+            >
+              <Preview ref={previewIframeRef} transpiled={transpiled} projectId={project.id} assets={runnerAssets} />
+            </ErrorBoundary>
+          )
         ) : undefined
       }
       previewHeaderActions={

@@ -16,22 +16,6 @@ const _sbAssets = (() => {
       _ready = true;
     },
 
-    async preloadFromLocalStorage(projectId) {
-      const raw = window.localStorage.getItem('persist:softBASIC');
-      if (!raw) { _ready = true; return; }
-      let assetsById = {};
-      try {
-        const persisted = JSON.parse(raw);
-        assetsById = JSON.parse(persisted.assets ?? '{}').byId ?? {};
-      } catch (_) {
-        _ready = true;
-        return;
-      }
-      const assets = Object.values(assetsById).filter((a) => a.projectId === projectId);
-      if (assets.length === 0) { _ready = true; return; }
-      await this.preload(assets.map((a) => ({ name: a.fullName ?? a.name, src: a.content })));
-    },
-
     isReady() {
       return _ready;
     },

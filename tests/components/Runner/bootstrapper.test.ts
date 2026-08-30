@@ -33,14 +33,10 @@ describe('boot sequence order', () => {
   test('declares transpiled code and fires oninit before any preloading', () => {
     expect(at('//${transpiled}')).toBeLessThan(at('_sb._fireInit()'));
     expect(at('_sb._fireInit()')).toBeLessThan(at('//${inlineAssets}'));
-    expect(at('_sb._fireInit()')).toBeLessThan(at('_sb.preloadFromLocalStorage'));
-    expect(at('_sb._fireInit()')).toBeLessThan(at('_sb.preloadAudioFromLocalStorage'));
   });
 
   test('runs deferred module bodies after preloading and before the scene switch', () => {
-    expect(at('_sb.preloadAudioFromLocalStorage')).toBeLessThan(
-      at('_sb._runModuleBodies()')
-    );
+    expect(at('//${inlineAssets}')).toBeLessThan(at('_sb._runModuleBodies()'));
     expect(at('_sb._runModuleBodies()')).toBeLessThan(at('_sb._applySwitch()'));
   });
 

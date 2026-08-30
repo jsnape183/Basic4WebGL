@@ -1,34 +1,16 @@
 const _sbAudio = (() => {
   const _cache = new Map();
-  const AUDIO_EXTS = new Set(['.mp3', '.wav', '.ogg']);
-
-  function _isAudio(name) {
-    const dot = name.lastIndexOf('.');
-    return dot !== -1 && AUDIO_EXTS.has(name.slice(dot).toLowerCase());
-  }
 
   return {
-    async preloadAudioFromLocalStorage(projectId) {
-      const raw = window.localStorage.getItem('persist:softBASIC');
-      if (!raw) return;
-      let assetsById = {};
-      try {
-        const persisted = JSON.parse(raw);
-        assetsById = JSON.parse(persisted.assets ?? '{}').byId ?? {};
-      } catch (_) { return; }
-
-      const audioAssets = Object.values(assetsById).filter(
-        (a) => a.projectId === projectId && _isAudio(a.name)
-      );
-
-      await Promise.all(audioAssets.map((a) => new Promise((resolve) => {
+    async preloadAudioManifest(manifest) {
+      await Promise.all((manifest || []).map((a) => new Promise((resolve) => {
         const sound = PIXI.sound.Sound.from({
-          url: a.content,
+          url: a.src,
           preload: true,
           loaded: () => resolve(),
           error: () => resolve(),
         });
-        _cache.set(a.fullName ?? a.name, sound);
+        _cache.set(a.name, sound);
       })));
     },
 
