@@ -455,6 +455,57 @@ endfunction
 `.trim();
 
 // ---------------------------------------------------------------------------
+// Action map (input.bind / axis / pressed / held) — keyboard path only.
+// Cypress cannot emulate a physical gamepad, so this exercises the keyboard
+// device path through a real compiled + run game.
+// ---------------------------------------------------------------------------
+
+const MAIN_ACTIONMAP = `
+function onenter()
+  stage.setBackground(10, 10, 30)
+  input.bind("move_left", "key", keyboard.LEFT)
+  input.bind("move_left", "key", 65)
+  input.bind("move_right", "key", keyboard.RIGHT)
+  input.bind("move_right", "key", 68)
+  input.bind("fire", "key", keyboard.SPACE)
+  dim player = new Player()
+endfunction
+`.trim();
+
+const PLAYER_ACTIONMAP = `
+Class
+Extends sprite
+
+dim speed
+dim shots
+dim heading
+
+Constructor()
+  super("ship.png")
+  self.speed = 200
+  self.shots = 0
+  self.heading = 0
+  self.transform.setPosition(320, 180)
+  stage.add(self)
+EndConstructor
+
+function onupdate(delta)
+  dim move
+  move = input.axis("move_left", "move_right")
+  dim x
+  x = self.transform.x() + move * self.speed * delta / 1000
+  self.transform.setPosition(x, self.transform.y())
+  if input.pressed("fire") then
+    self.shots = self.shots + 1
+  endif
+  if input.held("fire") then
+    self.heading = self.heading + delta / 100
+    self.setAngle(self.heading)
+  endif
+endfunction
+`.trim();
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -635,6 +686,21 @@ describe('Tutorial 11: Dodge!', () => {
       ],
       ['ship.png', 'enemy.png'],
       5000
+    );
+  });
+});
+
+describe('Action map (keyboard path)', () => {
+  it('binds and queries named actions with no ERR entries', () => {
+    runTutorial(
+      'e2e-actionmap',
+      'Action Map',
+      [
+        { name: 'Player', source: PLAYER_ACTIONMAP },
+        { name: 'Main', source: MAIN_ACTIONMAP },
+      ],
+      ['ship.png'],
+      3000
     );
   });
 });
