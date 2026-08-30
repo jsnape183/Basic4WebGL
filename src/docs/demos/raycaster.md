@@ -95,11 +95,15 @@ A short (~0.1s) `footstep_concrete_002.ogg` one-shot plays on a cadence while th
 
 Unlike `zombieGroan`, this uses `play()` rather than the same isPlaying()-gated pattern — each footstep is a short, independent one-shot rather than something that needs to avoid overlapping itself, and `play()` already supports overlapping instances of the same sound natively (see `src/docs/api-reference/audio.md`). Confirmed live: zero footsteps while idle, zero while turning only (A held), and roughly the expected count — 11 over a 4s hold of W, matching a ~0.35s cadence — while actually walking.
 
+### Gunshot
+
+`gunshotSound.play()` fires alongside `muzzleFlashEmitter.burst(18)` in `handleInput()`'s existing spacebar branch — same `flashTimer = 0` rate-limit gate as the muzzle flash and `checkHit()` already share, so the shot sound, the flash, and hit detection all stay in lockstep with the same one-shot-per-4-frames fire rate rather than needing a separate cooldown of its own. Confirmed live: holding spacebar for 60 frames logged exactly 15 shots — `60 / 4 = 15`, matching `flashTimer`'s existing rate limit precisely.
+
 ---
 
 ## Required assets
 
-Upload ten PNG files and two sound files to your project's asset library before running:
+Upload ten PNG files and three sound files to your project's asset library before running:
 
 | Filename | What it is |
 |---|---|
@@ -115,8 +119,9 @@ Upload ten PNG files and two sound files to your project's asset library before 
 | `damage_flash.png` | 8×8 solid red square, stretched via `setScale` into the full-screen damage vignette |
 | `dragon-studio-zombie-sound-357975.mp3` | ~8s zombie groan, played while the nearest living enemy is within range (see "Zombie groan" below) |
 | `footstep_concrete_002.ogg` | ~0.1s footstep, replayed on a cadence while the player is walking (see "Footsteps" below) |
+| `impactPlate_heavy_004.ogg` | Gunshot one-shot, played alongside the muzzle flash every time the player fires (see "Gunshot" below) |
 
-The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan and the footstep are this demo's only sounds.
+The exit billboard and the compass arrow are both drawn purely with `drawing`/`pen` calls, so endless levels needed no new image assets beyond these ten PNGs — the zombie groan, the footstep, and the gunshot are this demo's only sounds.
 
 ---
 
@@ -607,6 +612,12 @@ dim footstepSound as Audio
 dim footstepTimer
 dim FOOTSTEP_INTERVAL
 
+' Gunshot -- a plain play() one-shot, same reasoning as footstepSound:
+' each shot is independent, and flashTimer (see handleInput()) already
+' rate-limits firing to once every 4 frames, so there's no realistic way
+' for this to overlap itself badly enough to matter.
+dim gunshotSound as Audio
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -842,6 +853,7 @@ function handleInput()
             self.flashTimer = 4
             self.muzzleFlashEmitter.transform.setPosition(self.weaponSprite.transform.x() + self.muzzleOffsetX, self.weaponSprite.transform.y() + self.muzzleOffsetY)
             self.muzzleFlashEmitter.burst(18)
+            self.gunshotSound.play()
             self.checkHit()
         endif
     endif
@@ -1426,6 +1438,7 @@ function setupHud()
     ' every onenter()" convention rather than carving out a special case.
     self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
     self.footstepSound = new Audio("footstep_concrete_002.ogg")
+    self.gunshotSound = new Audio("impactPlate_heavy_004.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
