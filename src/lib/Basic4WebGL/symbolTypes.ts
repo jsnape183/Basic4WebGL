@@ -19,6 +19,7 @@ export const symbolTypes = {
   Object: 'Object',
   Class: 'Class',
   Dictionary: 'Dictionary',
+  Constant: 'Constant',
 };
 
 export class FunctionSymbol extends Symbol {
@@ -32,6 +33,23 @@ export class FunctionSymbol extends Symbol {
   ) {
     super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
     this.parameters = parameters;
+  }
+}
+
+export class ConstantSymbol extends Symbol {
+  value: number | string | boolean;
+  valueKind: 'number' | 'string' | 'boolean';
+  constructor(
+    name: string,
+    type: string,
+    scope: SymbolScope,
+    fullScope: string,
+    value: number | string | boolean,
+    valueKind: 'number' | 'string' | 'boolean'
+  ) {
+    super(name, type, scope, fullScope, getBuiltInType(builtInTypes.Variant));
+    this.value = value;
+    this.valueKind = valueKind;
   }
 }
 
