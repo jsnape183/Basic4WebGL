@@ -59,6 +59,7 @@ export const docsManifest: DocSection[] = [
         topics: [
           { slug: 'gfx',             title: 'gfx',             file: 'api-reference/gfx.md' },
           { slug: 'input',           title: 'input',           file: 'api-reference/input.md' },
+          { slug: 'keyboard',        title: 'keyboard',        file: 'api-reference/keyboard.md' },
           { slug: 'drawing',         title: 'drawing',         file: 'api-reference/drawing.md' },
           { slug: 'stage',           title: 'stage (deprecated)', file: 'api-reference/stage.md' },
           { slug: 'world',           title: 'world',           file: 'api-reference/world.md' },
