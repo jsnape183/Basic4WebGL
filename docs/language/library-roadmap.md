@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-08-04 (P11 `oninit` hook shipped; P12 pixel-art filtering opened)
+> Last updated: 2026-08-30 (P15 named constants + `keyboard` module shipped)
 
 ---
 
@@ -40,7 +40,8 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `pen` | `setFillColor(r,g,b)` `setLineColor(r,g,b)` `setLineWidth(n)` |
 | `collision` | `spriteCollide(a,b)` `boxCollide(...)` `circleCollide(a,rA,b,rB)` `pointInBox(x,y,sprite)` `raycast(x,y,angle,dist,sprites)` `raycastAll(...)` |
 | `pathfinding` | `setup(tileMapSet,blockingLayers)` `setRecomputeInterval(ms)` `navigateTo(sprite,x,y,speed)` `isNavigating(sprite)` `stopNavigating(sprite)` |
-| `input` | `getKeyDown(keycode)` `mouseX()` `mouseY()` `mouseDown()` |
+| `input` | `getKeyDown(keycode)` `keyPressed(keycode)` `keyReleased(keycode)` `mouseX()` `mouseY()` `mouseDown()` |
+| `keyboard` | 51 key-code constants — `keyboard.LEFT` `keyboard.SPACE` `keyboard.ENTER` … `keyboard.A`–`keyboard.Z` `keyboard.DIGIT_0`–`keyboard.DIGIT_9`. Pure `const … endconst` block; DOM legacy `keyCode` integers. |
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
 | `TileMap` *(class)* | `constructor(tilesetPath, tileW, tileH)` `load(jsonPath)` `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` |
@@ -247,6 +248,22 @@ This is a deliberate, scoped re-opening of the tile-metadata non-goal recorded w
 **Not built:** per-marker structured data beyond the tag string (no key/value payloads); marker-layer-scoped queries (`markersByTag` always searches the whole set); runtime marker mutation (markers are level-authoring-time data baked into the `.stm` file, not a live game-state concept — a game tracking "this spawn point is destroyed" does so in its own game logic).
 
 Design spec: `docs/superpowers/specs/2026-08-10-tilemap-markers-design.md`. Tests: `tests/components/Runner/tilemap.test.ts`, `tests/lib/Basic4WebGL/unit/transpiler/tilemapset.test.ts`, `tests/ui/components/TileMapEditor/` (`stmCodec`, `usePaintDrag`, `tagColor`, `MarkerCanvas`, `TagPicker`, `LayersPanel`, `TileMapEditor`). Docs: `src/docs/api-reference/tilemapset.md`.
+
+### ~~P15 — Named constants + `keyboard` module~~ **[DONE, 2026-08-30]**
+
+**Shipped:** named constants — `const … endconst` blocks and single-line `const NAME = value`, module-namespaced (referenced as `module.NAME`, or bare within the declaring file), literals only (number / string / `true` / `false`). Each declaring module emits one hoisted `Object.freeze` holder (`const _const_<module> = Object.freeze({ … })`); reference sites compile to `_const_<module>.<name>`. Constants are immutable across every binding form — assignment, redeclare, `dim`, `for`-loop variable, and function parameter are all rejected. Editor completion and hover (showing `NAME = value`) are wired through the existing dynamic-symbol-snapshot path. `const` is a top-level-only declaration (rejected inside a function, class, or block).
+
+Design: `docs/superpowers/specs/2026-08-30-softbasic-constants-design.md`. Plan: `docs/superpowers/plans/2026-08-30-softbasic-constants.md`.
+
+**Shipped — first consumer:** the `keyboard` def module — **51** key-code constants (15 named keys + 26 letters + 10 digits), DOM legacy `keyCode` integers, authored as a single `const … endconst` block. Registered in the **softGfx** package alongside `input`; softGfx `version` bumped 2.7.0 → 2.8.0.
+
+**Still open (new tracked item):** the `controller` constants module (`PAD_*`, axis constants) plus the `input` gamepad / action-map API (`input.bind(...)`). Has its own spec (`docs/superpowers/specs/2026-08-30-controller-support-design.md`) and plan (`docs/superpowers/plans/2026-08-30-controller-support.md`), not yet executed. Consumes `keyboard.*` / `controller.*` through the constants mechanism shipped here; also registers in softGfx.
+
+**Still open (new tracked item):** extract a dedicated **`softInput`** package (`input` + `keyboard` + `controller`) out of softGfx. A breaking migration — existing projects reference `softgfx` — so it needs its own spec covering the project-package migration path. Deferred; not part of the controller work.
+
+**Still open (new tracked item):** descriptor-generated `.bas` modules (`sprite`, `stage`, `gfx`, …) can't declare constants — the `.descriptor.ts` schema and `npm run generate:library` would need a `constants` field. Add only when a generated module actually needs constants.
+
+---
 
 ## Lower Priority / Future
 

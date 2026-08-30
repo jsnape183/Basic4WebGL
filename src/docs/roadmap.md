@@ -14,6 +14,8 @@ After that, a visual tilemap editor landed: load a tileset image, paint and eras
 
 Most recently, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the foundation platformers and top-down movement are built on, without every game having to hand-roll its own wall-collision checks. (Gravity and jumping are still just velocity math you write yourself — the engine doesn't add gravity for you.)
 
+And softBASIC now has named constants: a `const … endconst` block (or a single-line `const NAME = value`) gives fixed values a readable name instead of a bare number scattered through your code. The first module built on this is `keyboard` (in the softGfx package) — a full set of key-code constants like `keyboard.SPACE` and `keyboard.LEFT`, so key checks read as words rather than magic numbers.
+
 ## Right now
 
 Optional accounts are next. Signing in will unlock cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.

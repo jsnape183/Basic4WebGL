@@ -1535,7 +1535,7 @@ Expected: FAIL — `keyboard.bas` does not exist (`readFileSync` throws).
 
 - [ ] **Step 3: Create `keyboard.bas`**
 
-`src/lib/Basic4WebGL/defs/keyboard.bas` — exactly this content (49 constants, DOM legacy `keyCode` integers):
+`src/lib/Basic4WebGL/defs/keyboard.bas` — exactly this content (51 constants — 15 named + 26 letters + 10 digits — DOM legacy `keyCode` integers):
 
 ```
 ' keyboard — named key codes for input.getKeyDown / input.keyPressed / input.keyReleased.
@@ -1919,7 +1919,7 @@ git commit -m "docs: add keyboard module API reference page"
 Add a dated, done-marked entry in the appropriate section (match the file's existing format for completed items). Content to convey:
 
 - Named constants shipped: `const … endconst` + single-line `const NAME = value`, module-namespaced (`module.NAME`), literals only (number/string/`true`/`false`), emitted as a hoisted per-module `Object.freeze` holder. Design: `docs/superpowers/specs/2026-08-30-softbasic-constants-design.md`. Plan: `docs/superpowers/plans/2026-08-30-softbasic-constants.md`.
-- First consumer shipped: the `keyboard` def module (49 key-code constants), registered in the **softGfx** package (alongside `input`; softGfx `version` bumped 2.7.0 → 2.8.0).
+- First consumer shipped: the `keyboard` def module (51 key-code constants — 15 named + 26 letters + 10 digits), registered in the **softGfx** package (alongside `input`; softGfx `version` bumped 2.7.0 → 2.8.0).
 - **Still open (new tracked item):** the `controller` constants module (`PAD_*`, axis constants) and the `input` gamepad / action-map API (`input.bind(...)`) — its own spec, not yet written. It will consume `keyboard.*` and `controller.*` through the mechanism shipped here, and will also register in softGfx.
 - **Still open (new tracked item):** extract a dedicated **`softInput`** package (`input` + `keyboard` + `controller`) out of softGfx. This is a breaking migration (existing projects reference `softgfx`) — needs its own spec covering the project-package migration path. Deferred for now; do not attempt as part of the controller work.
 - **Still open (new tracked item):** descriptor-generated `.bas` modules (`sprite`, `stage`, `gfx`, …) have no way to declare constants — the `.descriptor.ts` schema and `npm run generate:library` would need a `constants` field. Add only when a generated module actually needs constants.
@@ -2013,7 +2013,7 @@ git commit -m "chore: constants feature — final verification fixes"
 | §8 step 5 — Language Guide topic + API Reference page + manifest | 15, 16 |
 | §8 step 6 — roadmap updates | 17 |
 | §9 test list | Covered across 1, 5, 6, 7, 8, 9, 10, 11, 12, 14 |
-| §10 `keyboard` module, 49 constants, keyCode values, `END`=35 etc. | 13 |
+| §10 `keyboard` module, 51 constants, keyCode values, `END`=35 etc. | 13 |
 | §10 `keyboard` gets its own API Reference page | 16 |
 | §11 controller module = separate spec; descriptor `constants` field = follow-up | 17 |
 | §12 summary table | Whole plan |
@@ -2041,7 +2041,7 @@ Consistent.
 
 ## Known minor gaps (accepted, not blockers)
 
-1. **`const` inside a top-level `if`/`while` block** is not separately rejected — `ConstBlockRule` only checks scope *type*, and a top-level control block keeps scope type `''`. Such a `const` would still register a valid module-scoped constant. Rare; spec §2.3 lists it but the value cost of threading a "top-level statement" flag through `BlockRule` outweighs the benefit. If required later, add a marker param to `RootRule`'s dispatch.
+1. ~~**`const` inside a top-level `if`/`while` block** is not separately rejected.~~ **Resolved in Task 6** — `BlockRule.ts` now maintains a block-nesting counter exposed as `isInsideBlock()`, and `ConstBlockRule` rejects a `const` declared inside any control block, not just inside a function or class.
 2. **Completion insert text is lowercase** (`space`, not `SPACE`) because the parser lowercases all identifiers. Cosmetic; the language is case-insensitive so the inserted code is correct.
 3. **`ConstantRefNode.dataType`** is set from `valueKind` so a boolean constant used as a bare `if` condition type-checks — but this path is lightly exercised. Task 12's tests don't cover strict type participation; if a validator regresses, fall back to `builtInTypes.Variant` in `ConstantRefNode`.
 
