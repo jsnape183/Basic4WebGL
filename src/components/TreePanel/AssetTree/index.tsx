@@ -19,6 +19,7 @@ import { IAsset, addAsset, removeAsset, reorderAssets, setAssetFolder } from '..
 import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
 import { renameFolderWithCascade, removeFolderWithCascade } from '../../../features/folders/folderThunks';
 import { getFullName } from '../../../selectors/getFullName';
+import { putAssetBlob } from '../../../lib/storage/assetBlobStore';
 import FolderNode from '../../FileTree/FolderNode';
 import ReactDOM from 'react-dom';
 import { validateAssetName } from './validateAssetName';
@@ -78,7 +79,7 @@ const SortableAssetItem: React.FC<SortableAssetItemProps> = ({ asset, depth, onR
   );
 };
 
-const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_BYTES = 25 * 1024 * 1024;
 
 function countAssets(folderId: string, folders: IFolder[], allAssets: IAsset[]): number {
   const direct = allAssets.filter((a) => a.folderId === folderId).length;
@@ -181,30 +182,23 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
 
   const processFiles = async (fileList: FileList, targetFolderId: string | null = null) => {
     for (const f of Array.from(fileList)) {
-      if (f.size > MAX_BYTES) { alert(`${f.name} is too large (max 4 MB).`); return; }
+      if (f.size > MAX_BYTES) { alert(`${f.name} is too large (max ${MAX_BYTES / (1024 * 1024)} MB).`); return; }
     }
     await Promise.all(
-      Array.from(fileList).map(
-        (file) =>
-          new Promise<void>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const assetName = file.name;
-              const fullName = getFullName(assetName, targetFolderId, folders);
-              // TODO(Task 7): write the uploaded file bytes to the blob store here
-              dispatch(addAsset({
-                id: crypto.randomUUID(),
-                name: assetName,
-                projectId,
-                folderId: targetFolderId,
-                fullName,
-              }));
-              resolve();
-            };
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
-          })
-      )
+      Array.from(fileList).map(async (file) => {
+        const id = crypto.randomUUID();
+        // A File is already a Blob — store the raw bytes directly, no base64.
+        await putAssetBlob(id, file);
+        const assetName = file.name;
+        const fullName = getFullName(assetName, targetFolderId, folders);
+        dispatch(addAsset({
+          id,
+          name: assetName,
+          projectId,
+          folderId: targetFolderId,
+          fullName,
+        }));
+      })
     );
   };
 
