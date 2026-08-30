@@ -1,6 +1,7 @@
 export const SOFTBASIC_KEYWORDS = [
   // Declarations
   'dim', 'class', 'as',
+  'const', 'endconst',
   'constructor', 'endconstructor', 'endclass',
   // Functions
   'function', 'return', 'endfunction',
