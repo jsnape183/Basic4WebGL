@@ -18,7 +18,7 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist";
-import storage from "redux-persist/lib/storage";
+import persistStorage from "./lib/storage/persistStore";
 import { IFilesState } from "./features/files/filesSlice";
 
 // Always clear dirtyFileIds on rehydration — it's UI-only state that must
@@ -33,7 +33,7 @@ const clearDirtyOnRehydrate = createTransform<IFilesState, IFilesState>(
 
 const persistedConfig = {
   key: "softBASIC",
-  storage,
+  storage: persistStorage,
   blacklist: ["session", "packages"],
   transforms: [clearDirtyOnRehydrate],
 };
