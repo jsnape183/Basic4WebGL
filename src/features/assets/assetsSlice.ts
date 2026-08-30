@@ -5,7 +5,6 @@ import { reorder } from '../../utils/reorder';
 export interface IAsset {
   id: string;
   name: string;
-  content: string;
   projectId: string;
   folderId: string | null;
   fullName: string;

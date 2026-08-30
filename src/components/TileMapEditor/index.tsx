@@ -90,7 +90,8 @@ export function encodeStmContent(doc: StmDoc, originalContent: string): string {
 const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const [draftDoc, setDraftDoc] = useState<StmDoc>(() => decodeStmContent(asset.content));
+  // TODO(Task 12): decode real .stm blob bytes instead of the empty shim
+  const [draftDoc, setDraftDoc] = useState<StmDoc>(() => decodeStmContent(''));
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -102,7 +103,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
 
   useEffect(() => {
-    setDraftDoc(decodeStmContent(asset.content));
+    // TODO(Task 12): decode real .stm blob bytes instead of the empty shim
+    setDraftDoc(decodeStmContent(''));
     setActiveIndex(0);
     setIsDirty(false);
     setHiddenLayerKeys(new Set());
@@ -114,7 +116,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     )
   );
 
-  const { slices } = useTilesetSlices(tilesetAsset?.content, draftDoc.tileWidth, draftDoc.tileHeight);
+  // TODO(Task 12): pass tilesetAsset's object URL instead of undefined
+  void tilesetAsset;
+  const { slices } = useTilesetSlices(undefined, draftDoc.tileWidth, draftDoc.tileHeight);
 
   useEffect(() => {
     onDirtyChange?.(asset.id, isDirty);
@@ -238,7 +242,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   };
 
   const handleSave = () => {
-    dispatch(updateAsset({ ...asset, content: encodeStmContent(draftDoc, asset.content) }));
+    // TODO(Task 12): putAssetBlob(asset.id, new Blob([exportStmDoc(draftDoc)], { type: 'application/json' }))
+    void encodeStmContent(draftDoc, '');
+    dispatch(updateAsset({ ...asset }));
     setIsDirty(false);
   };
 

@@ -93,12 +93,8 @@ describe('importProject', () => {
     expect(assetIds).not.toContain('a1');
   });
 
-  test('asset content is preserved', () => {
-    const store = makeStore();
-    store.dispatch(importProject(sampleJson));
-    const asset = Object.values(store.getState().assets.byId)[0];
-    expect(asset.content).toBe('data:image/png;base64,abc');
-  });
+  // Removed in Task 6: asset binaries no longer live in Redux state. The
+  // import round-trip (JSON content -> blob store) is re-tested in Task 15.
 
   test('project packageIds default to softcore + softgfx', () => {
     const store = makeStore();

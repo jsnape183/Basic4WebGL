@@ -10,7 +10,7 @@ import TilemapChooserModal from '../../../../src/components/TileMapEditor/Tilema
 function renderModal(onOpenAsset = vi.fn(), onClose = vi.fn()) {
   const store = configureStore({ reducer: { assets: assetsReducer } });
   store.dispatch(addAsset({
-    id: 'm1', name: 'level1.stm', content: 'data:application/json;base64,e30=',
+    id: 'm1', name: 'level1.stm',
     projectId: 'p1', folderId: null, fullName: 'level1.stm',
   }));
   render(

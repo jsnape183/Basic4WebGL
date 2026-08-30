@@ -33,9 +33,10 @@ export function buildExportJson(projectId: string, state: ExportableState): Proj
     .filter((f) => f.projectId === projectId)
     .map(({ id, name, source, folderId, fullName }) => ({ id, name, source, folderId, fullName }));
 
+  // TODO(Task 8): make buildExportJson async and read real bytes from the blob store.
   const assets = Object.values(state.assets.byId)
     .filter((a) => a.projectId === projectId)
-    .map(({ id, name, content, folderId, fullName }) => ({ id, name, content, folderId, fullName }));
+    .map(({ id, name, folderId, fullName }) => ({ id, name, folderId, fullName, content: '' }));
 
   const fileOrder: Record<string, string[]> = {};
   Object.entries(state.files.fileOrder).forEach(([key, ids]) => {

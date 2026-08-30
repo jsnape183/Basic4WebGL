@@ -191,10 +191,10 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
             reader.onload = () => {
               const assetName = file.name;
               const fullName = getFullName(assetName, targetFolderId, folders);
+              // TODO(Task 7): write the uploaded file bytes to the blob store here
               dispatch(addAsset({
                 id: crypto.randomUUID(),
                 name: assetName,
-                content: reader.result as string,
                 projectId,
                 folderId: targetFolderId,
                 fullName,
@@ -222,10 +222,10 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
     if (error) { setNewFileError(error); return; }
     const id = crypto.randomUUID();
     const fullName = getFullName(name, selectedFolderId, folders);
+    // TODO(Task 8): write an empty blob to the blob store for the new file here
     dispatch(addAsset({
       id,
       name,
-      content: 'data:text/plain;base64,',
       projectId,
       folderId: selectedFolderId,
       fullName,

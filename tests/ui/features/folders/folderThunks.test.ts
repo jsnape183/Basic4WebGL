@@ -45,7 +45,7 @@ describe('renameFolderWithCascade', () => {
   test('updates fullName of assets inside the renamed folder', () => {
     const store = makeStore();
     store.dispatch(addFolder(f1));
-    store.dispatch(addAsset({ id: 'a1', name: 'hero.png', content: '', projectId: 'p1', folderId: 'f1', fullName: 'Game/hero.png' }));
+    store.dispatch(addAsset({ id: 'a1', name: 'hero.png', projectId: 'p1', folderId: 'f1', fullName: 'Game/hero.png' }));
     store.dispatch(renameFolderWithCascade({ folderId: 'f1', name: 'Sprites' }));
     expect(store.getState().assets.byId['a1'].fullName).toBe('Sprites/hero.png');
   });
@@ -89,7 +89,7 @@ describe('removeFolderWithCascade', () => {
   test('moves items in deleted root folder to null (root)', () => {
     const store = makeStore();
     store.dispatch(addFolder(f1));
-    store.dispatch(addAsset({ id: 'a1', name: 'hero.png', content: '', projectId: 'p1', folderId: 'f1', fullName: 'Game/hero.png' }));
+    store.dispatch(addAsset({ id: 'a1', name: 'hero.png', projectId: 'p1', folderId: 'f1', fullName: 'Game/hero.png' }));
     store.dispatch(removeFolderWithCascade({ folderId: 'f1' }));
     const asset = store.getState().assets.byId['a1'];
     expect(asset.folderId).toBeNull();

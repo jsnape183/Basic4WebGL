@@ -13,8 +13,9 @@ const ImagePreview: React.FC<Props> = ({ asset }) => {
       {error ? (
         <p role="alert" className="text-ds-text-muted text-sm">Unable to display image.</p>
       ) : (
+        // TODO(Task 11): useAssetObjectUrl — src stubbed empty until blob wiring lands
         <img
-          src={asset.content}
+          src={/* TODO(Task 11) */ ''}
           alt={asset.name}
           onError={handleError}
           className="max-w-full max-h-full object-contain"

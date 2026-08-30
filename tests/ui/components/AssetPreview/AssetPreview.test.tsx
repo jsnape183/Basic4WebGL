@@ -11,20 +11,16 @@ const makeStore = () => configureStore({ reducer: { assets: assetsReducer } });
 
 const imageAsset: IAsset = {
   id: 'a1', name: 'photo.png',
-  content: 'data:image/png;base64,abc',
   projectId: 'p1', folderId: null, fullName: 'photo.png',
 };
 
-// "{}" in base64 = e30=
 const textAsset: IAsset = {
   id: 'a2', name: 'config.json',
-  content: 'data:text/plain;base64,e30=',
   projectId: 'p1', folderId: null, fullName: 'config.json',
 };
 
 const tilemapAsset: IAsset = {
   id: 'a3', name: 'level1.stm',
-  content: 'data:application/json;base64,' + btoa(JSON.stringify({ tileWidth: 8, tileHeight: 8, tileImage: '', layers: {} })),
   projectId: 'p1', folderId: null, fullName: 'level1.stm',
 };
 

@@ -76,7 +76,7 @@ export const importProject =
         dispatch(addAsset({
           id: assetIdMap[oldId],
           name: asset.name,
-          content: asset.content,
+          // TODO(Task 13): write asset.content bytes to the blob store here
           projectId: newProjectId,
           folderId: asset.folderId ? (folderIdMap[asset.folderId] ?? null) : null,
           fullName: asset.fullName,
@@ -89,7 +89,7 @@ export const importProject =
       dispatch(addAsset({
         id: assetIdMap[asset.id],
         name: asset.name,
-        content: asset.content,
+        // TODO(Task 13): write asset.content bytes to the blob store here
         projectId: newProjectId,
         folderId: asset.folderId ? (folderIdMap[asset.folderId] ?? null) : null,
         fullName: asset.fullName,

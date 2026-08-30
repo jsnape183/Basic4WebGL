@@ -60,7 +60,7 @@ test('double-clicking an asset item calls onOpenAsset with its id', async () => 
   const user = userEvent.setup();
   const store = makeStore();
   store.dispatch(addProject({ id: 'p1', name: 'Test', packageIds: [] }));
-  store.dispatch(addAsset({ id: 'a1', name: 'data.json', content: '', projectId: 'p1', folderId: null, fullName: 'data.json' }));
+  store.dispatch(addAsset({ id: 'a1', name: 'data.json', projectId: 'p1', folderId: null, fullName: 'data.json' }));
   const onOpenAsset = vi.fn();
 
   const { getByText } = render(

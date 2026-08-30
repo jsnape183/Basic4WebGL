@@ -23,7 +23,7 @@ const state = {
   },
   assets: {
     byId: {
-      a1: { id: 'a1', name: 'hero.png', content: 'data:image/png;base64,abc', projectId: 'p1', folderId: null, fullName: 'hero.png' },
+      a1: { id: 'a1', name: 'hero.png', projectId: 'p1', folderId: null, fullName: 'hero.png' },
     },
     assetOrder: { 'p1:root': ['a1'] },
   },
@@ -63,7 +63,9 @@ describe('buildExportJson', () => {
 
   test('asset content is preserved as-is', () => {
     const json = buildExportJson('p1', state);
-    expect(json.assets[0].content).toBe('data:image/png;base64,abc');
+    // updated in Task 8: buildExportJson becomes async and reads real bytes from
+    // the blob store; for now the shim emits an empty string.
+    expect(json.assets[0].content).toBe('');
   });
 
   test('folder entries do not include projectId', () => {

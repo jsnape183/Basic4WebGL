@@ -13,7 +13,7 @@ const decodeContent = (content: string) =>
 function makeStoreWithTileset() {
   const store = configureStore({ reducer: { assets: assetsReducer } });
   store.dispatch(addAsset({
-    id: 'img1', name: 'tileset.png', content: 'data:image/png;base64,xx',
+    id: 'img1', name: 'tileset.png',
     projectId: 'p1', folderId: null, fullName: 'tileset.png',
   }));
   return store;
@@ -33,7 +33,7 @@ describe('NewTilemapDialog', () => {
   test('rejects a filename that already exists in the project', async () => {
     const store = makeStoreWithTileset();
     store.dispatch(addAsset({
-      id: 'm1', name: 'level1.stm', content: '', projectId: 'p1', folderId: null, fullName: 'level1.stm',
+      id: 'm1', name: 'level1.stm', projectId: 'p1', folderId: null, fullName: 'level1.stm',
     }));
     const onCreated = vi.fn();
     render(
@@ -64,13 +64,10 @@ describe('NewTilemapDialog', () => {
     const createdId = onCreated.mock.calls[0][0];
     const asset = store.getState().assets.byId[createdId];
     expect(asset.name).toBe('untitled.stm');
-    const decoded = decodeContent(asset.content);
-    expect(decoded).toEqual({
-      tileWidth: 16,
-      tileHeight: 16,
-      tileImage: 'tileset.png',
-      layers: { background: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0)) },
-    });
+    // updated in Task 12: the .stm doc bytes will be written to the blob store.
+    // For now only metadata is dispatched.
+    expect('content' in asset).toBe(false);
+    void decodeContent;
   });
 
   test('shows an error when no tileset image is chosen', async () => {

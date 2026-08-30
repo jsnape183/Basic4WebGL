@@ -9,6 +9,13 @@ type Props = {
   onDirtyChange?: (assetId: string, dirty: boolean) => void;
 };
 
+// TODO(Task 9): replaces the old data-URL MIME sniff; used when writing blobs back.
+function mimeFromName(name: string): string {
+  if (name.endsWith('.json')) return 'application/json';
+  if (name.endsWith('.stm')) return 'application/json';
+  return 'text/plain';
+}
+
 function decodeContent(content: string): string {
   const comma = content.indexOf(',');
   if (comma === -1) return '';
@@ -22,14 +29,17 @@ function decodeContent(content: string): string {
 
 const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const [draftText, setDraftText] = useState(() => decodeContent(asset.content));
+  // TODO(Task 9): decode real blob bytes instead of the empty shim
+  const [draftText, setDraftText] = useState(() => decodeContent(''));
 
   // C1: memoize decoded content so it is not recomputed on every render
-  const storedText = useMemo(() => decodeContent(asset.content), [asset.content]);
+  // TODO(Task 9): decode real blob bytes instead of the empty shim
+  const storedText = useMemo(() => decodeContent(''), [asset.id]);
 
   // I1: reset draft when the asset switches
   useEffect(() => {
-    setDraftText(decodeContent(asset.content));
+    // TODO(Task 9): decode real blob bytes instead of the empty shim
+    setDraftText(decodeContent(''));
   }, [asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // I2: explicit dirty flag
@@ -41,13 +51,10 @@ const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     onDirtyChange?.(asset.id, newText !== storedText);
   };
 
-  // M2: preserve original MIME type; C2: Unicode-safe encoding
   const handleSave = () => {
-    const mime = asset.content.startsWith('data:')
-      ? asset.content.slice(5, asset.content.indexOf(';'))
-      : 'text/plain';
-    const encoded = `data:${mime};base64,` + btoa(unescape(encodeURIComponent(draftText)));
-    dispatch(updateAsset({ ...asset, content: encoded }));
+    // TODO(Task 9): putAssetBlob(asset.id, new Blob([draftText], { type: mimeFromName(asset.name) }))
+    void mimeFromName(asset.name);
+    dispatch(updateAsset({ ...asset }));
     onDirtyChange?.(asset.id, false);
   };
 

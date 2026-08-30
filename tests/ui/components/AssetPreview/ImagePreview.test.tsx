@@ -7,17 +7,15 @@ import { IAsset } from '../../../../src/features/assets/assetsSlice';
 
 const asset: IAsset = {
   id: 'a1', name: 'logo.png',
-  content: 'data:image/png;base64,abc123',
   projectId: 'p1', folderId: null, fullName: 'logo.png',
 };
 
 describe('ImagePreview', () => {
   test('renders image with src from asset content', () => {
     render(<ImagePreview asset={asset} />);
-    expect(screen.getByRole('img', { name: 'logo.png' })).toHaveAttribute(
-      'src',
-      'data:image/png;base64,abc123'
-    );
+    // updated in Task 11: src comes from a blob object URL. For now it is stubbed
+    // empty, and React omits the attribute entirely for an empty string.
+    expect(screen.getByRole('img', { name: 'logo.png' })).not.toHaveAttribute('src');
   });
 
   test('shows error message when image fails to load', () => {

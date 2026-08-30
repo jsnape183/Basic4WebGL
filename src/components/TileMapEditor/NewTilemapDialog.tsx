@@ -37,10 +37,10 @@ const NewTilemapDialog: React.FC<Props> = ({ projectId, onCreated, onCancel }) =
     const reader = new FileReader();
     reader.onload = () => {
       const id = crypto.randomUUID();
+      // TODO(Task 12): write the uploaded tileset bytes to the blob store here
       dispatch(addAsset({
         id,
         name: file.name,
-        content: reader.result as string,
         projectId,
         folderId: null,
         fullName: file.name,
@@ -63,10 +63,11 @@ const NewTilemapDialog: React.FC<Props> = ({ projectId, onCreated, onCancel }) =
     const doc = { tileWidth, tileHeight, tileImage: tileImageName, layers: { background: data } };
     const json = JSON.stringify(doc);
     const id = crypto.randomUUID();
+    // TODO(Task 12): putAssetBlob(id, new Blob([json], { type: 'application/json' }))
+    void json;
     dispatch(addAsset({
       id,
       name,
-      content: 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(json))),
       projectId,
       folderId: null,
       fullName: name,
