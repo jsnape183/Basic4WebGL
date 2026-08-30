@@ -70,6 +70,20 @@ dim levelHudText as Text
 dim damageFlash as Sprite
 dim damageFlashTimer
 
+' Zombie groan -- one shared Audio instance, not one per enemy. audio.bas's
+' createSound() caches sounds by filename and hands back the SAME
+' underlying handle to every Audio instance constructed with that path, so
+' 20 independent "new Audio(...)" calls for the same file wouldn't behave
+' independently anyway -- calling play()/setVolume() on one would affect
+' every other instance referencing that same file. A single shared channel
+' that tracks whichever enemy is currently closest is both the only thing
+' this engine actually supports here and the more sensible design besides:
+' 20 simultaneous overlapping groans would be noise, not atmosphere.
+dim zombieGroan as Audio
+dim zombieGroanCooldown
+dim ZOMBIE_GROAN_CUTOFF
+dim ZOMBIE_GROAN_COOLDOWN
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -124,6 +138,12 @@ Constructor(gameData as GameData)
   self.damageCooldown = 0
   self.moveSpeed = 0.05
   self.rotSpeed = 0.04
+  ' Tiles -- comfortably past Enemy.giveUpRadius (9), so the groan is
+  ' audible for a chasing enemy's entire approach, not just its last few
+  ' steps.
+  self.ZOMBIE_GROAN_CUTOFF = 10
+  ' Seconds between replays while an enemy stays in range.
+  self.ZOMBIE_GROAN_COOLDOWN = 2.0
 EndConstructor
 
 function checkHit()
@@ -778,6 +798,7 @@ function onenter()
     self.playerHealth = 100
     self.damageCooldown = 0
     self.damageFlashTimer = 0
+    self.zombieGroanCooldown = 0
     ' setupHud() above (this call or an earlier one) always runs before this
     ' point, so self.damageFlash already exists here on every onenter().
     self.damageFlash.setAlpha(0)
@@ -862,6 +883,13 @@ function setupHud()
     self.enemyDeathEmitter.setColorOverLife(16711680, 4473924)
     self.enemyDeathEmitter.setMaxParticles(80)
     hud.add(self.enemyDeathEmitter)
+
+    ' Not a hud element -- audio.bas's Audio class has nothing to do with
+    ' the display list, so it doesn't need hud.add() and isn't affected by
+    ' stage.clear() on scene switch. Recreated here anyway just to match
+    ' this function's own established "everything gets set up fresh on
+    ' every onenter()" convention rather than carving out a special case.
+    self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
 endfunction
 
 function mazeSizeForLevel(lvl)
@@ -914,6 +942,8 @@ function onupdate(delta)
     dim e as Enemy
     dim dist
     dim hpFillWidth
+    dim nearestEnemyDist
+    dim zombieGroanVolume
 
     if self.playerHealth < 1 then
         self.gameData.levelReached = self.level
@@ -924,11 +954,19 @@ function onupdate(delta)
     self.handleInput()
     self.castRays()
 
+    ' Starting above ZOMBIE_GROAN_CUTOFF guarantees "no living enemy found
+    ' this frame" fails the cutoff check below on its own, without a
+    ' separate found-anything flag.
+    nearestEnemyDist = self.ZOMBIE_GROAN_CUTOFF + 1
+
     for i = 0 to self.ENEMY_COUNT - 1
       e = self.enemies(i)
       e.update(delta / 1000, self.posX, self.posY)
       if not e.dead then
         dist = math.distance(e.x, e.y, self.posX, self.posY)
+        if dist < nearestEnemyDist then
+          nearestEnemyDist = dist
+        endif
         ' A single shared cooldown across every enemy, not one per enemy --
         ' with 10 enemies now able to be adjacent at once, a per-enemy
         ' cooldown would let each land its own hit independently and
@@ -952,6 +990,39 @@ function onupdate(delta)
     if self.damageFlashTimer > 0 then
       self.damageFlashTimer = self.damageFlashTimer - 1
       self.damageFlash.setAlpha(0.35 * self.damageFlashTimer / 18)
+    endif
+
+    ' Zombie groan -- one shared channel (see the field declaration
+    ' comment for why), tracking whichever living enemy is currently
+    ' closest rather than any one enemy in particular. Volume falls off
+    ' linearly with distance and hits exactly 0 at ZOMBIE_GROAN_CUTOFF, so
+    ' there's a real, audible "out of range" rather than a sound that's
+    ' merely quiet everywhere. It's deliberately NOT a true engine loop
+    ' (playLoop()) -- a groan sound isn't built to repeat seamlessly, so
+    ' instead this replays it as a one-shot every ZOMBIE_GROAN_COOLDOWN
+    ' seconds for as long as an enemy stays in range, giving a periodic
+    ' groan rather than a continuous drone or an audible seam every
+    ' repeat. Retreating out of range just stops it from retriggering --
+    ' the current one-shot is left to finish naturally rather than being
+    ' cut off abruptly.
+    if self.zombieGroanCooldown > 0 then
+      self.zombieGroanCooldown = self.zombieGroanCooldown - (delta / 1000)
+    endif
+    if nearestEnemyDist <= self.ZOMBIE_GROAN_CUTOFF then
+      zombieGroanVolume = 1.0 - (nearestEnemyDist / self.ZOMBIE_GROAN_CUTOFF)
+      self.zombieGroan.setVolume(zombieGroanVolume)
+      ' `not X and Y`, not `Y and not X` -- this language's grammar only
+      ' accepts a leading `not` at the very start of a boolean expression
+      ' (BoolExpressionRule calls the Not rule once, up front, before its
+      ' and/or loop; and/or's own right-hand side parses as a plain
+      ' BoolTerm that never routes back through Not), so `not` can't
+      ' appear after `and`/`or` -- confirmed live via the exact compile
+      ' error this line originally hit ("Expected String, Number,
+      ' Variable but found not") before reordering it.
+      if not self.zombieGroan.isPlaying() and self.zombieGroanCooldown <= 0 then
+        self.zombieGroan.play()
+        self.zombieGroanCooldown = self.ZOMBIE_GROAN_COOLDOWN
+      endif
     endif
 
     self.renderEnemies()
