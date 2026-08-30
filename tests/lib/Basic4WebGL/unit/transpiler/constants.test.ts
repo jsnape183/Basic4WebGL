@@ -246,3 +246,17 @@ describe('const — for-loop and parameter shadowing', () => {
     expectError('const MAX = 5\nfunction test(MAX)\nendfunction\n', 'constant');
   });
 });
+
+describe('const — symbol snapshot', () => {
+  test('snapshot entry carries kind Constant, value, and valueKind', () => {
+    const src = ['const', '  SPEED = 5', '  TITLE = "Hi"', 'endconst', ''].join('\n');
+    const result = compiler.transpile({ files: [{ name: 'Main.bas', source: src }] });
+    const speed = result.symbols?.find((s: any) => s.name === 'speed');
+    expect(speed?.kind).toBe('Constant');
+    expect(speed?.value).toBe(5);
+    expect(speed?.valueKind).toBe('number');
+    const title = result.symbols?.find((s: any) => s.name === 'title');
+    expect(title?.value).toBe('Hi');
+    expect(title?.valueKind).toBe('string');
+  });
+});

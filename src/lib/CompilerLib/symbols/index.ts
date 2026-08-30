@@ -57,6 +57,8 @@ export type SymbolSnapshotEntry = {
   isParam?: boolean;
   dimensions?: number;
   parameters?: { name: string; className?: string }[];
+  value?: string | number | boolean;
+  valueKind?: string;
 };
 
 class Symbols {
@@ -409,6 +411,8 @@ class Symbols {
         name: p.name,
         className: (p as any).classSymbol?.name,
       })),
+      value: (s as any).value,
+      valueKind: (s as any).valueKind,
     }));
   }
 }
