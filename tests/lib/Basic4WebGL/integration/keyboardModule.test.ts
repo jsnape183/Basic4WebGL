@@ -58,3 +58,29 @@ describe('keyboard module', () => {
     expect(result.diagnostics.length).toBeGreaterThan(0);
   });
 });
+
+import { packageModules } from '../../../../src/constants/packageModules';
+import { firstPartyPackages } from '../../../../src/constants/firstPartyPackages';
+
+describe('keyboard package registration', () => {
+  test('packageModules["keyboard"] resolves to the def source', () => {
+    expect(typeof packageModules['keyboard']).toBe('string');
+    expect(packageModules['keyboard']).toContain('const');
+    expect(packageModules['keyboard']).toContain('SPACE = 32');
+  });
+
+  test('keyboard is listed in the softGfx package moduleNames', () => {
+    const softgfx = firstPartyPackages.find((p) => p.id === 'softgfx');
+    expect(softgfx?.moduleNames).toContain('keyboard');
+  });
+
+  test('compiling keyboard.SPACE through the resolved lib yields no diagnostics', () => {
+    const libs = [
+      { name: 'keyboard', source: packageModules['keyboard'] },
+      { name: 'input', source: readFileSync('src/lib/Basic4WebGL/defs/input.bas', 'utf-8') },
+    ];
+    const src = 'function test()\n  dim x\n  x = input.getKeyDown(keyboard.LEFT)\nendfunction';
+    const result = compiler.transpile({ lib: libs, files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics).toHaveLength(0);
+  });
+});

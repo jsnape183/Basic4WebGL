@@ -6,6 +6,7 @@ import file from '../lib/Basic4WebGL/defs/file.bas?raw';
 import save from '../lib/Basic4WebGL/defs/save.bas?raw';
 import gfx from '../lib/Basic4WebGL/defs/gfx.bas?raw';
 import input from '../lib/Basic4WebGL/defs/input.bas?raw';
+import keyboard from '../lib/Basic4WebGL/defs/keyboard.bas?raw';
 import drawing from '../lib/Basic4WebGL/defs/drawing.bas?raw';
 import stage from '../lib/Basic4WebGL/defs/stage.bas?raw';
 import pen from '../lib/Basic4WebGL/defs/pen.bas?raw';
@@ -40,6 +41,7 @@ export const packageModules: Record<string, string> = {
   save,
   gfx,
   input,
+  keyboard,
   drawing,
   stage,
   pen,
