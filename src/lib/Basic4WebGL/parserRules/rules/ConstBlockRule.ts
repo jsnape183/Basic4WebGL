@@ -11,6 +11,7 @@ import { scopeTypes, symbolTypes, ConstantSymbol } from '../../symbolTypes';
 import tokens from '../../tokens';
 import { newLines } from '../../parserConfig';
 import ConstBlockNode from '../../nodes/ConstBlockNode';
+import { isInsideBlock } from './BlockRule';
 
 type LiteralKind = 'number' | 'string' | 'boolean';
 
@@ -51,7 +52,7 @@ class ConstBlockRule implements IParserRule {
   parse(tokenStream: TokenStream, symbolTable: Symbols): Tree {
     const loc = tokenStream.current().loc();
 
-    if (symbolTable.getScopeType() !== scopeTypes.Globals) {
+    if (symbolTable.getScopeType() !== scopeTypes.Globals || isInsideBlock()) {
       throw new CompilationError(
         'const declarations are only allowed at the top level of a file, not inside a function, class, or block.',
         loc
@@ -77,6 +78,18 @@ class ConstBlockRule implements IParserRule {
       }
       matchAndMove(tokens.Equals, tokenStream);
       const { value, valueKind } = readLiteral(tokenStream, declLoc);
+      // The literal must be the whole right-hand side. Anything left on the
+      // line (an operator, a call, another token) means it was an expression.
+      if (
+        !check(newLines, tokenStream.current()) &&
+        !check(tokens.EndConst, tokenStream.current()) &&
+        !check(tokens.EndOfFile, tokenStream.current())
+      ) {
+        throw new CompilationError(
+          'A const value must be a plain number, string, true, or false — expressions and other names are not allowed.',
+          declLoc
+        );
+      }
       symbolTable.addTyped(
         new ConstantSymbol(
           name,

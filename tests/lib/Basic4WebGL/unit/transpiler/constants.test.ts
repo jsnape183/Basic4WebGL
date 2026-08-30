@@ -96,3 +96,45 @@ describe('const — malformed block', () => {
     expect(result.diagnostics.length).toBeGreaterThan(0);
   });
 });
+
+describe('const — diagnostics', () => {
+  const expectError = (src: string, fragment: string) => {
+    const result = compiler.transpile({ files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message.toLowerCase()).toContain(fragment.toLowerCase());
+  };
+
+  test('non-literal RHS (another name) is rejected', () => {
+    expectError('const A = 1\nconst B = A\n', 'const value must be');
+  });
+
+  test('non-literal RHS (expression) is rejected', () => {
+    expectError('const\n  A = 1 + 2\nendconst\n', 'const value must be');
+  });
+
+  test('non-literal RHS (function call) is rejected', () => {
+    expectError('const\n  A = math.pi()\nendconst\n', 'const value must be');
+  });
+
+  test('redeclaring a constant in the same block is rejected', () => {
+    expectError('const\n  A = 1\n  A = 2\nendconst\n', 'already declared');
+  });
+
+  test('redeclaring a constant across blocks is rejected', () => {
+    expectError('const\n  A = 1\nendconst\nconst\n  A = 2\nendconst\n', 'already declared');
+  });
+
+  test('const inside a function body is rejected', () => {
+    expectError('function test()\n  const A = 1\nendfunction\n', 'top level');
+  });
+
+  test('const inside a class body is rejected', () => {
+    // softBASIC classes are declared with a bare `class` (module name = filename);
+    // `class Foo` is invalid syntax, so the const body is what must be rejected.
+    expectError('class\n  const A = 1\nendclass\n', 'top level');
+  });
+
+  test('const inside a top-level if block is rejected', () => {
+    expectError('if true then\n  const A = 1\nendif\n', 'top level');
+  });
+});
