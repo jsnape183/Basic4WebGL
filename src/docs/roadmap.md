@@ -12,9 +12,11 @@ Since then, your games can now save and load progress. Whether it's a high-score
 
 After that, a visual tilemap editor landed: load a tileset image, paint and erase tiles onto a grid, and manage multiple named layers — all without hand-editing JSON.
 
-Most recently, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the foundation platformers and top-down movement are built on, without every game having to hand-roll its own wall-collision checks. (Gravity and jumping are still just velocity math you write yourself — the engine doesn't add gravity for you.)
+After that, tile collision arrived: mark any layer as solid right in the tilemap editor, then give a sprite a velocity and let it move on its own, sliding to a stop against walls and floors instead of passing through them. That's the foundation platformers and top-down movement are built on, without every game having to hand-roll its own wall-collision checks. (Gravity and jumping are still just velocity math you write yourself — the engine doesn't add gravity for you.)
 
 And softBASIC now has named constants: a `const … endconst` block (or a single-line `const NAME = value`) gives fixed values a readable name instead of a bare number scattered through your code. The first module built on this is `keyboard` (in the softGfx package) — a full set of key-code constants like `keyboard.SPACE` and `keyboard.LEFT`, so key checks read as words rather than magic numbers.
+
+Most recently, controller support landed. Games now use an *action map*: you give each thing the player can do a name, bind keys and controller buttons to it once, and the rest of your game reads the action — so keyboard and gamepad work from the same code with no branching. Analog sticks and triggers are supported, and the old keyboard-only functions still work.
 
 ## Right now
 
@@ -27,6 +29,8 @@ Optional accounts are next. Signing in will unlock cloud sync for your projects.
 With accounts in place, sharing becomes possible: a link to your finished game that anyone can play in a browser, no account required on their end. A public gallery of published games will follow — a place to discover what people are making with softBASIC.
 
 Alongside sharing, a package ecosystem opens the platform to first-party extension modules that go beyond the built-in library.
+
+As part of that, the built-in library will be re-organised into smaller packages — for example a dedicated input package so a game can read the keyboard and controller without pulling in the whole rendering engine.
 
 That's the milestone we're calling v1.0 — a complete, open platform.
 

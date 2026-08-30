@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-08-30 (P15 named constants + `keyboard` module shipped)
+> Last updated: 2026-08-30 (controller / gamepad support shipped — action map on `input` + `controller` constants module)
 
 ---
 
@@ -40,8 +40,9 @@ PIXI v8 is loaded from CDN. Output is rendered in a sandboxed `<iframe>`.
 | `pen` | `setFillColor(r,g,b)` `setLineColor(r,g,b)` `setLineWidth(n)` |
 | `collision` | `spriteCollide(a,b)` `boxCollide(...)` `circleCollide(a,rA,b,rB)` `pointInBox(x,y,sprite)` `raycast(x,y,angle,dist,sprites)` `raycastAll(...)` |
 | `pathfinding` | `setup(tileMapSet,blockingLayers)` `setRecomputeInterval(ms)` `navigateTo(sprite,x,y,speed)` `isNavigating(sprite)` `stopNavigating(sprite)` |
-| `input` | `getKeyDown(keycode)` `keyPressed(keycode)` `keyReleased(keycode)` `mouseX()` `mouseY()` `mouseDown()` |
+| `input` | action map: `bind` `clearBindings` `held` `pressed` `released` `strength` `axis` `padConnected` `setDeadzone`; deprecated: `getKeyDown` `keyPressed` `keyReleased`; `mouseX()` `mouseY()` `mouseDown()` |
 | `keyboard` | 51 key-code constants — `keyboard.LEFT` `keyboard.SPACE` `keyboard.ENTER` … `keyboard.A`–`keyboard.Z` `keyboard.DIGIT_0`–`keyboard.DIGIT_9`. Pure `const … endconst` block; DOM legacy `keyCode` integers. |
+| `controller` | constants only — gamepad button + stick-direction values for `input.bind` |
 | `Sprite` *(class)* | `constructor(imagePath)` `setPosition(x,y)` `x()` `y()` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `setTexture` `width()` `height()` `setDepth(n)` |
 | `AnimatedSprite` *(class)* | `constructor(imagePath, frameW, frameH)` — slices a spritesheet image into a frame grid; `addAnim(name, startFrame, endFrame, fps, loop)` `play(name)` `isPlaying(name)` `stop()` `setSpriteSheet(imagePath, frameW, frameH)` `setAngle` `setAlpha` `setScale` `setFlip` `setVisible` `width()` `height()` `setDepth(n)` |
 | `TileMap` *(class)* | `constructor(tilesetPath, tileW, tileH)` `load(jsonPath)` `tileAt(x,y)` `widthPx()` `heightPx()` `setDepth(n)` |
@@ -257,11 +258,30 @@ Design: `docs/superpowers/specs/2026-08-30-softbasic-constants-design.md`. Plan:
 
 **Shipped — first consumer:** the `keyboard` def module — **51** key-code constants (15 named keys + 26 letters + 10 digits), DOM legacy `keyCode` integers, authored as a single `const … endconst` block. Registered in the **softGfx** package alongside `input`; softGfx `version` bumped 2.7.0 → 2.8.0.
 
-**Still open (new tracked item):** the `controller` constants module (`PAD_*`, axis constants) plus the `input` gamepad / action-map API (`input.bind(...)`). Has its own spec (`docs/superpowers/specs/2026-08-30-controller-support-design.md`) and plan (`docs/superpowers/plans/2026-08-30-controller-support.md`), not yet executed. Consumes `keyboard.*` / `controller.*` through the constants mechanism shipped here; also registers in softGfx.
+**Shipped — second consumer:** the `controller` constants module plus the `input` gamepad / action-map API (`input.bind(...)`), consuming `keyboard.*` / `controller.*` through the constants mechanism shipped here. See the **Controller / gamepad support** delivered section below.
 
 **Still open (new tracked item):** extract a dedicated **`softInput`** package (`input` + `keyboard` + `controller`) out of softGfx. A breaking migration — existing projects reference `softgfx` — so it needs its own spec covering the project-package migration path. Deferred; not part of the controller work.
 
 **Still open (new tracked item):** descriptor-generated `.bas` modules (`sprite`, `stage`, `gfx`, …) can't declare constants — the `.descriptor.ts` schema and `npm run generate:library` would need a `constants` field. Add only when a generated module actually needs constants.
+
+### ~~Controller / gamepad support~~ **[DONE]**
+
+Shipped as an **action map** on `input` plus a new `controller` constant module (and building on the named-constants mechanism + `keyboard` module, `docs/superpowers/specs/2026-08-30-softbasic-constants-design.md`).
+
+Game code calls `input.bind(action, device, code)` (`device`: `"key"` | `"button"` | `"axis"`) once at startup, then queries actions — never physical inputs: `input.held`, `input.pressed`, `input.released` (digital, OR across sources), `input.strength` (0..1, max across sources), `input.axis(neg, pos)` (−1..1). Plus `input.clearBindings(action)`, `input.padConnected()`, `input.setDeadzone(value)` (default 0.15). Keyboard and controller are interchangeable in game logic with zero branching.
+
+Engine: `_sbInput._pollGamepads()` runs at the top of `_sbScene._fixedStep` (`engine/scene.js`), reads `navigator.getGamepads()`, folds the first standard-mapping pad into the existing just-pressed/just-released model in a separate `"b#"`/`"h#"` key namespace, and derives 8 deadzone-rescaled 0..1 stick half-strengths. `_resetFrameInput` rolls `_padButtons`/`_padAxisHalves` into their `*Prev` counterparts. `bootstrapper.html` adds `gamepadconnected`/`gamepaddisconnected` listeners as a connectivity hint before the first poll. Releases are flushed on pad disconnect.
+
+`input.getKeyDown` / `keyPressed` / `keyReleased` are kept working, marked deprecated in the docs with migration examples.
+
+Design spec: `docs/superpowers/specs/2026-08-30-controller-support-design.md`. Plan: `docs/superpowers/plans/2026-08-30-controller-support.md`. Tests: `tests/lib/Basic4WebGL/unit/transpiler/input.test.ts`, `tests/components/Runner/engine/input.test.ts`, `tests/components/Runner/scene.test.ts`, `tests/components/Runner/bootstrapper.test.ts`, `cypress/e2e/tutorials.cy.ts` (keyboard path). Docs: `src/docs/api-reference/input.md`, `src/docs/api-reference/controller.md`, `src/docs/language-guide/input.md`.
+
+**Tracked follow-ups (deferred):**
+
+- **Local multiplayer** — a player-index parameter on `bind` and the query functions. The API was designed so this can be added as an optional trailing argument without breaking the current surface. `_pollGamepads` currently reads only the first connected pad.
+- **Rumble / haptics** — `gamepad.vibrationActuator` (Chromium-only). Not started.
+- **Runtime rebind UI helpers** — a "press any input" capture so settings screens can let players remap. `clearBindings` + `bind` already cover applying a new binding; the missing piece is detecting what the player just pressed.
+- **Extract a dedicated `softInput` package** — see the P15 follow-up above (`input` + `keyboard` + `controller` out of softGfx; breaking migration, needs its own design spec). Deferred.
 
 ---
 

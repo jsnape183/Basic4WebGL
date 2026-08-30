@@ -4,6 +4,8 @@ The `keyboard` module is a set of named **key codes** — nothing else, no
 functions. Pass them to `input.getKeyDown`, `input.keyPressed`, or
 `input.keyReleased` instead of remembering raw numbers.
 
+For new games, prefer binding these to named actions with [`input.bind`](input) and reading them with `input.held` / `input.pressed` — see the [input](input) reference.
+
 ```basic
 function onupdate(delta)
     if input.getKeyDown(keyboard.LEFT) then
