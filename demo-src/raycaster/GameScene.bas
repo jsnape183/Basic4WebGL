@@ -116,6 +116,15 @@ dim gunshotSound as Audio
 ' zombieGroan's.
 dim zombieDeathSound as Audio
 
+' Background music -- unlike every other sound in this file, this one
+' genuinely IS meant to loop seamlessly (it's a proper ~105s ambient
+' track, not a short effect), so playLoop() is the right call here where
+' it wasn't for zombieGroan/footstepSound/gunshotSound/zombieDeathSound.
+' Kept deliberately quiet (see BG_MUSIC_VOLUME) so it adds atmosphere
+' without competing with the gunshot, the groan, or the footsteps.
+dim bgMusic as Audio
+dim BG_MUSIC_VOLUME
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -160,6 +169,10 @@ Constructor(gameData as GameData)
   self.TEXW = 64
   self.ENIW = 64
   self.FIRE_COOLDOWN_FRAMES = 20
+  ' Low enough to sit under the gunshot/groan/footstep effects (all at
+  ' their default full volume) rather than muffling them, but still
+  ' clearly audible as ambience rather than fading into silence.
+  self.BG_MUSIC_VOLUME = 0.2
   self.flashTimer = self.FIRE_COOLDOWN_FRAMES
   self.muzzleOffsetX = -6
   self.muzzleOffsetY = -92
@@ -841,6 +854,14 @@ function onenter()
     ' though everything had genuinely just been cleared out from under it.
     self.setupHud()
 
+    ' playLoop() restarts the track from the beginning if it's already
+    ' looping (see audio.md), so this genuinely does restart the music
+    ' fresh on every run -- the very first level 1, and every retry after
+    ' death alike -- rather than leaving a stale loop from a previous
+    ' attempt playing under a freshly-constructed bgMusic instance.
+    self.bgMusic.setVolume(self.BG_MUSIC_VOLUME)
+    self.bgMusic.playLoop()
+
     self.playerHealth = 100
     self.damageCooldown = 0
     self.damageFlashTimer = 0
@@ -940,6 +961,7 @@ function setupHud()
     self.footstepSound = new Audio("footstep_concrete_002.ogg")
     self.gunshotSound = new Audio("impactPlate_heavy_004.ogg")
     self.zombieDeathSound = new Audio("freesound_community-zombie-6851.mp3")
+    self.bgMusic = new Audio("yd_Searching.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
@@ -998,12 +1020,13 @@ function onupdate(delta)
 
     if self.playerHealth < 1 then
         ' stage.clear() (triggered by the scenemanager.switch() below)
-        ' wipes the hud/world display containers, but zombieGroan is a
-        ' PIXI.sound instance, not a display object -- switching away
-        ' from GameScene does nothing to it on its own, so without this
-        ' explicit stop() a groan already playing at the moment of death
-        ' would keep right on playing over the game-over screen.
+        ' wipes the hud/world display containers, but zombieGroan and
+        ' bgMusic are PIXI.sound instances, not display objects --
+        ' switching away from GameScene does nothing to them on its own,
+        ' so without these explicit stop() calls both would keep right on
+        ' playing over the game-over screen.
         self.zombieGroan.stop()
+        self.bgMusic.stop()
         self.gameData.levelReached = self.level
         scenemanager.switch("gameover")
         return
