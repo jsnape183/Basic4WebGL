@@ -369,3 +369,50 @@ describe('_sbInput.axis', () => {
     expect(inp.axis('left', 'right')).toBe(0);
   });
 });
+
+describe('_sbInput — keyboard-only path', () => {
+  test('actions resolve with no gamepad present and getGamepads returning []', () => {
+    const inp = loadInput();
+    setPads([]);
+    inp.bind('jump', 'key', 32);
+    inp._pollGamepads();
+    expect(inp._padConnected).toBe(false);
+
+    inp.registerKey(32, true);
+    expect(inp.held('jump')).toBe(true);
+    expect(inp.pressed('jump')).toBe(true);
+    inp._resetFrameInput();
+    expect(inp.pressed('jump')).toBe(false);
+    inp.registerKey(32, false);
+    expect(inp.released('jump')).toBe(true);
+  });
+
+  test('legacy getKeyDown/keyPressed still work alongside the action map', () => {
+    const inp = loadInput();
+    inp.registerKey(37, true);
+    expect(inp.getKeyDown(37)).toBe(true);
+    expect(inp.keyPressed(37)).toBe(true);
+  });
+});
+
+describe('_sbInput._resetFrameInput — pad prev-state roll', () => {
+  test('after reset, _padButtonsPrev equals the last polled _padButtons', () => {
+    const inp = loadInput();
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    const snapshot = inp._padButtons;
+    inp._resetFrameInput();
+    expect(inp._padButtonsPrev).toBe(snapshot);
+    expect(inp._padAxisHalvesPrev).toBe(inp._padAxisHalves);
+  });
+
+  test('a second poll in the same frame produces no spurious edge', () => {
+    const inp = loadInput();
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    expect(inp._justPressed['b0']).toBe(true);
+    inp._resetFrameInput();
+    inp._pollGamepads();
+    expect(inp._justPressed['b0']).toBeUndefined();
+  });
+});
