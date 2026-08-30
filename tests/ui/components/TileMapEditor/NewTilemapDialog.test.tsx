@@ -64,7 +64,7 @@ describe('NewTilemapDialog', () => {
     const createdId = onCreated.mock.calls[0][0];
     const asset = store.getState().assets.byId[createdId];
     expect(asset.name).toBe('untitled.stm');
-    // updated in Task 12: the .stm doc bytes will be written to the blob store.
+    // updated in Task 8: the .stm doc bytes will be written to the blob store.
     // For now only metadata is dispatched.
     expect('content' in asset).toBe(false);
     void decodeContent;

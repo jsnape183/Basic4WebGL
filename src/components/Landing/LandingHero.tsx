@@ -111,7 +111,7 @@ const LandingHero: React.FC = () => {
       { name: 'bullet.png', src: '/bullet.png' },
     ];
     for (const { name, src } of assetDefs) {
-      // TODO(Task 17): write the fetched demo asset bytes to the blob store here
+      // TODO(Task 16): write the fetched demo asset bytes to the blob store here
       void (await fetchAsDataUrl(src));
       dispatch(addAsset({ id: uuidv4(), name, projectId, folderId: null, fullName: name }));
     }
