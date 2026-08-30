@@ -7,7 +7,7 @@ import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 @RegisterTranspilerRule(nodeTypes.TypedElementAccess)
 class TypedElementAccessRule implements IGeneratable {
   generate(node: Tree, table: Symbols | undefined): string {
-    const { collectionSymbol, chain, memberName, kind, isStatement } = node.data;
+    const { collectionSymbol, chain, memberName, kind, isStatement, isAssignment } = node.data;
     // `chain` is a pre-built JS receiver expression (e.g. "this.bullets"),
     // used by the self-field path (SelfFactorRule/SelfRule) where there is
     // no symbol whose formatSymbol() would produce "this.x". The ordinary
@@ -29,6 +29,15 @@ class TypedElementAccessRule implements IGeneratable {
     }
 
     const wrapped = `_sbRequireInit(${ref},"${label}")`;
+
+    // `enemies(0).x = value` — writing a FIELD on the object at that index,
+    // as opposed to calling a method on it (isStatement, below) or reading
+    // the field back (neither flag set). node.children[1] here is the value
+    // expression itself, not a call-argument list.
+    if (isAssignment) {
+      const value = doChild(node, 1, table);
+      return `${wrapped}.${memberName}=${value};`;
+    }
 
     if (isStatement) {
       const args = node.children.length > 1 ? doChild(node, 1, table) : '';

@@ -233,6 +233,33 @@ describe('typed array — member access', () => {
   });
 });
 
+// ─── typed array — element field write ─────────────────────────────────────
+
+describe('typed array — element field write', () => {
+  // Regression test: `widgets(0).x = value` (writing a FIELD, not calling a
+  // method, on a typed array-of-objects element from outside the class) used
+  // to fall through VariableRule's typed-array-element branch with the `.x`
+  // dot already consumed, land on the plain "no dot" array-element-assign
+  // path below it, and silently emit `main.widgets[0]=5` — replacing the
+  // whole Widget object at that index with a bare scalar.
+  const widgetFile = {
+    name: 'Widget',
+    source: ['Class', '  dim x', 'endclass'].join('\n'),
+  };
+
+  test('widgets(0).x = 5 sets the field on the object, not the whole slot', () => {
+    const result = transpileWith(
+      [widgetFile],
+      ['dim widgets(10) as Widget', 'widgets(0).x = 5'].join('\n')
+    );
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain(
+      '_sbRequireInit(main.widgets[0],"widgets(0)").x=5;'
+    );
+    expect(result.code).not.toContain('main.widgets[0]=5');
+  });
+});
+
 // ─── typed dict — declaration ───────────────────────────────────────────────
 
 describe('typed dict — declaration', () => {

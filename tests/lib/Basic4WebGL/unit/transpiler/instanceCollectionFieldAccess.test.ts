@@ -182,3 +182,24 @@ describe('external instance typed-array element — chained call (issue #20)', (
     expect(code).toContain('main.v = main.ship.bullets[0]');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sibling write-side bug to #20's read-side chaining: `ship.bullets(0).x =
+// value` (writing a FIELD on a typed array-of-objects element through an
+// EXTERNAL instance) used the same ObjectPropertyRule branch that only
+// handled a chained *method call* after the inner Dot. With no following
+// '(' it fell through with `.x` already consumed, landed on the
+// SelfArrayAssignNode branch below (which now saw a bare '=' and matched
+// it), and silently emitted `main.ship.bullets[0]=value` — clobbering the
+// whole element instead of setting its field.
+// ---------------------------------------------------------------------------
+
+describe('external instance typed-array element — field write', () => {
+  test('ship.bullets(0).x = 99 sets the field, not the whole slot', () => {
+    const code = compileMainWithShip(['dim ship as Ship()', 'ship.bullets(0).x = 99']);
+    expect(code).toContain(
+      '_sbRequireInit(main.ship.bullets[0],"bullets(0)").x=99;'
+    );
+    expect(code).not.toContain('main.ship.bullets[0]=99');
+  });
+});

@@ -72,6 +72,22 @@ class SelfRule implements IParserRule {
             loc
           );
         }
+
+        // self.enemies(0).x = value — writing a FIELD on the object at that
+        // index (as opposed to calling a method on it, above). Without this
+        // branch, the already-consumed `.x` left the current token as `=`,
+        // which the plain "self.arr(i) = value" branch below would match
+        // and silently replace the whole array slot with a scalar.
+        if (check(tokens.Equals, tokenStream.current())) {
+          matchAndMove(tokens.Equals, tokenStream);
+          const innerExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+          matchAndMove(newLines, tokenStream);
+          return new TypedElementAccessNode(
+            { chain, name: memberName, memberName: innerMember, kind: 'array', isStatement: true, isAssignment: true },
+            [args, innerExpr],
+            loc
+          );
+        }
       }
 
       // self.arr(i) = value — array element assignment on a class member

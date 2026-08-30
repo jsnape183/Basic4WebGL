@@ -155,6 +155,24 @@ class VariableRule implements IParserRule {
               loc
             );
           }
+          // enemies(0).x = value — writing a FIELD on the object at that
+          // index, not calling a method on it. Without this branch, the
+          // already-consumed `.x` left the current token as `=`, which
+          // would otherwise reach the parser as an unexpected token here
+          // (unlike the self/external-instance equivalents, this block
+          // never falls through to the plain "enemies(0) = new Enemy()"
+          // assignment below it, since there is no ambiguity to fall
+          // through into — the dot was already committed to).
+          if (check(tokens.Equals, tokenStream.current())) {
+            matchAndMove(tokens.Equals, tokenStream);
+            const fieldExpr = getParserRule('BoolExpression').parse(tokenStream, symbolTable, undefined);
+            matchAndMove(newLines, tokenStream);
+            return new TypedElementAccessNode(
+              { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: true, isAssignment: true },
+              [dims, fieldExpr],
+              loc
+            );
+          }
           matchAndMove(newLines, tokenStream);
           return new TypedElementAccessNode(
             { collectionSymbol: arraySym, memberName, kind: 'array', isStatement: false },

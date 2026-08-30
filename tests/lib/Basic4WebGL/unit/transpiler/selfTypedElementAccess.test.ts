@@ -46,6 +46,10 @@ const shipFile = {
     '    self.bullets(0).explode()',
     '  endfunction',
     '',
+    '  function setFirstBulletX()',
+    '    self.bullets(0).x = 5',
+    '  endfunction',
+    '',
     '  function readCoin()',
     '    dim v',
     '    v = self.coins(0)',
@@ -87,6 +91,25 @@ describe('self typed-array element — chained call (statement context)', () => 
     expect(result.code).toContain(
       '_sbRequireInit(this.bullets[0],"bullets(0)").explode();'
     );
+  });
+});
+
+describe('self typed-array element — field write (statement context)', () => {
+  // Regression test for the compiler bug where `self.enemies(0).x = value`
+  // (writing a FIELD, not calling a method, on an array-of-objects element)
+  // silently compiled to `this.enemies[0] = value` — replacing the whole
+  // object at that index with a bare scalar instead of setting the field on
+  // it — because SelfRule's inner-Dot branch only handled the method-call
+  // case and fell through, unconsumed-token-free but semantically wrong,
+  // into the plain array-element-assignment branch below it.
+  test('self.bullets(0).x = 5 sets the field on the object, not the whole slot', () => {
+    const result = transpileWith([bulletFile, shipFile], 'dim s as Ship()');
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain(
+      '_sbRequireInit(this.bullets[0],"bullets(0)").x=5;'
+    );
+    // Must NOT have corrupted the array slot itself.
+    expect(result.code).not.toContain('this.bullets[0]=5');
   });
 });
 
