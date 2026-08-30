@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { importProject } from '../features/projects/importProject';
-import { demoRegistry, DemoEntry } from '../features/demos/demoRegistry';
+import { demoRegistry, DemoEntry, loadDemoJson } from '../features/demos/demoRegistry';
 import type { Components } from 'react-markdown';
 
 const descComponents: Components = {
@@ -24,10 +24,17 @@ const DemoRow: React.FC<{ demo: DemoEntry }> = ({ demo }) => {
 
   const existing = projects.find((p) => p.name === demo.name);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const handleTryDemo = async () => {
-    const newId = await dispatch(importProject(demo.json, { tags: demo.tags }));
-    setJustAdded(newId);
+    setBusy(true);
+    try {
+      const json = await loadDemoJson(demo.slug);
+      const newId = await dispatch(importProject(json, { tags: demo.tags }));
+      setJustAdded(newId);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const targetId = justAdded ?? existing?.id;
@@ -62,9 +69,10 @@ const DemoRow: React.FC<{ demo: DemoEntry }> = ({ demo }) => {
           ) : (
             <button
               onClick={handleTryDemo}
-              className="bg-accent-gradient text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition whitespace-nowrap"
+              disabled={busy}
+              className="bg-accent-gradient text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition whitespace-nowrap disabled:opacity-60"
             >
-              Try Demo →
+              {busy ? 'Adding…' : 'Try Demo →'}
             </button>
           )}
           <Link

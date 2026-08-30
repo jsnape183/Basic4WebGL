@@ -1,8 +1,4 @@
 import { ProjectExportJson } from '../projects/exportProject';
-import raycasterJson from '../../docs/demos/Raycaster.b4wgl.json';
-import coinsPlatformerJson from '../../docs/demos/CoinsPlatformer.b4wgl.json';
-import bulletHellShooterJson from '../../docs/demos/BulletHellShooter.b4wgl.json';
-import dungeonExplorerJson from '../../docs/demos/DungeonExplorer.b4wgl.json';
 
 export interface DemoEntry {
   slug: string;
@@ -10,7 +6,8 @@ export interface DemoEntry {
   tags: string[];
   description: string;
   docsSlug: string;
-  json: ProjectExportJson;
+  /** basename of the .b4wgl.json under src/docs/demos/ */
+  file: string;
 }
 
 export const demoRegistry: DemoEntry[] = [
@@ -30,7 +27,7 @@ Firing, landing a hit, and killing an enemy each burst an \`Emitter\` — a part
 
 **Assets required:** \`wall.png\`, \`enemy.png\`, \`enemy_attack.png\`, \`enemy_hit.png\`, \`enemy_dead.png\`, \`gun.png\`, \`particle.png\`, \`healthbar_bg.png\`, \`healthbar_fill.png\`, \`dragon-studio-zombie-sound-357975.mp3\`, \`footstep_concrete_002.ogg\`, \`impactPlate_heavy_004.ogg\`, \`freesound_community-zombie-6851.mp3\`, \`yd_Searching.ogg\` — **Controls:** WASD to move, Q/E to strafe, Space to fire`,
     docsSlug: 'raycaster',
-    json: raycasterJson as ProjectExportJson,
+    file: 'Raycaster',
   },
   {
     slug: 'coins-platformer',
@@ -48,7 +45,7 @@ Reaching the end of a level switches to the next via \`scenemanager.switch(...)\
 
 **Assets required:** \`player.png\`, \`enemy.png\`, \`coin.png\`, \`tilemap_trimmed.png\`, \`particle.png\`, \`level1.json\`, \`level2.json\`, \`level3.json\` — **Controls:** Arrow keys/WASD to move, Space to jump`,
     docsSlug: 'coins-platformer',
-    json: coinsPlatformerJson as ProjectExportJson,
+    file: 'CoinsPlatformer',
   },
   {
     slug: 'bullet-hell-shooter',
@@ -64,7 +61,7 @@ The player aims with the mouse, fires with the left click or spacebar, and can p
 
 **Assets required:** \`player.png\`, \`mob.png\`, \`spawnpoint.png\`, \`spawnpoint_destroyed.png\`, \`pickup.png\`, \`bullet.png\`, a tileset image, three tilemaps — **Controls:** WASD to move, mouse to aim, left click or Space to fire`,
     docsSlug: 'bullet-hell-shooter',
-    json: bulletHellShooterJson as ProjectExportJson,
+    file: 'BulletHellShooter',
   },
   {
     slug: 'dungeon-explorer',
@@ -80,6 +77,13 @@ The player moves with \`setVelocity\` (sliding cleanly along walls, automatic ti
 
 **Assets required:** \`player.png\`, \`enemy.png\`, \`boss.png\`, \`key.png\`, \`sword.png\`, \`heart_full.png\`, \`heart_empty.png\`, a tileset image, one tilemap, \`particle.png\` — **Controls:** WASD to move, J to attack`,
     docsSlug: 'dungeon-explorer',
-    json: dungeonExplorerJson as ProjectExportJson,
+    file: 'DungeonExplorer',
   },
 ];
+
+export async function loadDemoJson(slug: string): Promise<ProjectExportJson> {
+  const entry = demoRegistry.find((d) => d.slug === slug);
+  if (!entry) throw new Error(`Unknown demo slug: ${slug}`);
+  const mod = await import(`../../docs/demos/${entry.file}.b4wgl.json`);
+  return (mod.default ?? mod) as ProjectExportJson;
+}
