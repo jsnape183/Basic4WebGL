@@ -15,11 +15,9 @@ export const deleteProjectWithMainFile =
     );
     files.forEach((file) => dispatch(removeFile((file as IFile).id)));
 
-    const assets = Object.values(state.assets.byId).filter(
-      (asset) => (asset as IAsset).projectId === projectId
-    );
-    const assetIds = assets.map((asset) => (asset as IAsset).id);
-    await deleteAssetBlobs(assetIds);
+    const assetIds = Object.values(state.assets.byId)
+      .filter((asset) => (asset as IAsset).projectId === projectId)
+      .map((asset) => (asset as IAsset).id);
     assetIds.forEach((id) => dispatch(removeAsset(id)));
 
     const folders = state.folders.items.filter(
@@ -29,4 +27,8 @@ export const deleteProjectWithMainFile =
 
     dispatch(clearProjectSelection(projectId));
     dispatch(removeProject(projectId));
+
+    // Blob cleanup is fire-after: the read side already tolerates orphaned blobs,
+    // so the UI updates immediately and this just reclaims quota.
+    await deleteAssetBlobs(assetIds);
   };
