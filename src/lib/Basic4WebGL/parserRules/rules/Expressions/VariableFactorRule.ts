@@ -8,6 +8,7 @@ import Symbols from '@CompilerLib/symbols';
 import { Symbol } from '@CompilerLib/symbols';
 import { Tree } from '@CompilerLib/tree';
 import ArrayLookupNode from '@Basic4WebGL/nodes/ArrayLookupNode';
+import ConstantRefNode from '@Basic4WebGL/nodes/ConstantRefNode';
 import TypedElementAccessNode from '@Basic4WebGL/nodes/TypedElementAccessNode';
 import DictionaryLookupNode from '@Basic4WebGL/nodes/DictionaryLookupNode';
 import SelfArrayLookupNode from '@Basic4WebGL/nodes/SelfArrayLookupNode';
@@ -36,6 +37,15 @@ class VariableFactorRule implements IParserRule {
     const loc = tokenStream.current().loc();
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
+
+    if (symbolTable.check(name, symbolTypes.Constant)) {
+      const constSym = symbolTable.get(name, symbolTypes.Constant) as any;
+      return new ConstantRefNode(
+        { module: constSym.scope.name, name },
+        constSym.valueKind,
+        loc
+      );
+    }
 
     if (symbolTable.check(name, symbolTypes.Module)) {
       return getParserRule('ModuleFactor').parse(tokenStream, symbolTable, {

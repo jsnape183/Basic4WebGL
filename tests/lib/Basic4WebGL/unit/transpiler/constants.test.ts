@@ -1,5 +1,11 @@
 import { describe, test, expect } from 'vitest';
+import { readFileSync } from 'fs';
 import compiler from '@Basic4WebGL/index';
+
+const mathLib = {
+  name: 'math',
+  source: readFileSync('src/lib/Basic4WebGL/defs/math.bas', 'utf-8'),
+};
 
 const transpile = (
   source: string,
@@ -43,13 +49,43 @@ describe('const — block form', () => {
       'endconst',
       'function test()',
       '  dim x',
-      '  x = 1',
+      '  x = MAX_HEALTH',
       'endfunction',
     ].join('\n');
     const result = transpile(src);
     expect(result.diagnostics).toHaveLength(0);
-    // TODO(Task 8): bare-ref resolution (`x = MAX_HEALTH` -> `_const_main.max_health`)
-    // needs VariableFactorRule; assertion re-added there.
+    expect(result.code).toContain('_const_main.max_health');
+  });
+});
+
+describe('const — bare references', () => {
+  test('bare reference in an expression compiles to _const_<module>.<name>', () => {
+    const src = [
+      'const MAX = 100',
+      'function test()',
+      '  dim x',
+      '  x = MAX + 1',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_const_main.max');
+  });
+
+  test('bare reference as a function argument compiles', () => {
+    const src = [
+      'const SPEED = 5',
+      'function test()',
+      '  dim x',
+      '  x = math.max(SPEED, 1)',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({
+      lib: [mathLib],
+      files: [{ name: 'Main.bas', source: src }],
+    });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_const_main.speed');
   });
 });
 
