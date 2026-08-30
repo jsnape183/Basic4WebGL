@@ -1,7 +1,7 @@
 # IndexedDB Asset Storage — Design
 
 **Date:** 2026-08-30
-**Status:** Approved, ready for implementation plan
+**Status:** Approved. Plan: `docs/superpowers/plans/2026-08-30-indexeddb-asset-storage.md` (20 tasks). The plan corrects several details this spec got wrong about the current runner asset path and the sync→async ripple — where they differ, the plan is authoritative.
 
 ## Problem
 
@@ -135,15 +135,21 @@ export function useAssetText(assetId: string | undefined): { text: string | unde
 - `src/components/AssetPreview/TextEditor.tsx` — seed the editor draft once loaded
 - `src/components/TileMapEditor/index.tsx` — `decodeStmContent(text)` once loaded; show a loading state until then
 
-### Runner (`src/components/Runner/index.tsx`)
+### Runner
 
-The `assets` prop is `Array<{ name: string; src: string }>` and gets `JSON.stringify`'d into the bootstrapper `srcDoc`. The component that supplies this prop (trace from `EditPage` / wherever `<Runner assets=...>` is rendered) resolves it just before Run:
+**Correction (found during planning): the runner does not take an `assets` prop today.** `bootstrapper.html` calls `_sb.preloadFromLocalStorage(projectId)` / `_sb.preloadAudioFromLocalStorage(projectId)` — engine methods that read `localStorage['persist:softBASIC']` **from inside the iframe** and parse `state.assets.byId` for base64 content. Those two methods break the moment assets leave localStorage, so the whole runtime delivery path is replaced:
 
-- For each project asset: `getAssetBlob(id)` → `URL.createObjectURL(blob)` → `{ name: fullName ?? name, src: blobUrl }`.
-- Hold the blob URLs in a ref; `URL.revokeObjectURL` them when the iframe unmounts or a new Run replaces them.
-- `srcdoc` iframes are same-origin with the parent document, so `blob:` URLs minted by the parent resolve inside the iframe (`new Image().src`, `new Audio()`, `fetch`).
+- New `useRunnerAssets(projectId)` hook — selects all project assets (all folders, via `makeSelectAssetsByProject`), `await getAssetBlob(id)` for each, converts to a manifest `Array<{ name, src }>`. Runner path uses **data URLs** (`blobToDataUrl`) as the primary representation — that is exactly what the engine consumes today, and a parent-minted `blob:` URL crossing the `srcdoc` + `sandbox="allow-scripts allow-same-origin"` boundary cannot be verified by the automated suite (PIXI's loader / `@pixi/sound` add further failure surface). Blob-URL optimization for the runner is a deferred follow-up.
+- Thread the manifest as a prop through `Preview` → `EditPage` → `Runner`, with a "loading assets" gate so the iframe does not mount until the manifest resolves.
+- `Runner` splits the manifest by file extension: images/other → `_sb.preload(...)`; audio → a **new** `_sb.preloadAudioManifest(...)` method in `engine/audio.js` (there is no manifest-based audio preload today — only the localStorage one).
+- Delete `_sb.preloadFromLocalStorage` / `_sb.preloadAudioFromLocalStorage` from the engine; update `tests/components/Runner/bootstrapper.test.ts`, which asserts on their presence / call order.
+- `LandingHero` already passes an `assets` prop (public-path URLs, images only) — reconcile with the new prop shape.
 
-**Risk / fallback:** if PIXI's loader or `pixi-sound` fails to load a `blob:` URL across the `srcdoc` boundary during implementation, fall back to `blobToDataUrl` for the runner path only (re-encodes on each Run — a user-initiated action, acceptable cost). This is a localized change to the runner asset-resolution step; the rest of the design is unaffected.
+**Residual risk for manual check:** PIXI v8 choking on very large (multi-MB) data URLs. If that surfaces it is a genuinely new problem, not covered here.
+
+### In-app previews (top document, not the iframe)
+
+`ImagePreview`, `AudioPreview`, and the TileMapEditor tileset slicing render in the top document, so they safely use `blob:` object URLs via `useAssetObjectUrl` (below).
 
 ## Export — byte-identical output
 
