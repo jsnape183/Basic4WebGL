@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "project": {
+    "name": "dungeon-explorer"
+  },
+  "folders": [],
+  "files": [
+    {
+      "id": "c4ba4eeb-9d72-45db-8645-b542b10c64dd",
+      "name": "GameOverScene.bas",
+      "source": "Class\nExtends scene\n\ndim failText as text\n\nConstructor()\nEndConstructor\n\nfunction onenter()\n  dim t1 as text\n  t1 = new text(\"YOU DIED\", 320, 200)\n  t1.setStyle(28, 255, 60, 60)\n  hud.add(t1)\n  self.failText = t1\nendfunction\n\nfunction onkeydown(key)\n  scenemanager.switch(\"dungeon\")\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "GameOverScene.bas"
+    },
+    {
+      "id": "518c9bad-97b3-4611-be3f-89eb0b4b827e",
+      "name": "Main.bas",
+      "source": "' demo-src/dungeon-explorer/Main.bas\nfunction oninit()\n  world.setPixelPerfect(true)\nendfunction\n\ndim titlescene = new TitleScene()\ndim dungeonscene = new DungeonScene()\ndim winscene = new WinScene()\ndim gameoverscene = new GameOverScene()\n\nscenemanager.register(\"title\", titlescene)\nscenemanager.register(\"dungeon\", dungeonscene)\nscenemanager.register(\"winscene\", winscene)\nscenemanager.register(\"gameover\", gameoverscene)\nscenemanager.switch(\"title\")\n",
+      "folderId": null,
+      "fullName": "Main.bas"
+    },
+    {
+      "id": "ef02697c-341a-4b32-b2a0-1059900bf1fa",
+      "name": "TitleScene.bas",
+      "source": "Class\nExtends scene\n\ndim titleText as text\ndim promptText as text\n\nConstructor()\nEndConstructor\n\nfunction onenter()\n  world.setBackground(15, 10, 20)\n  dim t1 as text\n  t1 = new text(\"DUNGEON EXPLORER\", 260, 200)\n  t1.setStyle(30, 255, 220, 120)\n  hud.add(t1)\n  self.titleText = t1\n\n  dim t2 as text\n  t2 = new text(\"Press any key to start\", 290, 260)\n  t2.setStyle(16, 200, 200, 200)\n  hud.add(t2)\n  self.promptText = t2\nendfunction\n\nfunction onkeydown(key)\n  scenemanager.switch(\"dungeon\")\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "TitleScene.bas"
+    },
+    {
+      "id": "899ad50f-b3f9-46bc-9f31-e1d64e93b2b4",
+      "name": "WinScene.bas",
+      "source": "Class\nExtends scene\n\ndim winText as text\n\nConstructor()\nEndConstructor\n\nfunction onenter()\n  dim t1 as text\n  t1 = new text(\"THE DUNGEON IS CLEAR\", 240, 200)\n  t1.setStyle(26, 255, 255, 100)\n  hud.add(t1)\n  self.winText = t1\nendfunction\n\nfunction onkeydown(key)\n  scenemanager.switch(\"title\")\nendfunction\n\nEndClass\n",
+      "folderId": null,
+      "fullName": "WinScene.bas"
+    }
+  ],
+  "assets": [],
+  "fileOrder": {
+    ":root": [
+      "c4ba4eeb-9d72-45db-8645-b542b10c64dd",
+      "518c9bad-97b3-4611-be3f-89eb0b4b827e",
+      "ef02697c-341a-4b32-b2a0-1059900bf1fa",
+      "899ad50f-b3f9-46bc-9f31-e1d64e93b2b4"
+    ]
+  },
+  "assetOrder": {
+    ":root": []
+  }
+}

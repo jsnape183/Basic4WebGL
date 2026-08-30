@@ -89,6 +89,27 @@
 
       const _throwError = (e)=>{
         window.parent.postMessage({type:'runtimeError', message: e.message});
+        // Every error in this game reaches the parent IDE through here --
+        // scene.js's per-call try/catches, the unhandledrejection listener,
+        // and window.onerror below all funnel into this one function. But
+        // posting the message and then throwing does NOT stop the game:
+        // this throw only aborts the current tick, and PIXI's ticker keeps
+        // scheduling the next requestAnimationFrame regardless of whether
+        // the previous one threw. Without stopping the ticker here, a
+        // recoverable-looking single error (e.g. a missing asset) instead
+        // becomes an infinite loop -- the same broken code path runs again
+        // next frame, throws again, forever, at 60fps, with the SAME
+        // postMessage firing every single time. That's not a crash the
+        // page recovers from; it's the tab pegging a core and the console
+        // filling up until the page is reloaded, which is exactly what "the
+        // game freezes and the browser tab hangs" reports were describing --
+        // not a genuinely unbounded computation, just an error handler that
+        // never actually stopped anything. `app`/`app.ticker` may not exist
+        // yet if this fires before PIXI finishes initialising, hence the
+        // guard.
+        if (typeof app !== 'undefined' && app && app.ticker) {
+          app.ticker.stop();
+        }
         throw Error(e.message);
       }
 

@@ -349,8 +349,10 @@ constants-only module, and its own docs page.
 Engine key state is keyed by the DOM legacy **`keyCode`** number
 (`src/components/Runner/engine/input.js`: `getKeyDown(keyCode)` indexes
 `this._keys[keyCode]`), so every constant is a legacy `keyCode` integer.
-Digit names are prefixed `NUM_` because an identifier cannot start with a
-digit; letters `A`–`Z` are bare.
+Number-row digits are named `DIGIT_0`–`DIGIT_9` because an identifier cannot
+start with a digit; the `NUM_` prefix is reserved for numpad keys if/when
+they are added later. Letters `A`–`Z` are bare. Function keys (F1–F12) are
+skipped for now — browsers intercept most — and can be appended later.
 
 | Name(s) | Value(s) | Notes |
 |---------|----------|-------|
@@ -360,13 +362,16 @@ digit; letters `A`–`Z` are bare.
 | `ESCAPE` | 27 | |
 | `TAB` | 9 | |
 | `BACKSPACE` | 8 | |
+| `DELETE` | 46 | |
+| `HOME` | 36 | |
+| `END` | 35 | |
 | `SHIFT` | 16 | |
 | `CTRL` | 17 | |
 | `ALT` | 18 | |
 | `A`–`Z` | 65–90 | `keyboard.A` … `keyboard.Z` |
-| `NUM_0`–`NUM_9` | 48–57 | top-row digits; `keyboard.NUM_0` … `keyboard.NUM_9` |
+| `DIGIT_0`–`DIGIT_9` | 48–57 | number-row digits; `keyboard.DIGIT_0` … `keyboard.DIGIT_9` |
 
-Total: 4 + 6 + 26 + 10 = **46 constants**, one `const … endconst` block.
+Total: 4 + 9 + 26 + 10 = **49 constants**, one `const … endconst` block.
 
 Full `.bas` file sketch:
 
@@ -382,6 +387,9 @@ const
     ESCAPE = 27
     TAB = 9
     BACKSPACE = 8
+    DELETE = 46
+    HOME = 36
+    END = 35
     SHIFT = 16
     CTRL = 17
     ALT = 18
@@ -389,10 +397,10 @@ const
     B = 66
     ' … C–Y …
     Z = 90
-    NUM_0 = 48
-    NUM_1 = 49
-    ' … NUM_2–NUM_8 …
-    NUM_9 = 57
+    DIGIT_0 = 48
+    DIGIT_1 = 49
+    ' … DIGIT_2–DIGIT_8 …
+    DIGIT_9 = 57
 endconst
 ```
 
@@ -444,5 +452,5 @@ the separate controller spec (§11).
 | Override | No syntax path for user code to override a library constant |
 | Editor | Completion (bare + dot), hover (name + value), diagnostics via standard path |
 | Engine / bootstrapper | No engine change (compile-time only); the new `keyboard` def is registered as a package in `constants/packageModules.ts` + `softcore` moduleNames |
-| Worked example | New hand-written `defs/keyboard.bas` — a 46-constant `const … endconst` block (arrows, space, enter, escape, tab, backspace, shift, ctrl, alt, A–Z, NUM_0–NUM_9), legacy `keyCode` values, its own API Reference page |
+| Worked example | New hand-written `defs/keyboard.bas` — a 49-constant `const … endconst` block (arrows, space, enter, escape, tab, backspace, delete, home, end, shift, ctrl, alt, A–Z, DIGIT_0–DIGIT_9), legacy `keyCode` values, its own API Reference page |
 | Next consumers | `controller` constants module + `input` gamepad/action-map API — separate spec |
