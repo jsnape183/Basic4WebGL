@@ -956,6 +956,13 @@ function onupdate(delta)
     dim zombieGroanVolume
 
     if self.playerHealth < 1 then
+        ' stage.clear() (triggered by the scenemanager.switch() below)
+        ' wipes the hud/world display containers, but zombieGroan is a
+        ' PIXI.sound instance, not a display object -- switching away
+        ' from GameScene does nothing to it on its own, so without this
+        ' explicit stop() a groan already playing at the moment of death
+        ' would keep right on playing over the game-over screen.
+        self.zombieGroan.stop()
         self.gameData.levelReached = self.level
         scenemanager.switch("gameover")
         return
