@@ -37,6 +37,8 @@ Levels progress endlessly — there's no final level, no win screen, only "how m
 
 The maze exit needed no new image. `pickExitPosition()` places it with the same reroll-until-far-enough pattern `pickEnemySpawn()` already used for enemy spawns, except it rerolls until the exit lands at least 60% of the maze's diagonal away from the player's spawn corner, so reaching it is a genuine trek rather than a lucky first turn. `projectExit()` mirrors `projectEnemy()`'s camera-plane transform exactly — same formula, a single object instead of a loop over an array — and `drawExit()` mirrors `drawEnemy()`'s column-by-column, z-buffer-occluded draw loop, but calls `drawing.drawRect` with a flat gold fill colour (`pen.setFillColor(255, 215, 0)`) per visible column instead of sampling `drawing.drawImageStrip` from a texture. A billboard doesn't need to be textured to behave like one on screen; it only needs the same projection math and the same z-buffer occlusion check every other billboard in this demo already has.
 
+`pickEnemySpawn()`'s own "far enough" distance used to be a flat 8 tiles, regardless of the current maze's actual size — reasonable at level 13's 33×33, but at level 1's 9×9 (and every small early maze after it), 8 tiles is close to the whole map's diagonal, so almost every candidate cell failed the check and the reroll loop burned all its tries without ever finding one that passed, silently falling back to whatever candidate it tried last — which could easily still be right next to the player's spawn corner. Reported live as getting hit almost the instant a level starts. It now scales the same way `pickExitPosition()`'s own distance already does — `mazegrid.getMapW() * 0.35`, a smaller fraction than the exit's 0.6 since enemies only need to not be adjacent, not be a trek away — keeping the requirement satisfiable at every maze size. Confirmed live: printed each enemy's actual spawn distance across two separate mazes at level 1 (`mapW = 9`, so `minDist = 3.15`) — every one landed between 4 and 7.2 tiles out, comfortably past the threshold.
+
 ### The compass arrow, and a `drawLine` quirk worth knowing
 
 `drawCompass()` draws a small hand-rotated arrow near the top-right corner of the screen every frame, always pointing toward the exit's direction relative to the player's current facing — regardless of whether the exit itself is currently on screen, which matters once mazes started growing past the original 33×33, since a distant exit can sit many cells outside the player's view for most of a level. The arrow is two `drawing.drawLine` calls forming a chevron, rotated with plain `math.cos`/`math.sin` from `math.atan2(exitY - posY, exitX - posX)` relative to the player's own facing angle (`atan2(dirY, dirX)`) — no image asset, same reasoning as the exit billboard above.
@@ -899,16 +901,32 @@ function castRays()
 endfunction
 
 function pickEnemySpawn()
+  ' minDist used to be a flat 8 tiles, regardless of the current maze's
+  ' actual size -- fine at level 13's 33x33, but at level 1's 9x9 (and
+  ' every small early maze after it) 8 tiles is close to the whole map's
+  ' diagonal, so almost every candidate cell failed the "far enough"
+  ' check and the loop burned all 20 tries without ever finding one that
+  ' passed, silently falling back to whatever candidate it last tried --
+  ' which could easily still be right next to the player's spawn corner.
+  ' Reported live as getting hit almost the instant a level starts.
+  ' Scaling minDist off mazegrid.getMapW() (same pattern
+  ' pickExitPosition() already uses for the exit, just a smaller
+  ' fraction -- enemies only need to not be adjacent, not be a trek away
+  ' like the exit) keeps the requirement satisfiable at every maze size.
   dim spawn
   dim ex
   dim ey
   dim tries
+  dim minDist
   dim result(2)
+
+  minDist = mazegrid.getMapW() * 0.35
+
   tries = 0
   spawn = mazegrid.randomOpenCell()
   ex = spawn(0) + 0.5
   ey = spawn(1) + 0.5
-  while math.distance(ex, ey, self.posX, self.posY) < 8 and tries < 20
+  while math.distance(ex, ey, self.posX, self.posY) < minDist and tries < 30
     spawn = mazegrid.randomOpenCell()
     ex = spawn(0) + 0.5
     ey = spawn(1) + 0.5
