@@ -65,30 +65,31 @@ const _sbInput = {
     if (!pad) {
       this._padButtons = [];
       this._padAxisHalves = [0, 0, 0, 0, 0, 0, 0, 0];
-      return;
+    } else {
+      this._padButtons = Array.from(pad.buttons, (b) => ({
+        pressed: !!b.pressed,
+        value: typeof b.value === 'number' ? b.value : (b.pressed ? 1 : 0),
+      }));
+
+      const dz = this._deadzone;
+      const rescale = (x) => {
+        const m = Math.min(Math.max(x - dz, 0), 1);
+        return dz < 1 ? m / (1 - dz) : m;
+      };
+      const ax = pad.axes || [];
+      const lx = ax[0] || 0, ly = ax[1] || 0, rx = ax[2] || 0, ry = ax[3] || 0;
+      this._padAxisHalves = [
+        rescale(-lx), rescale(lx),
+        rescale(-ly), rescale(ly),
+        rescale(-rx), rescale(rx),
+        rescale(-ry), rescale(ry),
+      ];
     }
 
-    this._padButtons = Array.from(pad.buttons, (b) => ({
-      pressed: !!b.pressed,
-      value: typeof b.value === 'number' ? b.value : (b.pressed ? 1 : 0),
-    }));
-
-    const dz = this._deadzone;
-    const rescale = (x) => {
-      const m = Math.min(Math.max(x - dz, 0), 1);
-      return dz < 1 ? m / (1 - dz) : m;
-    };
-    const ax = pad.axes || [];
-    const lx = ax[0] || 0, ly = ax[1] || 0, rx = ax[2] || 0, ry = ax[3] || 0;
-    this._padAxisHalves = [
-      rescale(-lx), rescale(lx),
-      rescale(-ly), rescale(ly),
-      rescale(-rx), rescale(rx),
-      rescale(-ry), rescale(ry),
-    ];
-
-    for (let i = 0; i < this._padButtons.length; i++) {
-      const now = this._padButtons[i].pressed;
+    const nButtons = Math.max(this._padButtons.length, this._padButtonsPrev.length);
+    for (let i = 0; i < nButtons; i++) {
+      const cur = this._padButtons[i];
+      const now = cur ? cur.pressed : false;
       const prev = this._padButtonsPrev[i];
       const was = prev ? prev.pressed : false;
       if (now && !was) this._justPressed['b' + i] = true;

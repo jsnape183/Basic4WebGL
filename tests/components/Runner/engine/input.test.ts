@@ -196,3 +196,25 @@ describe('_sbInput._pollGamepads — analog->digital crossover at 0.5', () => {
     expect(inp._justReleased['h1']).toBe(true);
   });
 });
+
+describe('_sbInput._pollGamepads — disconnect flushes releases', () => {
+  test('a held button that disappears on disconnect fires a released edge', () => {
+    const inp = loadInput();
+    setPads([makePad({ buttons: [1] })]);
+    inp._pollGamepads();
+    inp._resetFrameInput();
+    setPads([]); // disconnect
+    inp._pollGamepads();
+    expect(inp._justReleased['b0']).toBe(true);
+    expect(inp._padConnected).toBe(false);
+  });
+  test('a deflected stick that disconnects fires an h# released edge', () => {
+    const inp = loadInput();
+    setPads([makePad({ axes: [1, 0, 0, 0] })]);
+    inp._pollGamepads();
+    inp._resetFrameInput();
+    setPads([]);
+    inp._pollGamepads();
+    expect(inp._justReleased['h1']).toBe(true);
+  });
+});
