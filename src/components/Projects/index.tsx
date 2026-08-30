@@ -400,7 +400,7 @@ const ProjectList: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       let json: ProjectExportJson;
       try {
         json = JSON.parse(event.target?.result as string) as ProjectExportJson;
@@ -418,17 +418,17 @@ const ProjectList: React.FC = () => {
         setImportConfirmName('');
         setShowImportOverwriteModal(true);
       } else {
-        dispatch(importProject(json));
+        await dispatch(importProject(json));
       }
     };
     reader.readAsText(file);
   };
 
-  const handleImportOverwrite = () => {
+  const handleImportOverwrite = async () => {
     if (!importPendingJson || importConfirmName !== importPendingJson.project.name) return;
     const existing = projects.find((p) => p.name === importPendingJson.project.name);
     if (existing) dispatch(deleteProjectWithMainFile(existing.id));
-    dispatch(importProject(importPendingJson));
+    await dispatch(importProject(importPendingJson));
     setShowImportOverwriteModal(false);
     setImportPendingJson(null);
     setImportConfirmName('');

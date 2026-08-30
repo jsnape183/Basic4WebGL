@@ -5,10 +5,12 @@ import { addFolder } from '../folders/foldersSlice';
 import { addFile } from '../files/filesSlice';
 import { addAsset } from '../assets/assetsSlice';
 import { ProjectExportJson } from './exportProject';
+import { putAssetBlob } from '../../lib/storage/assetBlobStore';
+import { dataUrlToBlob } from '../../lib/storage/dataUrl';
 
 export const importProject =
   (json: ProjectExportJson, options?: { tags?: string[] }) =>
-  (dispatch: AppDispatch): string => {
+  async (dispatch: AppDispatch): Promise<string> => {
     const newProjectId = uuidv4();
 
     const folderIdMap: Record<string, string> = {};
@@ -67,6 +69,13 @@ export const importProject =
       }));
     });
 
+    // Write every asset's bytes to the blob store first, then dispatch metadata.
+    await Promise.all(
+      json.assets.map((a) =>
+        a.content ? putAssetBlob(assetIdMap[a.id], dataUrlToBlob(a.content)) : Promise.resolve(),
+      ),
+    );
+
     // Dispatch assets in assetOrder order
     const dispatchedAssetIds = new Set<string>();
     Object.values(json.assetOrder).forEach((orderedIds) => {
@@ -76,7 +85,6 @@ export const importProject =
         dispatch(addAsset({
           id: assetIdMap[oldId],
           name: asset.name,
-          // TODO(Task 13): write asset.content bytes to the blob store here
           projectId: newProjectId,
           folderId: asset.folderId ? (folderIdMap[asset.folderId] ?? null) : null,
           fullName: asset.fullName,
@@ -89,7 +97,6 @@ export const importProject =
       dispatch(addAsset({
         id: assetIdMap[asset.id],
         name: asset.name,
-        // TODO(Task 13): write asset.content bytes to the blob store here
         projectId: newProjectId,
         folderId: asset.folderId ? (folderIdMap[asset.folderId] ?? null) : null,
         fullName: asset.fullName,

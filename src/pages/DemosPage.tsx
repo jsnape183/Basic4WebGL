@@ -25,8 +25,8 @@ const DemoRow: React.FC<{ demo: DemoEntry }> = ({ demo }) => {
   const existing = projects.find((p) => p.name === demo.name);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
-  const handleTryDemo = () => {
-    const newId = dispatch(importProject(demo.json, { tags: demo.tags }));
+  const handleTryDemo = async () => {
+    const newId = await dispatch(importProject(demo.json, { tags: demo.tags }));
     setJustAdded(newId);
   };
 
