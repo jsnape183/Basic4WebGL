@@ -1,4 +1,5 @@
-import { matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import { check, matchAndMove } from '@CompilerLib/parser/rulesHelper';
+import { CompilationError } from '@CompilerLib/errors';
 import TokenStream from '@CompilerLib/lexer/tokens/tokenStream';
 import IParserRule, {
   RegisterParserRule,
@@ -23,6 +24,21 @@ class ModuleRule implements IParserRule {
     try {
       matchAndMove(tokens.Variable, tokenStream);
       const functionName = tokenStream.prev().text;
+
+      let constSym: any;
+      try {
+        constSym = symbolTable.getInScope(functionName, symbolTypes.Constant, name);
+      } catch {
+        constSym = undefined;
+      }
+      if (constSym) {
+        throw new CompilationError(
+          check(tokens.Equals, tokenStream.current())
+            ? `'${name}.${functionName}' is a constant and cannot be assigned.`
+            : `'${name}.${functionName}' is a constant — it can't be used as a statement on its own.`
+        );
+      }
+
       const functionSymbol = symbolTable.getInScope(functionName, symbolTypes.Function, name);
       node = getParserRule('FunctionCall').parse(
         tokenStream,

@@ -175,3 +175,38 @@ describe('const — diagnostics', () => {
     expectError('if true then\n  const A = 1\nendif\n', 'top level');
   });
 });
+
+describe('const — namespaced references (cross-file)', () => {
+  // A second user `.bas` file passed via `files:` does NOT auto-register as a
+  // module namespace (verified: `keys.SPACE` then fails with "Variable keys ...
+  // has not been declared"). Cross-file modules are supplied via `lib:` — the
+  // same mechanism the `defs` modules (math, string, ...) use — where the entry
+  // `name` is the module name directly. Mirrors the `mathLib` setup above.
+  const keys = {
+    name: 'keys',
+    source: ['const', '  SPACE = 32', '  LEFT = 37', 'endconst'].join('\n'),
+  };
+
+  test('module.CONSTANT in an expression compiles to _const_keys.<name>', () => {
+    const src = [
+      'function test()',
+      '  dim x',
+      '  x = keys.SPACE',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ lib: [keys], files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_const_keys.space');
+  });
+
+  test('assigning to module.CONSTANT is rejected', () => {
+    const src = [
+      'function test()',
+      '  keys.SPACE = 5',
+      'endfunction',
+    ].join('\n');
+    const result = compiler.transpile({ lib: [keys], files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message.toLowerCase()).toContain('constant');
+  });
+});
