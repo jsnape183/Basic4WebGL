@@ -42,21 +42,24 @@ export const useRunnerMessages = (projectId?: string) => {
         case 'runtimeError':
           dispatch(addLog({ type: LogItemType.Error, text: e.data.message }));
           if (projectId) {
-            try {
-              const state = store.getState();
-              const exportJson = buildExportJson(projectId, state);
-              // Strip asset binary content — source files are what matter for reproduction
-              const sanitized = {
-                ...exportJson,
-                assets: exportJson.assets.map(({ id, name, fullName, folderId }) => ({ id, name, fullName, folderId })),
-              };
-              Sentry.captureMessage(e.data.message, {
-                level: 'error',
-                extra: { project: sanitized },
-              });
-            } catch {
-              Sentry.captureMessage(e.data.message, { level: 'error' });
-            }
+            const message = e.data.message;
+            void (async () => {
+              try {
+                const state = store.getState();
+                const exportJson = await buildExportJson(projectId, state);
+                // Strip asset binary content — source files are what matter for reproduction
+                const sanitized = {
+                  ...exportJson,
+                  assets: exportJson.assets.map(({ id, name, fullName, folderId }) => ({ id, name, fullName, folderId })),
+                };
+                Sentry.captureMessage(message, {
+                  level: 'error',
+                  extra: { project: sanitized },
+                });
+              } catch {
+                Sentry.captureMessage(message, { level: 'error' });
+              }
+            })();
           }
           break;
         default:

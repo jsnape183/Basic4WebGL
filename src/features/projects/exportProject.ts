@@ -3,6 +3,8 @@ import { Project } from './projectsSlice';
 import { IFile } from '../files/filesSlice';
 import { IAsset } from '../assets/assetsSlice';
 import { IFolder } from '../folders/foldersSlice';
+import { getAssetBlob } from '../../lib/storage/assetBlobStore';
+import { blobToDataUrl } from '../../lib/storage/dataUrl';
 
 export interface ProjectExportJson {
   version: 1;
@@ -21,7 +23,10 @@ type ExportableState = {
   assets: { byId: Record<string, IAsset>; assetOrder: Record<string, string[]> };
 };
 
-export function buildExportJson(projectId: string, state: ExportableState): ProjectExportJson {
+export async function buildExportJson(
+  projectId: string,
+  state: ExportableState,
+): Promise<ProjectExportJson> {
   const project = state.projects.items.find((p) => p.id === projectId);
   if (!project) throw new Error(`Project ${projectId} not found`);
 
@@ -33,10 +38,15 @@ export function buildExportJson(projectId: string, state: ExportableState): Proj
     .filter((f) => f.projectId === projectId)
     .map(({ id, name, source, folderId, fullName }) => ({ id, name, source, folderId, fullName }));
 
-  // TODO(Task 8): make buildExportJson async and read real bytes from the blob store.
-  const assets = Object.values(state.assets.byId)
-    .filter((a) => a.projectId === projectId)
-    .map(({ id, name, folderId, fullName }) => ({ id, name, folderId, fullName, content: '' }));
+  const assets = await Promise.all(
+    Object.values(state.assets.byId)
+      .filter((a) => a.projectId === projectId)
+      .map(async ({ id, name, folderId, fullName }) => {
+        const blob = await getAssetBlob(id);
+        const content = blob ? await blobToDataUrl(blob) : '';
+        return { id, name, content, folderId, fullName };
+      }),
+  );
 
   const fileOrder: Record<string, string[]> = {};
   Object.entries(state.files.fileOrder).forEach(([key, ids]) => {
@@ -68,10 +78,10 @@ export function triggerDownload(json: ProjectExportJson, filename: string): void
 }
 
 export const exportProject =
-  (projectId: string) => (_dispatch: AppDispatch, getState: () => RootState) => {
+  (projectId: string) => async (_dispatch: AppDispatch, getState: () => RootState) => {
     const state = getState();
     const project = state.projects.items.find((p) => p.id === projectId);
     if (!project) return;
-    const json = buildExportJson(projectId, state);
+    const json = await buildExportJson(projectId, state);
     triggerDownload(json, `${project.name}.b4wgl.json`);
   };

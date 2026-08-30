@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import assetsReducer, { addAsset } from '../../../../src/features/assets/assetsSlice';
 import NewTilemapDialog from '../../../../src/components/TileMapEditor/NewTilemapDialog';
+import { getAssetBlob, _clearAllAssetBlobsForTests } from '../../../../src/lib/storage/assetBlobStore';
 
-const decodeContent = (content: string) =>
-  JSON.parse(decodeURIComponent(escape(atob(content.split(',')[1]))));
+beforeEach(async () => {
+  await _clearAllAssetBlobsForTests();
+});
 
 function makeStoreWithTileset() {
   const store = configureStore({ reducer: { assets: assetsReducer } });
@@ -64,10 +66,20 @@ describe('NewTilemapDialog', () => {
     const createdId = onCreated.mock.calls[0][0];
     const asset = store.getState().assets.byId[createdId];
     expect(asset.name).toBe('untitled.stm');
-    // updated in Task 8: the .stm doc bytes will be written to the blob store.
-    // For now only metadata is dispatched.
     expect('content' in asset).toBe(false);
-    void decodeContent;
+
+    const blob = await getAssetBlob(createdId);
+    expect(blob).toBeDefined();
+    expect(blob!.type).toBe('application/json');
+    const doc = JSON.parse(await blob!.text());
+    expect(doc).toEqual({
+      tileWidth: 16,
+      tileHeight: 16,
+      tileImage: 'tileset.png',
+      layers: {
+        background: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0)),
+      },
+    });
   });
 
   test('shows an error when no tileset image is chosen', async () => {

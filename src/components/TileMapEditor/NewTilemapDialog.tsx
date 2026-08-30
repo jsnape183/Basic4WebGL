@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from '../../store';
 import { addAsset } from '../../features/assets/assetsSlice';
 import { validateAssetName } from '../TreePanel/AssetTree/validateAssetName';
 import { getAssetType } from '../AssetPreview/getAssetType';
+import { putAssetBlob } from '../../lib/storage/assetBlobStore';
 
 type Props = {
   projectId: string;
@@ -33,24 +34,20 @@ const NewTilemapDialog: React.FC<Props> = ({ projectId, onCreated, onCancel }) =
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const uploadTilesetFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const id = crypto.randomUUID();
-      // TODO(Task 8): write the uploaded tileset bytes to the blob store here
-      dispatch(addAsset({
-        id,
-        name: file.name,
-        projectId,
-        folderId: null,
-        fullName: file.name,
-      }));
-      setTileImageName(file.name);
-    };
-    reader.readAsDataURL(file);
+  const uploadTilesetFile = async (file: File) => {
+    const id = crypto.randomUUID();
+    await putAssetBlob(id, file);
+    dispatch(addAsset({
+      id,
+      name: file.name,
+      projectId,
+      folderId: null,
+      fullName: file.name,
+    }));
+    setTileImageName(file.name);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const name = filename.trim();
     const nameError = validateAssetName(name, allAssets, null);
     if (nameError) { setError(nameError); return; }
@@ -61,10 +58,8 @@ const NewTilemapDialog: React.FC<Props> = ({ projectId, onCreated, onCancel }) =
     }
     const data = Array.from({ length: rows }, () => Array.from({ length: cols }, () => 0));
     const doc = { tileWidth, tileHeight, tileImage: tileImageName, layers: { background: data } };
-    const json = JSON.stringify(doc);
     const id = crypto.randomUUID();
-    // TODO(Task 8): putAssetBlob(id, new Blob([json], { type: "application/json" }))
-    void json;
+    await putAssetBlob(id, new Blob([JSON.stringify(doc)], { type: 'application/json' }));
     dispatch(addAsset({
       id,
       name,

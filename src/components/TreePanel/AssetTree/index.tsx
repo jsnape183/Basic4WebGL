@@ -210,13 +210,13 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
     setCreatingFolderParent(undefined);
   };
 
-  const handleCreateNewFile = () => {
+  const handleCreateNewFile = async () => {
     const name = newFileName.trim();
     const error = validateAssetName(name, allAssets, selectedFolderId);
     if (error) { setNewFileError(error); return; }
     const id = crypto.randomUUID();
     const fullName = getFullName(name, selectedFolderId, folders);
-    // TODO(Task 8): write an empty blob to the blob store for the new file here
+    await putAssetBlob(id, new Blob([''], { type: 'text/plain' }));
     dispatch(addAsset({
       id,
       name,

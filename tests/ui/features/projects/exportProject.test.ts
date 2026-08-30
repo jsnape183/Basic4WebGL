@@ -1,5 +1,12 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { buildExportJson } from '../../../../src/features/projects/exportProject';
+import { putAssetBlob, _clearAllAssetBlobsForTests } from '../../../../src/lib/storage/assetBlobStore';
+import { dataUrlToBlob } from '../../../../src/lib/storage/dataUrl';
+
+beforeEach(async () => {
+  await _clearAllAssetBlobsForTests();
+  await putAssetBlob('a1', dataUrlToBlob('data:image/png;base64,abc='));
+});
 
 const state = {
   projects: { items: [{ id: 'p1', name: 'My Game', packageIds: ['softcore'] }] },
@@ -30,50 +37,55 @@ const state = {
 };
 
 describe('buildExportJson', () => {
-  test('version is 1', () => {
-    expect(buildExportJson('p1', state).version).toBe(1);
+  test('version is 1', async () => {
+    expect((await buildExportJson('p1', state)).version).toBe(1);
   });
 
-  test('project name is preserved', () => {
-    expect(buildExportJson('p1', state).project.name).toBe('My Game');
+  test('project name is preserved', async () => {
+    expect((await buildExportJson('p1', state)).project.name).toBe('My Game');
   });
 
-  test('only includes files for the exported project', () => {
-    const json = buildExportJson('p1', state);
+  test('only includes files for the exported project', async () => {
+    const json = await buildExportJson('p1', state);
     expect(json.files).toHaveLength(2);
     expect(json.files.every((f) => f.id !== 'other')).toBe(true);
   });
 
-  test('file entries do not include projectId', () => {
-    const json = buildExportJson('p1', state);
+  test('file entries do not include projectId', async () => {
+    const json = await buildExportJson('p1', state);
     expect('projectId' in json.files[0]).toBe(false);
   });
 
-  test('fileOrder keys have projectId prefix stripped', () => {
-    const json = buildExportJson('p1', state);
+  test('fileOrder keys have projectId prefix stripped', async () => {
+    const json = await buildExportJson('p1', state);
     expect(Object.keys(json.fileOrder)).toContain(':root');
     expect(Object.keys(json.fileOrder)).toContain(':f1');
     expect(Object.keys(json.fileOrder).some((k) => k.includes('p1'))).toBe(false);
   });
 
-  test('fileOrder keys do not include keys from other projects', () => {
-    const json = buildExportJson('p1', state);
+  test('fileOrder keys do not include keys from other projects', async () => {
+    const json = await buildExportJson('p1', state);
     expect(Object.keys(json.fileOrder)).toHaveLength(2);
   });
 
-  test('asset content is preserved as-is', () => {
-    const json = buildExportJson('p1', state);
-    // updated in Task 8: buildExportJson becomes async and reads real bytes from
-    // the blob store; for now the shim emits an empty string.
+  test('asset content is read from the blob store as a base64 data URL', async () => {
+    const json = await buildExportJson('p1', state);
+    expect(json.assets).toHaveLength(1);
+    expect(json.assets[0].content).toBe('data:image/png;base64,abc=');
+  });
+
+  test('asset content is an empty string when no blob is stored', async () => {
+    await _clearAllAssetBlobsForTests();
+    const json = await buildExportJson('p1', state);
     expect(json.assets[0].content).toBe('');
   });
 
-  test('folder entries do not include projectId', () => {
-    const json = buildExportJson('p1', state);
+  test('folder entries do not include projectId', async () => {
+    const json = await buildExportJson('p1', state);
     expect('projectId' in json.folders[0]).toBe(false);
   });
 
-  test('throws if projectId is not found', () => {
-    expect(() => buildExportJson('no-such', state)).toThrow();
+  test('throws if projectId is not found', async () => {
+    await expect(buildExportJson('no-such', state)).rejects.toThrow();
   });
 });
