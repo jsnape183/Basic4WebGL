@@ -73,6 +73,12 @@ class DimRule implements IParserRule {
     matchAndMove(tokens.Variable, tokenStream);
     const name = tokenStream.prev().text.toLowerCase();
 
+    if (symbolTable.check(name, symbolTypes.Constant)) {
+      throw new CompilationError(
+        `'${name}' is a constant and cannot be redeclared with 'dim'.`
+      );
+    }
+
     if (check(tokens.Equals, tokenStream.current())) {
       // ── dim name = expr ──────────────────────────────────────────────────
       matchAndMove(tokens.Equals, tokenStream);

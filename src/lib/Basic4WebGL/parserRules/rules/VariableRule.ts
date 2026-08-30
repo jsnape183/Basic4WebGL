@@ -36,6 +36,10 @@ class VariableRule implements IParserRule {
       return getParserRule('Module').parse(tokenStream, symbolTable, name);
     }
 
+    if (symbolTable.check(name, symbolTypes.Constant)) {
+      throw new CompilationError(`'${name}' is a constant and cannot be assigned.`);
+    }
+
     if (symbolTable.check(name, symbolTypes.Object)) {
       // Dot access → property/method on the instance
       if (check(tokens.Dot, tokenStream.current())) {

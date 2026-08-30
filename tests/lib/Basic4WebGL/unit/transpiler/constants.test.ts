@@ -210,3 +210,23 @@ describe('const — namespaced references (cross-file)', () => {
     expect(result.diagnostics[0].message.toLowerCase()).toContain('constant');
   });
 });
+
+describe('const — assignment and shadowing rules', () => {
+  const expectError = (src: string, fragment: string) => {
+    const result = compiler.transpile({ files: [{ name: 'Main.bas', source: src }] });
+    expect(result.diagnostics.length).toBeGreaterThan(0);
+    expect(result.diagnostics[0].message.toLowerCase()).toContain(fragment.toLowerCase());
+  };
+
+  test('assigning to a bare constant name is rejected', () => {
+    expectError('const MAX = 1\nfunction test()\n  MAX = 2\nendfunction\n', 'constant');
+  });
+
+  test('dim with a constant name at module level is rejected', () => {
+    expectError('const MAX = 1\ndim MAX\n', 'constant');
+  });
+
+  test('dim shadowing a constant inside a function is rejected', () => {
+    expectError('const MAX = 1\nfunction test()\n  dim MAX\nendfunction\n', 'constant');
+  });
+});
