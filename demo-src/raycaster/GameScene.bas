@@ -85,6 +85,17 @@ dim ZOMBIE_GROAN_CUTOFF
 dim ZOMBIE_GROAN_COOLDOWN
 dim ZOMBIE_GROAN_MAX_VOLUME
 
+' Footstep -- plays via play(), not playLoop(), so each step is an
+' independent, possibly-overlapping one-shot rather than a single
+' instance being restarted (audio.bas's playLoop() calls stop() first,
+' which would cut off the tail of the previous step). At footstepTimer's
+' short interval that overlap risk is theoretical, not audible in
+' practice, but play() is also just the simpler, more direct match for
+' "trigger a short clip repeatedly" than looping ever was.
+dim footstepSound as Audio
+dim footstepTimer
+dim FOOTSTEP_INTERVAL
+
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
 ' sized-array declaration itself needs a compile-time literal (array dims
@@ -154,6 +165,8 @@ Constructor(gameData as GameData)
   ' Volume at distance 0 -- capped well under 1.0 so even a zombie right
   ' on top of the player isn't jarringly loud.
   self.ZOMBIE_GROAN_MAX_VOLUME = 0.6
+  ' Seconds between footstep sounds while a movement key is held.
+  self.FOOTSTEP_INTERVAL = 0.35
 EndConstructor
 
 function checkHit()
@@ -809,6 +822,7 @@ function onenter()
     self.damageCooldown = 0
     self.damageFlashTimer = 0
     self.zombieGroanCooldown = 0
+    self.footstepTimer = 0
     ' setupHud() above (this call or an earlier one) always runs before this
     ' point, so self.damageFlash already exists here on every onenter().
     self.damageFlash.setAlpha(0)
@@ -900,6 +914,7 @@ function setupHud()
     ' this function's own established "everything gets set up fresh on
     ' every onenter()" convention rather than carving out a special case.
     self.zombieGroan = new Audio("dragon-studio-zombie-sound-357975.mp3")
+    self.footstepSound = new Audio("footstep_concrete_002.ogg")
 endfunction
 
 function mazeSizeForLevel(lvl)
@@ -954,6 +969,7 @@ function onupdate(delta)
     dim hpFillWidth
     dim nearestEnemyDist
     dim zombieGroanVolume
+    dim isMoving
 
     if self.playerHealth < 1 then
         ' stage.clear() (triggered by the scenemanager.switch() below)
@@ -969,6 +985,22 @@ function onupdate(delta)
     endif
 
     self.handleInput()
+
+    ' Footsteps -- W/S/Q/E (walk or strafe) count as moving; A/D (turning
+    ' in place) don't. Checked directly against the same key codes
+    ' handleInput() itself checks, rather than having handleInput() report
+    ' back whether it moved, since a blocked move (walking straight into a
+    ' wall) should still sound like footsteps -- the player is still
+    ' walking in place against it, not standing still.
+    isMoving = input.getKeyDown(87) or input.getKeyDown(83) or input.getKeyDown(69) or input.getKeyDown(81)
+    if self.footstepTimer > 0 then
+      self.footstepTimer = self.footstepTimer - (delta / 1000)
+    endif
+    if isMoving and self.footstepTimer <= 0 then
+      self.footstepSound.play()
+      self.footstepTimer = self.FOOTSTEP_INTERVAL
+    endif
+
     self.castRays()
 
     ' Starting above ZOMBIE_GROAN_CUTOFF guarantees "no living enemy found
