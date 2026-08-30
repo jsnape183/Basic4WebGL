@@ -7,7 +7,12 @@ const PIXEL_PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 // ---------------------------------------------------------------------------
-// State seed helper
+// Run helper — seed via the app's real project-creation path (assets now live
+// in IndexedDB, not localStorage), then visit, click Run, wait, assert no ERR.
+//
+// `window.__seedProject` is registered by src/devSeed.ts (imported by App) and
+// is dev/Cypress-only. It does addProject + addFile per file + (putAssetBlob +
+// addAsset) per asset, and resolves with the new project id.
 // ---------------------------------------------------------------------------
 
 interface FileSpec {
@@ -15,84 +20,35 @@ interface FileSpec {
   source: string;
 }
 
-function buildPersistedState(
-  projectId: string,
-  projectName: string,
-  files: FileSpec[],
-  assetNames: string[] = []
-): string {
-  const filesById: Record<string, object> = {};
-  const fileOrder: string[] = [];
-  files.forEach((f) => {
-    const id = `file-${f.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-    filesById[id] = {
-      id,
-      name: f.name,
-      source: f.source,
-      projectId,
-      folderId: null,
-      fullName: f.name,
-    };
-    fileOrder.push(id);
-  });
-
-  const assetsById: Record<string, object> = {};
-  const assetOrder: string[] = [];
-  assetNames.forEach((name) => {
-    const id = `asset-${name.replace('.', '-')}`;
-    assetsById[id] = {
-      id,
-      name,
-      content: PIXEL_PNG,
-      projectId,
-      folderId: null,
-      fullName: name,
-    };
-    assetOrder.push(id);
-  });
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: projectName, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
-// ---------------------------------------------------------------------------
-// Run helper — seed state, visit, click Run, wait, assert no ERR in panel
-// ---------------------------------------------------------------------------
+type SeedProject = (spec: {
+  name: string;
+  files: FileSpec[];
+  assets?: Array<{ name: string; dataUrl: string }>;
+}) => Promise<string>;
 
 function runTutorial(
-  projectId: string,
   projectName: string,
   files: FileSpec[],
   assetNames: string[] = [],
   waitMs = 3000
 ) {
-  const persistedState = buildPersistedState(projectId, projectName, files, assetNames);
-
-  cy.visit(`/projects/${projectId}/edit`, {
-    onBeforeLoad(win) {
-      win.localStorage.setItem('persist:softBASIC', persistedState);
-    },
-  });
-
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
-  // Assert no ERR entries in the bottom panel — that is what the user sees
-  cy.get('span').contains('ERR').should('not.exist');
+  cy.visit('/projects'); // any route that mounts the app + the seed hook
+  cy.window().its('__seedProject').should('be.a', 'function');
+  cy.window()
+    .then((win) =>
+      (win as unknown as { __seedProject: SeedProject }).__seedProject({
+        name: projectName,
+        files,
+        assets: assetNames.map((name) => ({ name, dataUrl: PIXEL_PNG })),
+      }),
+    )
+    .then((projectId) => {
+      cy.visit(`/projects/${projectId}/edit`);
+      cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
+      cy.wait(waitMs);
+      // Assert no ERR entries in the bottom panel — that is what the user sees
+      cy.get('span').contains('ERR').should('not.exist');
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -511,7 +467,7 @@ endfunction
 
 describe('Tutorial 1: Hello World', () => {
   it('runs without runtime errors', () => {
-    runTutorial('t01', 'Tutorial 1', [
+    runTutorial('Tutorial 1', [
       {
         name: 'Main',
         source: `
@@ -533,7 +489,7 @@ print "Lives remaining: " + string.str(lives)
 
 describe('Tutorial 2: Drawing on Screen', () => {
   it('runs without runtime errors', () => {
-    runTutorial('t02', 'Tutorial 2', [
+    runTutorial('Tutorial 2', [
       {
         name: 'Main',
         source: `
@@ -566,7 +522,6 @@ endfunction
 describe('Tutorial 3: Your First Sprite', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't03',
       'Tutorial 3',
       [
         { name: 'Player', source: PLAYER_T3 },
@@ -581,7 +536,6 @@ describe('Tutorial 3: Your First Sprite', () => {
 describe('Tutorial 4: Making Things Move', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't04',
       'Tutorial 4',
       [
         { name: 'Player', source: PLAYER_T4 },
@@ -596,7 +550,6 @@ describe('Tutorial 4: Making Things Move', () => {
 describe('Tutorial 5: Keyboard Control', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't05',
       'Tutorial 5',
       [
         { name: 'Player', source: PLAYER_T5 },
@@ -611,7 +564,6 @@ describe('Tutorial 5: Keyboard Control', () => {
 describe('Tutorial 6: Staying on Screen', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't06',
       'Tutorial 6',
       [
         { name: 'Player', source: PLAYER_T6 },
@@ -626,7 +578,6 @@ describe('Tutorial 6: Staying on Screen', () => {
 describe('Tutorial 7: Score and Text', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't07',
       'Tutorial 7',
       [
         { name: 'Player', source: PLAYER_T6 },
@@ -642,7 +593,6 @@ describe('Tutorial 7: Score and Text', () => {
 describe('Tutorial 8: Functions', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't08',
       'Tutorial 8',
       [
         { name: 'Player', source: PLAYER_T8 },
@@ -658,7 +608,6 @@ describe('Tutorial 8: Functions', () => {
 describe('Tutorial 9: Multiple Enemies', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't09',
       'Tutorial 9',
       [
         { name: 'Player', source: PLAYER_T8 },
@@ -675,7 +624,6 @@ describe('Tutorial 9: Multiple Enemies', () => {
 describe('Tutorial 11: Dodge!', () => {
   it('runs without runtime errors', () => {
     runTutorial(
-      't11',
       'Tutorial 11',
       [
         { name: 'Player', source: PLAYER_T8 },
@@ -693,7 +641,6 @@ describe('Tutorial 11: Dodge!', () => {
 describe('Action map (keyboard path)', () => {
   it('binds and queries named actions with no ERR entries', () => {
     runTutorial(
-      'e2e-actionmap',
       'Action Map',
       [
         { name: 'Player', source: PLAYER_ACTIONMAP },

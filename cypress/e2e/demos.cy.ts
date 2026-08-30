@@ -1,104 +1,37 @@
 /// <reference types="cypress" />
 
 // ---------------------------------------------------------------------------
-// Seeds a demo's real .b4wgl.json export (read straight from src/docs/demos/,
-// including its real assets) into localStorage, the same way tutorials.cy.ts
-// seeds hardcoded snippets — but sourced from the actual shipped export
-// instead of duplicating the source in this file.
+// Seeds each demo by invoking the app's real import path via a dev/Cypress-only
+// window hook (`window.__seedDemo`, registered in src/pages/DemosPage.tsx),
+// then Runs the project and asserts no ERR appears in the console panel.
+//
+// Assets now live in IndexedDB (not localStorage), so the hook is the only
+// sane way to seed: it exercises loadDemoJson -> async importProject ->
+// putAssetBlob for real, exactly as clicking "Try Demo" would.
 // ---------------------------------------------------------------------------
 
-interface ExportedFile {
-  id: string;
-  name: string;
-  source: string;
-  folderId: string | null;
-  fullName: string;
-}
+const DEMOS: Array<{ slug: string; title: string; waitMs: number }> = [
+  { slug: 'raycaster', title: 'Wolfenstein-Style Raycaster', waitMs: 4000 },
+  { slug: 'coins-platformer', title: 'Collect the Coins: A Platformer', waitMs: 4000 },
+  { slug: 'bullet-hell-shooter', title: 'Bullet-Hell Shooter', waitMs: 4000 },
+  { slug: 'dungeon-explorer', title: 'Dungeon Explorer', waitMs: 4000 },
+];
 
-interface ExportedAsset {
-  id: string;
-  name: string;
-  content: string;
-  folderId: string | null;
-  fullName: string;
-}
-
-interface ProjectExportJson {
-  version: 1;
-  project: { name: string };
-  files: ExportedFile[];
-  assets: ExportedAsset[];
-  fileOrder: Record<string, string[]>;
-  assetOrder: Record<string, string[]>;
-}
-
-function buildPersistedStateFromExport(projectId: string, json: ProjectExportJson): string {
-  const filesById: Record<string, object> = {};
-  json.files.forEach((f) => {
-    filesById[f.id] = { ...f, projectId };
-  });
-  const fileOrder = json.fileOrder[':root'] ?? json.files.map((f) => f.id);
-
-  const assetsById: Record<string, object> = {};
-  json.assets.forEach((a) => {
-    assetsById[a.id] = { ...a, projectId };
-  });
-  const assetOrder = json.assetOrder[':root'] ?? json.assets.map((a) => a.id);
-
-  const state = {
-    projects: JSON.stringify({
-      items: [{ id: projectId, name: json.project.name, packageIds: ['softcore', 'softgfx'] }],
-    }),
-    files: JSON.stringify({
-      byId: filesById,
-      dirtyFileIds: [],
-      fileOrder: { [`${projectId}:root`]: fileOrder },
-    }),
-    assets: JSON.stringify({
-      byId: assetsById,
-      assetOrder: { [`${projectId}:root`]: assetOrder },
-    }),
-    folders: JSON.stringify({ items: [] }),
-    _persist: JSON.stringify({ version: -1, rehydrated: true }),
-  };
-  return JSON.stringify(state);
-}
-
-function runDemo(projectId: string, jsonPath: string, waitMs: number) {
-  cy.readFile(jsonPath).then((json: ProjectExportJson) => {
-    const persistedState = buildPersistedStateFromExport(projectId, json);
-    cy.visit(`/projects/${projectId}/edit`, {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('persist:softBASIC', persistedState);
-      },
+DEMOS.forEach(({ slug, title, waitMs }) => {
+  describe(`Demo: ${title}`, () => {
+    it('runs without runtime errors', () => {
+      cy.visit('/demos');
+      cy.window().its('__seedDemo').should('be.a', 'function');
+      cy.window()
+        .then((win) =>
+          (win as unknown as { __seedDemo: (s: string) => Promise<string> }).__seedDemo(slug),
+        )
+        .then((projectId) => {
+          cy.visit(`/projects/${projectId}/edit`);
+          cy.get('[aria-label="Run project"]', { timeout: 15000 }).click();
+          cy.wait(waitMs);
+          cy.get('span').contains('ERR').should('not.exist');
+        });
     });
-  });
-
-  cy.get('[aria-label="Run project"]', { timeout: 10000 }).click();
-  cy.wait(waitMs);
-  cy.get('span').contains('ERR').should('not.exist');
-}
-
-describe('Demo: Wolfenstein-Style Raycaster', () => {
-  it('runs without runtime errors', () => {
-    runDemo('demo-raycaster', 'src/docs/demos/Raycaster.b4wgl.json', 4000);
-  });
-});
-
-describe('Demo: Collect the Coins: A Platformer', () => {
-  it('runs without runtime errors', () => {
-    runDemo('demo-coins-platformer', 'src/docs/demos/CoinsPlatformer.b4wgl.json', 4000);
-  });
-});
-
-describe('Demo: Bullet-Hell Shooter', () => {
-  it('runs without runtime errors', () => {
-    runDemo('demo-bullet-hell-shooter', 'src/docs/demos/BulletHellShooter.b4wgl.json', 4000);
-  });
-});
-
-describe('Demo: Dungeon Explorer', () => {
-  it('runs without runtime errors', () => {
-    runDemo('demo-dungeon-explorer', 'src/docs/demos/DungeonExplorer.b4wgl.json', 4000);
   });
 });

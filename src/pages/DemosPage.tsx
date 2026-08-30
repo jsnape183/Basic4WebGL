@@ -7,6 +7,20 @@ import { RootState, AppDispatch } from '../store';
 import { importProject } from '../features/projects/importProject';
 import { demoRegistry, DemoEntry, loadDemoJson } from '../features/demos/demoRegistry';
 import type { Components } from 'react-markdown';
+import { store } from '../store';
+
+// Dev/Cypress-only seed hook: seeds a shipped demo through the app's real
+// import path (loadDemoJson -> async importProject -> putAssetBlob) and
+// resolves with the new project id. `import.meta.env.DEV` is statically `false`
+// in a production `vite build`, so this block tree-shakes out of the prod
+// bundle; the `window.Cypress` clause remains but is tiny and harmless.
+if (
+  import.meta.env.DEV ||
+  (typeof window !== 'undefined' && (window as unknown as { Cypress?: unknown }).Cypress)
+) {
+  (window as unknown as { __seedDemo?: (slug: string) => Promise<string> }).__seedDemo = (slug) =>
+    loadDemoJson(slug).then((j) => store.dispatch(importProject(j)));
+}
 
 const descComponents: Components = {
   p: ({ children }) => <p className="text-ds-text-muted text-sm leading-relaxed mb-3 last:mb-0">{children}</p>,
