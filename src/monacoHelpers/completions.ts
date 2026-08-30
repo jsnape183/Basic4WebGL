@@ -51,6 +51,8 @@ function dynamicSymbolKind(monaco: Monaco, s: SymbolSnapshotEntry): number {
       return monaco.languages.CompletionItemKind.Class;
     case symbolTypes.Module:
       return monaco.languages.CompletionItemKind.Module;
+    case symbolTypes.Constant:
+      return monaco.languages.CompletionItemKind.Constant;
     default:
       return monaco.languages.CompletionItemKind.Variable;
   }
@@ -67,7 +69,12 @@ function symbolToCompletionItem(
     insertText: buildDynamicSnippet(s),
     insertTextRules:
       s.kind === symbolTypes.Function ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
-    documentation: s.className ? `${s.kind} (${s.className})` : s.kind,
+    documentation:
+      s.valueKind !== undefined
+        ? `constant = ${s.valueKind === 'string' ? JSON.stringify(s.value) : s.value}`
+        : s.className
+        ? `${s.kind} (${s.className})`
+        : s.kind,
     range,
   };
 }

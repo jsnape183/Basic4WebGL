@@ -2,7 +2,7 @@
 import type { Monaco } from '@monaco-editor/react';
 import { getModuleMethod, getConstructor } from './catalogue';
 import { scanEnclosingScope } from './scopeScanner';
-import { getVisibleSymbols, type SymbolContext } from './symbolCatalogue';
+import { getVisibleSymbols, getMembers, type SymbolContext } from './symbolCatalogue';
 import { symbolTypes } from '../lib/Basic4WebGL/symbolTypes';
 
 /**
@@ -43,7 +43,20 @@ export function registerHoverProvider(monaco: Monaco, symbolContext?: SymbolCont
       const ctx = parseHoverContext(lineContent, word);
       if (ctx) {
         const method = getModuleMethod(ctx.moduleName, ctx.methodName);
-        if (!method) return null;
+        if (!method) {
+          // Not a static library method — try a user-defined namespaced constant
+          // (`module.CONSTANT`) before giving up.
+          if (symbolContext) {
+            const member = getMembers(symbolContext.getSymbols(), ctx.moduleName).find(
+              (s) => s.name.toLowerCase() === ctx.methodName && s.kind === symbolTypes.Constant
+            );
+            if (member) {
+              const shown = member.valueKind === 'string' ? JSON.stringify(member.value) : member.value;
+              return { contents: [{ value: `**${ctx.moduleName}.${member.name}** = ${shown}` }] };
+            }
+          }
+          return null;
+        }
         return {
           contents: [
             { value: `**${ctx.moduleName}.${method.name}(${method.params.join(', ')})**` },
@@ -75,6 +88,10 @@ export function registerHoverProvider(monaco: Monaco, symbolContext?: SymbolCont
         );
         const match = symbols.find((s) => s.name.toLowerCase() === word.word.toLowerCase());
         if (match) {
+          if (match.kind === symbolTypes.Constant) {
+            const shown = match.valueKind === 'string' ? JSON.stringify(match.value) : match.value;
+            return { contents: [{ value: `**${match.name}** = ${shown}` }] };
+          }
           if (match.kind === symbolTypes.Function) {
             const params = (match.parameters ?? []).map((p) => p.name).join(', ');
             return { contents: [{ value: `**${match.name}(${params})**` }] };
