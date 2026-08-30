@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-30
 **Status:** Approved, ready for implementation plan
-**Related:** `2026-08-30-softbasic-constants-design.md` (separate spec — named `PAD_*` / axis constants will land once the constant mechanism exists; this spec uses raw integers)
+**Depends on:** `2026-08-30-softbasic-constants-design.md` — the constant mechanism and the `keyboard` constant module must ship first. This spec adds a sibling `controller` constant module and the `input` action-map API.
 
 ## Problem
 
@@ -15,6 +15,16 @@ An **action map**. Game code binds named actions (`"jump"`, `"move_left"`) to on
 The browser Gamepad API is poll-based: each frame the engine calls `navigator.getGamepads()`, reads a fresh snapshot, and folds it into the same "keys down / just-pressed / just-released" tables the keyboard already uses. After polling, the query functions don't care where an input came from.
 
 We rely on the W3C **standard gamepad mapping** (`gamepad.mapping === "standard"`), which Chrome/Edge/Firefox apply to Xbox, PlayStation, and most modern controllers. Non-standard controllers degrade gracefully — bindings simply won't match; documented as a known limitation.
+
+## Module layout
+
+Three hand-written (non-descriptor) def modules:
+
+- **`keyboard`** — pure constant module. Specified in the constants spec; a dependency here. `keyboard.SPACE`, `keyboard.LEFT`, `keyboard.A`, …
+- **`controller`** — pure constant module (new in this spec). Button and axis-half constants — see the code tables below. No functions.
+- **`input`** — the action-map API (bind + query). Constants from `keyboard` / `controller` are passed into `input.bind` by name; `input` never imports them, they resolve to plain integers at compile time.
+
+The caller always names the device explicitly: `input.bind("jump", "key", keyboard.SPACE)`, `input.bind("jump", "button", controller.A)`, `input.bind("aim_x", "axis", controller.RSTICK_RIGHT)`. Raw integers still work (`input.bind("jump", "key", 32)`) — the constants are readability sugar.
 
 ## softBASIC API
 
@@ -38,44 +48,44 @@ input.setDeadzone(value)              ' analog rest-zone, default 0.15
 
 ### `code` values by device
 
-**`device = "key"`** — a numeric keycode, exactly as today (37 = left arrow, 32 = space, 65–90 = A–Z, …). Existing keycode docs table is reused.
+**`device = "key"`** — a numeric keycode, exactly as today. Pass a `keyboard.*` constant or a raw keycode (37 = left arrow, 32 = space, 65–90 = A–Z, …).
 
-**`device = "button"`** — a standard-mapping button index:
+**`device = "button"`** — a standard-mapping button index. `controller` constants:
 
-| Code | Button | Code | Button |
-|---|---|---|---|
-| 0 | A / ✕ | 8 | Back / Select |
-| 1 | B / ○ | 9 | Start |
-| 2 | X / □ | 10 | Left stick click |
-| 3 | Y / △ | 11 | Right stick click |
-| 4 | Left shoulder | 12 | D-pad up |
-| 5 | Right shoulder | 13 | D-pad down |
-| 6 | Left trigger | 14 | D-pad left |
-| 7 | Right trigger | 15 | D-pad right |
-|   |   | 16 | Guide / Home |
+| Constant | Code | Button | Constant | Code | Button |
+|---|---|---|---|---|---|
+| `controller.A` | 0 | A / ✕ | `controller.BACK` | 8 | Back / Select |
+| `controller.B` | 1 | B / ○ | `controller.START` | 9 | Start |
+| `controller.X` | 2 | X / □ | `controller.LSTICK` | 10 | Left stick click |
+| `controller.Y` | 3 | Y / △ | `controller.RSTICK` | 11 | Right stick click |
+| `controller.LB` | 4 | Left shoulder | `controller.DPAD_UP` | 12 | D-pad up |
+| `controller.RB` | 5 | Right shoulder | `controller.DPAD_DOWN` | 13 | D-pad down |
+| `controller.LT` | 6 | Left trigger | `controller.DPAD_LEFT` | 14 | D-pad left |
+| `controller.RT` | 7 | Right trigger | `controller.DPAD_RIGHT` | 15 | D-pad right |
+|   |   |   | `controller.GUIDE` | 16 | Guide / Home |
 
-Triggers (6, 7) are buttons that also carry a 0..1 analog value — usable digitally via `held`/`pressed`, or as magnitude via `strength`.
+Triggers (`LT`, `RT`) are buttons that also carry a 0..1 analog value — usable digitally via `held`/`pressed`, or as magnitude via `strength`.
 
 **`device = "axis"`** — a stick **half-direction** (a one-way 0..1 signal derived from the raw −1..1 stick axis):
 
-| Code | Direction | Code | Direction |
-|---|---|---|---|
-| 0 | Left stick — left  | 4 | Right stick — left  |
-| 1 | Left stick — right | 5 | Right stick — right |
-| 2 | Left stick — up    | 6 | Right stick — up    |
-| 3 | Left stick — down  | 7 | Right stick — down  |
+| Constant | Code | Direction | Constant | Code | Direction |
+|---|---|---|---|---|---|
+| `controller.LSTICK_LEFT`  | 0 | Left stick — left  | `controller.RSTICK_LEFT`  | 4 | Right stick — left  |
+| `controller.LSTICK_RIGHT` | 1 | Left stick — right | `controller.RSTICK_RIGHT` | 5 | Right stick — right |
+| `controller.LSTICK_UP`    | 2 | Left stick — up    | `controller.RSTICK_UP`    | 6 | Right stick — up    |
+| `controller.LSTICK_DOWN`  | 3 | Left stick — down  | `controller.RSTICK_DOWN`  | 7 | Right stick — down  |
 
 ### Example
 
 ```bas
 function oncreate()
-  input.bind("move_left",  "key", 37)
-  input.bind("move_left",  "axis", 0)      ' left stick left
-  input.bind("move_right", "key", 39)
-  input.bind("move_right", "axis", 1)      ' left stick right
-  input.bind("jump", "key", 32)
-  input.bind("jump", "button", 0)          ' A
-  input.bind("fire", "button", 7)          ' right trigger
+  input.bind("move_left",  "key", keyboard.LEFT)
+  input.bind("move_left",  "axis", controller.LSTICK_LEFT)
+  input.bind("move_right", "key", keyboard.RIGHT)
+  input.bind("move_right", "axis", controller.LSTICK_RIGHT)
+  input.bind("jump", "key", keyboard.SPACE)
+  input.bind("jump", "button", controller.A)
+  input.bind("fire", "button", controller.RT)
 endfunction
 
 function onupdate(delta)
@@ -128,7 +138,7 @@ Bindings are **global and persist across scene switches** — set once (in a sta
 
 ## Testing
 
-1. **Transpiler unit tests** — `tests/lib/Basic4WebGL/unit/transpiler/input.test.ts`: `input.bind`, `input.held`, `input.pressed`, `input.released`, `input.strength`, `input.axis`, `input.clearBindings`, `input.padConnected`, `input.setDeadzone` all produce the expected `_sb.*` calls.
+1. **Transpiler unit tests** — `tests/lib/Basic4WebGL/unit/transpiler/input.test.ts`: `input.bind`, `input.held`, `input.pressed`, `input.released`, `input.strength`, `input.axis`, `input.clearBindings`, `input.padConnected`, `input.setDeadzone` all produce the expected `_sb.*` calls, including with `controller.*` / `keyboard.*` constants as the `code` argument (resolving to their integer values).
 2. **Engine unit tests** — `tests/components/Runner/engine/input.test.ts` (new) with a mocked `navigator.getGamepads`:
    - deadzone rescaling of axis halves
    - button edge detection across polls
@@ -140,16 +150,17 @@ Bindings are **global and persist across scene switches** — set once (in a sta
 
 ## Docs
 
-- **`src/docs/api-reference/input.md`** — restructure: action-map section first (`bind`, the query functions, `clearBindings`, `padConnected`, `setDeadzone`, the button/axis code tables), keycode table retained, deprecated `getKeyDown`/`keyPressed`/`keyReleased` moved to a "Deprecated" section at the bottom with migration examples.
+- **`src/docs/api-reference/input.md`** — restructure: action-map section first (`bind`, the query functions, `clearBindings`, `padConnected`, `setDeadzone`), deprecated `getKeyDown`/`keyPressed`/`keyReleased` moved to a "Deprecated" section at the bottom with migration examples.
+- **`src/docs/api-reference/controller.md`** — new page: the button and axis-half constant tables, a note on standard mapping and its limitations.
+- **`src/docs/api-reference/keyboard.md`** — created by the constants spec; the `input` docs link to it for `device = "key"` codes.
+- **`src/docs/manifest.ts`** — add `controller` (and `keyboard`, if not already added by the constants spec) to the API Reference group.
 - **Language Guide input topic** — updated to teach the action map as the primary input model.
-- **`src/docs/manifest.ts`** — no new page, just content changes.
 
 ## Roadmap
 
 - `docs/language/library-roadmap.md` — mark controller/gamepad support as delivered; add tracked follow-up items for the deferred pieces:
   - **Local multiplayer** — a player-index parameter on `bind` and the query functions (designed to be added as an optional trailing arg without breaking the current surface).
   - **Rumble** — `gamepad.vibrationActuator` (Chromium-only).
-  - **Named constants** for buttons/axes — blocked on the constants spec; migrate the code tables to `PAD_*` / axis constants once available.
   - **Runtime rebind UI helpers** — "press any input" capture for settings screens.
 - `docs/roadmap.md` — reflect the same in the public-facing summary.
 
@@ -158,6 +169,7 @@ Bindings are **global and persist across scene switches** — set once (in a sta
 - Multiple simultaneous controllers / local multiplayer (tracked follow-up).
 - Rumble / haptics (tracked follow-up).
 - Non-standard-mapping controller remapping.
+- The constant mechanism itself and the `keyboard` module (constants spec).
 - Touch / virtual on-screen controls.
 - Migrating shipped demos and tutorials to the new API (separate follow-up; the deprecated functions keep them working).
-- Named `PAD_*` constants (separate constants spec).
+- The `keyboard` constant module (defined in the constants spec).
