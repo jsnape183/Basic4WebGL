@@ -83,6 +83,7 @@ dim zombieGroan as Audio
 dim zombieGroanCooldown
 dim ZOMBIE_GROAN_CUTOFF
 dim ZOMBIE_GROAN_COOLDOWN
+dim ZOMBIE_GROAN_MAX_VOLUME
 
 ' Enemies
 ' ENEMY_COUNT mirrors the array size below (dim enemies(10) as Enemy) -- the
@@ -142,8 +143,17 @@ Constructor(gameData as GameData)
   ' audible for a chasing enemy's entire approach, not just its last few
   ' steps.
   self.ZOMBIE_GROAN_CUTOFF = 10
-  ' Seconds between replays while an enemy stays in range.
-  self.ZOMBIE_GROAN_COOLDOWN = 2.0
+  ' Seconds of SILENCE after a groan finishes before it's allowed to play
+  ' again -- not seconds between play() calls. The original 2.0 did
+  ' nothing in practice: the shipped clip is ~8s long, so isPlaying()
+  ' was already the binding constraint and a new groan started the
+  ' instant the last one ended, reported live as sounding constant.
+  ' 6 seconds of quiet after an ~8s groan gives a real off period each
+  ' cycle (~14s total) rather than back-to-back replaying.
+  self.ZOMBIE_GROAN_COOLDOWN = 6.0
+  ' Volume at distance 0 -- capped well under 1.0 so even a zombie right
+  ' on top of the player isn't jarringly loud.
+  self.ZOMBIE_GROAN_MAX_VOLUME = 0.6
 EndConstructor
 
 function checkHit()
@@ -994,22 +1004,34 @@ function onupdate(delta)
 
     ' Zombie groan -- one shared channel (see the field declaration
     ' comment for why), tracking whichever living enemy is currently
-    ' closest rather than any one enemy in particular. Volume falls off
-    ' linearly with distance and hits exactly 0 at ZOMBIE_GROAN_CUTOFF, so
-    ' there's a real, audible "out of range" rather than a sound that's
-    ' merely quiet everywhere. It's deliberately NOT a true engine loop
-    ' (playLoop()) -- a groan sound isn't built to repeat seamlessly, so
-    ' instead this replays it as a one-shot every ZOMBIE_GROAN_COOLDOWN
-    ' seconds for as long as an enemy stays in range, giving a periodic
-    ' groan rather than a continuous drone or an audible seam every
-    ' repeat. Retreating out of range just stops it from retriggering --
-    ' the current one-shot is left to finish naturally rather than being
-    ' cut off abruptly.
-    if self.zombieGroanCooldown > 0 then
+    ' closest rather than any one enemy in particular. It's deliberately
+    ' NOT a true engine loop (playLoop()) -- a groan sound isn't built to
+    ' repeat seamlessly, so instead this replays it as a one-shot,
+    ' ZOMBIE_GROAN_COOLDOWN seconds of actual SILENCE apart, for as long
+    ' as an enemy stays in range. Retreating out of range just stops it
+    ' from retriggering -- the current one-shot is left to finish
+    ' naturally rather than being cut off abruptly.
+    '
+    ' zombieGroanCooldown only ticks down while the clip is NOT playing --
+    ' it's frozen at ZOMBIE_GROAN_COOLDOWN for the clip's entire ~8s
+    ' runtime, then counts down from there once it actually ends. Ticking
+    ' it down unconditionally (from the moment play() was called) was the
+    ' original bug: with a 2s cooldown and an ~8s clip, the cooldown had
+    ' already run out well before the clip finished, so isPlaying() alone
+    ' gated the replay and a new groan started the INSTANT the last one
+    ' ended -- zero silence, reported live as sounding constant.
+    if not self.zombieGroan.isPlaying() and self.zombieGroanCooldown > 0 then
       self.zombieGroanCooldown = self.zombieGroanCooldown - (delta / 1000)
     endif
     if nearestEnemyDist <= self.ZOMBIE_GROAN_CUTOFF then
-      zombieGroanVolume = 1.0 - (nearestEnemyDist / self.ZOMBIE_GROAN_CUTOFF)
+      ' Squared, not linear, falloff -- a linear drop from 1.0 to 0.0
+      ' read as "everything sounds close" (human loudness perception is
+      ' closer to logarithmic than linear, so a merely-linear volume
+      ' value stays subjectively loud for most of the range), and
+      ' ZOMBIE_GROAN_MAX_VOLUME caps the peak (right on top of the
+      ' player) well under full volume rather than assuming distance
+      ' alone should carry all the attenuation.
+      zombieGroanVolume = self.ZOMBIE_GROAN_MAX_VOLUME * math.pow(1.0 - (nearestEnemyDist / self.ZOMBIE_GROAN_CUTOFF), 2)
       self.zombieGroan.setVolume(zombieGroanVolume)
       ' `not X and Y`, not `Y and not X` -- this language's grammar only
       ' accepts a leading `not` at the very start of a boolean expression
