@@ -62,7 +62,7 @@
 | `src/lib/Basic4WebGL/index.ts` | Call `constantRules` and prepend its output to `code`. |
 | `src/lib/Basic4WebGL/transpilerRules/index.ts` | Export `constantRules`. |
 | `src/constants/packageModules.ts` | Import + register `keyboard`. |
-| `src/constants/firstPartyPackages.ts` | Add `'keyboard'` to softCore `moduleNames`. |
+| `src/constants/firstPartyPackages.ts` | Add `'keyboard'` to softGfx `moduleNames`; bump softGfx `version` 2.7.0 → 2.8.0. |
 | `src/monacoHelpers/completions.ts` | `dynamicSymbolKind` → `Constant`; documentation string shows value. |
 | `src/monacoHelpers/hover.ts` | Namespaced + bare-word constant hover shows `NAME = value`. |
 | `src/docs/manifest.ts` | Add `constants` Language Guide topic + `keyboard` API Reference topic. |
@@ -1635,12 +1635,12 @@ describe('keyboard package registration', () => {
     expect(packageModules['keyboard']).toContain('SPACE = 32');
   });
 
-  test('keyboard is listed in the softCore package moduleNames', () => {
-    const softcore = firstPartyPackages.find((p) => p.id === 'softcore');
-    expect(softcore?.moduleNames).toContain('keyboard');
+  test('keyboard is listed in the softGfx package moduleNames', () => {
+    const softgfx = firstPartyPackages.find((p) => p.id === 'softgfx');
+    expect(softgfx?.moduleNames).toContain('keyboard');
   });
 
-  test('compiling keyboard.SPACE through the resolved softcore lib yields no diagnostics', () => {
+  test('compiling keyboard.SPACE through the resolved lib yields no diagnostics', () => {
     const libs = [
       { name: 'keyboard', source: packageModules['keyboard'] },
       { name: 'input', source: readFileSync('src/lib/Basic4WebGL/defs/input.bas', 'utf-8') },
@@ -1678,13 +1678,20 @@ Add to the `packageModules` record (place it right after `input,` for grouping):
 
 - [ ] **Step 4: Implement `firstPartyPackages.ts`**
 
-`src/constants/firstPartyPackages.ts` — add `'keyboard'` to the softCore entry's `moduleNames`:
+`src/constants/firstPartyPackages.ts` — add `'keyboard'` to the **softGfx** entry's `moduleNames` (append at the end of the array), and bump that entry's `version` from `'2.7.0'` to `'2.8.0'`:
 
 ```ts
-    moduleNames: ['math', 'string', 'array', 'dict', 'file', 'save', 'keyboard'],
+  {
+    id: 'softgfx',
+    name: 'softGfx',
+    version: '2.8.0',
+    isCore: false,
+    isFirstParty: true,
+    moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'tilemaplayer', 'tilemapset', 'audio', 'collision', 'pathfinding', 'marker', 'rayhit', 'scene', 'scenemanager', 'camera', 'world', 'hud', 'Keyframe', 'tween', 'Emitter', 'keyboard'],
+  },
 ```
 
-Rationale: `keyboard` is pure data with no runtime engine dependency, so softCore (the always-on core package) is the right home — it is available in every project without adding `softgfx`.
+Rationale: `input` already lives in softGfx (which also carries `audio`, `collision`, `scene` — it is the game-engine package, not just graphics). `keyboard` is a pure constant companion to `input`, so it belongs alongside it. The same will apply to the future `controller` module.
 
 - [ ] **Step 5: Run the tests**
 
@@ -1694,13 +1701,13 @@ Expected: PASS.
 - [ ] **Step 6: Full suite**
 
 Run: `npx vitest run`
-Expected: green. Watch for any test that snapshots the full softCore module list or the number of packages — update it if it now legitimately includes `keyboard`.
+Expected: green. Watch for any test that snapshots the full softGfx module list, the softGfx `version`, or the number of packages — update it if it now legitimately includes `keyboard` / the bumped version.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add src/constants/packageModules.ts src/constants/firstPartyPackages.ts tests/lib/Basic4WebGL/integration/keyboardModule.test.ts
-git commit -m "feat: register keyboard module in softCore package"
+git commit -m "feat: register keyboard module in softGfx package"
 ```
 
 ---
@@ -1880,11 +1887,11 @@ If Task 13 Step 3 renamed `END` to `END_KEY`, change the `keyboard.END` cell her
 
 - [ ] **Step 2: Register in `manifest.ts`**
 
-In `src/docs/manifest.ts`, in the `api-reference` section, `softCore` group `topics` array, add after `save`:
+In `src/docs/manifest.ts`, in the `api-reference` section, the **softGfx** group `topics` array, add `keyboard` after the `input` entry (it is the constant companion to `input`, and `keyboard` ships in the softGfx package):
 
 ```ts
-          { slug: 'save',   title: 'save',   file: 'api-reference/save.md' },
-          { slug: 'keyboard', title: 'keyboard', file: 'api-reference/keyboard.md' },
+          { slug: 'input',           title: 'input',           file: 'api-reference/input.md' },
+          { slug: 'keyboard',        title: 'keyboard',        file: 'api-reference/keyboard.md' },
 ```
 
 - [ ] **Step 3: Verify**
@@ -1912,13 +1919,14 @@ git commit -m "docs: add keyboard module API reference page"
 Add a dated, done-marked entry in the appropriate section (match the file's existing format for completed items). Content to convey:
 
 - Named constants shipped: `const … endconst` + single-line `const NAME = value`, module-namespaced (`module.NAME`), literals only (number/string/`true`/`false`), emitted as a hoisted per-module `Object.freeze` holder. Design: `docs/superpowers/specs/2026-08-30-softbasic-constants-design.md`. Plan: `docs/superpowers/plans/2026-08-30-softbasic-constants.md`.
-- First consumer shipped: the `keyboard` def module (49 key-code constants), registered in the softCore package.
-- **Still open (new tracked item):** the `controller` constants module (`PAD_*`, axis constants) and the `input` gamepad / action-map API (`input.bind(...)`) — its own spec, not yet written. It will consume `keyboard.*` and `controller.*` through the mechanism shipped here.
+- First consumer shipped: the `keyboard` def module (49 key-code constants), registered in the **softGfx** package (alongside `input`; softGfx `version` bumped 2.7.0 → 2.8.0).
+- **Still open (new tracked item):** the `controller` constants module (`PAD_*`, axis constants) and the `input` gamepad / action-map API (`input.bind(...)`) — its own spec, not yet written. It will consume `keyboard.*` and `controller.*` through the mechanism shipped here, and will also register in softGfx.
+- **Still open (new tracked item):** extract a dedicated **`softInput`** package (`input` + `keyboard` + `controller`) out of softGfx. This is a breaking migration (existing projects reference `softgfx`) — needs its own spec covering the project-package migration path. Deferred for now; do not attempt as part of the controller work.
 - **Still open (new tracked item):** descriptor-generated `.bas` modules (`sprite`, `stage`, `gfx`, …) have no way to declare constants — the `.descriptor.ts` schema and `npm run generate:library` would need a `constants` field. Add only when a generated module actually needs constants.
 
 - [ ] **Step 2: Update `src/docs/roadmap.md`**
 
-Add a one-line entry to the public-facing summary noting that softBASIC now has named constants (`const … endconst`) and a `keyboard` module of key-code constants. Match the surrounding style.
+Add a one-line entry to the public-facing summary noting that softBASIC now has named constants (`const … endconst`) and a `keyboard` module of key-code constants (in the softGfx package). Match the surrounding style.
 
 - [ ] **Step 3: Commit**
 
