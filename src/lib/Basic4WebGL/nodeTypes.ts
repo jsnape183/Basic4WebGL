@@ -68,6 +68,8 @@ export const nodeTypes = createEnum([
   'SelfDictAssign',
   'SelfDictLookup',
   'ArrayLiteral',
+  'ConstBlock',
+  'ConstantRef',
 ]);
 
 export default nodeTypes;
