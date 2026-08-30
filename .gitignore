@@ -5,3 +5,4 @@ dist/
 tests/scratch/
 cypress/screenshots/
 cypress/videos/
+.DS_Store
