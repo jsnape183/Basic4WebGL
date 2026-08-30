@@ -51,9 +51,62 @@ const _sbInput = {
     return this._padConnected;
   },
 
+  _pollGamepads() {
+    const pads =
+      (typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function')
+        ? navigator.getGamepads()
+        : [];
+    let pad = null;
+    for (let i = 0; i < pads.length; i++) {
+      if (pads[i]) { pad = pads[i]; break; }
+    }
+    this._padConnected = pad != null;
+
+    if (!pad) {
+      this._padButtons = [];
+      this._padAxisHalves = [0, 0, 0, 0, 0, 0, 0, 0];
+      return;
+    }
+
+    this._padButtons = Array.from(pad.buttons, (b) => ({
+      pressed: !!b.pressed,
+      value: typeof b.value === 'number' ? b.value : (b.pressed ? 1 : 0),
+    }));
+
+    const dz = this._deadzone;
+    const rescale = (x) => {
+      const m = Math.min(Math.max(x - dz, 0), 1);
+      return dz < 1 ? m / (1 - dz) : m;
+    };
+    const ax = pad.axes || [];
+    const lx = ax[0] || 0, ly = ax[1] || 0, rx = ax[2] || 0, ry = ax[3] || 0;
+    this._padAxisHalves = [
+      rescale(-lx), rescale(lx),
+      rescale(-ly), rescale(ly),
+      rescale(-rx), rescale(rx),
+      rescale(-ry), rescale(ry),
+    ];
+
+    for (let i = 0; i < this._padButtons.length; i++) {
+      const now = this._padButtons[i].pressed;
+      const prev = this._padButtonsPrev[i];
+      const was = prev ? prev.pressed : false;
+      if (now && !was) this._justPressed['b' + i] = true;
+      if (!now && was) this._justReleased['b' + i] = true;
+    }
+    for (let i = 0; i < 8; i++) {
+      const now = this._padAxisHalves[i] >= this._axisThreshold;
+      const was = (this._padAxisHalvesPrev[i] || 0) >= this._axisThreshold;
+      if (now && !was) this._justPressed['h' + i] = true;
+      if (!now && was) this._justReleased['h' + i] = true;
+    }
+  },
+
   _resetFrameInput() {
     this._justPressed = {};
     this._justReleased = {};
+    this._padButtonsPrev = this._padButtons;
+    this._padAxisHalvesPrev = this._padAxisHalves;
   },
   getMouseX() {
     return this._mouseX;
