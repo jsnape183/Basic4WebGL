@@ -19,7 +19,7 @@ import { IAsset, addAsset, removeAsset, reorderAssets, setAssetFolder } from '..
 import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
 import { renameFolderWithCascade, removeFolderWithCascade } from '../../../features/folders/folderThunks';
 import { getFullName } from '../../../selectors/getFullName';
-import { putAssetBlob } from '../../../lib/storage/assetBlobStore';
+import { putAssetBlob, deleteAssetBlob } from '../../../lib/storage/assetBlobStore';
 import FolderNode from '../../FileTree/FolderNode';
 import ReactDOM from 'react-dom';
 import { validateAssetName } from './validateAssetName';
@@ -311,7 +311,7 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
                 key={asset.id}
                 asset={asset}
                 depth={depth}
-                onRemove={(id) => dispatch(removeAsset(id))}
+                onRemove={(id) => { void deleteAssetBlob(id); dispatch(removeAsset(id)); }}
                 onDoubleClick={onOpenAsset}
               />
             ))}

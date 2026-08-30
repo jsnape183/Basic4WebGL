@@ -46,7 +46,7 @@ test('clearProjectSelection leaves unrelated project entries intact', () => {
   expect(state.selectedFileByProject['p2']).toBe('f2');
 });
 
-test('deleteProjectWithMainFile clears selectedFileByProject entry for the deleted project', () => {
+test('deleteProjectWithMainFile clears selectedFileByProject entry for the deleted project', async () => {
   const store = makeStore();
 
   store.dispatch(addProject({ id: 'p1', name: 'Project 1' }));
@@ -55,12 +55,12 @@ test('deleteProjectWithMainFile clears selectedFileByProject entry for the delet
 
   expect(store.getState().ui.selectedFileByProject['p1']).toBe('f1');
 
-  (store.dispatch as any)(deleteProjectWithMainFile('p1'));
+  await (store.dispatch as any)(deleteProjectWithMainFile('p1'));
 
   expect('p1' in store.getState().ui.selectedFileByProject).toBe(false);
 });
 
-test('deleteProjectWithMainFile does not affect selections for other projects', () => {
+test('deleteProjectWithMainFile does not affect selections for other projects', async () => {
   const store = makeStore();
 
   store.dispatch(addProject({ id: 'p1', name: 'Project 1' }));
@@ -70,7 +70,7 @@ test('deleteProjectWithMainFile does not affect selections for other projects', 
   store.dispatch(selectFile({ projectId: 'p1', fileId: 'f1' }));
   store.dispatch(selectFile({ projectId: 'p2', fileId: 'f2' }));
 
-  (store.dispatch as any)(deleteProjectWithMainFile('p1'));
+  await (store.dispatch as any)(deleteProjectWithMainFile('p1'));
 
   expect('p1' in store.getState().ui.selectedFileByProject).toBe(false);
   expect(store.getState().ui.selectedFileByProject['p2']).toBe('f2');

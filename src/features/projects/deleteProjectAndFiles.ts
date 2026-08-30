@@ -4,9 +4,10 @@ import { IFile, removeFile } from "../files/filesSlice";
 import { IAsset, removeAsset } from "../assets/assetsSlice";
 import { removeFolder } from '../folders/foldersSlice';
 import { clearProjectSelection } from "../ui/uiSlice";
+import { deleteAssetBlobs } from "../../lib/storage/assetBlobStore";
 
 export const deleteProjectWithMainFile =
-  (projectId: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+  (projectId: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     const state = getState();
 
     const files = Object.values(state.files.byId).filter(
@@ -17,7 +18,9 @@ export const deleteProjectWithMainFile =
     const assets = Object.values(state.assets.byId).filter(
       (asset) => (asset as IAsset).projectId === projectId
     );
-    assets.forEach((asset) => dispatch(removeAsset((asset as IAsset).id)));
+    const assetIds = assets.map((asset) => (asset as IAsset).id);
+    await deleteAssetBlobs(assetIds);
+    assetIds.forEach((id) => dispatch(removeAsset(id)));
 
     const folders = state.folders.items.filter(
       (folder) => folder.projectId === projectId

@@ -427,7 +427,7 @@ const ProjectList: React.FC = () => {
   const handleImportOverwrite = async () => {
     if (!importPendingJson || importConfirmName !== importPendingJson.project.name) return;
     const existing = projects.find((p) => p.name === importPendingJson.project.name);
-    if (existing) dispatch(deleteProjectWithMainFile(existing.id));
+    if (existing) await dispatch(deleteProjectWithMainFile(existing.id));
     await dispatch(importProject(importPendingJson));
     setShowImportOverwriteModal(false);
     setImportPendingJson(null);
