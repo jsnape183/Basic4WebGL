@@ -87,6 +87,8 @@ It's deliberately *not* a true engine loop (`playLoop()`): a groan clip isn't bu
 
 Note the `if not X() and Y then` order, not `if Y and not X() then` — this language's `BoolExpression` grammar only accepts a leading `not` at the very start of a boolean expression (parsed once, up front, before its `and`/`or` loop); `and`/`or`'s own right-hand side parses as a plain `BoolTerm` that never routes back through the `Not` rule, so `not` can't appear *after* `and`/`or`. Confirmed live via the exact compile error writing it the other way around produces: `Expected String, Number, Variable but found not`.
 
+Death explicitly calls `zombieGroan.stop()` before `scenemanager.switch("gameover")`. `stage.clear()` (triggered by that switch) wipes the `hud`/`world` display containers, but `zombieGroan` is a PIXI.sound instance, not a display object — switching scenes does nothing to it on its own, so a groan already playing at the moment of death would otherwise keep playing right over the game-over screen. Confirmed live: forced a death via a temporary probe timed to land while the groan was actively playing (`playing=true`), and the very next log line after `stop()` read `playing=false`.
+
 ---
 
 ## Required assets
@@ -1458,6 +1460,13 @@ function onupdate(delta)
     dim zombieGroanVolume
 
     if self.playerHealth < 1 then
+        ' stage.clear() (triggered by the scenemanager.switch() below)
+        ' wipes the hud/world display containers, but zombieGroan is a
+        ' PIXI.sound instance, not a display object -- switching away
+        ' from GameScene does nothing to it on its own, so without this
+        ' explicit stop() a groan already playing at the moment of death
+        ' would keep right on playing over the game-over screen.
+        self.zombieGroan.stop()
         self.gameData.levelReached = self.level
         scenemanager.switch("gameover")
         return
