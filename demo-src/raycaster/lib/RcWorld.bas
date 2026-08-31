@@ -5,6 +5,14 @@ Class
 ' Cell index = row * cols + col. Heights are in world units; 0 = standard floor,
 ' 1.0 = standard ceiling (RC_STD_CEIL). Negative floor = pit.
 ' flags bitset: 1 door, 2 lift, 4 water, 8 sky.
+'
+' Phase 1 scope -- not yet implemented:
+'  - light: tags currently set lightArr(idx) to a 0/1 flag only; spec §3.1
+'    defines it as a baked static light *level* (deferred to the lighting phase).
+'  - Upper regions: spec §3.2's upFloorTex / upCeilTex / upWallTex arrays are
+'    not implemented, and upperRegion hardcodes the region ceiling as
+'    baseCeil + 1.0 with no per-region tag support (deferred to the
+'    upper-region phase, plan phase 8).
 
 dim cols
 dim rows
@@ -175,6 +183,8 @@ endfunction
 
 ' Returns the index of the upper-region entry named `name`, creating it on first
 ' use. baseCeil is the host cell's ceiling -- the upper region floor sits on it.
+' Keep ceil: and upper: tags on the SAME marker -- cross-marker resolution order
+' for a shared cell is not guaranteed.
 function upperRegion(name, baseCeil)
     dim i
     for i = 0 to array.arrLength(self.upNames) - 1
@@ -214,6 +224,8 @@ function wallAt(col, row)
 endfunction
 
 function floorHeightAt(col, row)
+    ' OOB cells are solid walls, so this OOB value is informational only.
+    ' 0 is the standard floor.
     if self.inBounds(col, row) = 0 then
         return 0
     endif
@@ -221,8 +233,10 @@ function floorHeightAt(col, row)
 endfunction
 
 function ceilHeightAt(col, row)
+    ' OOB cells are solid walls, so this OOB value is informational only.
+    ' 1.0 matches the standard ceiling.
     if self.inBounds(col, row) = 0 then
-        return 0
+        return 1.0
     endif
     return self.ceilHArr(row * self.cols + col)
 endfunction

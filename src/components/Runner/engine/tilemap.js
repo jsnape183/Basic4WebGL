@@ -26,6 +26,17 @@ function _tilemapWorldOffset(handle) {
   return { x: offsetX, y: offsetY };
 }
 
+// World-space centre of the cell a marker sits in. The one place the
+// marker -> pixel convention lives; markersByTag and allMarkers both use it.
+// Takes the already-resolved `offset` (from _tilemapWorldOffset) so a caller
+// looping over many markers resolves the ancestor chain once, not per marker.
+function _markerWorldXY(offset, setHandle, m) {
+  return {
+    x: offset.x + m.col * setHandle._tileW + setHandle._tileW / 2,
+    y: offset.y + m.row * setHandle._tileH + setHandle._tileH / 2,
+  };
+}
+
 const _sbTilemaps = {
   createTileMap(tilesetPath, tileW, tileH) {
     tileW = Number(tileW);
@@ -213,14 +224,11 @@ const _sbTilemaps = {
   // with it, matching tileAt's existing offset contract.
   markersByTag(setHandle, tag) {
     const offset = _tilemapWorldOffset(setHandle);
-    const offsetX = offset.x;
-    const offsetY = offset.y;
     const results = [];
     for (const m of setHandle._markers) {
       if (m.tag !== tag) continue;
       results.push({
-        x: offsetX + m.col * setHandle._tileW + setHandle._tileW / 2,
-        y: offsetY + m.row * setHandle._tileH + setHandle._tileH / 2,
+        ..._markerWorldXY(offset, setHandle, m),
         col: m.col,
         row: m.row,
         tag: m.tag,
@@ -235,11 +243,8 @@ const _sbTilemaps = {
   // themselves or build an entity table from all markers at once.
   allMarkers(setHandle) {
     const offset = _tilemapWorldOffset(setHandle);
-    const offsetX = offset.x;
-    const offsetY = offset.y;
     return setHandle._markers.map((m) => ({
-      x: offsetX + m.col * setHandle._tileW + setHandle._tileW / 2,
-      y: offsetY + m.row * setHandle._tileH + setHandle._tileH / 2,
+      ..._markerWorldXY(offset, setHandle, m),
       col: m.col,
       row: m.row,
       tag: m.tag,
