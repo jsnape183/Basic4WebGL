@@ -107,7 +107,7 @@ next i
 
 Every marker in the map, each with its grid column, grid row, and its full tag text. Use this when you need to read the tag yourself (for example to parse `floor:2 door` into separate values) or build a table from all markers at once.
 
-**Returns:** array of objects, each with `col`, `row`, and `tag`.
+**Returns:** array of objects, each with `col`, `row`, and `tag`. Returns an empty array (length 0) if the map has no markers.
 
 | Property | Type   | Description |
 |----------|--------|-------------|
@@ -137,15 +137,6 @@ The width of one tile in the map, in pixels.
 
 **Returns:** number.
 
-```bas
-dim level as tilemapset("level1.stm")
-
-function onenter()
-  world.add(level)
-  print "each tile is " + string.str(level.tileWidth()) + " pixels wide"
-endfunction
-```
-
 ## tileHeight()
 
 The height of one tile in the map, in pixels.
@@ -154,10 +145,19 @@ The height of one tile in the map, in pixels.
 
 ```bas
 dim level as tilemapset("level1.stm")
+dim col
+dim row
 
 function onenter()
   world.add(level)
-  print "each tile is " + string.str(level.tileHeight()) + " pixels tall"
+endfunction
+
+function onupdate()
+  dim col
+  dim row
+  col = 5
+  row = 3
+  enemy.transform.setPosition(col * level.tileWidth(), row * level.tileHeight())
 endfunction
 ```
 
