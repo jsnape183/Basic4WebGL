@@ -402,8 +402,8 @@ describe('markersByTag', () => {
     const results = markersByTag(handle, 'spawn');
 
     expect(results).toEqual([
-      { x: 15, y: 5 },  // col 1, row 0 -> local center (15, 5)
-      { x: 5, y: 25 },  // col 0, row 2 -> local center (5, 25)
+      { x: 15, y: 5, col: 1, row: 0, tag: 'spawn' },  // col 1, row 0 -> local center (15, 5)
+      { x: 5, y: 25, col: 0, row: 2, tag: 'spawn' },  // col 0, row 2 -> local center (5, 25)
     ]);
   });
 
@@ -420,7 +420,7 @@ describe('markersByTag', () => {
     const handle = { x: 20, y: 0, parent: worldContainer, _tileW: 10, _tileH: 10, _markers: [{ row: 0, col: 0, tag: 'spawn' }] };
 
     // local center (5, 5) + offset (20, 0) = world (25, 5)
-    expect(markersByTag(handle, 'spawn')).toEqual([{ x: 25, y: 5 }]);
+    expect(markersByTag(handle, 'spawn')).toEqual([{ x: 25, y: 5, col: 0, row: 0, tag: 'spawn' }]);
   });
 });
 

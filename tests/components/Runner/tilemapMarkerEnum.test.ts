@@ -33,10 +33,10 @@ function loadTilemap() {
     _sbAssets: { get: (n: string) => unknown };
     _sbTilemaps: {
       createTileMapSet: (p: string) => unknown;
-      allMarkers: (h: unknown) => Array<{ col: number; row: number; tag: string }>;
+      allMarkers: (h: unknown) => Array<{ x: number; y: number; col: number; row: number; tag: string }>;
       tileWidth: (h: unknown) => number;
       tileHeight: (h: unknown) => number;
-      markersByTag: (h: unknown, t: string) => Array<{ x: number; y: number }>;
+      markersByTag: (h: unknown, t: string) => Array<{ x: number; y: number; col: number; row: number; tag: string }>;
       getTileMapSetLayer: (h: unknown, n: string) => unknown;
       tileMapWidthPx: (h: unknown) => number;
       tileAt: (h: unknown, x: number, y: number) => number;
@@ -76,12 +76,12 @@ describe('tilemap — marker enumeration + tile metrics', () => {
     return { _sbTilemaps, handle: _sbTilemaps.createTileMapSet('level.stm') };
   }
 
-  test('allMarkers returns every marker with col/row/tag', () => {
+  test('allMarkers returns every marker with x/y/col/row/tag', () => {
     const { _sbTilemaps, handle } = makeSet();
     const all = _sbTilemaps.allMarkers(handle);
     expect(all).toEqual([
-      { col: 2, row: 0, tag: 'floor:2 door' },
-      { col: 1, row: 1, tag: 'light:spot' },
+      { x: 2 * 16 + 8, y: 0 * 24 + 12, col: 2, row: 0, tag: 'floor:2 door' },
+      { x: 1 * 16 + 8, y: 1 * 24 + 12, col: 1, row: 1, tag: 'light:spot' },
     ]);
   });
 
@@ -91,10 +91,15 @@ describe('tilemap — marker enumeration + tile metrics', () => {
     expect(_sbTilemaps.tileHeight(handle)).toBe(24);
   });
 
-  test('existing markersByTag is unchanged', () => {
+  test('markersByTag keeps x/y and now also carries col/row/tag', () => {
     const { _sbTilemaps, handle } = makeSet();
-    expect(_sbTilemaps.markersByTag(handle, 'light:spot')).toEqual([
-      { x: 1 * 16 + 8, y: 1 * 24 + 12 },
+    const found = _sbTilemaps.markersByTag(handle, 'light:spot');
+    // x/y unchanged from before this field addition
+    expect(found[0].x).toBe(1 * 16 + 8);
+    expect(found[0].y).toBe(1 * 24 + 12);
+    // new additive fields
+    expect(found).toEqual([
+      { x: 1 * 16 + 8, y: 1 * 24 + 12, col: 1, row: 1, tag: 'light:spot' },
     ]);
   });
 

@@ -119,8 +119,12 @@ describe('tilemap markers — editor encode -> engine parse round trip', () => {
     // World-space cell-center positions for each tag, proving the full
     // chain: editor data model -> encodeStmContent -> real .stm JSON ->
     // engine parse -> markersByTag query.
-    expect(_sbTilemaps.markersByTag(set, 'spawn')).toEqual([{ x: 24, y: 8 }]);
-    expect(_sbTilemaps.markersByTag(set, 'enemy')).toEqual([{ x: 8, y: 24 }]);
+    expect(_sbTilemaps.markersByTag(set, 'spawn')).toEqual([
+      { x: 24, y: 8, col: 1, row: 0, tag: 'spawn' },
+    ]);
+    expect(_sbTilemaps.markersByTag(set, 'enemy')).toEqual([
+      { x: 8, y: 24, col: 0, row: 1, tag: 'enemy' },
+    ]);
     expect(_sbTilemaps.markersByTag(set, 'nonexistent')).toEqual([]);
   });
 });

@@ -85,12 +85,15 @@ Finds every marker with the given tag, painted anywhere in this tilemap using th
 
 **Returns:** Array of `Marker` objects. Returns an empty array (length 0) if no marker has that tag.
 
-Each `Marker` has two properties:
+Each `Marker` has these properties:
 
 | Property | Type   | Description |
 |----------|--------|-------------|
 | x        | number | World x position of the marker |
 | y        | number | World y position of the marker |
+| col      | number | Grid column of the marker |
+| row      | number | Grid row of the marker |
+| tag      | string | The marker's full tag text |
 
 ```bas
 dim spawnPoints = level.markersByTag("spawn")
@@ -105,12 +108,14 @@ next i
 
 ## allMarkers()
 
-Every marker in the map, each with its grid column, grid row, and its full tag text. Use this when you need to read the tag yourself (for example to parse `floor:2 door` into separate values) or build a table from all markers at once.
+Every marker in the map, each with the world-space centre of its cell, its grid column and row, and its full tag text. Use this when you need to read the tag yourself (for example to parse `floor:2 door` into separate values) or build a table from all markers at once.
 
-**Returns:** array of objects, each with `col`, `row`, and `tag`. Returns an empty array (length 0) if the map has no markers.
+**Returns:** array of `Marker` objects. Returns an empty array (length 0) if the map has no markers.
 
 | Property | Type   | Description |
 |----------|--------|-------------|
+| x        | number | World x position of the centre of the marker's cell |
+| y        | number | World y position of the centre of the marker's cell |
 | col      | number | Grid column of the marker |
 | row      | number | Grid row of the marker |
 | tag      | string | The marker's full tag text |
@@ -124,7 +129,7 @@ function onenter()
   all = level.allMarkers()
   dim i
   for i = 0 to array.arrLength(all) - 1
-    dim m
+    dim m as Marker
     m = all(i)
     print "marker at column " + string.str(m.col) + ", row " + string.str(m.row) + ": " + m.tag
   next i

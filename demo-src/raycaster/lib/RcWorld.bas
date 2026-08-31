@@ -69,18 +69,14 @@ function build(tm as tilemapset, wallsLayerName)
     dim markers
     markers = tm.allMarkers()
     dim mi
-    dim mk
-    dim mcol
-    dim mrow
+    dim mk as Marker
     for mi = 0 to array.arrLength(markers) - 1
         mk = markers(mi)
-        mcol = mk("col")
-        mrow = mk("row")
-        if mcol >= 0 then
-            if mrow >= 0 then
-                if mcol < self.cols then
-                    if mrow < self.rows then
-                        self.applyTag(mrow * self.cols + mcol, mk("tag"))
+        if mk.col >= 0 then
+            if mk.row >= 0 then
+                if mk.col < self.cols then
+                    if mk.row < self.rows then
+                        self.applyTag(mk.row * self.cols + mk.col, mk.tag)
                     endif
                 endif
             endif

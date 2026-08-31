@@ -221,6 +221,9 @@ const _sbTilemaps = {
       results.push({
         x: offsetX + m.col * setHandle._tileW + setHandle._tileW / 2,
         y: offsetY + m.row * setHandle._tileH + setHandle._tileH / 2,
+        col: m.col,
+        row: m.row,
+        tag: m.tag,
       });
     }
     return results;
@@ -231,7 +234,16 @@ const _sbTilemaps = {
   // world-space {x,y}); this is for callers that need to read/parse tags
   // themselves or build an entity table from all markers at once.
   allMarkers(setHandle) {
-    return setHandle._markers.map((m) => ({ col: m.col, row: m.row, tag: m.tag }));
+    const offset = _tilemapWorldOffset(setHandle);
+    const offsetX = offset.x;
+    const offsetY = offset.y;
+    return setHandle._markers.map((m) => ({
+      x: offsetX + m.col * setHandle._tileW + setHandle._tileW / 2,
+      y: offsetY + m.row * setHandle._tileH + setHandle._tileH / 2,
+      col: m.col,
+      row: m.row,
+      tag: m.tag,
+    }));
   },
 
   // The set's cell size in pixels, from the .stm.
