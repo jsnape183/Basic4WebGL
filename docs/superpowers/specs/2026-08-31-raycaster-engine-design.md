@@ -95,6 +95,11 @@ The `.stm` tilemap layer is a **top-down floorplan**, not a picture of the game:
   `light:spot warm`, `door`, `water`, `sky`.
 - The `raycaster` module owns the real texture atlas and resolves tag → atlas rect
   at map load. Retexturing an area = editing tags, no art changes.
+- Markers in the `.stm` format carry a single free-text `tag` string
+  (`{ row, col, tag }`), not structured properties. The loader parses
+  space-separated `key:value` and bare-flag tokens out of that string
+  (`floor:2 ftex:grating door`), and multiple markers on one cell merge. No `.stm`
+  format or Tilemap Editor change is required.
 - Same authoring workflow as the other demos; the tilemap editor's top-down view
   *is* the working view (walls as filled cells, tags as badges).
 
