@@ -94,21 +94,27 @@ const LandingHero: React.FC = () => {
     const projectId = uuidv4();
     const fileId = uuidv4();
 
-    dispatch(addProject({ id: projectId, name: 'Space Shooter Demo', packageIds: ['softcore', 'softgfx'] }));
-    dispatch(addFile({ id: fileId, name: 'Main.bas', source: DEMO_SOURCE, projectId, folderId: null, fullName: 'Main.bas' }));
+    try {
+      dispatch(addProject({ id: projectId, name: 'Space Shooter Demo', packageIds: ['softcore', 'softgfx'] }));
+      dispatch(addFile({ id: fileId, name: 'Main.bas', source: DEMO_SOURCE, projectId, folderId: null, fullName: 'Main.bas' }));
 
-    const assetDefs = [
-      { name: 'ship.png', src: '/ship.png' },
-      { name: 'bullet.png', src: '/bullet.png' },
-    ];
-    for (const { name, src } of assetDefs) {
-      const id = uuidv4();
-      const blob = await (await fetch(src)).blob();
-      await putAssetBlob(id, blob);
-      dispatch(addAsset({ id, name, projectId, folderId: null, fullName: name }));
+      const assetDefs = [
+        { name: 'ship.png', src: '/ship.png' },
+        { name: 'bullet.png', src: '/bullet.png' },
+      ];
+      for (const { name, src } of assetDefs) {
+        const id = uuidv4();
+        const blob = await (await fetch(src)).blob();
+        await putAssetBlob(id, blob);
+        dispatch(addAsset({ id, name, projectId, folderId: null, fullName: name }));
+      }
+
+      navigate(`/projects/${projectId}/edit`);
+    } catch (err) {
+      // A blocked/full IndexedDB shouldn't wedge the button on "Opening editor…".
+      console.error('LandingHero: failed to seed the demo project', err);
+      setLaunching(false);
     }
-
-    navigate(`/projects/${projectId}/edit`);
   };
 
   return (
