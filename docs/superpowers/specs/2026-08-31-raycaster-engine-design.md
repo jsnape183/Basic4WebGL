@@ -164,10 +164,35 @@ Walk the column's spans **far → near**, maintaining a vertical window
 - Sky (`sky`-flagged ceiling spans) and the default ambient floor/ceiling fill are
   quads in the same mesh.
 
-### 5.3 One texture atlas
+### 5.3 One texture atlas — fixed-size grid (option D)
 
-Every wall / floor / ceiling texture lives on a single atlas page. The whole layer
-is one material → one bind → one draw. Tag → atlas-rect resolved at map load.
+Every wall / floor / ceiling texture is the same power-of-two size (default
+128×128). The atlas is a plain grid — e.g. 8×8 = 64 textures on a 1024×1024 page,
+with additional pages allocated if a map references more than 64. A texture's slot
+is its index; UV math is `index → (row, col)`, identical and branch-free for every
+strip. No rect table, no packer.
+
+This is deliberately the **same model the 2D tilemap renderer already uses**:
+`_sbAssets.getSlices(tileImage, tileW, tileH)` slices one tileset image into a
+uniform grid addressed by index. The raycaster's atlas loader is a thin wrapper
+over the same slicing, built at map load from the individually-preloaded,
+tag-referenced images. Tag → slot index resolved at load.
+
+Trade-off accepted: uniform texture size is enforced (idiomatic for the genre —
+DOOM and classic raycasters have always used fixed-size wall textures), and an
+atlas page with few textures wastes space.
+
+### 5.3a General reusability note (not in scope)
+
+The single-mesh rendering technique in §5.2 — replace N per-cell display objects
+with one persistent mesh whose quads are written into typed-array vertex buffers
+and uploaded once — is exactly what a batched 2D tilemap renderer
+(`PIXI` `CompositeTilemap`) does. The current `tilemap.js` creates one
+`PIXI.Sprite` per non-empty cell (~2,300 objects for a 48×48 map); draw-call
+batching already works, but the scene-graph object overhead does not scale. If the
+raycaster proves this pattern out, retrofitting it into `tilemap.js` is a strong
+follow-on performance improvement for every 2D game. **Recorded here, not part of
+this spec.**
 
 ### 5.4 Per-span depth
 
@@ -313,16 +338,26 @@ Follows the six-step "adding a new library module" process in `CLAUDE.md`.
    if this closes or partially closes a tracked item; update
    `src/docs/roadmap.md` (public summary) too.
 
-### 9.1 Open questions for the plan
+### 9.1 Resolved decisions
 
-- **Camera integration.** Does the raycast camera reuse the existing `camera`
-  module, or does `raycaster` own its own camera state and the `camera` module is
-  inert inside a raycast scene? Leaning toward the latter (raycaster owns it),
-  decide during planning.
-- **`maxColumns` / `maxSpansPerColumn` / light-cap constants** — pick defaults in
-  phase 3/5, tune against the phase-9 benchmark.
-- **Atlas construction** — build-time packing vs runtime packing of the texture
-  atlas from tag-referenced images.
+- **Camera.** `raycaster` owns its own camera state (yaw, pitch, position, plane
+  vectors, FOV). The existing `camera` module is 2D-scroll-oriented and is inert
+  inside a raycast scene — this is a fundamentally different projection and reusing
+  it would only constrain the design. The mover writes camera state via the actor
+  bound with `raycaster.bindCamera(actor)`.
+- **Tuning constants.** Pick defaults now, expect authors/us to tweak against the
+  phase-9 benchmark. Starting values: `maxColumns = 160` (≈ one ray per 8 px at
+  1280 wide, strip-doubled), `maxSpansPerColumn = 12`, light-cap = 4 lights per
+  grid cell, dynamic-light range = 8 cells, max active dynamic lights = 12,
+  step-up height = 0.35 world units. All exposed as module constants, not magic
+  numbers.
+
+### 9.2 Resolved — atlas construction
+
+Fixed-size grid atlas (option D), §5.3. Chosen for direct reuse of the existing
+`_sbAssets.getSlices` uniform-grid tileset model. Remaining sub-decision for the
+plan: default tile size (128×128 assumed) and whether floor/ceiling textures share
+the wall atlas page or get their own.
 
 ---
 
