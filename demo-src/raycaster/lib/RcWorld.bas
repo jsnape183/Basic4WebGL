@@ -87,34 +87,65 @@ endfunction
 function applyTag(idx, tagStr)
     dim tokens
     tokens = string.split(string.trim(tagStr), " ")
+    dim pass
     dim ti
     dim tok
     dim ci
-    for ti = 0 to array.arrLength(tokens) - 1
-        tok = tokens(ti)
-        if string.len(tok) > 0 then
-            ci = string.indexof(tok, ":")
-            if ci < 0 then
-                self.applyFlag(idx, tok)
-            else
-                self.applyKv(idx, string.substr(tok, 0, ci), string.substr(tok, ci + 1, string.len(tok)))
+    dim k
+    dim isUpper
+    for pass = 0 to 1
+        for ti = 0 to array.arrLength(tokens) - 1
+            tok = tokens(ti)
+            if string.len(tok) > 0 then
+                ci = string.indexof(tok, ":")
+                if ci < 0 then
+                    if pass = 0 then
+                        self.applyFlag(idx, tok)
+                    endif
+                else
+                    k = string.substr(tok, 0, ci)
+                    isUpper = 0
+                    if k = "upper" then
+                        isUpper = 1
+                    endif
+                    if pass = 0 then
+                        if isUpper = 0 then
+                            self.applyKv(idx, k, string.substr(tok, ci + 1, string.len(tok)))
+                        endif
+                    else
+                        if isUpper = 1 then
+                            self.applyKv(idx, k, string.substr(tok, ci + 1, string.len(tok)))
+                        endif
+                    endif
+                endif
             endif
-        endif
-    next ti
+        next ti
+    next pass
+endfunction
+
+' Idempotent bit-set: only adds `bit` to the cell's flag bitset if not already set.
+' softBASIC has no bitwise operators and no modulo, so oddness of flags/bit is
+' computed as q - math.floor(q / 2) * 2.
+function setFlag(idx, bit)
+    dim q
+    q = math.floor(self.flagsArr(idx) / bit)
+    if q - math.floor(q / 2) * 2 < 1 then
+        self.flagsArr(idx) = self.flagsArr(idx) + bit
+    endif
 endfunction
 
 function applyFlag(idx, name)
     if name = "door" then
-        self.flagsArr(idx) = self.flagsArr(idx) + 1
+        self.setFlag(idx, 1)
     endif
     if name = "lift" then
-        self.flagsArr(idx) = self.flagsArr(idx) + 2
+        self.setFlag(idx, 2)
     endif
     if name = "water" then
-        self.flagsArr(idx) = self.flagsArr(idx) + 4
+        self.setFlag(idx, 4)
     endif
     if name = "sky" then
-        self.flagsArr(idx) = self.flagsArr(idx) + 8
+        self.setFlag(idx, 8)
     endif
 endfunction
 
