@@ -1,0 +1,23 @@
+{
+  "tileWidth": 16,
+  "tileHeight": 16,
+  "tileImage": "rc_placeholder_tiles.png",
+  "layers": {
+    "walls": [
+      [1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 1],
+      [1, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1]
+    ],
+    "tags": {
+      "type": "markers",
+      "markers": [
+        { "row": 1, "col": 1, "tag": "floor:2 ftex:grating" },
+        { "row": 2, "col": 2, "tag": "floor:-3 ceil:4 ctex:pipes" },
+        { "row": 1, "col": 2, "tag": "upper:vent" },
+        { "row": 2, "col": 3, "tag": "door" },
+        { "row": 1, "col": 3, "tag": "tex:concrete sky" }
+      ]
+    }
+  }
+}
