@@ -111,14 +111,23 @@ const EditPage: React.FC = () => {
   // If the toggle was armed before Run was clicked, request fullscreen on
   // the game once it's actually mounted and running -- this is the only
   // place the toggle's "on" state ever leads to an actual Fullscreen API
-  // call while not already running.
+  // call while not already running. `runnerAssets` is in the deps because
+  // the preview iframe isn't mounted (and previewIframeRef is null) until
+  // the asset manifest resolves from IndexedDB -- this effect has to re-run
+  // once it does, while the Run click's transient activation is still valid.
   useEffect(() => {
-    if (isRunning && fullscreenArmed && !document.fullscreenElement) {
-      previewIframeRef.current?.requestFullscreen().catch((err) => {
+    if (
+      isRunning &&
+      fullscreenArmed &&
+      runnerAssets !== null &&
+      previewIframeRef.current &&
+      !document.fullscreenElement
+    ) {
+      previewIframeRef.current.requestFullscreen().catch((err) => {
         console.warn('Failed to enter fullscreen:', err);
       });
     }
-  }, [isRunning, fullscreenArmed]);
+  }, [isRunning, fullscreenArmed, runnerAssets]);
 
   // Regular file edits auto-save (see useAutoSave) and are never at risk on
   // navigation, but an asset like a tilemap only persists on an explicit
