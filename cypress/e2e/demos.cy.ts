@@ -35,3 +35,26 @@ DEMOS.forEach(({ slug, title, waitMs }) => {
     });
   });
 });
+
+const DEV_DEMOS: Array<{ slug: string; title: string; waitMs: number }> = [
+  { slug: 'raycaster-p1-mapload', title: 'Raycaster P1 — Map Load', waitMs: 3000 },
+];
+
+DEV_DEMOS.forEach(({ slug, title, waitMs }) => {
+  describe(`Dev demo: ${title}`, () => {
+    it('runs without runtime errors', () => {
+      cy.visit('/demos');
+      cy.window().its('__seedDemo').should('be.a', 'function');
+      cy.window()
+        .then((win) =>
+          (win as unknown as { __seedDemo: (s: string) => Promise<string> }).__seedDemo(slug),
+        )
+        .then((projectId) => {
+          cy.visit(`/projects/${projectId}/edit`);
+          cy.get('[aria-label="Run project"]', { timeout: 15000 }).click();
+          cy.wait(waitMs);
+          cy.get('span').contains('ERR').should('not.exist');
+        });
+    });
+  });
+});
