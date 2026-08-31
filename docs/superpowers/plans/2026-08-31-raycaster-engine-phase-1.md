@@ -1,814 +1,647 @@
-# Raycaster Engine — Phase 1: World Model & Map Loader — Implementation Plan
+# Raycaster Engine — Phase 1: `RcWorld` + Map Loader — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a `raycaster` engine module that loads a tagged `.stm` tilemap into an in-memory height-aware world model and exposes read accessors, verified by unit tests and an unlisted phase demo.
+**Goal:** Ship `RcWorld.bas` — a softBASIC library module that reads a tagged `.stm` tilemap into an in-memory height-aware world model — plus the one generic engine addition it needs (`tilemap` marker/tile-metric accessors), verified by JS unit tests and an unlisted Cypress phase demo.
 
-**Architecture:** A new plain-script engine module `src/components/Runner/engine/raycaster.js` (concatenated into the runtime iframe like `tilemap.js`), a hand-written `raycaster.bas` def exposing the surface, and a separate `devDemoRegistry` so phase demos are seedable by Cypress without appearing on the public `/demos` page. Phase 1 does **no rendering** — it builds a data model from `.stm` layers and marker tags.
+**Architecture:** The raycaster is built **in softBASIC** (spec §1.1). Phase 1 adds no `_sb` module. It adds:
+1. a small **generic** improvement to the existing `tilemap` engine module (JS + `.bas` def + JS unit tests + docs) — `tilemapset.allMarkers()`, `.tileWidth()`, `.tileHeight()` — because a softBASIC library currently has no way to enumerate markers or learn a map's cell size;
+2. `RcWorld.bas`, a pure-softBASIC module that consumes those to build parallel arrays of per-cell `wall / floorH / ceilH / flags / upper / tex` data;
+3. the `devDemoRegistry` mechanism so every later phase's demo is Cypress-seedable without appearing on `/demos`.
 
-**Tech Stack:** TypeScript/React frontend, Vitest unit tests, Cypress e2e, softBASIC `.bas` defs, PIXI (not touched this phase).
+**Tech Stack:** TypeScript/React, Vitest (JS unit tests only — the `.bas` logic is Cypress-verified per spec §1.2), Cypress e2e, softBASIC.
 
-**Spec:** `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md` — this plan implements §3 (data model), the loader half of §4, the `loadMap` + cell-accessor portion of §9, and phase 1 of §11. The per-phase unlisted-demo mechanism (§10) is set up here for all later phases to reuse.
+**Spec:** `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md` — implements §3 (data model + §3.3 authoring), §9.1 (the generic `tilemap` change), §9.4 constants as used, phase 1 of §11, and sets up §10's per-phase demo mechanism.
 
 ---
 
 ## File Structure
 
 **Created:**
-- `src/components/Runner/engine/raycaster.js` — the engine module: world model, `.stm` parser, tag parser, cell accessors. One responsibility: the raycaster world data model. Rendering/movement come in later phases as separate concerns inside this same file (spec §11), but Phase 1 keeps it to the loader.
-- `src/lib/Basic4WebGL/defs/raycaster.bas` — hand-written softBASIC surface (NOT descriptor-generated; not added to `library/registry.ts`).
-- `src/features/demos/devDemoRegistry.ts` — registry of unlisted phase demos; same shape as `demoRegistry`, never rendered on `/demos`.
-- `tests/components/Runner/raycasterWorld.test.ts` — Vitest unit tests for `_parseTags` and `_buildWorld` (pure functions).
-- `tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts` — transpiler tests: the `.bas` surface compiles and emits the right `_sb.*` calls.
+- `demo-src/raycaster/lib/RcWorld.bas` — the world-model module. One responsibility: parse a `.stm` tilemap + marker tags into per-cell arrays and expose read accessors. (Lives under `demo-src/raycaster/lib/` so later phases' `RcCast`, `RcRender`, etc. sit beside it as the growing library.)
+- `src/features/demos/devDemoRegistry.ts` — unlisted phase-demo registry; same shape as `demoRegistry`, never rendered on `/demos`.
+- `tests/components/Runner/tilemapMarkerEnum.test.ts` — JS unit tests for the new `allMarkers` / `tileWidth` / `tileHeight` engine accessors.
+- `tests/features/demos/devDemoRegistry.test.ts` — unit tests for the dev registry.
+- `tests/scratch/raycasterP1DemoCompiles.test.ts` — transpile-output check for the Phase 1 `.bas` (retired to `.skip` once green).
 - `demo-src/raycaster-p1/Main.bas` — demo entry.
-- `demo-src/raycaster-p1/MapProbeScene.bas` — demo scene that loads the map and prints cell data.
+- `demo-src/raycaster-p1/RcWorld.bas` — copy of the library module (buildDemo packages a flat dir; see Task 6 Step 2).
+- `demo-src/raycaster-p1/MapProbeScene.bas` — demo scene: builds the world, `print`s assertions, draws a top-down grid.
 - `demo-src/raycaster-p1/assets/p1testmap.stm` — the test map.
+- `demo-src/raycaster-p1/assets/rc_placeholder_tiles.png` — placeholder tilesheet (copied from an existing demo).
 - `src/docs/demos/RaycasterP1MapLoad.b4wgl.json` — build output (generated, committed).
 
 **Modified:**
-- `src/components/Runner/index.tsx` — import and concatenate `raycaster.js`.
-- `src/components/Runner/softBasicEngine.js` — spread `_sbRaycaster` into `_sb`.
-- `src/components/Runner/engine/stage.js` — call `this._raycasterReset()` in `clear()`.
-- `src/constants/packageModules.ts` — import and register `raycaster.bas`.
+- `src/components/Runner/engine/tilemap.js` — add `allMarkers`, `tileWidth`, `tileHeight`.
+- `src/lib/Basic4WebGL/defs/tilemapset.bas` — add the three matching wrappers.
+- `src/features/demos/demoRegistry.ts` — split out a reusable `loadExportJson(file)`.
 - `src/pages/DemosPage.tsx` — `__seedDemo` falls back to `devDemoRegistry`.
-- `src/features/demos/demoRegistry.ts` — export a shared `loadExportJson(file)` helper reused by both registries.
-- `cypress/e2e/demos.cy.ts` — add the Phase 1 demo to a separate `DEV_DEMOS` loop.
-- `tests/components/Runner/bootstrapper.test.ts` — add `raycaster.js` to the engine-scripts assertion if one exists (verify in Task 1).
+- `cypress/e2e/demos.cy.ts` — add a `DEV_DEMOS` loop with the Phase 1 demo.
+- `src/docs/api-reference/tilemapset.md` (or the tilemap API page — verify path in Task 2) — document the three new functions.
+- `docs/roadmap.md`, `docs/language/library-roadmap.md` — note the raycaster library is in progress.
 
 ---
 
-## Task 1: Scaffold the engine module and wire it into the runtime
+## Task 1: Generic engine change — `tilemap` marker enumeration + tile metrics (JS)
 
 **Files:**
-- Create: `src/components/Runner/engine/raycaster.js`
-- Modify: `src/components/Runner/index.tsx`
-- Modify: `src/components/Runner/softBasicEngine.js`
-- Modify: `src/components/Runner/engine/stage.js`
-- Test: `tests/components/Runner/raycasterWorld.test.ts`
+- Modify: `src/components/Runner/engine/tilemap.js`
+- Test: `tests/components/Runner/tilemapMarkerEnum.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/components/Runner/raycasterWorld.test.ts`:
+Create `tests/components/Runner/tilemapMarkerEnum.test.ts`:
 
 ```ts
 import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 
-// engine/raycaster.js is a plain script: it declares a bare `const _sbRaycaster`
-// that the runner concatenates into the sandboxed iframe. Evaluate it in a
-// Function context — the same technique tilemap.test.ts / camera.test.ts use.
-// `_sbAssets` is only referenced inside loadMap(), which these tests never call.
-function loadRaycaster() {
-  const src = readFileSync('src/components/Runner/engine/raycaster.js', 'utf-8');
-  const factory = new Function(`${src}\n return _sbRaycaster;`);
-  return factory() as {
-    _parseTags: (s: string) => Record<string, string | true>;
-    _buildWorld: (stm: unknown) => {
-      width: number;
-      height: number;
-      cells: Array<{
-        wall: number; floorH: number; ceilH: number;
-        wallTex: string | null; floorTex: string | null; ceilTex: string | null;
-        upper: number; light: number; flags: number;
-      }>;
-      upperRegions: Array<{ name: string; floorH: number; ceilH: number }>;
+// tilemap.js is a plain script declaring bare `const _sbTilemaps` + reading
+// `_sbAssets`/`PIXI`/`worldContainer`/`hudContainer` globals. Same harness as
+// tests/components/Runner/tilemap.test.ts / tests/integration/tilemapMarkersRoundTrip.ts.
+class FakeRectangle {
+  constructor(public x: number, public y: number, public width: number, public height: number) {}
+}
+class FakeContainer {
+  children: unknown[] = [];
+  x = 0;
+  y = 0;
+  parent: unknown = null;
+  addChild(c: unknown) { this.children.push(c); }
+  removeChildren() { this.children = []; }
+}
+function loadTilemap() {
+  const assetsSrc = readFileSync('src/components/Runner/engine/assets.js', 'utf-8');
+  const tilemapSrc = readFileSync('src/components/Runner/engine/tilemap.js', 'utf-8');
+  const PIXI = {
+    Container: FakeContainer,
+    Sprite: FakeContainer,
+    Rectangle: FakeRectangle,
+    Texture: class {},
+    Assets: { add() {}, async load() { return {}; } },
+  };
+  const factory = new Function(
+    'PIXI', 'worldContainer', 'hudContainer',
+    `${assetsSrc}\n${tilemapSrc}\n return { _sbAssets, _sbTilemaps };`,
+  );
+  return factory(PIXI, new FakeContainer(), new FakeContainer()) as {
+    _sbAssets: { get: (n: string) => unknown };
+    _sbTilemaps: {
+      createTileMapSet: (p: string) => unknown;
+      allMarkers: (h: unknown) => Array<{ col: number; row: number; tag: string }>;
+      tileWidth: (h: unknown) => number;
+      tileHeight: (h: unknown) => number;
+      markersByTag: (h: unknown, t: string) => Array<{ x: number; y: number }>;
     };
-    _raycasterReset: () => void;
-    mapWidth: () => number;
-    cellWall: (x: number, y: number) => number;
   };
 }
 
-describe('raycaster module scaffold', () => {
-  test('exposes the expected surface', () => {
-    const rc = loadRaycaster();
-    expect(typeof rc._parseTags).toBe('function');
-    expect(typeof rc._buildWorld).toBe('function');
-    expect(typeof rc._raycasterReset).toBe('function');
-    expect(typeof rc.mapWidth).toBe('function');
+const STM = JSON.stringify({
+  tileWidth: 16,
+  tileHeight: 24,
+  tileImage: 'tiles.png',
+  layers: {
+    walls: [
+      [1, 1, 1],
+      [1, 0, 1],
+    ],
+    tags: {
+      type: 'markers',
+      markers: [
+        { row: 0, col: 2, tag: 'floor:2 door' },
+        { row: 1, col: 1, tag: 'light:spot' },
+      ],
+    },
+  },
+});
+
+describe('tilemap — marker enumeration + tile metrics', () => {
+  function makeSet() {
+    const { _sbAssets, _sbTilemaps } = loadTilemap();
+    // getSlices needs the image; stub _sbAssets.get for both the .stm and the png.
+    (_sbAssets as unknown as { get: (n: string) => unknown }).get = (name: string) => {
+      if (name === 'level.stm') return STM;
+      if (name === 'tiles.png') return { source: {}, width: 16, height: 24 };
+      throw new Error(`unexpected asset ${name}`);
+    };
+    return { _sbTilemaps, handle: _sbTilemaps.createTileMapSet('level.stm') };
+  }
+
+  test('allMarkers returns every marker with col/row/tag', () => {
+    const { _sbTilemaps, handle } = makeSet();
+    const all = _sbTilemaps.allMarkers(handle);
+    expect(all).toEqual([
+      { col: 2, row: 0, tag: 'floor:2 door' },
+      { col: 1, row: 1, tag: 'light:spot' },
+    ]);
   });
 
-  test('with no world loaded, accessors return safe defaults', () => {
-    const rc = loadRaycaster();
-    rc._raycasterReset();
-    expect(rc.mapWidth()).toBe(0);
-    expect(rc.cellWall(0, 0)).toBe(1); // out-of-world reads as solid
+  test('tileWidth / tileHeight report the .stm values', () => {
+    const { _sbTilemaps, handle } = makeSet();
+    expect(_sbTilemaps.tileWidth(handle)).toBe(16);
+    expect(_sbTilemaps.tileHeight(handle)).toBe(24);
+  });
+
+  test('existing markersByTag is unchanged', () => {
+    const { _sbTilemaps, handle } = makeSet();
+    expect(_sbTilemaps.markersByTag(handle, 'light:spot')).toEqual([
+      { x: 1 * 16 + 8, y: 1 * 24 + 12 },
+    ]);
   });
 });
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npx vitest run tests/components/Runner/raycasterWorld.test.ts`
-Expected: FAIL — `ENOENT` reading `src/components/Runner/engine/raycaster.js` (file does not exist yet).
+Run: `npx vitest run tests/components/Runner/tilemapMarkerEnum.test.ts`
+Expected: FAIL — `_sbTilemaps.allMarkers is not a function`.
 
-- [ ] **Step 3: Create the engine module**
+(If it instead fails earlier in `createTileMapSet` / `getSlices` because the `_sbAssets.get` stub shape is wrong, adjust the stub's returned object to whatever `getSlices` in `assets.js` actually destructures — read `assets.js`'s `getSlices` first — then continue.)
 
-Create `src/components/Runner/engine/raycaster.js`:
+- [ ] **Step 3: Implement the three accessors**
+
+In `src/components/Runner/engine/tilemap.js`, inside the `_sbTilemaps` object, next to `markersByTag`, add:
 
 ```js
-// Raycaster engine module — Phase 1: world model + .stm map loader only.
-// No rendering, no movement (spec docs/superpowers/specs/2026-08-31-raycaster-engine-design.md).
-// Concatenated as a plain script into the runtime iframe (see src/components/Runner/index.tsx),
-// exactly like engine/tilemap.js. `_sbAssets` (engine/assets.js) is a runtime global,
-// only touched inside loadMap().
-const _sbRaycaster = (() => {
-  // ── constants (spec §9.1) ──────────────────────────────────────────────
-  const STD_CEIL = 1.0; // default ceiling height in world units when untagged
+  // Every marker across every marker layer, with grid coords and its raw tag
+  // string. Companion to markersByTag (which does exact-tag match and returns
+  // world-space {x,y}); this is for callers that need to read/parse tags
+  // themselves or build an entity table from all markers at once.
+  allMarkers(setHandle) {
+    return setHandle._markers.map((m) => ({ col: m.col, row: m.row, tag: m.tag }));
+  },
 
-  const FLAG_DOOR = 1;
-  const FLAG_LIFT = 2;
-  const FLAG_WATER = 4;
-  const FLAG_SKY = 8;
+  tileWidth(setHandle) {
+    return setHandle._tileW;
+  },
 
-  let _world = null;
-
-  // "floor:2 ftex:grating door" -> { floor: "2", ftex: "grating", door: true }
-  function _parseTags(tagString) {
-    const props = {};
-    if (!tagString) return props;
-    for (const token of String(tagString).trim().split(/\s+/)) {
-      if (!token) continue;
-      const idx = token.indexOf(':');
-      if (idx === -1) {
-        props[token] = true;
-      } else {
-        props[token.slice(0, idx)] = token.slice(idx + 1);
-      }
-    }
-    return props;
-  }
-
-  function _applyProps(cell, props, upperRegions, upperByName) {
-    if ('tex' in props) cell.wallTex = String(props.tex);
-    if ('floor' in props) cell.floorH = Number(props.floor);
-    if ('ceil' in props) cell.ceilH = Number(props.ceil);
-    if ('ftex' in props) cell.floorTex = String(props.ftex);
-    if ('ctex' in props) cell.ceilTex = String(props.ctex);
-    if ('light' in props) {
-      cell.light = props.light === true ? 1 : (Number(props.light) || 1);
-    }
-    if (props.door) cell.flags |= FLAG_DOOR;
-    if (props.lift) cell.flags |= FLAG_LIFT;
-    if (props.water) cell.flags |= FLAG_WATER;
-    if (props.sky) cell.flags |= FLAG_SKY;
-    if ('upper' in props) {
-      const name = props.upper === true ? '_default' : String(props.upper);
-      let idx = upperByName.get(name);
-      if (idx === undefined) {
-        idx = upperRegions.length;
-        upperRegions.push({
-          name,
-          floorH: cell.ceilH,
-          ceilH: cell.ceilH + STD_CEIL,
-          floorTex: null,
-          ceilTex: null,
-          wallTex: null,
-        });
-        upperByName.set(name, idx);
-      }
-      cell.upper = idx;
-    }
-  }
-
-  // stm: parsed .stm object { tileWidth, tileHeight, tileImage, layers: {...} }.
-  // layers values are either a number[][] grid, or { type: 'markers', markers: [...] },
-  // or { type: 'collision', data: [...] } (ignored by the raycaster).
-  function _buildWorld(stm) {
-    const layers = (stm && stm.layers) || {};
-    const wallsGrid = Array.isArray(layers.walls) ? layers.walls : null;
-    const floorGrid = Array.isArray(layers.floor) ? layers.floor : null;
-    const refGrid = wallsGrid || floorGrid;
-    if (!refGrid) {
-      throw new Error('raycaster.loadMap: .stm has no "walls" or "floor" tile layer');
-    }
-    const height = refGrid.length;
-    const width = refGrid[0] ? refGrid[0].length : 0;
-
-    const cells = new Array(width * height);
-    for (let i = 0; i < cells.length; i++) {
-      cells[i] = {
-        wall: 0,
-        floorH: 0,
-        ceilH: STD_CEIL,
-        wallTex: null,
-        floorTex: null,
-        ceilTex: null,
-        upper: -1,
-        light: 0,
-        flags: 0,
-      };
-    }
-
-    if (wallsGrid) {
-      for (let row = 0; row < height; row++) {
-        for (let col = 0; col < width; col++) {
-          const id = (wallsGrid[row] && wallsGrid[row][col]) || 0;
-          if (id) cells[row * width + col].wall = id;
-        }
-      }
-    }
-
-    const upperRegions = [];
-    const upperByName = new Map();
-
-    for (const layerName of Object.keys(layers)) {
-      const layer = layers[layerName];
-      if (!layer || Array.isArray(layer) || layer.type !== 'markers') continue;
-      for (const m of layer.markers || []) {
-        if (m.row < 0 || m.col < 0 || m.row >= height || m.col >= width) continue;
-        const cell = cells[m.row * width + m.col];
-        _applyProps(cell, _parseTags(m.tag), upperRegions, upperByName);
-      }
-    }
-
-    return { width, height, cells, upperRegions };
-  }
-
-  function _cellAt(x, y) {
-    if (!_world) return null;
-    const cx = Math.floor(x);
-    const cy = Math.floor(y);
-    if (cx < 0 || cy < 0 || cx >= _world.width || cy >= _world.height) return null;
-    return _world.cells[cy * _world.width + cx];
-  }
-
-  return {
-    // Called by stage.clear() on every scene switch — see engine/stage.js.
-    _raycasterReset() {
-      _world = null;
-    },
-
-    loadMap(stmPath) {
-      const raw = _sbAssets.get(stmPath);
-      const stm = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      _world = _buildWorld(stm);
-    },
-
-    mapWidth() {
-      return _world ? _world.width : 0;
-    },
-    mapHeight() {
-      return _world ? _world.height : 0;
-    },
-    cellWall(x, y) {
-      const c = _cellAt(x, y);
-      return c ? c.wall : 1; // out-of-world reads as solid wall
-    },
-    cellFloorHeight(x, y) {
-      const c = _cellAt(x, y);
-      return c ? c.floorH : 0;
-    },
-    cellCeilHeight(x, y) {
-      const c = _cellAt(x, y);
-      return c ? c.ceilH : 0;
-    },
-    cellFlags(x, y) {
-      const c = _cellAt(x, y);
-      return c ? c.flags : 0;
-    },
-    cellHasUpper(x, y) {
-      const c = _cellAt(x, y);
-      return c && c.upper >= 0 ? 1 : 0;
-    },
-
-    // Exposed for unit tests only (tests/components/Runner/raycasterWorld.test.ts).
-    _parseTags,
-    _buildWorld,
-  };
-})();
+  tileHeight(setHandle) {
+    return setHandle._tileH;
+  },
 ```
+
+Verify `createTileMapSet` sets `_tileW` / `_tileH` on the handle (grep for `_tileW` in the file — `createTileMap` sets `container._tileW = tileW`; confirm `createTileMapSet`'s wrapping container does too, and if it only stores them on child layer containers, also store `handle._tileW = tileW; handle._tileH = tileH;` on the set's wrapping container in `createTileMapSet` so these accessors work).
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `npx vitest run tests/components/Runner/raycasterWorld.test.ts`
-Expected: PASS (both tests).
+Run: `npx vitest run tests/components/Runner/tilemapMarkerEnum.test.ts`
+Expected: PASS (all three tests).
 
-- [ ] **Step 5: Wire the module into the runtime iframe**
+- [ ] **Step 5: Run the full tilemap suite for regressions**
 
-In `src/components/Runner/index.tsx`, add the import next to the other engine imports (after the `sbParticles` line):
+Run: `npx vitest run tests/components/Runner/tilemap.test.ts tests/integration/tilemapMarkersRoundTrip.test.ts tests/components/Runner/tilemapMarkerEnum.test.ts`
+Expected: PASS.
 
-```tsx
-import sbParticles from './engine/particles.js?raw';
-import sbRaycaster from './engine/raycaster.js?raw';
-```
-
-Then add `sbRaycaster` to the concatenation array. Find the line beginning `[sbLifecycle, sbInput, ...` and insert `sbRaycaster` immediately before `sbScene`:
-
-```tsx
-[sbLifecycle, sbInput, sbAssets, sbFile, sbSave, sbAudio, sbDrawing, sbStage, sbSprites, sbAnimatedSprites, sbTilemaps, sbCollision, sbPathfinding, sbTween, sbAttach, sbParticles, sbRaycaster, sbScene, sbCamera, sbFrameLoop, softBasicEngine].join('\n')
-```
-
-- [ ] **Step 6: Spread the module into `_sb`**
-
-In `src/components/Runner/softBasicEngine.js`, add `..._sbRaycaster,` immediately after `..._sbParticles,` (mirroring the concat order in Step 5, and safely before the `..._sbFrameLoop` line that the file's comment says must stay last):
-
-```js
-  ..._sbParticles,
-  ..._sbRaycaster,
-```
-
-- [ ] **Step 7: Reset world state on scene switch**
-
-In `src/components/Runner/engine/stage.js`, inside the `clear()` method, add the raycaster reset next to the other module resets:
-
-```js
-    this._cameraReset();
-    this._pathfindingReset();
-    this._tileCollisionReset();
-    this._frameLoopReset();
-    this._raycasterReset();
-```
-
-- [ ] **Step 8: Check the bootstrapper test for an engine-scripts assertion**
-
-Run: `grep -n "particles.js\|engine/.*\.js?raw\|engineScripts" tests/components/Runner/bootstrapper.test.ts`
-
-If a test asserts the exact list/order of engine scripts concatenated in `index.tsx`, update it to include `./engine/raycaster.js?raw` in the same position used in Step 5. If no such assertion exists (grep is empty), skip — do not add one.
-
-- [ ] **Step 9: Run the full runner test suite**
-
-Run: `npx vitest run tests/components/Runner/`
-Expected: PASS (all files, including the existing `bootstrapper.test.ts` and `stage`-related tests).
-
-- [ ] **Step 10: Verify the build**
-
-Run: `npx vite build`
-Expected: build completes with no errors.
-
-- [ ] **Step 11: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/components/Runner/engine/raycaster.js src/components/Runner/index.tsx src/components/Runner/softBasicEngine.js src/components/Runner/engine/stage.js tests/components/Runner/raycasterWorld.test.ts
-git add tests/components/Runner/bootstrapper.test.ts 2>/dev/null || true
-git commit -m "feat(raycaster): scaffold engine module with .stm world-model loader"
+git add src/components/Runner/engine/tilemap.js tests/components/Runner/tilemapMarkerEnum.test.ts
+git commit -m "feat(tilemap): allMarkers / tileWidth / tileHeight accessors"
 ```
 
 ---
 
-## Task 2: Tag parser — full coverage
+## Task 2: Generic engine change — softBASIC wrappers + docs
 
 **Files:**
-- Modify: `src/components/Runner/engine/raycaster.js` (no change expected; this task locks behaviour with tests)
-- Test: `tests/components/Runner/raycasterWorld.test.ts:` add a `describe('raycaster _parseTags')` block
+- Modify: `src/lib/Basic4WebGL/defs/tilemapset.bas`
+- Modify: the tilemap/tilemapset API reference markdown (verify path)
+- Test: `tests/lib/Basic4WebGL/unit/transpiler/tilemap.test.ts` (or wherever `tilemapset` transpiler tests live — verify)
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Find the existing tilemapset transpiler test and API doc**
 
-Append to `tests/components/Runner/raycasterWorld.test.ts`:
+Run: `ls tests/lib/Basic4WebGL/unit/transpiler/ | grep -i tile` and `ls src/docs/api-reference/ | grep -i tile`
+Note the exact filenames — the tests and doc edits below target them.
+
+- [ ] **Step 2: Write the failing transpiler test**
+
+In the tilemapset transpiler test file found in Step 1, add:
 
 ```ts
-describe('raycaster _parseTags', () => {
-  test('parses key:value tokens', () => {
-    const rc = loadRaycaster();
-    expect(rc._parseTags('floor:2 ceil:6')).toEqual({ floor: '2', ceil: '6' });
-  });
-
-  test('parses bare flags as true', () => {
-    const rc = loadRaycaster();
-    expect(rc._parseTags('door sky')).toEqual({ door: true, sky: true });
-  });
-
-  test('mixes flags and key:value, tolerates extra whitespace', () => {
-    const rc = loadRaycaster();
-    expect(rc._parseTags('  floor:1   ftex:grating   lift ')).toEqual({
-      floor: '1',
-      ftex: 'grating',
-      lift: true,
-    });
-  });
-
-  test('empty / null / undefined tag -> empty object', () => {
-    const rc = loadRaycaster();
-    expect(rc._parseTags('')).toEqual({});
-    expect(rc._parseTags(null as unknown as string)).toEqual({});
-    expect(rc._parseTags(undefined as unknown as string)).toEqual({});
-  });
-
-  test('a value containing a colon keeps everything after the first colon', () => {
-    const rc = loadRaycaster();
-    expect(rc._parseTags('tex:wall:variant2')).toEqual({ tex: 'wall:variant2' });
+describe('tilemapset — marker enumeration + tile metrics', () => {
+  test('allMarkers / tileWidth / tileHeight emit their _sb.* calls', () => {
+    const result = /* the file's existing transpile helper */ ([
+      'function test()',
+      '  dim tm as tilemapset',
+      '  dim all',
+      '  dim tw',
+      '  dim th',
+      '  all = tm.allMarkers()',
+      '  tw = tm.tileWidth()',
+      '  th = tm.tileHeight()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_sb.allMarkers(');
+    expect(result.code).toContain('_sb.tileWidth(');
+    expect(result.code).toContain('_sb.tileHeight(');
   });
 });
 ```
 
-- [ ] **Step 2: Run the tests**
+Match the file's existing transpile-helper name and `tilemapset` construction idiom exactly (read a neighbouring test in the same file first).
 
-Run: `npx vitest run tests/components/Runner/raycasterWorld.test.ts`
-Expected: PASS. (The implementation from Task 1 already satisfies these. If any fail, fix `_parseTags` in `raycaster.js` to match the specified behaviour, then re-run.)
+- [ ] **Step 3: Run to verify it fails**
 
-- [ ] **Step 3: Commit**
+Run: `npx vitest run <that test file>`
+Expected: FAIL — output does not contain `_sb.allMarkers(`.
+
+- [ ] **Step 4: Add the wrappers**
+
+In `src/lib/Basic4WebGL/defs/tilemapset.bas`, before `EndClass`, add:
+
+```basic
+function allMarkers()
+    return call("_sb.allMarkers(this._handle)")
+endfunction
+
+function tileWidth()
+    return call("_sb.tileWidth(this._handle)")
+endfunction
+
+function tileHeight()
+    return call("_sb.tileHeight(this._handle)")
+endfunction
+```
+
+- [ ] **Step 5: Run to verify it passes**
+
+Run: `npx vitest run <that test file>`
+Expected: PASS.
+
+- [ ] **Step 6: Document the three functions**
+
+In the tilemapset API reference markdown from Step 1, add entries following the house style (one-sentence description → parameter table → `**Returns:**` → `.bas` example), e.g.:
+
+```markdown
+## tilemapset.allMarkers
+
+Every marker in the map, each with its grid column, grid row, and its full tag
+text. Use this when you need to read the tag yourself (for example to parse
+`floor:2 door` into separate values) or build a table from all markers at once.
+
+**Returns:** array of objects with `col`, `row`, and `tag`
+
+```basic
+dim all
+all = level.allMarkers()
+dim i
+for i = 0 to array.arrLength(all) - 1
+  dim m
+  m = all(i)
+  print "marker at " + string.str(m.col) + "," + string.str(m.row) + " = " + m.tag
+next i
+```
+
+## tilemapset.tileWidth
+
+The width of one tile in the map, in pixels.
+
+**Returns:** number
+
+```basic
+dim tw
+tw = level.tileWidth()
+```
+
+## tilemapset.tileHeight
+
+The height of one tile in the map, in pixels.
+
+**Returns:** number
+
+```basic
+dim th
+th = level.tileHeight()
+```
+```
+
+- [ ] **Step 7: Full unit suite + build**
+
+Run: `npx vitest run` then `npx vite build`
+Expected: both PASS/clean. Update any test that snapshots the `tilemapset.bas` function list.
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git add tests/components/Runner/raycasterWorld.test.ts
-git commit -m "test(raycaster): lock tag-parser behaviour"
+git add src/lib/Basic4WebGL/defs/tilemapset.bas src/docs/api-reference/ tests/lib/Basic4WebGL/unit/transpiler/
+git commit -m "feat(tilemapset): softBASIC wrappers + docs for allMarkers / tile metrics"
 ```
 
 ---
 
-## Task 3: World builder — grids, heights, flags, upper regions
+## Task 3: `RcWorld.bas` — the world-model module
 
 **Files:**
-- Modify: `src/components/Runner/engine/raycaster.js` (only if a test exposes a bug)
-- Test: `tests/components/Runner/raycasterWorld.test.ts:` add a `describe('raycaster _buildWorld')` block
+- Create: `demo-src/raycaster/lib/RcWorld.bas`
+- Test: `tests/scratch/raycasterP1DemoCompiles.test.ts` (created in Task 6; this task's verification is Step 4 below + the Task 6 demo)
 
-- [ ] **Step 1: Write the failing tests**
+`RcWorld` has no Vitest unit tests (spec §1.2 — no softBASIC execution harness). Its behaviour is asserted by the Phase 1 demo's `print` output (Task 6) and locked against transpile errors by the scratch check (Task 6 Step 3). Write it carefully against the def files per CLAUDE.md's "API cross-reference rule".
 
-Append to `tests/components/Runner/raycasterWorld.test.ts`:
+- [ ] **Step 1: Create the module**
 
-```ts
-describe('raycaster _buildWorld', () => {
-  // 3x2 map: row 0 all wall, row 1 open. One marker raises floor of (col1,row1).
-  const stm = {
-    tileWidth: 16,
-    tileHeight: 16,
-    tileImage: 'placeholder.png',
-    layers: {
-      floor: [
-        [1, 1, 1],
-        [1, 1, 1],
-      ],
-      walls: [
-        [7, 7, 7],
-        [0, 0, 0],
-      ],
-      tags: {
-        type: 'markers',
-        markers: [
-          { row: 1, col: 1, tag: 'floor:2 ftex:grating' },
-          { row: 1, col: 2, tag: 'door' },
-          { row: 0, col: 0, tag: 'tex:concrete' },
-        ],
-      },
-    },
-  };
+Create `demo-src/raycaster/lib/RcWorld.bas`:
 
-  test('dimensions come from the walls grid', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld(stm);
-    expect(w.width).toBe(3);
-    expect(w.height).toBe(2);
-    expect(w.cells).toHaveLength(6);
-  });
+```basic
+' RcWorld -- raycaster world model (spec docs/superpowers/specs/2026-08-31-raycaster-engine-design.md §3).
+' Reads a tagged .stm tilemap into parallel per-cell arrays. Pure softBASIC.
+'
+' Cell index = row * cols + col. Heights are in world units; 0 = standard floor,
+' 1.0 = standard ceiling (RC_STD_CEIL). Negative floor = pit.
+' flags bitset: 1 door, 2 lift, 4 water, 8 sky.
+Class
 
-  test('wall ids are copied from the walls layer, 0 elsewhere', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld(stm);
-    expect(w.cells[0 * 3 + 0].wall).toBe(7);
-    expect(w.cells[1 * 3 + 0].wall).toBe(0);
-  });
+dim cols
+dim rows
 
-  test('untagged cells get default heights', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld(stm);
-    expect(w.cells[1 * 3 + 0].floorH).toBe(0);
-    expect(w.cells[1 * 3 + 0].ceilH).toBe(1.0);
-  });
+dim wallArr(0)
+dim floorHArr(0)
+dim ceilHArr(0)
+dim wallTexArr(0)
+dim floorTexArr(0)
+dim ceilTexArr(0)
+dim upperArr(0)
+dim lightArr(0)
+dim flagsArr(0)
 
-  test('marker tags apply to the addressed cell', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld(stm);
-    const raised = w.cells[1 * 3 + 1];
-    expect(raised.floorH).toBe(2);
-    expect(raised.floorTex).toBe('grating');
-    expect(w.cells[0 * 3 + 0].wallTex).toBe('concrete');
-  });
+dim upNames(0)
+dim upFloorHArr(0)
+dim upCeilHArr(0)
 
-  test('bare flag tokens set the flags bitset (door = 1)', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld(stm);
-    expect(w.cells[1 * 3 + 2].flags & 1).toBe(1);
-  });
+Constructor(tm as tilemapset, wallsLayerName)
+    self.build(tm, wallsLayerName)
+EndConstructor
 
-  test('two markers naming the same upper region share one table entry', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld({
-      ...stm,
-      layers: {
-        ...stm.layers,
-        tags: {
-          type: 'markers',
-          markers: [
-            { row: 1, col: 0, tag: 'upper:vent' },
-            { row: 1, col: 1, tag: 'upper:vent' },
-            { row: 1, col: 2, tag: 'upper:balcony' },
-          ],
-        },
-      },
-    });
-    expect(w.upperRegions).toHaveLength(2);
-    expect(w.cells[1 * 3 + 0].upper).toBe(w.cells[1 * 3 + 1].upper);
-    expect(w.cells[1 * 3 + 2].upper).not.toBe(w.cells[1 * 3 + 0].upper);
-  });
+function build(tm as tilemapset, wallsLayerName)
+    dim tw
+    dim th
+    tw = tm.tileWidth()
+    th = tm.tileHeight()
 
-  test('falls back to the floor grid for dimensions when there is no walls layer', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld({
-      layers: { floor: [[1, 1, 1, 1]] },
-    });
-    expect(w.width).toBe(4);
-    expect(w.height).toBe(1);
-  });
+    dim wallsLayer as tilemaplayer
+    wallsLayer = tm.layer(wallsLayerName)
+    self.cols = math.floor(wallsLayer.widthPx() / tw)
+    self.rows = math.floor(wallsLayer.heightPx() / th)
 
-  test('throws when the .stm has no walls and no floor layer', () => {
-    const rc = loadRaycaster();
-    expect(() => rc._buildWorld({ layers: { collision: { type: 'collision', data: [] } } })).toThrow(
-      /no "walls" or "floor"/,
-    );
-  });
+    dim total
+    total = self.cols * self.rows
 
-  test('markers outside the grid are ignored, not fatal', () => {
-    const rc = loadRaycaster();
-    const w = rc._buildWorld({
-      ...stm,
-      layers: {
-        ...stm.layers,
-        tags: { type: 'markers', markers: [{ row: 99, col: 99, tag: 'door' }] },
-      },
-    });
-    expect(w.cells.every((c) => c.flags === 0)).toBe(true);
-  });
-});
+    dim i
+    for i = 0 to total - 1
+        array.push(self.wallArr, 0)
+        array.push(self.floorHArr, 0)
+        array.push(self.ceilHArr, 1.0)
+        array.push(self.wallTexArr, "")
+        array.push(self.floorTexArr, "")
+        array.push(self.ceilTexArr, "")
+        array.push(self.upperArr, -1)
+        array.push(self.lightArr, 0)
+        array.push(self.flagsArr, 0)
+    next i
+
+    dim col
+    dim row
+    dim id
+    for row = 0 to self.rows - 1
+        for col = 0 to self.cols - 1
+            id = wallsLayer.tileAt(col * tw + tw / 2, row * th + th / 2)
+            if id > 0 then
+                self.wallArr(row * self.cols + col) = id
+            endif
+        next col
+    next row
+
+    dim markers
+    markers = tm.allMarkers()
+    dim mi
+    dim mk as Marker
+    for mi = 0 to array.arrLength(markers) - 1
+        mk = markers(mi)
+        if mk.col >= 0 then
+            if mk.row >= 0 then
+                if mk.col < self.cols then
+                    if mk.row < self.rows then
+                        self.applyTag(mk.row * self.cols + mk.col, mk.tag)
+                    endif
+                endif
+            endif
+        endif
+    next mi
+endfunction
+
+function applyTag(idx, tagStr)
+    dim tokens
+    tokens = string.split(string.trim(tagStr), " ")
+    dim ti
+    dim tok
+    dim ci
+    for ti = 0 to array.arrLength(tokens) - 1
+        tok = tokens(ti)
+        if string.len(tok) > 0 then
+            ci = string.indexof(tok, ":")
+            if ci < 0 then
+                self.applyFlag(idx, tok)
+            else
+                self.applyKv(idx, string.substr(tok, 0, ci), string.substr(tok, ci + 1, string.len(tok)))
+            endif
+        endif
+    next ti
+endfunction
+
+function applyFlag(idx, name)
+    if name = "door" then
+        self.flagsArr(idx) = self.flagsArr(idx) + 1
+    endif
+    if name = "lift" then
+        self.flagsArr(idx) = self.flagsArr(idx) + 2
+    endif
+    if name = "water" then
+        self.flagsArr(idx) = self.flagsArr(idx) + 4
+    endif
+    if name = "sky" then
+        self.flagsArr(idx) = self.flagsArr(idx) + 8
+    endif
+endfunction
+
+function applyKv(idx, key, val)
+    if key = "tex" then
+        self.wallTexArr(idx) = val
+    endif
+    if key = "ftex" then
+        self.floorTexArr(idx) = val
+    endif
+    if key = "ctex" then
+        self.ceilTexArr(idx) = val
+    endif
+    if key = "floor" then
+        self.floorHArr(idx) = math.val(val)
+    endif
+    if key = "ceil" then
+        self.ceilHArr(idx) = math.val(val)
+    endif
+    if key = "light" then
+        self.lightArr(idx) = 1
+    endif
+    if key = "upper" then
+        self.upperArr(idx) = self.upperRegion(val, self.ceilHArr(idx))
+    endif
+endfunction
+
+' Returns the index of the upper-region entry named `name`, creating it on first
+' use. baseCeil is the host cell's ceiling -- the upper region floor sits on it.
+function upperRegion(name, baseCeil)
+    dim i
+    for i = 0 to array.arrLength(self.upNames) - 1
+        if self.upNames(i) = name then
+            return i
+        endif
+    next i
+    array.push(self.upNames, name)
+    array.push(self.upFloorHArr, baseCeil)
+    array.push(self.upCeilHArr, baseCeil + 1.0)
+    return array.arrLength(self.upNames) - 1
+endfunction
+
+' ── read accessors (col, row are integer cell coords) ────────────────────────
+
+function inBounds(col, row)
+    if col < 0 then
+        return 0
+    endif
+    if row < 0 then
+        return 0
+    endif
+    if col >= self.cols then
+        return 0
+    endif
+    if row >= self.rows then
+        return 0
+    endif
+    return 1
+endfunction
+
+function wallAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 1
+    endif
+    return self.wallArr(row * self.cols + col)
+endfunction
+
+function floorHeightAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    return self.floorHArr(row * self.cols + col)
+endfunction
+
+function ceilHeightAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    return self.ceilHArr(row * self.cols + col)
+endfunction
+
+function flagsAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    return self.flagsArr(row * self.cols + col)
+endfunction
+
+function hasUpperAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    if self.upperArr(row * self.cols + col) >= 0 then
+        return 1
+    endif
+    return 0
+endfunction
+
+function wallTexAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return ""
+    endif
+    return self.wallTexArr(row * self.cols + col)
+endfunction
+
+function widthCells()
+    return self.cols
+endfunction
+
+function heightCells()
+    return self.rows
+endfunction
+
+EndClass
 ```
 
-- [ ] **Step 2: Run the tests**
+- [ ] **Step 2: Sanity-check every softBASIC call against its def file**
 
-Run: `npx vitest run tests/components/Runner/raycasterWorld.test.ts`
-Expected: PASS. If any fail, fix the corresponding logic in `_buildWorld` / `_applyProps` in `src/components/Runner/engine/raycaster.js` to match the specified behaviour, then re-run until green.
+Confirm each of these against `src/lib/Basic4WebGL/defs/`:
+- `string.split`, `string.trim`, `string.len`, `string.indexof`, `string.substr` — `string.bas` (all present; `substr(s, start, end)`).
+- `array.push`, `array.arrLength` — `array.bas`.
+- `math.floor`, `math.val` — `math.bas` (`val(s)` returns `Number(s)`).
+- `tm.layer(name)` → `tilemaplayer`; `.widthPx()`, `.heightPx()`, `.tileAt(worldX, worldY)` — `tilemaplayer.bas`. **Runtime risk:** confirm `createTileMapSet` populates each layer container with `_tileW`/`_tileH` and `_map` (grep `getTileMapSetLayer` and the layer-building loop in `tilemap.js`). If a set-layer container lacks tile metrics, `widthPx()`/`tileAt()` on it will misbehave at runtime — that's another small generic `tilemap.js` fix (store `_tileW`/`_tileH` on set-layer containers too), bundled into Task 1, with a unit test. Catch it here, not in Task 6.
+- `tm.tileWidth()`, `tm.tileHeight()`, `tm.allMarkers()` — added in Task 2.
+- `Marker` has `.x`, `.y` per `marker.bas` — **but `allMarkers` returns `{col, row, tag}`, not `Marker`**. Do NOT type the loop var `as Marker`. Change `dim mk as Marker` to `dim mk` and access `mk.col` / `mk.row` / `mk.tag` as plain fields. Fix this in Step 1's code before proceeding.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Fix the `Marker` typing issue flagged in Step 2**
 
-```bash
-git add tests/components/Runner/raycasterWorld.test.ts src/components/Runner/engine/raycaster.js
-git commit -m "test(raycaster): lock world-builder behaviour for grids, heights, flags, upper regions"
+In `demo-src/raycaster/lib/RcWorld.bas`, change:
+
+```basic
+    dim mk as Marker
+```
+to:
+```basic
+    dim mk
 ```
 
----
+(The objects from `allMarkers()` are plain `{col, row, tag}` records, not the `Marker` class which only carries `x`/`y`.)
 
-## Task 4: `loadMap` + accessors against a real asset string
+- [ ] **Step 4: Verify it transpiles (temporary probe)**
 
-**Files:**
-- Test: `tests/components/Runner/raycasterWorld.test.ts:` add a `describe('raycaster loadMap + accessors')` block that concatenates `assets.js` + `raycaster.js` with a stub, the way `tilemap.test.ts` does for `loadTilemapWithAssets`.
-
-- [ ] **Step 1: Write the failing test**
-
-Append to `tests/components/Runner/raycasterWorld.test.ts`:
-
-```ts
-describe('raycaster loadMap + accessors', () => {
-  // Concatenate assets.js + raycaster.js so loadMap()'s `_sbAssets.get` resolves,
-  // same technique as tilemap.test.ts's loadTilemapWithAssets.
-  function loadWithAssets(assetName: string, rawStm: string) {
-    const assetsSrc = readFileSync('src/components/Runner/engine/assets.js', 'utf-8');
-    const raycasterSrc = readFileSync('src/components/Runner/engine/raycaster.js', 'utf-8');
-    const factory = new Function(
-      'PIXI',
-      `${assetsSrc}\n${raycasterSrc}\n` +
-        `_sbAssets._assetCache = _sbAssets._assetCache || {};\n` +
-        `return { _sbAssets, _sbRaycaster };`,
-    );
-    const { _sbAssets, _sbRaycaster } = factory({});
-    // assets.js exposes get() reading an internal cache; seed it directly.
-    // If assets.js has no writable cache hook, fall back to monkey-patching get:
-    _sbAssets.get = (name: string) => {
-      if (name === assetName) return rawStm;
-      throw new Error(`unexpected asset ${name}`);
-    };
-    return _sbRaycaster;
-  }
-
-  const rawStm = JSON.stringify({
-    tileWidth: 16,
-    tileHeight: 16,
-    tileImage: 'placeholder.png',
-    layers: {
-      walls: [
-        [1, 1, 1],
-        [1, 0, 1],
-        [1, 1, 1],
-      ],
-      tags: {
-        type: 'markers',
-        markers: [{ row: 1, col: 1, tag: 'floor:3 ceil:5 sky' }],
-      },
-    },
-  });
-
-  test('loadMap parses a JSON string and populates accessors', () => {
-    const rc = loadWithAssets('p1testmap.stm', rawStm);
-    rc._raycasterReset();
-    rc.loadMap('p1testmap.stm');
-    expect(rc.mapWidth()).toBe(3);
-    expect(rc.mapHeight()).toBe(3);
-    expect(rc.cellWall(0, 0)).toBe(1);
-    expect(rc.cellWall(1, 1)).toBe(0);
-    expect(rc.cellFloorHeight(1, 1)).toBe(3);
-    expect(rc.cellCeilHeight(1, 1)).toBe(5);
-    expect(rc.cellFlags(1, 1) & 8).toBe(8); // FLAG_SKY
-  });
-
-  test('accessors take world coordinates and floor them to a cell', () => {
-    const rc = loadWithAssets('p1testmap.stm', rawStm);
-    rc._raycasterReset();
-    rc.loadMap('p1testmap.stm');
-    expect(rc.cellFloorHeight(1.9, 1.1)).toBe(3);
-  });
-
-  test('reads outside the loaded map return solid-wall defaults', () => {
-    const rc = loadWithAssets('p1testmap.stm', rawStm);
-    rc._raycasterReset();
-    rc.loadMap('p1testmap.stm');
-    expect(rc.cellWall(-1, 0)).toBe(1);
-    expect(rc.cellWall(3, 3)).toBe(1);
-    expect(rc.cellFloorHeight(9, 9)).toBe(0);
-  });
-});
-```
-
-- [ ] **Step 2: Run the test to verify it fails or passes**
-
-Run: `npx vitest run tests/components/Runner/raycasterWorld.test.ts`
-Expected: PASS if `assets.js`'s `get` is monkey-patchable as written. If the `new Function` wrapper throws because `assets.js` references a global the stub does not provide (e.g. `PIXI.Assets`), adjust the factory: pass additional stub globals as extra `new Function` parameters (mirror exactly what `tilemap.test.ts`'s `loadTilemapWithAssets` passes) until the module evaluates, keeping the `_sbAssets.get` monkey-patch. Do not change `raycaster.js` for this — the production `loadMap` is already correct; this is test-harness plumbing.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add tests/components/Runner/raycasterWorld.test.ts
-git commit -m "test(raycaster): verify loadMap parses a real .stm asset string"
-```
-
----
-
-## Task 5: The `raycaster.bas` softBASIC surface
-
-**Files:**
-- Create: `src/lib/Basic4WebGL/defs/raycaster.bas`
-- Modify: `src/constants/packageModules.ts`
-- Test: `tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts`
-
-- [ ] **Step 1: Write the failing test**
-
-Create `tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts`:
+Create `tests/scratch/rcWorldCompiles.test.ts`:
 
 ```ts
 import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
+import { packageModules } from '../../src/constants/packageModules';
 
-const raycasterSource = readFileSync('src/lib/Basic4WebGL/defs/raycaster.bas', 'utf-8');
-
-const transpileWithRaycaster = (lines: string[]) =>
-  compiler.transpile({
-    lib: [{ name: 'raycaster', source: raycasterSource }],
-    files: [{ name: 'Main.bas', source: lines.join('\n') }],
-  });
-
-describe('raycaster.bas — Phase 1 surface', () => {
-  test('the def file itself compiles with no diagnostics', () => {
-    const result = transpileWithRaycaster([
-      'function test()',
-      '  dim w',
-      '  raycaster.loadMap("level.stm")',
-      '  w = raycaster.mapWidth()',
-      'endfunction',
-    ]);
-    expect(result.diagnostics).toHaveLength(0);
-  });
-
-  test('loadMap emits _sb.loadMap(', () => {
-    const result = transpileWithRaycaster([
-      'function test()',
-      '  raycaster.loadMap("level.stm")',
-      'endfunction',
-    ]);
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_sb.loadMap(');
-  });
-
-  test('cell accessors emit their _sb.* calls', () => {
-    const result = transpileWithRaycaster([
-      'function test()',
-      '  dim a',
-      '  dim b',
-      '  dim c',
-      '  dim d',
-      '  dim e',
-      '  a = raycaster.cellWall(1, 2)',
-      '  b = raycaster.cellFloorHeight(1, 2)',
-      '  c = raycaster.cellCeilHeight(1, 2)',
-      '  d = raycaster.cellFlags(1, 2)',
-      '  e = raycaster.cellHasUpper(1, 2)',
-      'endfunction',
-    ]);
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_sb.cellWall(');
-    expect(result.code).toContain('_sb.cellFloorHeight(');
-    expect(result.code).toContain('_sb.cellCeilHeight(');
-    expect(result.code).toContain('_sb.cellFlags(');
-    expect(result.code).toContain('_sb.cellHasUpper(');
-  });
-
-  test('mapWidth / mapHeight emit their _sb.* calls', () => {
-    const result = transpileWithRaycaster([
-      'function test()',
-      '  dim w',
-      '  dim h',
-      '  w = raycaster.mapWidth()',
-      '  h = raycaster.mapHeight()',
-      'endfunction',
-    ]);
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.code).toContain('_sb.mapWidth(');
-    expect(result.code).toContain('_sb.mapHeight(');
+describe('RcWorld compiles', () => {
+  test('no diagnostics against the standard library', () => {
+    const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
+    const result = compiler.transpile({
+      lib,
+      files: [
+        { name: 'RcWorld.bas', source: readFileSync('demo-src/raycaster/lib/RcWorld.bas', 'utf-8') },
+        { name: 'Main.bas', source: 'dim w\n' },
+      ],
+    });
+    expect(result.diagnostics).toEqual([]);
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
-
-Run: `npx vitest run tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts`
-Expected: FAIL — `ENOENT` reading `src/lib/Basic4WebGL/defs/raycaster.bas`.
-
-- [ ] **Step 3: Create the def file**
-
-Create `src/lib/Basic4WebGL/defs/raycaster.bas` (hand-written; parameter names follow the `<lowercasedfunc>_<arg>` convention used across every def file, e.g. `collision.bas`):
-
-```basic
-function loadMap(path)
-    call("_sb.loadMap(loadmap_path)")
-endfunction
-
-function mapWidth()
-    return call("_sb.mapWidth()")
-endfunction
-
-function mapHeight()
-    return call("_sb.mapHeight()")
-endfunction
-
-function cellWall(x, y)
-    return call("_sb.cellWall(cellwall_x, cellwall_y)")
-endfunction
-
-function cellFloorHeight(x, y)
-    return call("_sb.cellFloorHeight(cellfloorheight_x, cellfloorheight_y)")
-endfunction
-
-function cellCeilHeight(x, y)
-    return call("_sb.cellCeilHeight(cellceilheight_x, cellceilheight_y)")
-endfunction
-
-function cellFlags(x, y)
-    return call("_sb.cellFlags(cellflags_x, cellflags_y)")
-endfunction
-
-function cellHasUpper(x, y)
-    return call("_sb.cellHasUpper(cellhasupper_x, cellhasupper_y)")
-endfunction
-```
-
-- [ ] **Step 4: Register the def for the runtime**
-
-In `src/constants/packageModules.ts`, add the import next to the other def imports (after the `Emitter` import):
-
-```ts
-import Emitter from '../lib/Basic4WebGL/defs/Emitter.bas?raw';
-import raycaster from '../lib/Basic4WebGL/defs/raycaster.bas?raw';
-```
-
-And add `raycaster,` to the `packageModules` object (after `Emitter,`):
-
-```ts
-  Emitter,
-  raycaster,
-};
-```
-
-- [ ] **Step 5: Run the transpiler test to verify it passes**
-
-Run: `npx vitest run tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts`
-Expected: PASS (all tests).
-
-- [ ] **Step 6: Run the full unit suite**
-
-Run: `npx vitest run`
-Expected: PASS. Pay attention to any test that snapshots the full module list or `packageModules` keys — if one fails purely because `raycaster` was added, update its expectation.
-
-- [ ] **Step 7: Verify the build**
-
-Run: `npx vite build`
-Expected: build completes with no errors.
-
-- [ ] **Step 8: Commit**
+Run: `npx vitest run tests/scratch/rcWorldCompiles.test.ts`
+Expected: PASS. If diagnostics appear, fix `RcWorld.bas` (common causes: `elseif` not supported — the code above avoids it; a method called before it's defined — softBASIC hoists functions within a class, but verify; `return` inside a `for` — allowed). Iterate until clean, then delete this scratch file (Task 6 adds the permanent one):
 
 ```bash
-git add src/lib/Basic4WebGL/defs/raycaster.bas src/constants/packageModules.ts tests/lib/Basic4WebGL/unit/transpiler/raycaster.test.ts
-git commit -m "feat(raycaster): add raycaster.bas Phase 1 surface (loadMap + cell accessors)"
+rm tests/scratch/rcWorldCompiles.test.ts
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add demo-src/raycaster/lib/RcWorld.bas
+git commit -m "feat(raycaster): RcWorld.bas world-model module (Phase 1)"
 ```
 
 ---
 
-## Task 6: Unlisted phase-demo infrastructure
+## Task 4: Unlisted phase-demo infrastructure
 
 **Files:**
 - Create: `src/features/demos/devDemoRegistry.ts`
@@ -826,7 +659,7 @@ import { devDemoRegistry } from '../../../src/features/demos/devDemoRegistry';
 import { demoRegistry } from '../../../src/features/demos/demoRegistry';
 
 describe('devDemoRegistry', () => {
-  test('every dev demo has a slug, a file, and a title', () => {
+  test('every dev demo has slug, file, name', () => {
     for (const d of devDemoRegistry) {
       expect(d.slug).toBeTruthy();
       expect(d.file).toBeTruthy();
@@ -834,7 +667,7 @@ describe('devDemoRegistry', () => {
     }
   });
 
-  test('dev demo slugs never collide with public demo slugs', () => {
+  test('dev slugs never collide with public demo slugs', () => {
     const publicSlugs = new Set(demoRegistry.map((d) => d.slug));
     for (const d of devDemoRegistry) {
       expect(publicSlugs.has(d.slug)).toBe(false);
@@ -843,20 +676,19 @@ describe('devDemoRegistry', () => {
 
   test('includes the Phase 1 map-load demo', () => {
     const p1 = devDemoRegistry.find((d) => d.slug === 'raycaster-p1-mapload');
-    expect(p1).toBeDefined();
     expect(p1?.file).toBe('RaycasterP1MapLoad');
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run to verify it fails**
 
 Run: `npx vitest run tests/features/demos/devDemoRegistry.test.ts`
 Expected: FAIL — cannot resolve `src/features/demos/devDemoRegistry`.
 
-- [ ] **Step 3: Extract a shared loader in `demoRegistry.ts`**
+- [ ] **Step 3: Extract `loadExportJson` in `demoRegistry.ts`**
 
-In `src/features/demos/demoRegistry.ts`, replace the body of `loadDemoJson` so the dynamic-import step is reusable. The current function is:
+In `src/features/demos/demoRegistry.ts`, replace:
 
 ```ts
 export async function loadDemoJson(slug: string): Promise<ProjectExportJson> {
@@ -867,7 +699,7 @@ export async function loadDemoJson(slug: string): Promise<ProjectExportJson> {
 }
 ```
 
-Replace it with:
+with:
 
 ```ts
 export async function loadExportJson(file: string): Promise<ProjectExportJson> {
@@ -889,107 +721,85 @@ Create `src/features/demos/devDemoRegistry.ts`:
 ```ts
 import { DemoEntry } from './demoRegistry';
 
-// Phase demos for the raycaster engine build-out. Deliberately NOT rendered on
-// the public /demos page (DemosPage only maps `demoRegistry`). They exist so
-// each engine phase ships a runnable, Cypress-verified artifact — see
-// docs/superpowers/specs/2026-08-31-raycaster-engine-design.md §10.
+// Phase demos for the raycaster softBASIC library (spec
+// docs/superpowers/specs/2026-08-31-raycaster-engine-design.md §10). Deliberately
+// NOT rendered on /demos (DemosPage only maps `demoRegistry`) and given no docs
+// page. They exist so each library phase ships a runnable, Cypress-verified
+// artifact.
 export const devDemoRegistry: DemoEntry[] = [
   {
     slug: 'raycaster-p1-mapload',
     name: 'Raycaster P1 — Map Load',
     tags: ['Raycaster', 'Engine Phase'],
     description:
-      'Phase 1 probe: loads a tagged .stm into the raycaster world model and prints cell heights, flags and upper-region data. No rendering.',
+      'Phase 1 probe: builds RcWorld from a tagged .stm and prints cell heights, flags and upper-region data. No rendering.',
     docsSlug: '',
     file: 'RaycasterP1MapLoad',
   },
 ];
 ```
 
-- [ ] **Step 5: Make `__seedDemo` fall back to the dev registry**
+- [ ] **Step 5: `__seedDemo` falls back to the dev registry**
 
-In `src/pages/DemosPage.tsx`, add the import:
+In `src/pages/DemosPage.tsx`, add to the existing `'../features/demos/demoRegistry'` import: `loadExportJson`. Add a new import:
 
 ```tsx
-import { demoRegistry, DemoEntry, loadDemoJson } from '../features/demos/demoRegistry';
 import { devDemoRegistry } from '../features/demos/devDemoRegistry';
-import { loadExportJson } from '../features/demos/demoRegistry';
 ```
 
-(If `DemosPage.tsx` already imports from `'../features/demos/demoRegistry'` on one line, add `loadExportJson` to that existing import list instead of a second import line.)
-
-Then find the `__seedDemo` assignment (around line 23):
-
-```tsx
-  (window as unknown as { __seedDemo?: (slug: string) => Promise<string> }).__seedDemo = async (
-    slug,
-  ) => {
-    const json = await loadDemoJson(slug);
-```
-
-Change the `const json = ...` line to try the dev registry first when the slug is not public:
+Find the `__seedDemo` body's `const json = await loadDemoJson(slug);` and replace with:
 
 ```tsx
     const devEntry = devDemoRegistry.find((d) => d.slug === slug);
     const json = devEntry ? await loadExportJson(devEntry.file) : await loadDemoJson(slug);
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
-
-Run: `npx vitest run tests/features/demos/devDemoRegistry.test.ts`
-Expected: FAIL still — the `raycaster-p1-mapload` test passes only once the entry exists (it does now), but the "includes the Phase 1 map-load demo" test needs the registry entry, which Step 4 added. Re-run:
+- [ ] **Step 6: Run to verify it passes**
 
 Run: `npx vitest run tests/features/demos/devDemoRegistry.test.ts`
 Expected: PASS.
 
-- [ ] **Step 7: Run the broader demo + page suite**
+- [ ] **Step 7: Broader suite + build**
 
-Run: `npx vitest run tests/features/demos/ tests/pages/ 2>/dev/null; npx vitest run tests/features/demos/`
-Expected: PASS. If a `demoRegistry` test asserts `loadDemoJson`'s old shape, update it to the new `loadExportJson` + `loadDemoJson` split.
+Run: `npx vitest run tests/features/demos/` then `npx vite build`
+Expected: PASS/clean. Fix any `demoRegistry` test asserting the old `loadDemoJson` internals.
 
-- [ ] **Step 8: Verify the build**
-
-Run: `npx vite build`
-Expected: build completes with no errors.
-
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/features/demos/devDemoRegistry.ts src/features/demos/demoRegistry.ts src/pages/DemosPage.tsx tests/features/demos/devDemoRegistry.test.ts
-git commit -m "feat(demos): unlisted dev-demo registry for engine phase demos"
+git commit -m "feat(demos): unlisted dev-demo registry for raycaster phase demos"
 ```
 
 ---
 
-## Task 7: The Phase 1 demo — source, map, build, e2e
+## Task 5: The Phase 1 test map + placeholder tilesheet
 
 **Files:**
-- Create: `demo-src/raycaster-p1/Main.bas`
-- Create: `demo-src/raycaster-p1/MapProbeScene.bas`
+- Create: `demo-src/raycaster-p1/assets/rc_placeholder_tiles.png`
 - Create: `demo-src/raycaster-p1/assets/p1testmap.stm`
-- Create: `src/docs/demos/RaycasterP1MapLoad.b4wgl.json` (generated)
-- Modify: `cypress/e2e/demos.cy.ts`
 
-- [ ] **Step 1: Create the test map**
+- [ ] **Step 1: Copy a placeholder tilesheet**
 
-Create `demo-src/raycaster-p1/assets/p1testmap.stm` (a 5×5 room: solid border, open interior, one raised-floor cell, one pit cell, one `upper` cell, one door):
+`createTileMapSet` calls `getSlices(tileImage, …)` at construction, so the `.stm`'s `tileImage` must resolve to a real asset even though Phase 1 never renders it.
+
+```bash
+mkdir -p demo-src/raycaster-p1/assets
+cp demo-src/bullet-hell-shooter/assets/tilesheet.png demo-src/raycaster-p1/assets/rc_placeholder_tiles.png
+```
+
+- [ ] **Step 2: Create the test map**
+
+Create `demo-src/raycaster-p1/assets/p1testmap.stm` (5×4 room: solid border on the `walls` layer using tile id `1`, open interior id `0`; markers exercise every tag path). Set `tileWidth`/`tileHeight` to match the copied sheet — inspect it first: `node -e "const s=require('./src/components/Runner/engine/assets.js')" ` is not viable; instead open `demo-src/bullet-hell-shooter/assets/map1.stm` and reuse its `tileWidth`/`tileHeight` (16/16), since the same sheet is used there.
 
 ```json
 {
   "tileWidth": 16,
   "tileHeight": 16,
-  "tileImage": "placeholder.png",
+  "tileImage": "rc_placeholder_tiles.png",
   "layers": {
-    "floor": [
-      [1, 1, 1, 1, 1],
-      [1, 1, 1, 1, 1],
-      [1, 1, 1, 1, 1],
-      [1, 1, 1, 1, 1],
-      [1, 1, 1, 1, 1]
-    ],
     "walls": [
       [1, 1, 1, 1, 1],
-      [1, 0, 0, 0, 1],
       [1, 0, 0, 0, 1],
       [1, 0, 0, 0, 1],
       [1, 1, 1, 1, 1]
@@ -998,16 +808,36 @@ Create `demo-src/raycaster-p1/assets/p1testmap.stm` (a 5×5 room: solid border, 
       "type": "markers",
       "markers": [
         { "row": 1, "col": 1, "tag": "floor:2 ftex:grating" },
-        { "row": 2, "col": 2, "tag": "floor:-3 ctex:pipes" },
-        { "row": 3, "col": 3, "tag": "upper:vent ceil:4" },
-        { "row": 1, "col": 3, "tag": "tex:concrete door" }
+        { "row": 2, "col": 2, "tag": "floor:-3 ceil:4 ctex:pipes" },
+        { "row": 1, "col": 2, "tag": "upper:vent" },
+        { "row": 2, "col": 3, "tag": "door" },
+        { "row": 1, "col": 3, "tag": "tex:concrete sky" }
       ]
     }
   }
 }
 ```
 
-- [ ] **Step 2: Create the demo scene**
+- [ ] **Step 3: Commit**
+
+```bash
+git add demo-src/raycaster-p1/assets
+git commit -m "test(raycaster): Phase 1 test map + placeholder tilesheet"
+```
+
+---
+
+## Task 6: The Phase 1 demo — scene, build, e2e
+
+**Files:**
+- Create: `demo-src/raycaster-p1/Main.bas`
+- Create: `demo-src/raycaster-p1/RcWorld.bas` (copy)
+- Create: `demo-src/raycaster-p1/MapProbeScene.bas`
+- Create: `tests/scratch/raycasterP1DemoCompiles.test.ts`
+- Create: `src/docs/demos/RaycasterP1MapLoad.b4wgl.json` (generated)
+- Modify: `cypress/e2e/demos.cy.ts`
+
+- [ ] **Step 1: Create the demo scene**
 
 Create `demo-src/raycaster-p1/MapProbeScene.bas`:
 
@@ -1015,74 +845,109 @@ Create `demo-src/raycaster-p1/MapProbeScene.bas`:
 Class
 Extends scene
 
+dim tm as tilemapset
+dim wld as RcWorld
 dim titleText as Text
-dim line1 as Text
-dim line2 as Text
-dim line3 as Text
+dim l1 as Text
+dim l2 as Text
+dim l3 as Text
+dim l4 as Text
 
 Constructor()
 EndConstructor
 
 function onenter()
   world.setBackground(12, 12, 18)
-  raycaster.loadMap("p1testmap.stm")
 
-  self.titleText = new Text("Raycaster P1 — map probe", 24, 24)
-  self.titleText.setStyle(22, 255, 220, 120)
+  self.tm = new tilemapset("p1testmap.stm")
+  self.wld = new RcWorld(self.tm, "walls")
+
+  self.titleText = new Text("Raycaster P1 - map probe", 24, 20)
+  self.titleText.setStyle(20, 255, 220, 120)
   hud.add(self.titleText)
 
-  dim w
-  dim h
-  w = raycaster.mapWidth()
-  h = raycaster.mapHeight()
+  dim okSize
+  okSize = "FAIL"
+  if self.wld.widthCells() = 5 then
+    if self.wld.heightCells() = 4 then
+      okSize = "OK"
+    endif
+  endif
+  self.l1 = new Text("size 5x4: " + okSize + " (" + string.str(self.wld.widthCells()) + "x" + string.str(self.wld.heightCells()) + ")", 24, 52)
+  self.l1.setStyle(15, 255, 255, 255)
+  hud.add(self.l1)
 
-  self.line1 = new Text("map " + string.str(w) + " x " + string.str(h), 24, 60)
-  self.line1.setStyle(16, 255, 255, 255)
-  hud.add(self.line1)
+  dim okBorder
+  okBorder = "FAIL"
+  if self.wld.wallAt(0, 0) > 0 then
+    if self.wld.wallAt(1, 1) = 0 then
+      okBorder = "OK"
+    endif
+  endif
+  self.l2 = new Text("wall border: " + okBorder, 24, 74)
+  self.l2.setStyle(15, 255, 255, 255)
+  hud.add(self.l2)
 
-  dim raisedFloor
-  raisedFloor = raycaster.cellFloorHeight(1, 1)
-  self.line2 = new Text("floor at (1,1) = " + string.str(raisedFloor), 24, 84)
-  self.line2.setStyle(16, 255, 255, 255)
-  hud.add(self.line2)
+  dim okFloor
+  okFloor = "FAIL"
+  if self.wld.floorHeightAt(1, 1) = 2 then
+    if self.wld.floorHeightAt(2, 2) = -3 then
+      okFloor = "OK"
+    endif
+  endif
+  self.l3 = new Text("floor tags (2 / -3): " + okFloor, 24, 96)
+  self.l3.setStyle(15, 255, 255, 255)
+  hud.add(self.l3)
 
-  dim hasUpper
-  hasUpper = raycaster.cellHasUpper(3, 3)
-  self.line3 = new Text("cell (3,3) has upper region = " + string.str(hasUpper), 24, 108)
-  self.line3.setStyle(16, 255, 255, 255)
-  hud.add(self.line3)
+  dim okMisc
+  okMisc = "FAIL"
+  if self.wld.hasUpperAt(2, 1) = 1 then
+    if self.wld.flagsAt(3, 2) = 1 then
+      if self.wld.flagsAt(3, 1) = 8 then
+        okMisc = "OK"
+      endif
+    endif
+  endif
+  self.l4 = new Text("upper / door / sky: " + okMisc, 24, 118)
+  self.l4.setStyle(15, 255, 255, 255)
+  hud.add(self.l4)
 
-  self.drawTopDown(w, h)
+  self.drawGrid()
 endfunction
 
-function drawTopDown(w, h)
-  dim cx
-  dim cy
-  dim originX
-  dim originY
-  dim sizePx
-  originX = 24
-  originY = 150
-  sizePx = 28
-
-  for cy = 0 to h - 1
-    for cx = 0 to w - 1
-      if raycaster.cellWall(cx, cy) > 0 then
+function drawGrid()
+  dim col
+  dim row
+  dim ox
+  dim oy
+  dim s
+  ox = 24
+  oy = 150
+  s = 30
+  for row = 0 to self.wld.heightCells() - 1
+    for col = 0 to self.wld.widthCells() - 1
+      if self.wld.wallAt(col, row) > 0 then
         pen.setFillColor(90, 100, 140)
       else
         pen.setFillColor(30, 34, 44)
       endif
       pen.setLineWidth(1)
       pen.setLineColor(0, 0, 0)
-      drawing.drawRect(originX + cx * sizePx + sizePx / 2, originY + cy * sizePx + sizePx / 2, sizePx - 2, sizePx - 2)
-    next cx
-  next cy
+      drawing.drawRect(ox + col * s + s / 2, oy + row * s + s / 2, s - 2, s - 2)
+    next col
+  next row
 endfunction
 
 EndClass
 ```
 
-- [ ] **Step 3: Create the demo entry point**
+- [ ] **Step 2: Create `Main.bas` and stage the library copy**
+
+`npm run build:demo` packages every `.bas` directly inside the source dir (it does not recurse), so the demo needs its own copy of `RcWorld.bas`:
+
+```bash
+cp demo-src/raycaster/lib/RcWorld.bas demo-src/raycaster-p1/RcWorld.bas
+```
 
 Create `demo-src/raycaster-p1/Main.bas`:
 
@@ -1096,7 +961,7 @@ scenemanager.register("probe", probe)
 scenemanager.switch("probe")
 ```
 
-- [ ] **Step 4: Verify the demo source compiles in isolation**
+- [ ] **Step 3: Permanent transpile check**
 
 Create `tests/scratch/raycasterP1DemoCompiles.test.ts`:
 
@@ -1107,34 +972,39 @@ import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
 import { packageModules } from '../../src/constants/packageModules';
 
-describe('raycaster P1 demo source compiles', () => {
-  test('Main + MapProbeScene transpile with no diagnostics', () => {
+describe('raycaster P1 demo compiles', () => {
+  test('Main + MapProbeScene + RcWorld transpile with no diagnostics', () => {
     const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
+    const dir = 'demo-src/raycaster-p1';
     const result = compiler.transpile({
       lib,
       files: [
-        { name: 'MapProbeScene.bas', source: readFileSync('demo-src/raycaster-p1/MapProbeScene.bas', 'utf-8') },
-        { name: 'Main.bas', source: readFileSync('demo-src/raycaster-p1/Main.bas', 'utf-8') },
+        { name: 'RcWorld.bas', source: readFileSync(`${dir}/RcWorld.bas`, 'utf-8') },
+        { name: 'MapProbeScene.bas', source: readFileSync(`${dir}/MapProbeScene.bas`, 'utf-8') },
+        { name: 'Main.bas', source: readFileSync(`${dir}/Main.bas`, 'utf-8') },
       ],
     });
-    expect(result.diagnostics).toHaveLength(0);
+    expect(result.diagnostics).toEqual([]);
   });
 });
 ```
 
 Run: `npx vitest run tests/scratch/raycasterP1DemoCompiles.test.ts`
-Expected: PASS. If it fails on a call-syntax error, fix the `.bas` demo source (check `src/lib/Basic4WebGL/defs/string.bas`, `text.bas`, `pen.bas`, `drawing.bas` for exact signatures per CLAUDE.md's "API cross-reference rule"), then re-run.
+Expected: PASS. Fix `.bas` call-syntax issues until clean (check `text.bas` for `Text` constructor + `setStyle`, `pen.bas`, `drawing.bas`, `scene.bas` / `SceneManager.bas` for `Extends scene` + `scenemanager.register`/`switch`).
 
-Once green, mark the scratch test retired per CLAUDE.md (change `describe(` to `describe.skip(`).
+Then retire it per CLAUDE.md — change `describe(` to `describe.skip(`.
 
-- [ ] **Step 5: Build the demo export**
+- [ ] **Step 4: Build the demo export**
 
-Run: `npm run build:demo -- demo-src/raycaster-p1 RaycasterP1MapLoad`
-Expected: `Wrote src/docs/demos/RaycasterP1MapLoad.b4wgl.json (2 file(s), 1 asset(s))`
+```bash
+npm run build:demo -- demo-src/raycaster-p1 RaycasterP1MapLoad
+```
 
-- [ ] **Step 6: Add the Cypress e2e block**
+Expected: `Wrote src/docs/demos/RaycasterP1MapLoad.b4wgl.json (3 file(s), 2 asset(s))`
 
-In `cypress/e2e/demos.cy.ts`, after the existing `DEMOS.forEach(...)` block, add a separate loop for dev demos:
+- [ ] **Step 5: Add the Cypress block**
+
+In `cypress/e2e/demos.cy.ts`, after the existing `DEMOS.forEach(...)` block:
 
 ```ts
 const DEV_DEMOS: Array<{ slug: string; title: string; waitMs: number }> = [
@@ -1161,240 +1031,148 @@ DEV_DEMOS.forEach(({ slug, title, waitMs }) => {
 });
 ```
 
-- [ ] **Step 7: Run the e2e test**
+- [ ] **Step 6: Run the e2e**
 
-In one terminal: `npm run dev`
-In another: `npx cypress run --spec cypress/e2e/demos.cy.ts`
-Expected: all demo specs pass, including `Dev demo: Raycaster P1 — Map Load`.
+Terminal 1: `npm run dev`
+Terminal 2: `npx cypress run --spec cypress/e2e/demos.cy.ts`
+Expected: all specs pass, including `Dev demo: Raycaster P1 — Map Load`.
 
-If Cypress cannot start the dev server itself, confirm `npm run dev` is serving on port 5173 first (per CLAUDE.md).
+- [ ] **Step 7: Manual verification of the probe assertions**
 
-- [ ] **Step 8: Run the full unit suite once more**
+`npm run dev`, then in the browser console at `/demos`:
+`await window.__seedDemo('raycaster-p1-mapload')` → open `/projects/<id>/edit` → Run.
+Confirm all four probe lines read `OK` (`size`, `wall border`, `floor tags`, `upper / door / sky`) and the top-down grid draws a 5×4 room. If any reads `FAIL`, the bug is in `RcWorld.bas` — fix, re-copy to `demo-src/raycaster-p1/`, rebuild the export, re-verify.
 
-Run: `npx vitest run`
-Expected: PASS.
+- [ ] **Step 8: Full unit suite + build**
+
+Run: `npx vitest run` then `npx vite build`
+Expected: PASS / clean.
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git add demo-src/raycaster-p1 src/docs/demos/RaycasterP1MapLoad.b4wgl.json cypress/e2e/demos.cy.ts tests/scratch/raycasterP1DemoCompiles.test.ts
-git commit -m "test(raycaster): Phase 1 unlisted demo — map-load probe + e2e"
+git commit -m "test(raycaster): Phase 1 unlisted demo — RcWorld map-load probe + e2e"
 ```
 
 ---
 
-## Task 8: Documentation & roadmap
+## Task 7: Library guide + roadmap
 
 **Files:**
-- Create: `src/docs/api-reference/raycaster.md`
+- Create: `src/docs/guides/raycaster-library.md` (verify the guides dir / manifest section in Step 1)
 - Modify: `src/docs/manifest.ts`
-- Modify: `docs/roadmap.md`
-- Modify: `docs/language/library-roadmap.md`
+- Modify: `docs/roadmap.md`, `docs/language/library-roadmap.md`
 
-- [ ] **Step 1: Write the API reference page**
+- [ ] **Step 1: Find where prose guides live**
 
-Create `src/docs/api-reference/raycaster.md`. Follow the API-doc writing style in CLAUDE.md (beginner audience, no JS internals, game-like examples, one-sentence description → parameter table → `**Returns:**` → `.bas` example per function):
+Run: `ls src/docs/` and `grep -n "Language Guide\|guides\|section" src/docs/manifest.ts | head`
+Determine whether there's a "Guides" / "Language Guide" flat section this belongs in, or whether it should be a new section. The raycaster library is **project-level `.bas`, not an engine module**, so it is a guide, not an API Reference page.
 
-```markdown
-# raycaster
+- [ ] **Step 2: Write the guide stub**
 
-Loads a tilemap into a first-person world you can query for wall positions and
-floor/ceiling heights. This is the first piece of the raycaster engine — later
-versions draw the world and let the player walk around it.
-
-> The map is built in the Tilemap Editor. Draw walls on a `walls` layer, then add
-> **markers** with text tags to give cells height and other properties:
-> `floor:2` raises a cell's floor, `ceil:6` raises its ceiling, `door` marks a
-> doorway, `upper:vent` gives the cell a second space above it.
-
-## raycaster.loadMap
-
-Loads a `.stm` tilemap file into the raycaster.
-
-| Parameter | Type | Description |
-|---|---|---|
-| path | string | The name of the `.stm` file in your project. |
-
-```basic
-raycaster.loadMap("level1.stm")
-```
-
-## raycaster.mapWidth
-
-The width of the loaded map, in cells.
-
-**Returns:** number
-
-```basic
-dim w
-w = raycaster.mapWidth()
-```
-
-## raycaster.mapHeight
-
-The height of the loaded map, in cells.
-
-**Returns:** number
-
-```basic
-dim h
-h = raycaster.mapHeight()
-```
-
-## raycaster.cellWall
-
-Whether a cell holds a wall. `0` means the cell is open; any other number is a
-wall texture id.
-
-| Parameter | Type | Description |
-|---|---|---|
-| x | number | Cell column (world position is floored to a cell). |
-| y | number | Cell row. |
-
-**Returns:** number
-
-```basic
-if raycaster.cellWall(playerX, playerY) > 0 then
-  print "there is a wall here"
-endif
-```
-
-## raycaster.cellFloorHeight
-
-The floor height of a cell. `0` is the standard floor; higher numbers are raised
-platforms and steps, negative numbers are pits.
-
-| Parameter | Type | Description |
-|---|---|---|
-| x | number | Cell column. |
-| y | number | Cell row. |
-
-**Returns:** number
-
-```basic
-dim step
-step = raycaster.cellFloorHeight(3, 4)
-```
-
-## raycaster.cellCeilHeight
-
-The ceiling height of a cell. Lower numbers are crawlspaces; higher numbers are
-tall atriums.
-
-| Parameter | Type | Description |
-|---|---|---|
-| x | number | Cell column. |
-| y | number | Cell row. |
-
-**Returns:** number
-
-```basic
-dim roof
-roof = raycaster.cellCeilHeight(3, 4)
-```
-
-## raycaster.cellFlags
-
-A number whose bits mark special cells: `1` door, `2` lift, `4` water, `8` open
-sky.
-
-| Parameter | Type | Description |
-|---|---|---|
-| x | number | Cell column. |
-| y | number | Cell row. |
-
-**Returns:** number
-
-```basic
-dim isDoor
-isDoor = raycaster.cellFlags(2, 5)
-```
-
-## raycaster.cellHasUpper
-
-Whether a cell has a second space above it (a `upper:` marker). Returns `1` or
-`0`.
-
-| Parameter | Type | Description |
-|---|---|---|
-| x | number | Cell column. |
-| y | number | Cell row. |
-
-**Returns:** number
-
-```basic
-if raycaster.cellHasUpper(6, 6) then
-  print "there is a room above this one"
-endif
-```
-```
-
-- [ ] **Step 2: Add the page to the docs manifest**
-
-In `src/docs/manifest.ts`, find the API Reference section's `groups` array and add a `raycaster` topic to the most appropriate group (create a new group `{ title: 'Raycaster', topics: [] }` with the topic if none fits). Match the exact `DocTopic` / `DocGroup` shape already used in the file — read the surrounding entries first. The topic's slug must be `raycaster` and its path must resolve to `src/docs/api-reference/raycaster.md`, matching how sibling API pages (e.g. `collision`, `pathfinding`) are declared.
-
-- [ ] **Step 3: Verify the docs page renders**
-
-Run: `npm run dev`, open `http://localhost:5173/docs`, navigate to the new Raycaster API page. Confirm it renders with all eight functions and no broken layout.
-
-- [ ] **Step 4: Update the roadmap files**
-
-In `docs/roadmap.md` and `docs/language/library-roadmap.md`: if either tracks a "raycaster engine" / "3D" / "first-person" item, mark Phase 1 (world model + map loader) done and note the remaining phases (2–10 from the spec) as the open work, linking `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. If neither file mentions it, add a short tracked item under the appropriate section:
+Create the markdown (path per Step 1). Phase 1 content only — later phases extend it:
 
 ```markdown
-- **Raycaster engine** (in progress) — a "DOOM plus a bit" first-person renderer as
-  engine modules. Phase 1 (world model + tagged `.stm` loader) shipped. Phases 2–10
-  (span cast, renderer, mover, lighting, actors, diagonal tiles, upper regions,
-  optimisation) tracked in `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`.
+# Building a Raycaster (softBASIC library)
+
+A first-person raycaster you can drop into a project as a set of `.bas` modules.
+This guide is built up phase by phase alongside the library itself.
+
+## RcWorld — the map
+
+`RcWorld` turns a tagged tilemap into a world you can query for wall positions and
+floor/ceiling heights.
+
+Draw your level in the Tilemap Editor:
+
+- A **`walls` tile layer** — paint any non-zero tile where a wall should be.
+- A **marker layer** — drop markers and give each a text tag to add detail:
+  - `floor:2` raises the cell's floor; `floor:-3` makes a pit
+  - `ceil:4` lowers the ceiling; `ceil:8` makes an atrium
+  - `tex:concrete`, `ftex:grating`, `ctex:pipes` set surface textures
+  - `door`, `lift`, `water`, `sky` mark special cells
+  - `upper:vent` gives the cell a second space above it
+
+```basic
+dim level as tilemapset
+dim wld as RcWorld
+
+function onenter()
+  self.level = new tilemapset("level1.stm")
+  self.wld = new RcWorld(self.level, "walls")
+
+  if self.wld.wallAt(3, 4) > 0 then
+    print "wall at 3,4"
+  endif
+  print "floor height at 5,5 = " + string.str(self.wld.floorHeightAt(5, 5))
+endfunction
 ```
 
-Do **not** touch `src/docs/roadmap.md` unless it already has a matching public-facing item; a new internal engine-in-progress note does not belong on the public roadmap yet.
+### RcWorld accessors
 
-- [ ] **Step 5: Verify the build**
+| Call | Returns |
+|---|---|
+| `wld.widthCells()` / `wld.heightCells()` | map size in cells |
+| `wld.wallAt(col, row)` | `0` open, `>0` wall texture id (out of bounds = `1`) |
+| `wld.floorHeightAt(col, row)` | floor height (`0` standard, negative = pit) |
+| `wld.ceilHeightAt(col, row)` | ceiling height (`1` standard) |
+| `wld.flagsAt(col, row)` | bitset: `1` door, `2` lift, `4` water, `8` sky |
+| `wld.hasUpperAt(col, row)` | `1` if the cell has a space above it |
+| `wld.wallTexAt(col, row)` | wall texture id, or `""` |
+```
+
+- [ ] **Step 3: Register in the manifest**
+
+Add the guide to `src/docs/manifest.ts` in the section identified in Step 1, matching the exact `DocTopic` shape of its siblings (slug `raycaster-library`, path resolving to the file from Step 2).
+
+- [ ] **Step 4: Verify it renders**
+
+`npm run dev` → `/docs` → open the new guide. Confirm it renders cleanly.
+
+- [ ] **Step 5: Roadmap**
+
+In `docs/roadmap.md` and `docs/language/library-roadmap.md`, add or update a tracked item:
+
+```markdown
+- **Raycaster library** (in progress) — a "DOOM plus a bit" first-person raycaster
+  built in softBASIC as reusable `.bas` modules. Phase 1 (`RcWorld` + tagged `.stm`
+  loader, plus the generic `tilemapset.allMarkers` / tile-metric accessors) shipped.
+  Phases 2–10 (span cast, renderer, mover, lighting, actors, diagonal tiles, upper
+  regions, optimisation) tracked in
+  `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`.
+```
+
+Touch `src/docs/roadmap.md` only if it already carries a matching public item.
+
+- [ ] **Step 6: Build + commit**
 
 Run: `npx vite build`
-Expected: build completes with no errors.
-
-- [ ] **Step 6: Commit**
 
 ```bash
-git add src/docs/api-reference/raycaster.md src/docs/manifest.ts docs/roadmap.md docs/language/library-roadmap.md
-git commit -m "docs(raycaster): Phase 1 API reference + roadmap"
+git add src/docs/ docs/roadmap.md docs/language/library-roadmap.md
+git commit -m "docs(raycaster): Phase 1 library guide + roadmap"
 ```
 
 ---
 
-## Task 9: Phase close-out verification
+## Task 8: Phase close-out
 
-**Files:** none (verification only)
+**Files:** none.
 
-- [ ] **Step 1: Full unit suite**
-
-Run: `npx vitest run`
-Expected: PASS, no skipped tests other than the retired scratch file from Task 7 Step 4.
-
-- [ ] **Step 2: Build**
-
-Run: `npx vite build`
-Expected: clean build.
-
-- [ ] **Step 3: E2E**
-
-`npm run dev` in one terminal; `npx cypress run --spec cypress/e2e/demos.cy.ts` in another.
-Expected: all specs pass including the Phase 1 dev demo.
-
-- [ ] **Step 4: Manual smoke**
-
-`npm run dev`, open `/demos` is NOT expected to show the Phase 1 demo (confirm it does **not** appear). Then in the browser console on `/demos`: `await window.__seedDemo('raycaster-p1-mapload')` returns a project id; open `/projects/<id>/edit`, Run, confirm the probe text and top-down grid render and the console panel shows no `ERR`.
-
-- [ ] **Step 5: Confirm the spec's Phase 1 checklist**
-
-Re-read spec §11 Phase 1 and §3. Every cell field in §3.1 is present in the world model (`wall`, `floorH`, `ceilH`, `floorTex`, `ceilTex`, `upper`, `light`, `flags`). The `.stm` authoring model in §3.3 (semantic placeholder tiles + `TileMapSet` tags parsed by the loader) is what Task 3/7 implement. If anything is missing, open a follow-up task before declaring Phase 1 done.
+- [ ] **Step 1: Full unit suite** — `npx vitest run` → PASS (only the retired `.skip` scratch file skipped).
+- [ ] **Step 2: Build** — `npx vite build` → clean.
+- [ ] **Step 3: E2E** — `npm run dev` + `npx cypress run --spec cypress/e2e/demos.cy.ts` → all pass incl. the Phase 1 dev demo.
+- [ ] **Step 4: Confirm the demo is NOT on `/demos`** — `npm run dev`, open `/demos`, verify "Raycaster P1" does not appear in the list.
+- [ ] **Step 5: Spec check** — re-read spec §3 and §11 phase 1. Every cell field in §3.1 is populated by `RcWorld` (`wall`, `floorH`, `ceilH`, `wallTex`, `floorTex`, `ceilTex`, `upper`, `light`, `flags`); §3.2 upper-region arrays exist; §3.3 tag parsing + the §9.1 generic `tilemap` change are done. Note any gap as a follow-up task before declaring Phase 1 complete.
 
 ---
 
 ## Notes for later phases (not this plan)
 
-- **Spec §3.3 clarification discovered during planning:** markers carry a single free-text `tag` string (`{ row, col, tag }`), not structured properties. The loader parses space-separated `key:value` / bare-flag tokens out of that string, and multiple markers on one cell merge. No `.stm` format or Tilemap Editor change is needed. This should be back-ported into spec §3.3 as a one-line clarification.
-- Phase 2 (span builder) adds pure functions to `raycaster.js` and its own `raycaster-p2` dev demo drawing a top-down span visualisation.
-- The grid atlas (spec §5.3) and texture-slot resolution land in Phase 3 — Phase 1 stores texture **names** as strings on cells, unresolved.
+- **`math.val`** parses tag numbers (`Number(s)`); confirmed present.
+- Phase 2 (`RcCast`) adds `demo-src/raycaster/lib/RcCast.bas` + a `raycaster-p2` demo drawing a top-down span visualisation. It will likely surface the first `drawing` throughput question — hold the §5.3 contingency until phase 3's real 3D draw.
+- Texture ids are stored as plain image-name strings on cells through all phases; `RcRender` (phase 3) resolves them to drawables — no atlas (spec §5.2).
+- The library-copy duplication (`demo-src/raycaster/lib/RcWorld.bas` vs `demo-src/raycaster-p1/RcWorld.bas`) is a `build:demo` limitation. If it becomes painful across phases, a small generic `scripts/buildDemo.ts` change to accept a shared-lib dir is the fix — a tooling task, not engine.
+```
+
