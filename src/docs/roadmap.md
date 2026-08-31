@@ -18,6 +18,8 @@ And softBASIC now has named constants: a `const … endconst` block (or a single
 
 Most recently, controller support landed. Games now use an *action map*: you give each thing the player can do a name, bind keys and controller buttons to it once, and the rest of your game reads the action — so keyboard and gamepad work from the same code with no branching. Analog sticks and triggers are supported, and the old keyboard-only functions still work.
 
+Behind the scenes, project and asset storage moved to IndexedDB. Projects and their images and audio used to share a single browser storage slot capped at around 5 MB, which a large project could bump into. That limit is effectively gone — projects can now be much larger before running out of room.
+
 ## Right now
 
 Optional accounts are next. Signing in will unlock cloud sync for your projects. Local storage stays — everything works without an account, and signing in is an opt-in upgrade, not a gate.

@@ -8,7 +8,7 @@ Four pieces, all required:
 
 1. `src/docs/demos/<Slug>.b4wgl.json` — the project export (files, assets, folders — see `ProjectExportJson` in `src/features/projects/exportProject.ts`).
 2. `src/docs/demos/<slug>.md` — the "how it works" write-up: required-assets table, controls, explanation, full source. See `raycaster.md` for the template.
-3. `src/features/demos/demoRegistry.ts` — one `DemoEntry`: `slug`, `name`, `tags`, `description`, `docsSlug`, `json`.
+3. `src/features/demos/demoRegistry.ts` — one `DemoEntry`: `slug`, `name`, `tags`, `description`, `docsSlug`, `file`. The `file` field is the basename of the `.b4wgl.json` under `src/docs/demos/`; entries no longer carry inline `json`. `loadDemoJson(slug)` dynamic-imports the export on demand, so each demo's JSON is its own lazy chunk rather than being bundled into the main app.
 4. `src/docs/manifest.ts` — a nav entry in the `Demos` group: `{ slug, title, file: 'demos/<slug>.md' }`.
 
 ## Step 1: Pre-production brief
@@ -49,9 +49,9 @@ Two paths — pick based on complexity.
 
 - [ ] `.b4wgl.json` verified to run with zero `ERR` console entries.
 - [ ] `src/docs/demos/<slug>.md` write-up — required-assets table, controls, how-it-works explanation, full source. See `raycaster.md` for the template.
-- [ ] `demoRegistry.ts` entry.
+- [ ] `demoRegistry.ts` entry (with a `file` basename — not an inline `json` blob).
 - [ ] `docs/manifest.ts` nav entry under `Demos`.
-- [ ] `cypress/e2e/demos.cy.ts` — add a `describe` block for the new demo (copy the Raycaster block: read the real `.b4wgl.json` via `cy.readFile`, seed it into `localStorage`, click Run, assert no `ERR`). **Mandatory — a demo isn't done without this.**
+- [ ] `cypress/e2e/demos.cy.ts` — add an entry to the `DEMOS` array (slug, title, waitMs). Each demo is seeded through the dev/Cypress-only `window.__seedDemo(slug)` hook (registered in `src/pages/DemosPage.tsx`), which runs the app's real `loadDemoJson(slug) → importProject → putAssetBlob` path — the same thing clicking "Try Demo" does. Assets and persisted state now live in IndexedDB, so there is no `localStorage['persist:softBASIC']` key to hand-write; the hook is the only sane seed path. The shared helper `cypress/support/seedProject.ts` (`seedProject` / `seedAndRun`, backed by `window.__seedProject` in `src/devSeed.ts`) covers the non-demo specs the same way. **Mandatory — a demo isn't done without this.**
 - [ ] If the demo needed new engine functions: they went through the full six-step "Adding a new language feature or library module" process from `CLAUDE.md`, including the descriptor+generator pipeline if the module is descriptor-driven (see `CLAUDE.md`'s "Descriptor-generated `.bas` files" section) — never a hand-edited `.bas` file.
 
 ## The assembler script: `scripts/buildDemo.ts`
