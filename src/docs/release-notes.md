@@ -1,5 +1,32 @@
 # Release Notes
 
+## v0.7.0 — 2026-08-31
+
+### New: controller / gamepad support
+
+- Games now use an **action map** on `input`: you give each thing the player can do a name — `"jump"`, `"move_left"` — and bind one or more physical inputs to it with `input.bind(action, "key"|"button"|"axis", code)` once at startup, then query the action everywhere else. Keyboard and controller run the exact same game code with no `if keyboard… else if gamepad…` branching. Queries: `input.held` / `input.pressed` / `input.released` (true/false), `input.strength` (0–1, for analog sticks and triggers), `input.axis(negAction, posAction)` (−1..1, two opposing actions as one value). Plus `input.clearBindings` for rebind menus, `input.padConnected()`, and `input.setDeadzone(value)` (default 0.15). Standard-mapping controllers (Xbox, PlayStation, most modern pads) work out of the box; the engine polls the pad at the top of every fixed simulation step and folds it into the same input model the keyboard already uses. `input.getKeyDown` / `keyPressed` / `keyReleased` still work but are deprecated in the docs with migration examples
+
+### New: named constants (`const … endconst`) and a `keyboard` module
+
+- A `const … endconst` block (or single-line `const NAME = value`) declares named constants at the top level of a file. Literals only — numbers, strings, `true`/`false`. Reference them by bare name inside the declaring file or `module.NAME` from another file, exactly like calling a function from another module. Constants can't be reassigned, redeclared, or shadowed by a `dim` / loop variable / function parameter. Names are written in `UPPER_SNAKE_CASE` by convention (softBASIC is case-insensitive, so it's a readability signal, not a rule)
+- New `keyboard` module — a pure set of named key codes (`keyboard.SPACE`, `keyboard.LEFT`, `keyboard.A`, `keyboard.DIGIT_0` …) so `input.bind("jump", "key", keyboard.SPACE)` reads clearly instead of `input.bind("jump", "key", 32)`. New `controller` module does the same for gamepad buttons and stick directions (`controller.A`, `controller.DPAD_UP`, `controller.LSTICK_LEFT` …). Both ship in softGfx alongside `input`
+
+### Changed: asset & project storage moved to IndexedDB
+
+- Editor projects and their asset files (images, audio, tilemaps) are now stored in IndexedDB instead of a single `localStorage` slot. That slot was capped at roughly 5 MB per browser, which a modestly-sized project could exceed — the Raycaster demo's audio alone was enough to break saving. Projects can now be tens of MB. Asset binaries are stored as raw bytes, not base64-inflated text. The project export/import format (`.b4wgl.json`) is unchanged — existing exports import identically. In-game `save`/`file` storage is untouched (still per-project `localStorage`, a deliberately separate path)
+
+### Performance
+
+- The four demo project files are no longer bundled into the initial page load — each is fetched on demand when you open that demo. The main app bundle dropped from ~5.5 MB to ~1.7 MB (gzip ~2.7 MB → ~480 kB)
+
+### Raycaster demo
+
+- Migrated to the new action map: keyboard controls are unchanged (WASD move, Q/E strafe, A/D turn, Space fire), and a controller now works too — left stick moves and strafes, right stick turns, right trigger or A fires, all with analog speed scaling
+
+### Fixes
+
+- Fixed the "fullscreen on run" toggle: arming it before clicking Run stopped taking effect after the storage change (the preview iframe now mounts a moment later, once its assets resolve, and the fullscreen request wasn't re-checked at that point)
+
 ## v0.6.17 — 2026-08-25
 
 ### Fixes
