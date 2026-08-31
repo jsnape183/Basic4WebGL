@@ -382,33 +382,61 @@ Plus:
 - **Frame-cost benchmark** — a `tests/scratch/` harness measuring per-frame cast +
   buffer-write + light-grid cost on a representative map. Not committed to the
   suite; the reference point for the phase-9 optimisation pass.
-- **Cypress e2e** — a new raycaster **test scene** in `cypress/e2e/`: seed a small
-  height-varied map (steps, a pit, a window, a walkway, one upper region, one
-  diagonal cell, two lights), walk a scripted path, assert no `ERR` entries in the
-  console panel. Pixel probes added later. This is the only layer that runs the
-  real renderer in a browser.
+- **Per-phase demo** — every phase (§11) ends with a small, self-contained demo
+  that exercises exactly what that phase added, built and structured **exactly like
+  the shipped demos**: a real `.b4wgl.json` export under `src/docs/demos/` with its
+  real assets, plus a `describe` block in `cypress/e2e/demos.cy.ts` that seeds the
+  export and asserts no `ERR` entries. **The one difference: no entry is added to
+  `src/features/demos/demoRegistry.ts` and no `src/docs/demos/<slug>.md` page is
+  written**, so the demo never appears on the public `/demos` page. It exists as a
+  runnable, e2e-verified artifact only. These phase demos are the raycaster
+  engine's browser-level regression coverage — they replace the single "test
+  scene" idea with an accumulating set, one per capability.
+- Naming: `RaycasterP1SpanCast`, `RaycasterP2Rooms`, … under `src/docs/demos/`;
+  matching `describe('Raycaster P1 — …')` blocks. A later real, registry-listed
+  showcase demo is a separate gameplay-era task, out of scope here.
 
 ---
 
 ## 11. Build phasing (engine only)
 
+Each phase lands with its unit tests green **and** its unlisted demo (§10) running
+`ERR`-free in Cypress before the next begins.
+
 1. **World model + map loader** — pure, fully tested.
+   *Demo:* loads a tagged `.stm`, prints cell heights / region data to the console
+   — proves the loader without a renderer.
 2. **Span builder** (DDA + span collection) — pure, fully tested with hand-built
    maps.
-3. **Renderer**: occlusion window + one-mesh buffer writer + atlas — test scene
-   renders a stepped, pitted room with a window.
-4. **Mover + camera bind** — tested resolution + e2e walkthrough of a height-varied
-   map.
-5. **Lighting**: static bake + dynamic light grid + LOS occlusion — tested grid.
+   *Demo:* casts a fan of rays from a fixed point, draws the returned spans as a
+   2D top-down debug view (span list visualised) — proves the cast without the 3D
+   renderer.
+3. **Renderer**: occlusion window + one-mesh buffer writer + grid atlas.
+   *Demo:* a static camera in a stepped, pitted room with a window — the first
+   real 3D view. No movement yet.
+4. **Mover + raycaster-owned camera**.
+   *Demo:* free-walk that height-varied room — WASD + mouse-look, step up stairs,
+   fall in the pit, bonk your head on a low ceiling.
+5. **Lighting**: static bake + dynamic light grid + LOS occlusion.
+   *Demo:* the same room, dark, with a camera-parented flashlight and one flickering
+   wall light casting a hard shadow edge.
 6. **Actors**: billboard pool, depth-sort vs spans, `raycast()` / `hitscan()`.
+   *Demo:* a few billboards on different floor levels, correctly occluded by
+   ledges; click to `hitscan` and log what was hit.
 7. **Diagonal-wall tiles.**
+   *Demo:* an octagonal room + a canted corridor.
 8. **One upper region per cell** (single portal hop).
+   *Demo:* a walkway over a room you can see under, and a room under a lobby you
+   drop into.
 9. **Optimisation + benchmark pass**: batching, buffer upload strategy, static
    light caching, constant tuning.
-10. **Docs** (API Reference page) + roadmap update.
+   *Demo:* a deliberately busy stress map + an on-screen frame-time readout.
+10. **Docs** (API Reference page, added to `manifest.ts`) + roadmap update
+    (`docs/roadmap.md`, `docs/language/library-roadmap.md`, `src/docs/roadmap.md`).
+    No new demo; the phase-9 stress demo stands as the reference.
 
 Phases 1–6 are the foundation. 7–8 are the "plus a bit". 9 proves the performance
-numbers. Each phase lands with its tests green before the next begins.
+numbers.
 
 ---
 
