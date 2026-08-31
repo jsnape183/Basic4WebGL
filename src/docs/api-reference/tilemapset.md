@@ -103,6 +103,64 @@ for i = 0 to array.arrLength(spawnPoints) - 1
 next i
 ```
 
+## allMarkers()
+
+Every marker in the map, each with its grid column, grid row, and its full tag text. Use this when you need to read the tag yourself (for example to parse `floor:2 door` into separate values) or build a table from all markers at once.
+
+**Returns:** array of objects, each with `col`, `row`, and `tag`.
+
+| Property | Type   | Description |
+|----------|--------|-------------|
+| col      | number | Grid column of the marker |
+| row      | number | Grid row of the marker |
+| tag      | string | The marker's full tag text |
+
+```bas
+dim level as tilemapset("level1.stm")
+
+function onenter()
+  world.add(level)
+  dim all
+  all = level.allMarkers()
+  dim i
+  for i = 0 to array.arrLength(all) - 1
+    dim m
+    m = all(i)
+    print "marker at column " + string.str(m.col) + ", row " + string.str(m.row) + ": " + m.tag
+  next i
+endfunction
+```
+
+## tileWidth()
+
+The width of one tile in the map, in pixels.
+
+**Returns:** number.
+
+```bas
+dim level as tilemapset("level1.stm")
+
+function onenter()
+  world.add(level)
+  print "each tile is " + string.str(level.tileWidth()) + " pixels wide"
+endfunction
+```
+
+## tileHeight()
+
+The height of one tile in the map, in pixels.
+
+**Returns:** number.
+
+```bas
+dim level as tilemapset("level1.stm")
+
+function onenter()
+  world.add(level)
+  print "each tile is " + string.str(level.tileHeight()) + " pixels tall"
+endfunction
+```
+
 ## transform
 
 Position is controlled through `.transform` — see [ObjectTransform](objecttransform). This moves **every layer together**, useful for placing the whole map at a world position, or scrolling it as one piece. `tileAt` — both `tilemapset.tileAt(name, x, y)` above and `tilemaplayer.tileAt(x, y)` on a layer from `layer(name)` — always accounts for this offset, so tile lookups stay correct after moving the map.

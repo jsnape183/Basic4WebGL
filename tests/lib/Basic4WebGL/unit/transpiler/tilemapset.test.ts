@@ -225,6 +225,80 @@ describe('TileMapSet — markersByTag', () => {
   });
 });
 
+// ─── allMarkers / tileWidth / tileHeight ────────────────────────────────────
+
+describe('TileMapSet — allMarkers', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim all',
+      '  all = tm.allMarkers()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.allMarkers(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim all',
+      '  all = tm.allMarkers()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.allMarkers(');
+  });
+});
+
+describe('TileMapSet — tileWidth', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim w',
+      '  w = tm.tileWidth()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.tileWidth(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim w',
+      '  w = tm.tileWidth()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.tileWidth(');
+  });
+});
+
+describe('TileMapSet — tileHeight', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim h',
+      '  h = tm.tileHeight()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.tileHeight(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim h',
+      '  h = tm.tileHeight()',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.tileHeight(');
+  });
+});
+
 describe('Marker — field access', () => {
   test('m.x and m.y property access compiles without error', () => {
     const result = transpileWithTileMapSet([
