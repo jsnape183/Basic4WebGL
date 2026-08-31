@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useAssetText } from '../../../src/hooks/useAssetText';

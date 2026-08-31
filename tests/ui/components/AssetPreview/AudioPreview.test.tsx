@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 // tests/ui/components/AssetPreview/AudioPreview.test.tsx
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import AudioPreview from '../../../../src/components/AssetPreview/AudioPreview';
