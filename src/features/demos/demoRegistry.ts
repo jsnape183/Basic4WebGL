@@ -81,9 +81,13 @@ The player moves with \`setVelocity\` (sliding cleanly along walls, automatic ti
   },
 ];
 
+export async function loadExportJson(file: string): Promise<ProjectExportJson> {
+  const mod = await import(`../../docs/demos/${file}.b4wgl.json`);
+  return (mod.default ?? mod) as ProjectExportJson;
+}
+
 export async function loadDemoJson(slug: string): Promise<ProjectExportJson> {
   const entry = demoRegistry.find((d) => d.slug === slug);
   if (!entry) throw new Error(`Unknown demo slug: ${slug}`);
-  const mod = await import(`../../docs/demos/${entry.file}.b4wgl.json`);
-  return (mod.default ?? mod) as ProjectExportJson;
+  return loadExportJson(entry.file);
 }

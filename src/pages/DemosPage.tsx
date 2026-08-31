@@ -5,7 +5,8 @@ import remarkGfm from 'remark-gfm';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { importProject } from '../features/projects/importProject';
-import { demoRegistry, DemoEntry, loadDemoJson } from '../features/demos/demoRegistry';
+import { demoRegistry, DemoEntry, loadDemoJson, loadExportJson } from '../features/demos/demoRegistry';
+import { devDemoRegistry } from '../features/demos/devDemoRegistry';
 import type { Components } from 'react-markdown';
 import { store, persistor } from '../store';
 
@@ -23,7 +24,8 @@ if (
   (window as unknown as { __seedDemo?: (slug: string) => Promise<string> }).__seedDemo = async (
     slug,
   ) => {
-    const json = await loadDemoJson(slug);
+    const devEntry = devDemoRegistry.find((d) => d.slug === slug);
+    const json = devEntry ? await loadExportJson(devEntry.file) : await loadDemoJson(slug);
     const projectId = await store.dispatch(importProject(json));
     await persistor.flush();
     return projectId;
