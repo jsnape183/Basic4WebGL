@@ -211,6 +211,22 @@ const _sbTilemaps = {
   // same ancestor-offset-walking technique tileAt already uses, so if the
   // TileMapSet's own .transform moves the whole map, returned positions move
   // with it, matching tileAt's existing offset contract.
+  // Every marker across every marker layer, with grid coords and its raw tag
+  // string. Companion to markersByTag (which does exact-tag match and returns
+  // world-space {x,y}); this is for callers that need to read/parse tags
+  // themselves or build an entity table from all markers at once.
+  allMarkers(setHandle) {
+    return setHandle._markers.map((m) => ({ col: m.col, row: m.row, tag: m.tag }));
+  },
+
+  tileWidth(setHandle) {
+    return setHandle._tileW;
+  },
+
+  tileHeight(setHandle) {
+    return setHandle._tileH;
+  },
+
   markersByTag(setHandle, tag) {
     const offset = _tilemapWorldOffset(setHandle);
     const offsetX = offset.x;
