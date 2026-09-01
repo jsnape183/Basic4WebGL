@@ -851,6 +851,7 @@ endfunction
 | `rc.spanLo(i)` / `rc.spanHi(i)` | the low and high world heights the surface covers |
 | `rc.spanCol(i)` / `rc.spanRow(i)` | the cell that produced the span |
 | `rc.spanU(i)` | horizontal texture position `0`–`1` across a wall (`0` for steps) |
+| `rc.spanSide(i)` | `0` if the ray crossed an x-gridline into this cell, `1` for a y-gridline (Phase 3 uses it to shade perpendicular walls) |
 | `rc.spanTex(i)` | the texture id for that surface, or `""` |
 
 ### Line of sight
@@ -902,3 +903,4 @@ git commit -m "docs(raycaster): Phase 2 RcCast guide section + roadmap"
 - The `cast` early-out on the occlusion window (spec §4.1 step 3) is added in Phase 3 as an optional `maxScreenSpan` param or a callback — deferred now because Phase 2 has no screen space.
 - Floor/ceiling **step** spans currently fire on any `!=` (rise OR fall). Phase 3 decides how a "fall" (pit) span is drawn vs a "rise". If that distinction turns out to matter to the cast, revisit — for now the renderer has `lo`/`hi` + the running context it rebuilds.
 - Upper regions (`world.hasUpperAt`) — Phase 8. `RcCast` will emit extra spans when the ray passes under an open ceiling hole.
+- **`RC_MAX_SPANS` (spec §4.1 step 4, default 12) is NOT implemented in Phase 2** — `RcCast.addSpan` grows the span arrays unbounded. Deliberately deferred: Phase 3's `RcRender` is the natural place to cap (it walks spans far→near under the occlusion window and can stop early). If the cap turns out to belong in `RcCast`, add `RC_MAX_SPANS` to `RcConfig` and bail out of the march when `spanCount()` reaches it. Tracked here so it isn't silently dropped.
