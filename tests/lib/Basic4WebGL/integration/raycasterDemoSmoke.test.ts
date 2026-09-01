@@ -92,6 +92,7 @@ function evalDemo(code: string) {
        RcCast: typeof _sb_rccast !== 'undefined' ? _sb_rccast : null,
        RcWorld: typeof _sb_rcworld !== 'undefined' ? _sb_rcworld : null,
        RcRender: typeof _sb_rcrender !== 'undefined' ? _sb_rcrender : null,
+       RcMover: typeof _sb_rcmover !== 'undefined' ? _sb_rcmover : null,
      };`,
   );
   const mod = factory(_sb, _createArray, ...Object.values(helpers), { log() {} });
@@ -100,7 +101,24 @@ function evalDemo(code: string) {
     RcCast: (new () => RcCastLike) | null;
     RcWorld: unknown;
     RcRender: (new (w: unknown) => RcRenderLike) | null;
+    RcMover:
+      | (new (w: unknown, x: number, y: number, radius: number, bodyHeight: number) => RcMoverLike)
+      | null;
   };
+}
+
+interface RcMoverLike {
+  step(dt: number): void;
+  x(): number;
+  y(): number;
+  z(): number;
+  angle(): number;
+  pitch(): number;
+  onground(): number;
+  move(fwd: number, strafe: number): void;
+  turn(dAngle: number): void;
+  look(dPitch: number): void;
+  jump(): void;
 }
 
 interface RcCastLike {
@@ -158,5 +176,18 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => r.projecty(0.5, 5)).not.toThrow();
     const p = r.projecty(0.5, 5);
     expect(Number.isNaN(p) || p === r.projecty(0.5, 99)).toBe(true);
+  });
+
+  test.each(phaseDirs)('%s: RcMover (if present) step runs', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcMover) return; // phases without RcMover.bas
+    const m = new mod.RcMover(stubWorld, 2, 2, 0.3, 0.6);
+    m.move(1, 0);
+    m.turn(0.1);
+    m.look(10);
+    m.jump();
+    expect(() => m.step(16)).not.toThrow();
+    expect(typeof m.x()).toBe('number');
+    expect(typeof m.onground()).toBe('number');
   });
 });
