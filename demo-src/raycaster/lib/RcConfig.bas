@@ -10,4 +10,7 @@ const
     RC_SPAN_WALL = 0
     RC_SPAN_FLOORSTEP = 1
     RC_SPAN_CEILSTEP = 2
+    RC_STRIP_W = 4
+    RC_EYE_Z = 0.5
+    RC_MAX_PITCH = 220
 endconst
