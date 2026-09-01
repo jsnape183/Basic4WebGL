@@ -521,7 +521,19 @@ EndClass
 
 - [ ] **Step 2:** In `drawStrip`, add a `lightLevel` param (0..1, default via caller). Change the fill from `pen.setFillColor(g, g, g + 25)` to modulate: `pen.setFillColor(g * lightLevel, g * lightLevel, (g + 25) * lightLevel)`. Clamp each to 0..255 (`math.clamp(g * lightLevel, 0, 255)`).
 
-- [ ] **Step 3:** In `renderFrame`, per span, before `drawStrip`: `dim lite; lite = 1.0; if self.boundLights <> 0 then lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i)) endif` — pass `lite` to `drawStrip`.
+- [ ] **Step 3:** In `renderFrame`, per span, before `drawStrip`, compute `lite` (default `1.0`; only when `self.boundLights <> 0`):
+  - **WALL span:** a wall cell itself only gets `ambient` from `RcLights` (it never receives a splat — it's self-occluded). Sample the last OPEN cell in front of the wall instead. The parametric hit point is `cam + rayDir * spanDist` (same identity `GameScene` uses: `wallX = posX + perpWallDist * rayDirX`). So:
+    ```basic
+    dim sx
+    dim sy
+    sx = self.camX + rayX * d * 0.98
+    sy = self.camY + rayY * d * 0.98
+    lite = self.boundLights.sampleCell(math.floor(sx), math.floor(sy))
+    ```
+    (`rayX`/`rayY` are the per-column ray dir already in scope; `d` = `self.rc.spanDist(i)`. `* 0.98` pulls the sample point 2% short of the wall face, into the open cell.)
+  - **FLOOR-STEP / CEIL-STEP span:** `self.rc.spanCol(i)` / `spanRow(i)` is an open cell — sample it directly: `lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))`.
+  - Hoist `dim lite`, `dim sx`, `dim sy` to `renderFrame`'s dim block.
+  Pass `lite` to `drawStrip`.
 
 - [ ] **Step 4:** Phase 3/4 demos have no bound lights → `lite` stays `1.0` → strips render exactly as before. Confirm the Phase 3 projection probes and Phase 4 movement probes are unaffected (they don't touch rendering output). Re-sync p3/p4 `RcRender.bas` copies.
 
