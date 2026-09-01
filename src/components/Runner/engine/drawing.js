@@ -22,8 +22,9 @@ const _sbDrawing = (() => {
     } else {
       g = new PIXI.Graphics();
       g._sbKind = 'g';
-      worldContainer.addChild(g);
     }
+    // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
+    worldContainer.addChild(g);
     _live.push(g);
     return g;
   }
@@ -34,8 +35,9 @@ const _sbDrawing = (() => {
     } else {
       s = new PIXI.Sprite(PIXI.Texture.EMPTY ?? undefined);
       s._sbKind = 's';
-      worldContainer.addChild(s);
     }
+    // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
+    worldContainer.addChild(s);
     _live.push(s);
     return s;
   }

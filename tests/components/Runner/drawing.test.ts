@@ -24,7 +24,7 @@ class FakeTexture { constructor() { textureCreated++; } destroy() { destroyed++;
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
 class FakeContainer {
   children: unknown[] = [];
-  addChild(c: unknown) { this.children.push(c); }
+  addChild(c: unknown) { if (!this.children.includes(c)) this.children.push(c); } // dedupe like real PIXI
   removeChild(c: unknown) { this.children = this.children.filter((x) => x !== c); }
   removeChildren() { this.children = []; }
 }
@@ -85,7 +85,7 @@ describe('drawing — object pooling', () => {
     d.clearDrawing();          // -> pool
     d.drawRect(0, 0, 10, 10);  // -> live
     d._drawingReset();
-    expect(destroyed).toBeGreaterThanOrEqual(3); // 1 gfx pooled + 1 sprite pooled + 1 gfx live
+    expect(destroyed).toBe(3); // 1 live Graphics + 1 pooled Graphics + 1 pooled Sprite
     // after reset, a fresh draw allocates anew
     d.drawRect(0, 0, 10, 10);
     const before = gfxCreated;
@@ -101,5 +101,15 @@ describe('drawing — object pooling', () => {
     d.drawRect(0, 0, 1, 1); // only 1 this frame
     const visible = worldContainer.children.filter((c: any) => c.visible).length;
     expect(visible).toBe(1);
+  });
+
+  test('drawRect re-attaches a pooled object after worldContainer.removeChildren()', () => {
+    const { d, worldContainer } = loadDrawing();
+    d.drawRect(0, 0, 10, 10);
+    d.clearDrawing();                 // -> pool, still a (hidden) child
+    worldContainer.removeChildren();  // scene switch / world.clearWorld()
+    d.drawRect(0, 0, 10, 10);         // pops the detached pooled object
+    expect(worldContainer.children.length).toBe(1);        // re-attached
+    expect((worldContainer.children[0] as any).visible).toBe(true);
   });
 });
