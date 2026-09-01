@@ -265,6 +265,20 @@ function wallTexAt(col, row)
     return self.wallTexArr(row * self.cols + col)
 endfunction
 
+function floorTexAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return ""
+    endif
+    return self.floorTexArr(row * self.cols + col)
+endfunction
+
+function ceilTexAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return ""
+    endif
+    return self.ceilTexArr(row * self.cols + col)
+endfunction
+
 function widthCells()
     return self.cols
 endfunction
