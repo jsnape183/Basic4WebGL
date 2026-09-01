@@ -45,4 +45,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP4Walk',
   },
+  {
+    slug: 'raycaster-p5-lit',
+    name: 'Raycaster P5 — Lit Room',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 5 probe: RcLights — ambient + baked static + a player-following flashlight, wall-occluded via LOS. Dark room with a moving shadow.',
+    docsSlug: '',
+    file: 'RaycasterP5Lit',
+  },
 ];

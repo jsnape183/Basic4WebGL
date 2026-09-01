@@ -41,6 +41,7 @@ const DEV_DEMOS: Array<{ slug: string; title: string; waitMs: number }> = [
   { slug: 'raycaster-p2-spancast', title: 'Raycaster P2 — Span Cast', waitMs: 3000 },
   { slug: 'raycaster-p3-roomview', title: 'Raycaster P3 — Room View', waitMs: 3000 },
   { slug: 'raycaster-p4-walk', title: 'Raycaster P4 — Walk', waitMs: 4000 },
+  { slug: 'raycaster-p5-lit', title: 'Raycaster P5 — Lit Room', waitMs: 4000 },
 ];
 
 DEV_DEMOS.forEach(({ slug, title, waitMs }) => {
