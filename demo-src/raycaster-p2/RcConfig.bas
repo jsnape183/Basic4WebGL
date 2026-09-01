@@ -19,4 +19,5 @@ const
     RC_MOVE_SPEED = 2.6
     RC_TURN_SPEED = 2.4
     RC_LOOK_SPEED = 400.0
+    RC_MAX_STEP_DT = 0.1
 endconst

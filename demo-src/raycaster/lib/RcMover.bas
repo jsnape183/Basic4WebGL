@@ -12,6 +12,15 @@ Class
 '
 ' Deferred (spec): actor-vs-actor collision (§7.1), animated lifts, region
 ' resolution main-vs-upper (Phase 8).
+'   - vertical ceiling collision: pz is only clamped at the floor, so a jump can
+'     pass the head through a low ceiling. Safe only while the jump apex clears
+'     the lowest ceiling over any reachable floor (RC_JUMP_VEL^2 / (2*RC_GRAVITY)
+'     above the highest standable floor). Real head-bonk collision comes with
+'     upper regions (Phase 8).
+'   - single-cell slide invariant: step() checks exactly one destination edge
+'     cell per axis, so it only stays tunnel-proof while
+'     max_speed * RC_MAX_STEP_DT < rad. A faster body (Phase 6 enemies,
+'     knockback) needs a swept check.
 dim wld as RcWorld
 dim px
 dim py
@@ -42,6 +51,7 @@ Constructor(w as RcWorld, x, y, radius, bodyHeight)
     self.wantJump = 0
 EndConstructor
 
+' intent -- REPLACED each frame and cleared by step(); turn()/look() apply immediately and accumulate.
 function move(fwd, strafe)
     self.mvFwd = fwd
     self.mvStrafe = strafe
@@ -74,6 +84,15 @@ function blocked(cx, cy)
     return 0
 endfunction
 
+' Cell index of the leading edge of the body along one axis, given the new
+' centre coordinate and the signed move on that axis.
+function edgeCell(coord, delta)
+    if delta > 0 then
+        return math.floor(coord + self.rad)
+    endif
+    return math.floor(coord - self.rad)
+endfunction
+
 function step(dt)
     dim dsec
     dim dirX
@@ -87,10 +106,11 @@ function step(dt)
     dim cx
     dim cy
     dim groundH
+    dim steppingUp
 
     dsec = dt / 1000.0
-    if dsec > 0.1 then
-        dsec = 0.1
+    if dsec > RcConfig.RC_MAX_STEP_DT then
+        dsec = RcConfig.RC_MAX_STEP_DT
     endif
 
     dirX = math.cos(self.ang)
@@ -107,11 +127,7 @@ function step(dt)
     ' snap once, authoritatively, from the cell actually occupied after the move.
     if moveX <> 0 then
         nx = self.px + moveX
-        if moveX > 0 then
-            cx = math.floor(nx + self.rad)
-        else
-            cx = math.floor(nx - self.rad)
-        endif
+        cx = self.edgeCell(nx, moveX)
         if self.blocked(cx, math.floor(self.py)) = 0 then
             self.px = nx
         endif
@@ -119,11 +135,7 @@ function step(dt)
 
     if moveY <> 0 then
         ny = self.py + moveY
-        if moveY > 0 then
-            cy = math.floor(ny + self.rad)
-        else
-            cy = math.floor(ny - self.rad)
-        endif
+        cy = self.edgeCell(ny, moveY)
         if self.blocked(math.floor(self.px), cy) = 0 then
             self.py = ny
         endif
@@ -142,7 +154,13 @@ function step(dt)
     ' onto a low ledge). Otherwise integrate gravity and land when feet reach it
     ' (walking off a ledge / into a pit / descending a jump).
     groundH = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
-    if self.grounded = 1 and groundH > self.pz and groundH - self.pz <= RcConfig.RC_STEP_UP then
+    steppingUp = 0
+    if self.grounded = 1 and groundH > self.pz then
+        if groundH - self.pz <= RcConfig.RC_STEP_UP then
+            steppingUp = 1
+        endif
+    endif
+    if steppingUp = 1 then
         self.pz = groundH
         self.vz = 0
     else
