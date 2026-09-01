@@ -273,6 +273,8 @@ git commit -m "perf(drawing): pool Graphics/Sprite objects + cache strip texture
 
 **Files:** Modify `src/components/Runner/engine/stage.js`; possibly `src/components/Runner/softBasicEngine.js`.
 
+**Note (post Task-1 fix `4d3733c`+):** `_acquireG`/`_acquireS` now `addChild` unconditionally, so pooled objects survive `worldContainer.removeChildren()` (scene switch *and* `world.clearWorld()`) without a reset — drawing keeps working. `_drawingReset` is now **pure memory hygiene** (free the pool + texture cache on scene switch so a demo-heavy → game switch doesn't retain a huge hidden pool). Still worth wiring into `stage.clear()`; no longer a correctness dependency, so `stage.clearWorld()` does NOT need it.
+
 - [ ] **Step 1:** Confirm `_sbDrawing._drawingReset` reaches `_sb`. `softBasicEngine.js` spreads `..._sbDrawing` — so `_sb._drawingReset` exists. Check.
 
 - [ ] **Step 2:** In `stage.js` `clear()`, add `this._drawingReset();` alongside the other `*Reset()` calls.
