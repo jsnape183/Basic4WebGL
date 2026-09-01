@@ -265,6 +265,13 @@ function wallTexAt(col, row)
     return self.wallTexArr(row * self.cols + col)
 endfunction
 
+function lightAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    return self.lightArr(row * self.cols + col)
+endfunction
+
 function floorTexAt(col, row)
     if self.inBounds(col, row) = 0 then
         return ""

@@ -20,4 +20,8 @@ const
     RC_TURN_SPEED = 2.4
     RC_LOOK_SPEED = 400.0
     RC_MAX_STEP_DT = 0.1
+    RC_LIGHT_RANGE = 6
+    RC_LIGHT_CAP = 4
+    RC_AMBIENT = 0.12
+    RC_LIGHT_FALLOFF = 1.0
 endconst
