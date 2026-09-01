@@ -94,12 +94,17 @@ git commit -m "feat(raycaster): RcWorld floorTexAt / ceilTexAt accessors"
 
 ---
 
-## Task 2: `RcConfig.bas` — shared constants
+## Task 2: `RcConfig.bas` — shared constants  ✅ DONE (commit `d7d4a7c`)
 
-**Files:**
-- Create: `demo-src/raycaster/lib/RcConfig.bas`
+**Outcome / key finding for later tasks:** bare cross-file `const` access does NOT
+work in this compiler. Constants must be referenced **prefixed** —
+`RcConfig.RC_MAX_DIST`, `RcConfig.RC_SPAN_WALL`, etc. — exactly like `keyboard.W`.
+`sortByDependencies` picks up the `RcConfig.` reference as a dependency edge and
+orders `RcConfig.bas` first, so this is safe for both the transpile guard and the
+app build. **Every `RC_*` reference in Tasks 3, 5, and 7 below must be written
+`RcConfig.RC_*`** — the code blocks were drafted with bare names; prefix them.
 
-- [ ] **Step 1: Create the file**
+The committed file (`demo-src/raycaster/lib/RcConfig.bas`) is:
 
 ```basic
 ' RcConfig -- shared constants for the raycaster library.
@@ -111,6 +116,10 @@ const
   RC_SPAN_CEILSTEP = 2
 endconst
 ```
+
+<details><summary>Original Step 1–3 (superseded)</summary>
+
+- [ ] **Step 1: Create the file**  — done, see above
 
 - [ ] **Step 2: Verify cross-file const visibility**
 
@@ -154,6 +163,8 @@ git commit -m "feat(raycaster): RcConfig.bas shared constants"
 
 (If you chose option (b) — consts inside `RcCast.bas` — there is no `RcConfig.bas`; fold this into Task 3's commit and adjust the file lists in Tasks 5/6.)
 
+</details>
+
 ---
 
 ## Task 3: `RcCast.bas` — the span builder
@@ -170,7 +181,7 @@ No unit tests (spec §1.2). Verified by the Phase 2 demo (Task 5) and the transp
 ' DDA-marches the grid from a ray origin/direction and collects an ordered
 ' (near->far) list of surface spans. Does NOT stop at the first wall.
 '
-' Span kinds (RcConfig): RC_SPAN_WALL, RC_SPAN_FLOORSTEP, RC_SPAN_CEILSTEP.
+' Span kinds: RcConfig.RC_SPAN_WALL, RcConfig.RC_SPAN_FLOORSTEP, RcConfig.RC_SPAN_CEILSTEP.
 ' Each span carries: dist (perpendicular, no fisheye), lo/hi (world-space
 ' vertical extent), col/row (source cell), u (wall texture coord 0..1; 0 for
 ' steps), tex (texture id string).
@@ -286,7 +297,7 @@ function cast(world as RcWorld, ox, oy, dx, dy)
             side = 1
         endif
 
-        if entryDist > RC_MAX_DIST then
+        if entryDist > RcConfig.RC_MAX_DIST then
             return
         endif
 
@@ -298,7 +309,7 @@ function cast(world as RcWorld, ox, oy, dx, dy)
                 wallX = ox + entryDist * dx
             endif
             u = wallX - math.floor(wallX)
-            self.addSpan(RC_SPAN_WALL, entryDist, runFloor, runCeil, mapX, mapY, u, world.wallTexAt(mapX, mapY))
+            self.addSpan(RcConfig.RC_SPAN_WALL, entryDist, runFloor, runCeil, mapX, mapY, u, world.wallTexAt(mapX, mapY))
             return
         endif
 
@@ -308,14 +319,14 @@ function cast(world as RcWorld, ox, oy, dx, dy)
         if cellFloor <> runFloor then
             lo = math.min(runFloor, cellFloor)
             hi = math.max(runFloor, cellFloor)
-            self.addSpan(RC_SPAN_FLOORSTEP, entryDist, lo, hi, mapX, mapY, 0, world.floorTexAt(mapX, mapY))
+            self.addSpan(RcConfig.RC_SPAN_FLOORSTEP, entryDist, lo, hi, mapX, mapY, 0, world.floorTexAt(mapX, mapY))
             runFloor = cellFloor
         endif
 
         if cellCeil <> runCeil then
             lo = math.min(runCeil, cellCeil)
             hi = math.max(runCeil, cellCeil)
-            self.addSpan(RC_SPAN_CEILSTEP, entryDist, lo, hi, mapX, mapY, 0, world.ceilTexAt(mapX, mapY))
+            self.addSpan(RcConfig.RC_SPAN_CEILSTEP, entryDist, lo, hi, mapX, mapY, 0, world.ceilTexAt(mapX, mapY))
             runCeil = cellCeil
         endif
     endwhile
@@ -376,7 +387,7 @@ function los(world as RcWorld, ox, oy, dx, dy)
             sideDistY = sideDistY + deltaDistY
             mapY = mapY + stepY
         endif
-        if entryDist > RC_MAX_DIST then
+        if entryDist > RcConfig.RC_MAX_DIST then
             return -1
         endif
         if world.wallAt(mapX, mapY) > 0 then
@@ -433,7 +444,7 @@ EndClass
 - `array.clear`, `array.push`, `array.arrLength` — `array.bas`.
 - `world.floorHeightAt` etc. — `RcWorld.bas` (+ `floorTexAt`/`ceilTexAt` from Task 1).
 - `<>` is softBASIC "not equal" — confirm against an existing `.bas` (`demo-src/dungeon-explorer/Boss.bas:177` uses `<>`). Yes.
-- `RC_MAX_DIST`, `RC_SPAN_*` — from `RcConfig.bas` (Task 2), or top-of-file consts if you chose option (b).
+- `RcConfig.RC_MAX_DIST`, `RcConfig.RC_SPAN_*` — from `RcConfig.bas` (Task 2). **Must be prefixed** — bare `RC_MAX_DIST` does not resolve cross-file (Task 2 finding).
 - `return` with no value inside a `function` (the early `return` in `cast`) — confirm softBASIC allows a bare `return` in a function that elsewhere has no return value. If it requires `return 0` or an explicit form, adjust `cast`'s early exits. Check an existing `.bas` with a void-ish function that early-returns.
 
 - [ ] **Step 3: Transpile probe**
@@ -565,8 +576,8 @@ function onenter()
   dim eastOk
   eastOk = 0
   if self.rc.spanCount() = 5 then
-    if self.rc.spanKind(0) = RC_SPAN_FLOORSTEP then
-      if self.rc.spanKind(4) = RC_SPAN_WALL then
+    if self.rc.spanKind(0) = RcConfig.RC_SPAN_FLOORSTEP then
+      if self.rc.spanKind(4) = RcConfig.RC_SPAN_WALL then
         if math.abs(self.rc.spanDist(4) - 5.5) < 0.05 then
           if self.rc.spanLo(0) = 0 and self.rc.spanHi(0) = 2 then
             eastOk = 1
@@ -581,7 +592,7 @@ function onenter()
   dim westOk
   westOk = 0
   if self.rc.spanCount() = 1 then
-    if self.rc.spanKind(0) = RC_SPAN_WALL then
+    if self.rc.spanKind(0) = RcConfig.RC_SPAN_WALL then
       if math.abs(self.rc.spanDist(0) - 0.5) < 0.05 then
         westOk = 1
       endif
@@ -664,10 +675,10 @@ function drawTopDown()
     dim mx
     d = self.rc.spanDist(i)
     mx = px + d * s
-    if self.rc.spanKind(i) = RC_SPAN_WALL then
+    if self.rc.spanKind(i) = RcConfig.RC_SPAN_WALL then
       pen.setFillColor(255, 90, 90)
     else
-      if self.rc.spanKind(i) = RC_SPAN_FLOORSTEP then
+      if self.rc.spanKind(i) = RcConfig.RC_SPAN_FLOORSTEP then
         pen.setFillColor(90, 200, 120)
       else
         pen.setFillColor(120, 160, 255)
@@ -684,7 +695,7 @@ EndClass
 VERIFY every call. Notes:
 - `math.abs` — `math.bas`. `drawing.drawLine`, `drawing.drawCircle`, `drawing.drawRect`, `drawing.clear` — `drawing.bas`. `pen.*` — `pen.bas`.
 - The `wld_los` wrapper exists because calling `self.rc.los(...)` twice inside one `if` chain with `math.abs` is fine directly — you may inline it if it transpiles; the wrapper is just for readability. Drop it if it causes trouble.
-- `RC_SPAN_*` constants must resolve (Task 2). If you folded consts into `RcCast.bas`, they still resolve globally.
+- `RcConfig.RC_SPAN_*` constants must be written **prefixed** (Task 2 finding — bare names don't resolve cross-file).
 - Nested `dim` inside `for` (`dim d` / `dim mx` / `dim i` inside `drawTopDown`) — the Phase 1 `RcWorld.bas` review required loop vars hoisted to function top. Hoist `d`, `mx`, `i`, `n`, `col`, `row`, `px`, `py` to the top of `drawTopDown`. Fix before the probe.
 
 - [ ] **Step 2: Create `Main.bas`**
@@ -822,13 +833,13 @@ function onenter()
 endfunction
 ```
 
-### Span kinds (from `RcConfig`)
+### Span kinds (from `RcConfig`, referenced prefixed)
 
 | Constant | Meaning |
 |---|---|
-| `RC_SPAN_WALL` | a full-height wall — the ray stops here |
-| `RC_SPAN_FLOORSTEP` | the floor height changed between two cells |
-| `RC_SPAN_CEILSTEP` | the ceiling height changed between two cells |
+| `RcConfig.RC_SPAN_WALL` | a full-height wall — the ray stops here |
+| `RcConfig.RC_SPAN_FLOORSTEP` | the floor height changed between two cells |
+| `RcConfig.RC_SPAN_CEILSTEP` | the ceiling height changed between two cells |
 
 ### Reading a span
 
