@@ -123,7 +123,7 @@ describe('raycaster P5 demo probes execute', () => {
     expect(() => scene.onenter()).not.toThrow();
 
     const results = probeLog.filter((l) => l.includes(': OK') || l.includes(': FAIL'));
-    expect(results.length, 'probe count').toBe(5);
+    expect(results.length, 'probe count').toBe(6);
     expect(results.filter((l) => l.includes(': FAIL'))).toEqual([]);
   });
 });

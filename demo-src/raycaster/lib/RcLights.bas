@@ -117,7 +117,10 @@ function splat(wx, wy, intensity, radiusCells)
 endfunction
 
 ' One cell's contribution from a light at (wx, wy). Early-returns when the cell
-' is out of range, coincident with the light, or occluded by a wall.
+' is out of range or occluded by a wall. The light's own cell gets full
+' intensity -- it must be the brightest cell, not dark: a wall face whose
+' RcRender lighting sample steps back onto the light cell would otherwise read
+' only ambient (this is exactly the "dark wall right next to the lamp" bug).
 function splatCell(wx, wy, intensity, radiusCells, col, row)
     dim cx
     dim cy
@@ -132,6 +135,7 @@ function splatCell(wx, wy, intensity, radiusCells, col, row)
     dy = cy - wy
     dist = math.sqrt(dx * dx + dy * dy)
     if dist <= 0.001 then
+        self.addGrid(col, row, intensity)
         return
     endif
     if dist >= radiusCells then

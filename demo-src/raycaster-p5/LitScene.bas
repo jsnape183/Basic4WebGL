@@ -50,6 +50,7 @@ function runProbes()
     dim ok3
     dim ok4
     dim ok5
+    dim ok6
     dim movedVal
 
     ok1 = 0
@@ -90,6 +91,19 @@ function runProbes()
     self.lights.moveLight(self.torch, 3.5, 3.5)
     self.lights.update()
     self.probe("flashlight moves", ok5, 132)
+
+    ' The light marker's own cell (col 1, row 2) must be the brightest from the
+    ' static bake alone, not dark -- the wall directly next to it samples this
+    ' cell for its shade. Park the flashlight away so only the bake counts.
+    self.lights.moveLight(self.torch, 10.5, 6.5)
+    self.lights.update()
+    ok6 = 0
+    if self.lights.sampleCell(1, 2) > RcConfig.RC_AMBIENT + 0.5 then
+        ok6 = 1
+    endif
+    self.lights.moveLight(self.torch, 3.5, 3.5)
+    self.lights.update()
+    self.probe("light cell is bright", ok6, 152)
 endfunction
 
 function probe(label, passed, y)
