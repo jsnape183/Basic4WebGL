@@ -17,6 +17,7 @@ Draw your level in the Tilemap Editor:
   - `tex:concrete`, `ftex:grating`, `ctex:pipes` set surface textures
   - `door`, `lift`, `water`, `sky` mark special cells
   - `upper:vent` gives the cell a second space above it
+  - `light:` marks a cell as lit (Phase 1 records this as a simple on/off flag; proper light levels come with the lighting phase)
 
 Build the world once, then read from it:
 
