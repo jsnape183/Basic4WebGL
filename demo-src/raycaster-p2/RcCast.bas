@@ -1,0 +1,239 @@
+Class
+' RcCast -- raycaster span builder (spec docs/superpowers/specs/2026-08-31-raycaster-engine-design.md §4).
+' DDA-marches the grid from a ray origin/direction and collects an ordered
+' (near->far) list of surface spans. Does NOT stop at the first wall.
+'
+' Span kinds: RcConfig.RC_SPAN_WALL, RcConfig.RC_SPAN_FLOORSTEP, RcConfig.RC_SPAN_CEILSTEP.
+' Each span carries: dist (perpendicular, no fisheye), lo/hi (world-space
+' vertical extent), col/row (source cell), side (0 x-hit / 1 y-hit), u (wall
+' texture coord 0..1; 0 for steps), tex (texture id string).
+'
+' Direction (dx,dy) need not be normalized; spanDist and los() are in world
+' units regardless because deltaDist = |1/dir|.
+'
+' Phase 2 scope: no screen projection (Phase 3), no occlusion-window early-out
+' (Phase 3), no upper regions (Phase 8), no diagonal tiles (Phase 7).
+
+dim kindArr(0)
+dim distArr(0)
+dim loArr(0)
+dim hiArr(0)
+dim colArr(0)
+dim rowArr(0)
+dim sideArr(0)
+dim uArr(0)
+dim texArr(0)
+
+' march state (set by beginMarch, advanced by stepMarch)
+dim mMapX
+dim mMapY
+dim mDeltaX
+dim mDeltaY
+dim mStepX
+dim mStepY
+dim mSideX
+dim mSideY
+dim mEntryDist
+dim mSide
+
+Constructor()
+EndConstructor
+
+function reset()
+    array.clear(self.kindArr)
+    array.clear(self.distArr)
+    array.clear(self.loArr)
+    array.clear(self.hiArr)
+    array.clear(self.colArr)
+    array.clear(self.rowArr)
+    array.clear(self.sideArr)
+    array.clear(self.uArr)
+    array.clear(self.texArr)
+endfunction
+
+function addSpan(kind, dist, lo, hi, col, row, side, u, tex)
+    array.push(self.kindArr, kind)
+    array.push(self.distArr, dist)
+    array.push(self.loArr, lo)
+    array.push(self.hiArr, hi)
+    array.push(self.colArr, col)
+    array.push(self.rowArr, row)
+    array.push(self.sideArr, side)
+    array.push(self.uArr, u)
+    array.push(self.texArr, tex)
+endfunction
+
+' Initialise a DDA march from (ox,oy) heading (dx,dy). No normalization assumed:
+' deltaDist = |1/dir|, so mEntryDist comes out as perpendicular (no-fisheye) distance.
+function beginMarch(ox, oy, dx, dy)
+    self.mMapX = math.floor(ox)
+    self.mMapY = math.floor(oy)
+
+    if math.abs(dx) < 0.0001 then
+        self.mDeltaX = 1000000
+    else
+        self.mDeltaX = math.abs(1.0 / dx)
+    endif
+    if math.abs(dy) < 0.0001 then
+        self.mDeltaY = 1000000
+    else
+        self.mDeltaY = math.abs(1.0 / dy)
+    endif
+
+    if dx < 0 then
+        self.mStepX = -1
+        self.mSideX = (ox - self.mMapX) * self.mDeltaX
+    else
+        self.mStepX = 1
+        self.mSideX = (self.mMapX + 1.0 - ox) * self.mDeltaX
+    endif
+    if dy < 0 then
+        self.mStepY = -1
+        self.mSideY = (oy - self.mMapY) * self.mDeltaY
+    else
+        self.mStepY = 1
+        self.mSideY = (self.mMapY + 1.0 - oy) * self.mDeltaY
+    endif
+
+    self.mEntryDist = 0
+    self.mSide = 0
+endfunction
+
+' Advance one cell. After the call: mMapX/mMapY = the newly entered cell,
+' mEntryDist = perpendicular distance to that cell's near boundary,
+' mSide = 0 if an x-gridline was crossed, 1 if a y-gridline.
+function stepMarch()
+    if self.mSideX < self.mSideY then
+        self.mEntryDist = self.mSideX
+        self.mSideX = self.mSideX + self.mDeltaX
+        self.mMapX = self.mMapX + self.mStepX
+        self.mSide = 0
+    else
+        self.mEntryDist = self.mSideY
+        self.mSideY = self.mSideY + self.mDeltaY
+        self.mMapY = self.mMapY + self.mStepY
+        self.mSide = 1
+    endif
+endfunction
+
+' Marches from (ox, oy) along direction (dx, dy). Fills the span arrays.
+function cast(world as RcWorld, ox, oy, dx, dy)
+    dim runFloor
+    dim runCeil
+    dim iters
+    dim cellFloor
+    dim cellCeil
+    dim wallHere
+    dim wallX
+    dim u
+    dim lo
+    dim hi
+
+    self.reset()
+    self.beginMarch(ox, oy, dx, dy)
+
+    runFloor = world.floorHeightAt(self.mMapX, self.mMapY)
+    runCeil = world.ceilHeightAt(self.mMapX, self.mMapY)
+
+    iters = 0
+    while iters < RcConfig.RC_MAX_MARCH_ITERS
+        iters = iters + 1
+        self.stepMarch()
+
+        if self.mEntryDist > RcConfig.RC_MAX_DIST then
+            return
+        endif
+
+        wallHere = world.wallAt(self.mMapX, self.mMapY)
+        if wallHere > 0 then
+            if self.mSide = 0 then
+                wallX = oy + self.mEntryDist * dy
+            else
+                wallX = ox + self.mEntryDist * dx
+            endif
+            u = wallX - math.floor(wallX)
+            self.addSpan(RcConfig.RC_SPAN_WALL, self.mEntryDist, runFloor, runCeil, self.mMapX, self.mMapY, self.mSide, u, world.wallTexAt(self.mMapX, self.mMapY))
+            return
+        endif
+
+        cellFloor = world.floorHeightAt(self.mMapX, self.mMapY)
+        cellCeil = world.ceilHeightAt(self.mMapX, self.mMapY)
+
+        if cellFloor <> runFloor then
+            lo = math.min(runFloor, cellFloor)
+            hi = math.max(runFloor, cellFloor)
+            self.addSpan(RcConfig.RC_SPAN_FLOORSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, world.floorTexAt(self.mMapX, self.mMapY))
+            runFloor = cellFloor
+        endif
+
+        if cellCeil <> runCeil then
+            lo = math.min(runCeil, cellCeil)
+            hi = math.max(runCeil, cellCeil)
+            self.addSpan(RcConfig.RC_SPAN_CEILSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, world.ceilTexAt(self.mMapX, self.mMapY))
+            runCeil = cellCeil
+        endif
+    endwhile
+endfunction
+
+' Line-of-sight: distance to the first opaque wall along (dx,dy), or -1 if none
+' within RcConfig.RC_MAX_DIST. Shares beginMarch/stepMarch with cast().
+' Does NOT touch the span arrays -- a caller that interleaves los() and cast()
+' still reads the last cast()'s spans from spanCount()/spanKind(i)/...
+function los(world as RcWorld, ox, oy, dx, dy)
+    dim iters
+    self.beginMarch(ox, oy, dx, dy)
+    iters = 0
+    while iters < RcConfig.RC_MAX_MARCH_ITERS
+        iters = iters + 1
+        self.stepMarch()
+        if self.mEntryDist > RcConfig.RC_MAX_DIST then
+            return -1
+        endif
+        if world.wallAt(self.mMapX, self.mMapY) > 0 then
+            return self.mEntryDist
+        endif
+    endwhile
+    return -1
+endfunction
+
+function spanCount()
+    return array.arrLength(self.kindArr)
+endfunction
+
+function spanKind(i)
+    return self.kindArr(i)
+endfunction
+
+function spanDist(i)
+    return self.distArr(i)
+endfunction
+
+function spanLo(i)
+    return self.loArr(i)
+endfunction
+
+function spanHi(i)
+    return self.hiArr(i)
+endfunction
+
+function spanCol(i)
+    return self.colArr(i)
+endfunction
+
+function spanRow(i)
+    return self.rowArr(i)
+endfunction
+
+function spanSide(i)
+    return self.sideArr(i)
+endfunction
+
+function spanU(i)
+    return self.uArr(i)
+endfunction
+
+function spanTex(i)
+    return self.texArr(i)
+endfunction
+
+EndClass
