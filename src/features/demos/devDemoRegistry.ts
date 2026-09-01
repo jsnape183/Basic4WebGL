@@ -27,4 +27,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP2SpanCast',
   },
+  {
+    slug: 'raycaster-p3-roomview',
+    name: 'Raycaster P3 — Room View',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 3 probe: the first real first-person view — a static camera in a small room, rendered with RcRender, plus projection-identity probes and a frame-time readout.',
+    docsSlug: '',
+    file: 'RaycasterP3RoomView',
+  },
 ];
