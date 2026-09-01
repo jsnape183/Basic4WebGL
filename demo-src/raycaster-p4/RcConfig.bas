@@ -23,5 +23,5 @@ const
     RC_LIGHT_RANGE = 6
     RC_LIGHT_CAP = 4
     RC_AMBIENT = 0.12
-    RC_LIGHT_FALLOFF = 1.0
+    RC_STATIC_INTENSITY = 0.9
 endconst

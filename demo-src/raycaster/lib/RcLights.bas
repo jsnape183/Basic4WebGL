@@ -8,6 +8,13 @@ Class
 '
 ' Deferred (spec): coloured light (only a scalar 0..1 per cell here), spot cones,
 ' per-(cell,light) static caching (§6.4).
+' - the dynamic-light cap is global first-RC_LIGHT_CAP by slot order, NOT spec
+'   §6.1's per-cell nearest-N (fine at demo scale).
+' - wall cells receive no splat (self-occluded) so sampleCell on a wall cell
+'   returns only ambient -- RcRender samples the open cell in front of the wall
+'   instead (Task 6).
+' - addPoint's `z` is stored (lzArr) but not yet read -- reserved for vertical
+'   falloff / spot cones.
 dim wld as RcWorld
 dim rc as RcCast
 dim cols
@@ -42,16 +49,26 @@ function setAmbient(level)
     self.ambient = level
 endfunction
 
+' Splat every `light:` cell into dynArr (used here as scratch), then copy the
+' result into staticArr element-wise and zero dynArr. Called once from the
+' Constructor, before any dynamic lights exist.
 function bakeStatic()
     dim lc
     dim lr
+    dim i
+    dim n
     for lr = 0 to self.rows - 1
         for lc = 0 to self.cols - 1
             if self.wld.lightAt(lc, lr) > 0 then
-                self.splat(0, lc + 0.5, lr + 0.5, 0.9, RcConfig.RC_LIGHT_RANGE)
+                self.splat(lc + 0.5, lr + 0.5, RcConfig.RC_STATIC_INTENSITY, RcConfig.RC_LIGHT_RANGE)
             endif
         next lc
     next lr
+    n = self.cols * self.rows
+    for i = 0 to n - 1
+        self.staticArr(i) = self.dynArr(i)
+        self.dynArr(i) = 0
+    next i
 endfunction
 
 function addPoint(x, y, z, intensity, radiusCells)
@@ -77,22 +94,15 @@ function removeLight(handle)
     self.lActive(handle) = 0
 endfunction
 
-' whichGrid: 0 = staticArr (bake), 1 = dynArr (per-frame). Splat one light's
-' contribution, LOS-occluded by walls.
-function splat(whichGrid, wx, wy, intensity, radiusCells)
+' Splat one light's contribution into dynArr, LOS-occluded by walls. Always
+' writes dynArr -- bakeStatic copies the result into staticArr afterwards.
+function splat(wx, wy, intensity, radiusCells)
     dim col
     dim row
     dim c0
     dim c1
     dim r0
     dim r1
-    dim cx
-    dim cy
-    dim dx
-    dim dy
-    dim dist
-    dim losD
-    dim add
     c0 = math.floor(wx - radiusCells)
     c1 = math.floor(wx + radiusCells)
     r0 = math.floor(wy - radiusCells)
@@ -100,31 +110,45 @@ function splat(whichGrid, wx, wy, intensity, radiusCells)
     for row = r0 to r1
         for col = c0 to c1
             if col >= 0 and row >= 0 and col < self.cols and row < self.rows then
-                cx = col + 0.5
-                cy = row + 0.5
-                dx = cx - wx
-                dy = cy - wy
-                dist = math.sqrt(dx * dx + dy * dy)
-                if dist > 0.001 and dist < radiusCells then
-                    losD = self.rc.los(self.wld, wx, wy, dx / dist, dy / dist)
-                    if losD < 0 or losD >= dist - 0.05 then
-                        add = intensity * (1.0 - dist / radiusCells)
-                        self.addGrid(whichGrid, col, row, add)
-                    endif
-                endif
+                self.splatCell(wx, wy, intensity, radiusCells, col, row)
             endif
         next col
     next row
 endfunction
 
-function addGrid(whichGrid, col, row, v)
+' One cell's contribution from a light at (wx, wy). Early-returns when the cell
+' is out of range, coincident with the light, or occluded by a wall.
+function splatCell(wx, wy, intensity, radiusCells, col, row)
+    dim cx
+    dim cy
+    dim dx
+    dim dy
+    dim dist
+    dim losD
+    dim add
+    cx = col + 0.5
+    cy = row + 0.5
+    dx = cx - wx
+    dy = cy - wy
+    dist = math.sqrt(dx * dx + dy * dy)
+    if dist <= 0.001 then
+        return
+    endif
+    if dist >= radiusCells then
+        return
+    endif
+    losD = self.rc.los(self.wld, wx, wy, dx / dist, dy / dist)
+    if losD >= 0 and losD < dist - 0.05 then
+        return
+    endif
+    add = intensity * (1.0 - dist / radiusCells)
+    self.addGrid(col, row, add)
+endfunction
+
+function addGrid(col, row, v)
     dim idx
     idx = row * self.cols + col
-    if whichGrid = 0 then
-        self.staticArr(idx) = self.staticArr(idx) + v
-    else
-        self.dynArr(idx) = self.dynArr(idx) + v
-    endif
+    self.dynArr(idx) = self.dynArr(idx) + v
 endfunction
 
 ' Recompute the dynamic grid. Call once per frame before RcRender.renderFrame().
@@ -140,7 +164,7 @@ function update()
     for i = 0 to array.arrLength(self.lActive) - 1
         if self.lActive(i) = 1 then
             if count < RcConfig.RC_LIGHT_CAP then
-                self.splat(1, self.lxArr(i), self.lyArr(i), self.liArr(i), self.lrArr(i))
+                self.splat(self.lxArr(i), self.lyArr(i), self.liArr(i), self.lrArr(i))
                 count = count + 1
             endif
         endif
