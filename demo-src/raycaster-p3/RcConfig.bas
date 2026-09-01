@@ -13,4 +13,10 @@ const
     RC_STRIP_W = 4
     RC_EYE_Z = 0.5
     RC_MAX_PITCH = 220
+    RC_STEP_UP = 0.35
+    RC_GRAVITY = 14.0
+    RC_JUMP_VEL = 5.0
+    RC_MOVE_SPEED = 2.6
+    RC_TURN_SPEED = 2.4
+    RC_LOOK_SPEED = 400.0
 endconst
