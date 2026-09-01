@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-08-30 (controller / gamepad support shipped — action map on `input` + `controller` constants module)
+> Last updated: 2026-09-01 (raycaster library Phase 3 shipped — `RcRender` flat-shaded first-person renderer)
 
 ---
 
@@ -304,17 +304,46 @@ shares the same march to return the distance to the first wall (or `-1`) for
 line-of-sight checks, without disturbing the last `cast`'s spans. Span kinds and
 march limits live in the `RcConfig` constants module. Verified by JS unit tests.
 
-Phases 3–10 (renderer, mover, lighting, actors, diagonal tiles, upper regions,
+Phase 3 shipped: `RcRender` — the flat-shaded first-person renderer. It owns
+the camera (the `camera` module is inert in a raycast scene) and, on
+`renderFrame()`, casts one ray per screen column via `RcCast`, walks the
+returned spans near→far under a per-column occlusion window, projects each
+span's world heights to a screen Y, and draws flat-shaded vertical strips
+(`drawing.drawRect`, shaded by distance + surface kind — no wall textures /
+atlas / vertical texture-clip yet). The occlusion window handles floor/ceiling
+*rises* and flat sky/floor fill; a floor drop or ceiling rise leaves the window
+open so farther spans show through, but the pit floor / under-ledge surface
+itself isn't specially drawn (documented gap, revisited in a later phase).
+Verified by an unlisted `raycaster-p3` Cypress demo (static camera, a
+stepped/pitted/windowed room) that also carries a frame-time readout — the
+spec §5.3 throughput checkpoint.
+
+**Frame-time checkpoint (spec §5.3):** measured **16ms average over 127
+columns**, flat-shaded (no lighting, no textures). This lands in the
+"marginal" band (14–20ms per the spec's decision table) — no `drawing.js`
+change needed yet, but flagged: Phase 5 (lighting, a tint per strip) and
+textured walls will both add real per-strip cost on top of an already-marginal
+budget at only 127 columns with nothing else in the scene. Recommendation
+carried into Phase 4/5 planning: do the generic `drawing.js` sprite/graphics
+pooling fix (rung 1 of the §5.3 ladder) proactively before or alongside
+Phase 5, rather than waiting for a "fails 60fps" measurement that lighting
+will likely produce anyway.
+
+Phases 4–10 (mover, lighting, actors, diagonal tiles, upper regions,
 optimisation) remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
-`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Guide:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: `light:` tags set a 0/1 flag only (a baked light *level* comes with
 the lighting phase); upper regions have a fixed height and no per-region
 textures; `RcCast` stops at the first wall (no see-through windows yet), ignores
-upper regions, and treats diagonal-wall tiles as empty.
+upper regions, and treats diagonal-wall tiles as empty; `RcRender` is
+flat-shaded only (no wall textures/atlas), has no per-span depth buffer for
+sprite occlusion yet, and doesn't draw a pit floor or under-ledge surface when
+the occlusion window is left open.
 
 ---
 

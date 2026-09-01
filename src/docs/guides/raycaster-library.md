@@ -118,3 +118,37 @@ The ray stops at the first wall (no "see-through" windows yet), ignores rooms
 stacked above a cell, and treats diagonal-wall tiles as empty. The direction
 `(dx, dy)` doesn't need to be a unit vector — distances come out in world units
 regardless.
+
+## RcRender — drawing the view
+
+`RcRender` turns an `RcWorld` into a first-person picture. It owns the camera, so
+you set the camera on it directly (the normal `camera` module does nothing in a
+raycaster scene).
+
+```bas
+dim ren as RcRender
+
+function onenter()
+  self.ren = new RcRender(self.wld)
+  self.ren.setCamera(2, 4, 0, 0)   ' x, y, angle (radians), pitch
+endfunction
+
+function onupdate(delta)
+  self.ren.renderFrame()
+endfunction
+```
+
+| Call | Does |
+|---|---|
+| `new RcRender(world)` | create a renderer for a loaded `RcWorld` |
+| `ren.setCamera(x, y, angle, pitch)` | move/aim the camera; `angle` in radians, `pitch` is a small up/down look (pixels), clamped |
+| `ren.setFov(degrees)` | horizontal field of view (default ~66°) |
+| `ren.renderFrame()` | draw one frame — call every `onupdate` |
+| `ren.projectY(height, distance)` | screen Y for a world height at a distance (mostly internal) |
+| `ren.columnCount()` | how many vertical strips wide the view is |
+
+### Phase 3 limits
+
+Everything is flat-shaded — no wall textures yet. You can see across a pit to the
+wall beyond, but the inside of the pit isn't drawn specially. Rooms stacked above
+a cell and angled walls come in later phases.
