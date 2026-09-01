@@ -638,6 +638,12 @@ Run the demo in a browser (`npm run dev`, seed `raycaster-p3-roomview`, open the
 
 - [ ] **Step 3:** Record the outcome in `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md` (this file) under a new `## Frame-time result` heading, and in the roadmap.
 
+## Frame-time result
+
+Measured live in a browser (Task 4): **16 ms average over 30 frames, 127 columns**, flat-shaded (`drawing.drawRect` only — no textures, no lighting), on `demo-src/raycaster-p3/assets/p3room.stm` (10×8 room with stairs/pit/atrium).
+
+**This is the "marginal" band (14–20ms).** Per the decision table above: record it, no `drawing` changes yet, but flag prominently — Phase 5 (lighting, a tint per strip) and textured walls (switching from `drawRect` to `drawImageStrip`, which per spec §5.3 still allocates a fresh `PIXI.Texture`/`PIXI.Sprite` per call) will both add real per-strip cost on top of an already-marginal budget at only 127 columns with nothing else in the scene (no sprites, no HUD beyond 5 text lines). **Recommendation carried into Phase 4/5 planning: do the generic `drawing.js` sprite/graphics pooling fix (rung 1 of the §5.3 ladder) proactively before or alongside Phase 5, rather than waiting for a "fails 60fps" measurement that lighting will likely produce anyway.**
+
 ---
 
 ## Task 7: Docs + roadmap

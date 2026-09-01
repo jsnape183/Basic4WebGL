@@ -27,4 +27,9 @@ describe('devDemoRegistry', () => {
     const p2 = devDemoRegistry.find((d) => d.slug === 'raycaster-p2-spancast');
     expect(p2?.file).toBe('RaycasterP2SpanCast');
   });
+
+  test('includes the Phase 3 room-view demo', () => {
+    const p3 = devDemoRegistry.find((d) => d.slug === 'raycaster-p3-roomview');
+    expect(p3?.file).toBe('RaycasterP3RoomView');
+  });
 });
