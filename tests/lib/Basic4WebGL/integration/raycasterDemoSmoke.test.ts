@@ -91,17 +91,29 @@ function evalDemo(code: string) {
     `${code}\n; return {
        RcCast: typeof _sb_rccast !== 'undefined' ? _sb_rccast : null,
        RcWorld: typeof _sb_rcworld !== 'undefined' ? _sb_rcworld : null,
+       RcRender: typeof _sb_rcrender !== 'undefined' ? _sb_rcrender : null,
      };`,
   );
   const mod = factory(_sb, _createArray, ...Object.values(helpers), { log() {} });
   deferred.forEach((cb) => cb());
-  return mod as { RcCast: (new () => RcCastLike) | null; RcWorld: unknown };
+  return mod as {
+    RcCast: (new () => RcCastLike) | null;
+    RcWorld: unknown;
+    RcRender: (new (w: unknown) => RcRenderLike) | null;
+  };
 }
 
 interface RcCastLike {
   cast(w: unknown, ox: number, oy: number, dx: number, dy: number): void;
   los(w: unknown, ox: number, oy: number, dx: number, dy: number): number;
   spancount(): number;
+}
+
+interface RcRenderLike {
+  setcamera(x: number, y: number, angle: number, pitch: number): void;
+  renderframe(): void;
+  projecty(h: number, d: number): number;
+  columncount(): number;
 }
 
 // Open corridor with a wall at column >= 6 (and the col-0 border).
@@ -133,5 +145,18 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => rc.los(stubWorld, 1.5, 1.5, 1, 0)).not.toThrow();
     expect(rc.spancount()).toBeGreaterThan(0);
     expect(rc.los(stubWorld, 1.5, 1.5, 1, 0)).toBeCloseTo(4.5, 1);
+  });
+
+  test.each(phaseDirs)('%s: RcRender (if present) renderFrame runs', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcRender) return; // phases without RcRender.bas
+    const r = new mod.RcRender(stubWorld);
+    r.setcamera(2, 2, 0, 0);
+    // stage.width()/height() resolve to the chainable _sb stub, so cols is NaN
+    // and the column loop is inert. The point is: no ReferenceError.
+    expect(() => r.renderframe()).not.toThrow();
+    expect(() => r.projecty(0.5, 5)).not.toThrow();
+    const p = r.projecty(0.5, 5);
+    expect(Number.isNaN(p) || p === r.projecty(0.5, 99)).toBe(true);
   });
 });
