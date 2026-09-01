@@ -130,6 +130,7 @@ interface RcCastLike {
 interface RcRenderLike {
   setcamera(x: number, y: number, angle: number, pitch: number): void;
   renderframe(): void;
+  bindcamera(mover: unknown): void;
   projecty(h: number, d: number): number;
   columncount(): number;
 }
@@ -173,6 +174,11 @@ describe('raycaster phase demos smoke-execute', () => {
     // stage.width()/height() resolve to the chainable _sb stub, so cols is NaN
     // and the column loop is inert. The point is: no ReferenceError.
     expect(() => r.renderframe()).not.toThrow();
+    if (mod.RcRender && mod.RcMover) {
+      const m = new mod.RcMover(stubWorld, 2, 2, 0.3, 0.6);
+      r.bindcamera(m);
+      expect(() => r.renderframe()).not.toThrow();
+    }
     expect(() => r.projecty(0.5, 5)).not.toThrow();
     const p = r.projecty(0.5, 5);
     expect(Number.isNaN(p) || p === r.projecty(0.5, 99)).toBe(true);

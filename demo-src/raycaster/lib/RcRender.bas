@@ -26,6 +26,8 @@ dim viewW
 dim viewH
 dim scy
 dim cols
+dim camZ
+dim boundMover
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -39,7 +41,13 @@ Constructor(w as RcWorld)
     self.viewH = stage.height()
     self.scy = self.viewH / 2
     self.cols = math.floor(self.viewW / RcConfig.RC_STRIP_W)
+    self.camZ = 0
+    self.boundMover = 0
 EndConstructor
+
+function bindCamera(mover)
+    self.boundMover = mover
+endfunction
 
 function setCamera(x, y, angle, pitch)
     self.camX = x
@@ -63,7 +71,7 @@ function projectY(h, d)
     if dd < 0.05 then
         dd = 0.05
     endif
-    return self.scy + (RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
+    return self.scy + (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
 endfunction
 
 ' Draws a vertical strip [sTop..sBot] clipped to [winTop..winBot], flat-shaded.
@@ -124,6 +132,14 @@ function renderFrame()
     dim camRow
     dim horizon
     dim fh
+
+    if self.boundMover <> 0 then
+        self.camX = self.boundMover.x()
+        self.camY = self.boundMover.y()
+        self.camAngle = self.boundMover.angle()
+        self.camPitch = self.boundMover.pitch()
+        self.camZ = self.boundMover.z()
+    endif
 
     horizon = self.scy + self.camPitch
     fh = self.viewH - horizon
