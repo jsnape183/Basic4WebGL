@@ -145,8 +145,6 @@ function renderFrame()
     dim horizon
     dim fh
     dim lite
-    dim sx
-    dim sy
     dim bgLite
 
     if self.boundMover <> 0 then
@@ -210,9 +208,11 @@ function renderFrame()
             lite = 1.0
             if self.boundLights <> 0 then
                 if kind = RcConfig.RC_SPAN_WALL then
-                    sx = self.camX + rayX * d * 0.98
-                    sy = self.camY + rayY * d * 0.98
-                    lite = self.boundLights.sampleCell(math.floor(sx), math.floor(sy))
+                    if self.rc.spanSide(i) = 0 then
+                        lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                    else
+                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                    endif
                 else
                     lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
                 endif
