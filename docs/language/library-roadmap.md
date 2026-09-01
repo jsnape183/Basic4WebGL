@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-01 (raycaster library Phase 3 shipped — `RcRender` flat-shaded first-person renderer)
+> Last updated: 2026-09-01 (raycaster library Phase 5 shipped — `RcLights` per-cell light grid with ambient, static, and dynamic point lights)
 
 ---
 
@@ -340,22 +340,34 @@ floor heights, plus vertical gravity + landing. Query position/rotation with
 binds the camera so the view follows; otherwise call `RcRender.setCamera(x, y, angle, pitch)`
 manually. Verified by Cypress (dev-registry raycaster demo, playable level).
 
-Phases 5–10 (lighting, actors, diagonal tiles, upper regions, optimisation)
+Phase 5 shipped: `RcLights` — a per-cell light grid. Base ambient light everywhere
+(set by `setAmbient(level)`, `0`–`1`), plus baked static lights from cells marked
+`light:` in the tilemap, plus up to `RcConfig.RC_LIGHT_CAP` dynamic point lights
+added/moved via `addPoint(x, y, z, brightness, reachCells)` / `moveLight(handle, x, y)`.
+Each light is wall-occluded via line-of-sight. `RcRender.bindLights(lights)` shades
+every screen strip by sampling the light grid at that position. **Alongside Phase 5:**
+a general `drawing` engine perf fix shipped — pools `PIXI.Graphics`/`Sprite` per-scene
+and caches stripped textures, fixing a per-frame allocation/destruction pattern that
+was marginal at the Phase 3 throughput checkpoint (16ms / 127 columns) and critical
+once lighting and textures add per-strip cost. Post-pooling frame-time: **TBD** — measure
+`raycaster-p3-roomview` HUD (Phase 3 baseline was 16 ms / 127 cols).
+
+Phases 6–10 (actors, diagonal tiles, upper regions, optimisation)
 remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Phase 4 plan:
-`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Guide:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Phase 5 plan:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
-Known limits: `light:` tags set a 0/1 flag only (a baked light *level* comes with
-the lighting phase); upper regions have a fixed height and no per-region
-textures; `RcCast` stops at the first wall (no see-through windows yet), ignores
-upper regions, and treats diagonal-wall tiles as empty; `RcRender` is
-flat-shaded only (no wall textures/atlas), has no per-span depth buffer for
-sprite occlusion yet, and doesn't draw a pit floor or under-ledge surface when
-the occlusion window is left open.
+Known limits: Light is a single brightness value — no colour yet. Only point lights (no
+spot cones). Moving lights are fully recomputed every frame (no caching). Upper regions
+have a fixed height and no per-region textures; `RcCast` stops at the first wall (no
+see-through windows yet), ignores upper regions, and treats diagonal-wall tiles as
+empty; `RcRender` has no per-span depth buffer for sprite occlusion yet, and doesn't
+draw a pit floor or under-ledge surface when the occlusion window is left open.
 
 ---
 

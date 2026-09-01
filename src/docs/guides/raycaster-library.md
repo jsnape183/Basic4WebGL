@@ -194,3 +194,44 @@ endfunction
 Movers don't collide with each other yet, lifts don't move, and rooms stacked
 above a cell aren't handled. Tune movement with `RcConfig.RC_MOVE_SPEED`,
 `RC_STEP_UP`, `RC_GRAVITY`, `RC_JUMP_VEL`.
+
+## RcLights — light and shadow
+
+`RcLights` gives a raycaster scene a light level per cell: a base ambient
+everywhere, plus lights whose glow is blocked by walls. Bind it to the renderer
+and every strip is shaded by the light where it stands.
+
+```basic
+dim lights as RcLights
+
+function onenter()
+  self.lights = new RcLights(self.wld)
+  self.ren.bindLights(self.lights)
+  self.torch = self.lights.addPoint(4, 4, 0.5, 0.9, 6)  ' x, y, z, brightness, reach (cells)
+endfunction
+
+function onupdate(delta)
+  self.lights.moveLight(self.torch, self.me.x(), self.me.y())  ' flashlight follows the player
+  self.lights.update()
+  self.ren.renderFrame()
+endfunction
+```
+
+Any cell you mark `light` in the Tilemap Editor becomes a **static** light, baked
+once when the world loads.
+
+| Call | Does |
+|---|---|
+| `new RcLights(world)` | a light grid for a loaded `RcWorld` (bakes the `light` cells) |
+| `lights.setAmbient(level)` | base light everywhere, `0`–`1` |
+| `lights.addPoint(x, y, z, brightness, reachCells)` | add a movable light; returns a handle |
+| `lights.moveLight(handle, x, y)` / `setLightIntensity(handle, b)` / `removeLight(handle)` | change a light |
+| `lights.update()` | recompute the moving lights — call every `onupdate`, before `renderFrame` |
+| `lights.sampleCell(col, row)` | the total light at a cell, `0`–`1` |
+| `RcRender.bindLights(lights)` | shade the view by this grid |
+
+### Phase 5 limits
+
+Light is a single brightness value — no colour yet. Only point lights (no spot
+cones). Moving lights are fully recomputed every frame (no caching). At most
+`RcConfig.RC_LIGHT_CAP` moving lights contribute at once.
