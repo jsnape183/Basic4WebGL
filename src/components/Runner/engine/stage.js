@@ -63,6 +63,7 @@ const _sbStage = {
     this._pathfindingReset();
     this._tileCollisionReset();
     this._frameLoopReset();
+    this._drawingReset();
   },
 
   // ── canvas info ───────────────────────────────────────────────────────────

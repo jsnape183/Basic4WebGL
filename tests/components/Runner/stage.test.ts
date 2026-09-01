@@ -361,6 +361,7 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     stage._pathfindingReset = vi.fn();
     stage._tileCollisionReset = vi.fn();
     stage._frameLoopReset = vi.fn();
+    stage._drawingReset = vi.fn();
 
     stage.clear();
 
@@ -374,6 +375,7 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     const resetCalls: string[] = [];
     stage._tileCollisionReset = () => resetCalls.push("reset");
     stage._frameLoopReset = vi.fn();
+    stage._drawingReset = vi.fn();
 
     stage.clear();
 
@@ -392,6 +394,7 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     stage._pathfindingReset = vi.fn();
     stage._tileCollisionReset = vi.fn();
     stage._frameLoopReset = vi.fn();
+    stage._drawingReset = vi.fn();
 
     stage.clear();
 
