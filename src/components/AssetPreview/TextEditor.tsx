@@ -3,19 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { IAsset } from '../../features/assets/assetsSlice';
 import { useAssetText } from '../../hooks/useAssetText';
 import { putAssetBlob } from '../../lib/storage/assetBlobStore';
-
-type Props = {
-  asset: IAsset;
-  onDirtyChange?: (assetId: string, dirty: boolean) => void;
-};
-
-// Used when writing blobs back: .json / .stm are treated as JSON, everything
-// else as plain text.
-function mimeFromName(name: string): string {
-  if (name.endsWith('.json')) return 'application/json';
-  if (name.endsWith('.stm')) return 'application/json';
-  return 'text/plain';
-}
+import { assetMimeFromName as mimeFromName } from '../../lib/storage/assetMime';
 
 const TextEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const { text: storedText, loading } = useAssetText(asset.id);

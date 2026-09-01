@@ -20,6 +20,7 @@ import { IFolder, addFolder } from '../../../features/folders/foldersSlice';
 import { renameFolderWithCascade, removeFolderWithCascade } from '../../../features/folders/folderThunks';
 import { getFullName } from '../../../selectors/getFullName';
 import { putAssetBlob, deleteAssetBlob } from '../../../lib/storage/assetBlobStore';
+import { blobWithAssetMime } from '../../../lib/storage/assetMime';
 import FolderNode from '../../FileTree/FolderNode';
 import ReactDOM from 'react-dom';
 import { validateAssetName } from './validateAssetName';
@@ -188,7 +189,9 @@ const AssetTree: React.FC<AssetTreeProps> = ({ projectId, onOpenAsset }) => {
       Array.from(fileList).map(async (file) => {
         const id = crypto.randomUUID();
         // A File is already a Blob — store the raw bytes directly, no base64.
-        await putAssetBlob(id, file);
+        // Coerce the MIME when the browser assigned none (notably `.stm`), so
+        // the runner can load it later — see assetMime.ts.
+        await putAssetBlob(id, blobWithAssetMime(file));
         const assetName = file.name;
         const fullName = getFullName(assetName, targetFolderId, folders);
         dispatch(addAsset({

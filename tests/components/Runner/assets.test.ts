@@ -197,3 +197,64 @@ describe('getSlices — memoized frame slicing', () => {
     expect(frames[0].frame).toEqual({ x: 64, y: 64, width: 32, height: 32 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// A `.stm` / `.json` asset blob persisted without a MIME type (older app
+// versions; an OS that assigns nothing to the `.stm` extension) reaches the
+// runner as `data:application/octet-stream`. PIXI v8 has no loader parser for
+// that, so `PIXI.Assets.load` resolves `null`, `_sbAssets` caches null, and
+// `createTileMapSet` throws "Cannot read properties of null (reading
+// 'tileWidth')". preload() must decode our own text formats directly.
+// ---------------------------------------------------------------------------
+
+describe('preload — text assets decoded without PIXI MIME sniffing', () => {
+  const STM = JSON.stringify({ tileWidth: 16, tileHeight: 16, layers: { walls: [[1, 1]] } });
+  const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
+
+  function trackingPixi() {
+    const loadCalls: string[] = [];
+    const pixi = {
+      Assets: {
+        add() {},
+        async load(name: string) {
+          loadCalls.push(name);
+          return name.endsWith('.png') ? { width: 8, height: 8 } : null; // PIXI: unknown MIME -> null
+        },
+      },
+      Texture: FakeTexture,
+      Rectangle: FakeRectangle,
+    };
+    return { pixi, loadCalls };
+  }
+
+  test('a typeless .stm data URL is decoded + JSON-parsed, never handed to PIXI', async () => {
+    const { pixi, loadCalls } = trackingPixi();
+    const assets = loadAssets(pixi as never);
+    await assets.preload([{ name: 'room.stm', src: `data:application/octet-stream;base64,${b64(STM)}` }]);
+    expect(loadCalls).not.toContain('room.stm');
+    expect(assets.get('room.stm')).toEqual(JSON.parse(STM));
+  });
+
+  test('a bare `data:;base64` .stm URL still decodes', async () => {
+    const { pixi } = trackingPixi();
+    const assets = loadAssets(pixi as never);
+    await assets.preload([{ name: 'lvl.stm', src: `data:;base64,${b64(STM)}` }]);
+    expect(assets.get('lvl.stm')).toEqual(JSON.parse(STM));
+  });
+
+  test('.json tilemap data is parsed to its array', async () => {
+    const { pixi } = trackingPixi();
+    const assets = loadAssets(pixi as never);
+    const arr = JSON.stringify([[0, 1], [1, 0]]);
+    await assets.preload([{ name: 'map.json', src: `data:application/json;base64,${b64(arr)}` }]);
+    expect(assets.get('map.json')).toEqual([[0, 1], [1, 0]]);
+  });
+
+  test('image assets still load through PIXI.Assets.load', async () => {
+    const { pixi, loadCalls } = trackingPixi();
+    const assets = loadAssets(pixi as never);
+    await assets.preload([{ name: 'tiles.png', src: 'data:image/png;base64,AAAA' }]);
+    expect(loadCalls).toContain('tiles.png');
+    expect(assets.get('tiles.png')).toEqual({ width: 8, height: 8 });
+  });
+});

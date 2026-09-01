@@ -3,12 +3,42 @@ const _sbAssets = (() => {
   const _sliceCache = new Map();
   let _ready = false;
 
+  // Decode a `data:` URL's payload to text. Handles the `;base64` form the app
+  // emits (blobToDataUrl) and the plain percent-encoded form as a fallback.
+  function _decodeDataUrlText(dataUrl) {
+    const comma = dataUrl.indexOf(',');
+    const header = dataUrl.slice(0, comma);
+    const payload = dataUrl.slice(comma + 1);
+    if (header.includes(';base64')) {
+      const binary = atob(payload);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+    return decodeURIComponent(payload);
+  }
+
   return {
     async preload(manifest) {
-      manifest.forEach(({ name, src }) =>
-        PIXI.Assets.add({ alias: name, src })
-      );
-      const loads = manifest.map(async ({ name }) => {
+      // `.json` / `.stm` are our own text formats. Routing them through
+      // PIXI.Assets means PIXI has to pick a loader by sniffing the data: URL's
+      // MIME — and if the asset blob was persisted without a `type` (older app
+      // versions did this), the URL comes through as `application/octet-stream`,
+      // no loader matches, and PIXI resolves `null`. The caller then does
+      // `data.tileWidth` on null ("Cannot read properties of null"). Decode
+      // these ourselves so loading a `.stm` never depends on MIME sniffing.
+      const isText = (name) => /\.(json|stm)$/i.test(name);
+
+      manifest.forEach(({ name, src }) => {
+        if (!(isText(name) && typeof src === 'string' && src.startsWith('data:'))) {
+          PIXI.Assets.add({ alias: name, src });
+        }
+      });
+      const loads = manifest.map(async ({ name, src }) => {
+        if (isText(name) && typeof src === 'string' && src.startsWith('data:')) {
+          _cache.set(name, JSON.parse(_decodeDataUrlText(src)));
+          return;
+        }
         const asset = await PIXI.Assets.load(name);
         _cache.set(name, asset);
       });
