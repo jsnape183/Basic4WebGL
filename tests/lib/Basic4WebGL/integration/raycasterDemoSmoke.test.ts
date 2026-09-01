@@ -144,6 +144,7 @@ interface RcRenderLike {
   setcamera(x: number, y: number, angle: number, pitch: number): void;
   renderframe(): void;
   bindcamera(mover: unknown): void;
+  bindlights(lights: unknown): void;
   projecty(h: number, d: number): number;
   columncount(): number;
 }
@@ -191,6 +192,11 @@ describe('raycaster phase demos smoke-execute', () => {
     if (mod.RcRender && mod.RcMover) {
       const m = new mod.RcMover(stubWorld, 2, 2, 0.3, 0.6);
       r.bindcamera(m);
+      expect(() => r.renderframe()).not.toThrow();
+    }
+    if (mod.RcRender && mod.RcLights) {
+      const L = new mod.RcLights(stubWorld);
+      r.bindlights(L);
       expect(() => r.renderframe()).not.toThrow();
     }
     expect(() => r.projecty(0.5, 5)).not.toThrow();

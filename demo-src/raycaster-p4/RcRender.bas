@@ -28,6 +28,7 @@ dim scy
 dim cols
 dim camZ
 dim boundMover
+dim boundLights
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -43,10 +44,15 @@ Constructor(w as RcWorld)
     self.cols = math.floor(self.viewW / RcConfig.RC_STRIP_W)
     self.camZ = 0
     self.boundMover = 0
+    self.boundLights = 0
 EndConstructor
 
 function bindCamera(mover)
     self.boundMover = mover
+endfunction
+
+function bindLights(lights)
+    self.boundLights = lights
 endfunction
 
 function setCamera(x, y, angle, pitch)
@@ -76,10 +82,13 @@ endfunction
 
 ' Draws a vertical strip [sTop..sBot] clipped to [winTop..winBot], flat-shaded.
 ' shadeKind: 0 wall x-side, 1 wall y-side, 2 floor-step, 3 ceil-step.
-function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind)
+function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     dim t
     dim b
     dim g
+    dim rr
+    dim gg
+    dim bb
     t = sTop
     b = sBot
     if t < winTop then
@@ -101,8 +110,11 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind)
     if shadeKind = 3 then
         g = 65
     endif
+    rr = math.clamp(g * lightLevel, 0, 255)
+    gg = math.clamp(g * lightLevel, 0, 255)
+    bb = math.clamp((g + 25) * lightLevel, 0, 255)
     pen.setLineWidth(0)
-    pen.setFillColor(g, g, g + 25)
+    pen.setFillColor(rr, gg, bb)
     drawing.drawRect(destX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t)
 endfunction
 
@@ -132,6 +144,10 @@ function renderFrame()
     dim camRow
     dim horizon
     dim fh
+    dim lite
+    dim sx
+    dim sy
+    dim bgLite
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -139,6 +155,11 @@ function renderFrame()
         self.camAngle = self.boundMover.angle()
         self.camPitch = self.boundMover.pitch()
         self.camZ = self.boundMover.z()
+    endif
+
+    bgLite = 1.0
+    if self.boundLights <> 0 then
+        bgLite = self.boundLights.sampleCell(math.floor(self.camX), math.floor(self.camY))
     endif
 
     horizon = self.scy + self.camPitch
@@ -150,10 +171,10 @@ function renderFrame()
     drawing.clear()
 
     pen.setLineWidth(0)
-    pen.setFillColor(28, 32, 46)
+    pen.setFillColor(28 * bgLite, 32 * bgLite, 46 * bgLite)
     drawing.drawRect(self.viewW / 2, self.viewH / 2, self.viewW, self.viewH)
     if fh > 0 then
-        pen.setFillColor(20, 18, 16)
+        pen.setFillColor(20 * bgLite, 18 * bgLite, 16 * bgLite)
         drawing.drawRect(self.viewW / 2, horizon + fh / 2, self.viewW, fh)
     endif
 
@@ -186,8 +207,19 @@ function renderFrame()
             sTop = self.projectY(self.rc.spanHi(i), d)
             sBot = self.projectY(self.rc.spanLo(i), d)
 
+            lite = 1.0
+            if self.boundLights <> 0 then
+                if kind = RcConfig.RC_SPAN_WALL then
+                    sx = self.camX + rayX * d * 0.98
+                    sy = self.camY + rayY * d * 0.98
+                    lite = self.boundLights.sampleCell(math.floor(sx), math.floor(sy))
+                else
+                    lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
+                endif
+            endif
+
             if kind = RcConfig.RC_SPAN_WALL then
-                self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i))
+                self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i), lite)
                 i = n
             else
                 ' Floor and ceiling steps are mirror images: a floor RISE clamps winBot from
@@ -196,7 +228,7 @@ function renderFrame()
                 ' the window open -- farther geometry shows through (documented header gap).
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 2)
+                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
                     if newH > runFloorH then
                         newY = self.projectY(newH, d)
                         if newY < winBot then
@@ -206,7 +238,7 @@ function renderFrame()
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 3)
+                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
                     if newH < runCeilH then
                         newY = self.projectY(newH, d)
                         if newY > winTop then
