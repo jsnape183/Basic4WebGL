@@ -1,0 +1,20 @@
+{
+  "tileWidth": 16,
+  "tileHeight": 16,
+  "tileImage": "rc_placeholder_tiles.png",
+  "layers": {
+    "walls": [
+      [1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1]
+    ],
+    "tags": {
+      "type": "markers",
+      "markers": [
+        { "row": 1, "col": 3, "tag": "floor:2" },
+        { "row": 1, "col": 5, "tag": "ceil:0.5" }
+      ]
+    }
+  }
+}
