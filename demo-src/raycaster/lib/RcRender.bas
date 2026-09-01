@@ -10,6 +10,9 @@ Class
 ' later refinement -- the window is left open there so farther spans show
 ' through, but the pit floor / under-ledge surface is not specially drawn.
 '
+' Also not yet implemented: a per-span depth buffer for sprite occlusion (§5.4)
+' and any lighting model (§6) -- strips are shaded by surface kind/side only.
+'
 ' The RcWorld parameter is `wld`, NEVER `world` (builtin module -> silent
 ' mis-transpile -> runtime ReferenceError).
 dim wld as RcWorld
@@ -116,6 +119,7 @@ function renderFrame()
     dim sBot
     dim destX
     dim newH
+    dim newY
     dim camCol
     dim camRow
     dim horizon
@@ -170,12 +174,17 @@ function renderFrame()
                 self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i))
                 i = n
             else
+                ' Floor and ceiling steps are mirror images: a floor RISE clamps winBot from
+                ' below (can't see under a raised floor); a ceiling DROP clamps winTop from
+                ' above (can't see above a lowered ceiling). A floor DROP / ceiling RISE leaves
+                ' the window open -- farther geometry shows through (documented header gap).
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2)
                     if newH > runFloorH then
-                        if self.projectY(newH, d) < winBot then
-                            winBot = self.projectY(newH, d)
+                        newY = self.projectY(newH, d)
+                        if newY < winBot then
+                            winBot = newY
                         endif
                     endif
                     runFloorH = newH
@@ -183,8 +192,9 @@ function renderFrame()
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3)
                     if newH < runCeilH then
-                        if self.projectY(newH, d) > winTop then
-                            winTop = self.projectY(newH, d)
+                        newY = self.projectY(newH, d)
+                        if newY > winTop then
+                            winTop = newY
                         endif
                     endif
                     runCeilH = newH
