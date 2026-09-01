@@ -295,15 +295,26 @@ accessors it needed — `allMarkers()`, `tileWidth()`, `tileHeight()` — and
 `Marker` gaining `col` / `row` / `tag`. Verified by JS unit tests and an unlisted
 Cypress phase demo (`devDemoRegistry`).
 
-Phases 2–10 (span cast, renderer, mover, lighting, actors, diagonal tiles, upper
-regions, optimisation) tracked in
+Phase 2 shipped: `RcCast` — a DDA span builder. `cast(world, ox, oy, dx, dy)`
+marches a straight line across the grid and collects an ordered near→far list of
+surface spans (walls, floor steps, ceiling steps), each carrying perpendicular
+distance, low/high world height, source cell, hit side, wall texture coord, and
+texture id; it does **not** stop at the first wall. `los(world, ox, oy, dx, dy)`
+shares the same march to return the distance to the first wall (or `-1`) for
+line-of-sight checks, without disturbing the last `cast`'s spans. Span kinds and
+march limits live in the `RcConfig` constants module. Verified by JS unit tests.
+
+Phases 3–10 (renderer, mover, lighting, actors, diagonal tiles, upper regions,
+optimisation) remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
-`docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Guide:
+`docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
-Known Phase 1 limits: `light:` tags set a 0/1 flag only (a baked light *level*
-comes with the lighting phase); upper regions have a fixed height and no
-per-region textures.
+Known limits: `light:` tags set a 0/1 flag only (a baked light *level* comes with
+the lighting phase); upper regions have a fixed height and no per-region
+textures; `RcCast` stops at the first wall (no see-through windows yet), ignores
+upper regions, and treats diagonal-wall tiles as empty.
 
 ---
 

@@ -62,3 +62,59 @@ cells, but you would normally check `wallAt` first.
 `light:` currently just marks a cell (a proper light *level* comes with the
 lighting phase). Upper regions get a fixed height and no textures yet. Keep
 `ceil:` and `upper:` tags on the same marker.
+
+## RcCast — casting rays
+
+`RcCast` walks a straight line across the map from a point and collects every
+surface it crosses — walls, and the steps where a floor rises/falls or a ceiling
+rises/falls. Unlike a classic raycaster it does **not** stop at the first wall,
+so a later phase can draw what's visible past a low wall or across a pit.
+
+```bas
+dim rc as RcCast
+
+function onenter()
+  self.rc = new RcCast()
+  ' cast east from the middle of cell (1,1)
+  self.rc.cast(self.wld, 1.5, 1.5, 1, 0)
+
+  dim i
+  for i = 0 to self.rc.spanCount() - 1
+    print "span " + string.str(i) + " kind " + string.str(self.rc.spanKind(i)) + " at " + string.str(self.rc.spanDist(i))
+  next i
+endfunction
+```
+
+### Span kinds (from `RcConfig`, referenced prefixed)
+
+| Constant | Meaning |
+|---|---|
+| `RcConfig.RC_SPAN_WALL` | a full-height wall — the ray stops here |
+| `RcConfig.RC_SPAN_FLOORSTEP` | the floor height changed between two cells |
+| `RcConfig.RC_SPAN_CEILSTEP` | the ceiling height changed between two cells |
+
+### Reading a span
+
+| Call | Returns |
+|---|---|
+| `rc.spanCount()` | how many spans the last `cast` produced |
+| `rc.spanKind(i)` | one of the `RcConfig.RC_SPAN_*` constants |
+| `rc.spanDist(i)` | distance from the ray origin (no fisheye distortion) |
+| `rc.spanLo(i)` / `rc.spanHi(i)` | the low and high world heights the surface covers |
+| `rc.spanCol(i)` / `rc.spanRow(i)` | the cell that produced the span |
+| `rc.spanSide(i)` | `0` if the ray crossed an x-gridline into this cell, `1` for a y-gridline |
+| `rc.spanU(i)` | horizontal texture position `0`–`1` across a wall (`0` for steps) |
+| `rc.spanTex(i)` | the texture id for that surface, or `""` |
+
+### Line of sight
+
+`rc.los(world, x, y, dx, dy)` marches the same line and returns the distance to
+the first wall, or `-1` if nothing is hit within range. Use it for "can this
+enemy see the player" checks. It does not disturb the spans from the last `cast`.
+
+### Phase 2 limits
+
+The ray stops at the first wall (no "see-through" windows yet), ignores rooms
+stacked above a cell, and treats diagonal-wall tiles as empty. The direction
+`(dx, dy)` doesn't need to be a unit vector — distances come out in world units
+regardless.
