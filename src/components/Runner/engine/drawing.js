@@ -4,9 +4,10 @@ const _sbDrawing = (() => {
     lineColor: 0xffffff,
     lineWidth: 2,
   };
-  const _live = [];                 // drawn this frame
-  const _poolG = [];                // free Graphics
-  const _poolS = [];                // free Sprites
+  const _liveG = [];                // drawn this frame
+  const _liveS = [];                // drawn this frame
+  const _poolG = [];                // free Graphics; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
+  const _poolS = [];                // free Sprites; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
   const _texCache = new Map();      // `${imageName}:${srcX}` -> PIXI.Texture
 
   function _componentToHex(c) {
@@ -21,11 +22,10 @@ const _sbDrawing = (() => {
       g.visible = true;
     } else {
       g = new PIXI.Graphics();
-      g._sbKind = 'g';
     }
     // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
     worldContainer.addChild(g);
-    _live.push(g);
+    _liveG.push(g);
     return g;
   }
   function _acquireS() {
@@ -33,12 +33,11 @@ const _sbDrawing = (() => {
     if (s) {
       s.visible = true;
     } else {
-      s = new PIXI.Sprite(PIXI.Texture.EMPTY ?? undefined);
-      s._sbKind = 's';
+      s = new PIXI.Sprite();
     }
     // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
     worldContainer.addChild(s);
-    _live.push(s);
+    _liveS.push(s);
     return s;
   }
   function _texFor(imageName, srcX) {
@@ -100,21 +99,22 @@ const _sbDrawing = (() => {
     },
 
     clearDrawing() {
-      for (const o of _live) {
-        o.visible = false;
-        (o._sbKind === 's' ? _poolS : _poolG).push(o);
-      }
-      _live.length = 0;
+      for (const o of _liveG) { o.visible = false; _poolG.push(o); }
+      for (const o of _liveS) { o.visible = false; _poolS.push(o); }
+      _liveG.length = 0;
+      _liveS.length = 0;
     },
 
     // Full teardown — pooled + live objects destroyed, caches cleared. Called by
     // stage.clear() on scene switch (also fixes the old cross-scene leak where
     // _drawObjs kept references after worldContainer.removeChildren()).
     _drawingReset() {
-      for (const o of _live) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
+      for (const o of _liveG) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
+      for (const o of _liveS) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
       for (const o of _poolG) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
       for (const o of _poolS) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
-      _live.length = 0;
+      _liveG.length = 0;
+      _liveS.length = 0;
       _poolG.length = 0;
       _poolS.length = 0;
       for (const t of _texCache.values()) { if (t.destroy) t.destroy(); }

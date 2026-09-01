@@ -17,7 +17,7 @@ class FakeGraphics {
 class FakeSprite {
   visible = true; width = 0; height = 0; anchor = { set() {} }; position = { set() {} };
   texture: unknown;
-  constructor(t: unknown) { spriteCreated++; this.texture = t; }
+  constructor(t?: unknown) { spriteCreated++; this.texture = t; }
   destroy() { destroyed++; }
 }
 class FakeTexture { constructor() { textureCreated++; } destroy() { destroyed++; } }
@@ -85,7 +85,7 @@ describe('drawing — object pooling', () => {
     d.clearDrawing();          // -> pool
     d.drawRect(0, 0, 10, 10);  // -> live
     d._drawingReset();
-    expect(destroyed).toBe(3); // 1 live Graphics + 1 pooled Graphics + 1 pooled Sprite
+    expect(destroyed).toBe(3); // 1 Graphics (reused via pool) + 1 pooled Sprite + 1 cached Texture
     // after reset, a fresh draw allocates anew
     d.drawRect(0, 0, 10, 10);
     const before = gfxCreated;
