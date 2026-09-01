@@ -36,4 +36,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP3RoomView',
   },
+  {
+    slug: 'raycaster-p4-walk',
+    name: 'Raycaster P4 — Walk',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 4 probe: RcMover walks the room — circle-vs-wall collision, step-up, gravity, jump — with the camera bound to the mover.',
+    docsSlug: '',
+    file: 'RaycasterP4Walk',
+  },
 ];

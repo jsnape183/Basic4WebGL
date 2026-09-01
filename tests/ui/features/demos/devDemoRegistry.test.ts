@@ -32,4 +32,9 @@ describe('devDemoRegistry', () => {
     const p3 = devDemoRegistry.find((d) => d.slug === 'raycaster-p3-roomview');
     expect(p3?.file).toBe('RaycasterP3RoomView');
   });
+
+  test('includes the Phase 4 walk demo', () => {
+    const p4 = devDemoRegistry.find((d) => d.slug === 'raycaster-p4-walk');
+    expect(p4?.file).toBe('RaycasterP4Walk');
+  });
 });
