@@ -22,4 +22,9 @@ describe('devDemoRegistry', () => {
     const p1 = devDemoRegistry.find((d) => d.slug === 'raycaster-p1-mapload');
     expect(p1?.file).toBe('RaycasterP1MapLoad');
   });
+
+  test('includes the Phase 2 span-cast demo', () => {
+    const p2 = devDemoRegistry.find((d) => d.slug === 'raycaster-p2-spancast');
+    expect(p2?.file).toBe('RaycasterP2SpanCast');
+  });
 });

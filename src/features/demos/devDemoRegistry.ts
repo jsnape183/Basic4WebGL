@@ -18,4 +18,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP1MapLoad',
   },
+  {
+    slug: 'raycaster-p2-spancast',
+    name: 'Raycaster P2 — Span Cast',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 2 probe: RcCast DDA-marches the grid and collects wall / floor-step / ceiling-step spans; top-down visualiser + probes.',
+    docsSlug: '',
+    file: 'RaycasterP2SpanCast',
+  },
 ];
