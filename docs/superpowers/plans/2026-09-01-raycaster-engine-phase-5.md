@@ -296,7 +296,7 @@ git commit -m "fix(stage): tear down pooled drawing objects on scene switch"
 
 **Files:** none (measurement) — updates the Phase 3 plan's frame-time record.
 
-- [ ] **Step 1:** Run `raycaster-p3-roomview` in a browser, read the `frame avg N ms over 30 (M cols)` HUD line (the demo already prints it). Compare to the Phase 3 baseline (16 ms / 127 cols).
+- [ ] **Step 1:** Run `raycaster-p3-roomview` in a browser, read the `frame avg N ms over 30 (M cols)` HUD line (the demo already prints it). Compare to the Phase 3 baseline (16 ms / 127 cols). **Also eyeball for stale-geometry artifacts** — the raycaster's `drawStrip` now reuses pooled `PIXI.Graphics` frame-to-frame, and no automated test verifies `Graphics.clear()` actually discards last frame's rect. Walk/turn and confirm strips redraw cleanly with no ghosting, smearing, or leftover shapes. (If there IS ghosting, `_acquireG` needs more than `.clear()` — but PIXI v8 `.clear()` should be sufficient.)
 - [ ] **Step 2:** Record the new number in `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md` "Frame-time result" section (append a "Post-pooling-fix" line) and in the Phase 5 close-out summary.
 - [ ] **Step 3: Decision.**
   - Improved to ≤ ~10 ms: good headroom for lighting. Proceed.
