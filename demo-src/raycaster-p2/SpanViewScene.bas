@@ -10,6 +10,12 @@ Constructor()
 EndConstructor
 
 function onenter()
+  dim eastOk
+  dim westOk
+  dim losOk
+  dim losEast
+  dim losWest
+
   world.setBackground(10, 12, 16)
 
   self.tm = new tilemapset("p2map.stm")
@@ -22,7 +28,6 @@ function onenter()
 
   self.rc.cast(self.wld, 1.5, 1.5, 1, 0)
 
-  dim eastOk
   eastOk = 0
   if self.rc.spanCount() = 5 then
     if self.rc.spanKind(0) = RcConfig.RC_SPAN_FLOORSTEP then
@@ -38,7 +43,6 @@ function onenter()
   self.probe("east ray: 5 spans, wall at ~5.5", eastOk, 52)
 
   self.rc.cast(self.wld, 1.5, 1.5, -1, 0)
-  dim westOk
   westOk = 0
   if self.rc.spanCount() = 1 then
     if self.rc.spanKind(0) = RcConfig.RC_SPAN_WALL then
@@ -49,9 +53,6 @@ function onenter()
   endif
   self.probe("west ray: 1 wall at ~0.5", westOk, 74)
 
-  dim losOk
-  dim losEast
-  dim losWest
   losOk = 0
   losEast = self.rc.los(self.wld, 1.5, 1.5, 1, 0)
   losWest = self.rc.los(self.wld, 1.5, 1.5, -1, 0)
@@ -78,6 +79,10 @@ function probe(label, passed, y)
   t.setStyle(14, 255, 255, 255)
   hud.add(t)
   if passed = 0 then
+    ' Force a runtime error so the Cypress "no ERR" assertion catches a failed
+    ' probe -- canvas text is invisible to that test. array.arrLength reads the
+    ' .length of `missing` (unassigned / undefined), which throws a caught
+    ' runtimeError that surfaces as ERR in the console panel.
     boom = array.arrLength(missing)
   endif
 endfunction
