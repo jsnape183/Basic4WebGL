@@ -6,9 +6,10 @@ Class
 ' 1.0 = standard ceiling (RC_STD_CEIL). Negative floor = pit.
 ' flags bitset: 1 door, 2 lift, 4 water, 8 sky.
 '
+' A `light` tag (bare, or `light:<anything>`) sets lightArr(idx) to a 0/1 flag;
+' RcLights.bakeStatic reads it as a static light source at RC_STATIC_INTENSITY.
+'
 ' Phase 1 scope -- not yet implemented:
-'  - light: tags currently set lightArr(idx) to a 0/1 flag only; spec §3.1
-'    defines it as a baked static light *level* (deferred to the lighting phase).
 '  - Upper regions: spec §3.2's upFloorTex / upCeilTex / upWallTex arrays are
 '    not implemented, and upperRegion hardcodes the region ceiling as
 '    baseCeil + 1.0 with no per-region tag support (deferred to the
@@ -154,6 +155,9 @@ function applyFlag(idx, name)
     endif
     if name = "sky" then
         self.setFlag(idx, 8)
+    endif
+    if name = "light" then
+        self.lightArr(idx) = 1
     endif
 endfunction
 
