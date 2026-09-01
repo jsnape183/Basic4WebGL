@@ -283,6 +283,28 @@ Design spec: `docs/superpowers/specs/2026-08-30-controller-support-design.md`. P
 - **Runtime rebind UI helpers** — a "press any input" capture so settings screens can let players remap. `clearBindings` + `bind` already cover applying a new binding; the missing piece is detecting what the player just pressed.
 - **Extract a dedicated `softInput` package** — see the P15 follow-up above (`input` + `keyboard` + `controller` out of softGfx; breaking migration, needs its own design spec). Deferred.
 
+### Raycaster library **[IN PROGRESS]**
+
+A "DOOM plus a bit" first-person raycaster built in softBASIC as reusable `.bas`
+modules (not an engine `_sb` module) under `demo-src/raycaster/lib/`.
+
+Phase 1 shipped: `RcWorld` (a height-aware per-cell world model parsed from a
+tagged `.stm` tilemap + marker tags — walls, floor/ceiling heights, textures,
+door/lift/water/sky flags, upper regions), plus the generic `tilemapset`
+accessors it needed — `allMarkers()`, `tileWidth()`, `tileHeight()` — and
+`Marker` gaining `col` / `row` / `tag`. Verified by JS unit tests and an unlisted
+Cypress phase demo (`devDemoRegistry`).
+
+Phases 2–10 (span cast, renderer, mover, lighting, actors, diagonal tiles, upper
+regions, optimisation) tracked in
+`docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
+`docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Guide:
+`src/docs/guides/raycaster-library.md`.
+
+Known Phase 1 limits: `light:` tags set a 0/1 flag only (a baked light *level*
+comes with the lighting phase); upper regions have a fixed height and no
+per-region textures.
+
 ---
 
 ## Lower Priority / Future

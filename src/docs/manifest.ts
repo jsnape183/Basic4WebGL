@@ -51,6 +51,13 @@ export const docsManifest: DocSection[] = [
     ],
   },
   {
+    id: 'guides',
+    label: 'Guides',
+    topics: [
+      { slug: 'raycaster-library', title: 'Building a Raycaster', file: 'guides/raycaster-library.md' },
+    ],
+  },
+  {
     id: 'api-reference',
     label: 'API Reference',
     topics: [],
