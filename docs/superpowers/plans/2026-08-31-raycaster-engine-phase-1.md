@@ -1171,6 +1171,16 @@ git commit -m "docs(raycaster): Phase 1 library guide + roadmap"
 ## Notes for later phases (not this plan)
 
 - **`math.val`** parses tag numbers (`Number(s)`); confirmed present.
+- **Probe scenes must FORCE a runtime error on a failed check** — not just render
+  "FAIL" text. The Cypress guard (`cypress/e2e/demos.cy.ts`) only asserts "no ERR
+  line appears in the console panel"; canvas text is invisible to it, so a scene
+  that only draws "FAIL" would still pass CI. `MapProbeScene.bas` establishes the
+  pattern: a `probe(label, passed, y)` helper that renders the OK/FAIL text and,
+  when `passed = 0`, executes a statement that throws a caught `runtimeError`
+  (here `array.arrLength(missing)` on an unassigned var → reads `.length` of
+  `undefined`). That error propagates through scene.js's `onenter` try/catch into
+  `_throwError`, which posts a `runtimeError` message that surfaces as `ERR`.
+  Every later phase demo's probe scene must reuse this helper pattern.
 - Phase 2 (`RcCast`) adds `demo-src/raycaster/lib/RcCast.bas` + a `raycaster-p2` demo drawing a top-down span visualisation. It will likely surface the first `drawing` throughput question — hold the §5.3 contingency until phase 3's real 3D draw.
 - Texture ids are stored as plain image-name strings on cells through all phases; `RcRender` (phase 3) resolves them to drawables — no atlas (spec §5.2).
 - The library-copy duplication (`demo-src/raycaster/lib/RcWorld.bas` vs `demo-src/raycaster-p1/RcWorld.bas`) is a `build:demo` limitation. If it becomes painful across phases, a small generic `scripts/buildDemo.ts` change to accept a shared-lib dir is the fix — a tooling task, not engine.

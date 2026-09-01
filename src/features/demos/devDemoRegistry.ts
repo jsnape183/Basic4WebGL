@@ -7,6 +7,9 @@ import { DemoEntry } from './demoRegistry';
 // artifact.
 export const devDemoRegistry: DemoEntry[] = [
   {
+    // p1testmap.stm references a tileImage ('rc_placeholder_tiles.png', a copied
+    // BulletHell tilesheet) because the .stm format requires one, but Phase 1
+    // never renders it — MapProbeScene draws only `drawing` primitives.
     slug: 'raycaster-p1-mapload',
     name: 'Raycaster P1 — Map Load',
     tags: ['Raycaster', 'Engine Phase'],

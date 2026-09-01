@@ -4,15 +4,16 @@ Extends scene
 dim tm as tilemapset
 dim wld as RcWorld
 dim titleText as Text
-dim l1 as Text
-dim l2 as Text
-dim l3 as Text
-dim l4 as Text
 
 Constructor()
 EndConstructor
 
 function onenter()
+  dim okSize
+  dim okBorder
+  dim okFloor
+  dim okMisc
+
   world.setBackground(12, 12, 18)
 
   self.tm = new tilemapset("p1testmap.stm")
@@ -22,53 +23,55 @@ function onenter()
   self.titleText.setStyle(20, 255, 220, 120)
   hud.add(self.titleText)
 
-  dim okSize
-  okSize = "FAIL"
-  if self.wld.widthCells() = 5 then
-    if self.wld.heightCells() = 4 then
-      okSize = "OK"
-    endif
+  okSize = 0
+  if self.wld.widthCells() = 5 and self.wld.heightCells() = 4 then
+    okSize = 1
   endif
-  self.l1 = new Text("size 5x4: " + okSize + " (" + string.str(self.wld.widthCells()) + "x" + string.str(self.wld.heightCells()) + ")", 24, 52)
-  self.l1.setStyle(15, 255, 255, 255)
-  hud.add(self.l1)
+  self.probe("size 5x4", okSize, 52)
 
-  dim okBorder
-  okBorder = "FAIL"
-  if self.wld.wallAt(0, 0) > 0 then
-    if self.wld.wallAt(1, 1) = 0 then
-      okBorder = "OK"
-    endif
+  okBorder = 0
+  if self.wld.wallAt(0, 0) > 0 and self.wld.wallAt(1, 1) = 0 then
+    okBorder = 1
   endif
-  self.l2 = new Text("wall border: " + okBorder, 24, 74)
-  self.l2.setStyle(15, 255, 255, 255)
-  hud.add(self.l2)
+  self.probe("wall border", okBorder, 74)
 
-  dim okFloor
-  okFloor = "FAIL"
-  if self.wld.floorHeightAt(1, 1) = 2 then
-    if self.wld.floorHeightAt(2, 2) = -3 then
-      okFloor = "OK"
-    endif
+  okFloor = 0
+  if self.wld.floorHeightAt(1, 1) = 2 and self.wld.floorHeightAt(2, 2) = -3 then
+    okFloor = 1
   endif
-  self.l3 = new Text("floor tags (2 / -3): " + okFloor, 24, 96)
-  self.l3.setStyle(15, 255, 255, 255)
-  hud.add(self.l3)
+  self.probe("floor tags", okFloor, 96)
 
-  dim okMisc
-  okMisc = "FAIL"
-  if self.wld.hasUpperAt(2, 1) = 1 then
-    if self.wld.flagsAt(3, 2) = 1 then
-      if self.wld.flagsAt(3, 1) = 8 then
-        okMisc = "OK"
-      endif
-    endif
+  okMisc = 0
+  if self.wld.hasUpperAt(2, 1) = 1 and self.wld.flagsAt(3, 2) = 1 and self.wld.flagsAt(3, 1) = 8 then
+    okMisc = 1
   endif
-  self.l4 = new Text("upper / door / sky: " + okMisc, 24, 118)
-  self.l4.setStyle(15, 255, 255, 255)
-  hud.add(self.l4)
+  self.probe("upper/door/sky", okMisc, 118)
 
   self.drawGrid()
+endfunction
+
+function probe(label, passed, y)
+  dim result
+  dim t as Text
+  dim missing
+  dim boom
+
+  result = "OK"
+  if passed = 0 then
+    result = "FAIL"
+  endif
+
+  t = new Text(label + ": " + result, 24, y)
+  t.setStyle(15, 255, 255, 255)
+  hud.add(t)
+
+  if passed = 0 then
+    ' Force a runtime error so the Cypress "no ERR" assertion catches a failed
+    ' probe -- canvas text is invisible to that test. array.arrLength reads the
+    ' .length of `missing` (unassigned / undefined), which throws a caught
+    ' runtimeError that surfaces as ERR in the console panel.
+    boom = array.arrLength(missing)
+  endif
 endfunction
 
 function drawGrid()
@@ -77,6 +80,7 @@ function drawGrid()
   dim ox
   dim oy
   dim s
+  drawing.clear()
   ox = 24
   oy = 150
   s = 30
