@@ -152,3 +152,45 @@ endfunction
 Everything is flat-shaded — no wall textures yet. You can see across a pit to the
 wall beyond, but the inside of the pit isn't drawn specially. Rooms stacked above
 a cell and angled walls come in later phases.
+
+## RcMover — walking around
+
+`RcMover` is one movable body. Feed it intent each frame, call `step`, and it
+resolves the move against the world — sliding along walls, stepping up small
+ledges, falling into pits, and jumping. Bind it to the renderer so the view
+follows it.
+
+```basic
+dim me as RcMover
+
+function onenter()
+  self.me = new RcMover(self.wld, 2, 4, 0.3, 0.6)   ' world, x, y, radius, body height
+  self.ren.bindCamera(self.me)
+endfunction
+
+function onupdate(delta)
+  self.me.move(input.axis("back", "fwd") * 2.5, 0)
+  self.me.turn(input.axis("tl", "tr") * 2.0 * (delta / 1000))
+  if input.pressed("jump") then
+    self.me.jump()
+  endif
+  self.me.step(delta)
+  self.ren.renderFrame()
+endfunction
+```
+
+| Call | Does |
+|---|---|
+| `new RcMover(world, x, y, radius, bodyHeight)` | a body standing on the floor at `(x, y)` |
+| `me.move(forward, strafe)` | set this frame's move speed (units/sec); resolved by `step` |
+| `me.turn(deltaAngle)` / `me.look(deltaPitch)` | rotate / tilt the view |
+| `me.jump()` | jump if on the ground |
+| `me.step(delta)` | resolve one frame of movement + gravity — call every `onupdate` |
+| `me.x()` / `me.y()` / `me.z()` | current position (`z` is feet height) |
+| `me.angle()` / `me.pitch()` / `me.onGround()` | facing, tilt, whether standing on solid ground |
+
+### Phase 4 limits
+
+Movers don't collide with each other yet, lifts don't move, and rooms stacked
+above a cell aren't handled. Tune movement with `RcConfig.RC_MOVE_SPEED`,
+`RC_STEP_UP`, `RC_GRAVITY`, `RC_JUMP_VEL`.

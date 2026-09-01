@@ -329,12 +329,24 @@ pooling fix (rung 1 of the §5.3 ladder) proactively before or alongside
 Phase 5, rather than waiting for a "fails 60fps" measurement that lighting
 will likely produce anyway.
 
-Phases 4–10 (mover, lighting, actors, diagonal tiles, upper regions,
-optimisation) remain, tracked in
+Phase 4 shipped: `RcMover` — a height-aware movable body (circle-shaped,
+radius and bodyHeight configurable) that slides along walls, steps up onto
+low ledges, falls into pits, and jumps. Every frame: set intent via `move(forward, strafe)`
+(move speed in units/sec), `turn(deltaAngle)` / `look(deltaPitch)` (immediate,
+accumulate rotation/pitch), and `jump()` (if grounded). Call `step(delta)` to
+resolve collision — a single per-axis slide check against walls and adjacent
+floor heights, plus vertical gravity + landing. Query position/rotation with
+`x()` / `y()` / `z()` / `angle()` / `pitch()` / `onGround()`. `RcRender.bindCamera(mover)`
+binds the camera so the view follows; otherwise call `RcRender.setCamera(x, y, angle, pitch)`
+manually. Verified by Cypress (dev-registry raycaster demo, playable level).
+
+Phases 5–10 (lighting, actors, diagonal tiles, upper regions, optimisation)
+remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:
-`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Guide:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Phase 4 plan:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: `light:` tags set a 0/1 flag only (a baked light *level* comes with
