@@ -11,6 +11,11 @@ Class
 ' Direction (dx,dy) need not be normalized; spanDist and los() are in world
 ' units regardless because deltaDist = |1/dir|.
 '
+' NOTE: the RcWorld parameter is named `wld`, NOT `world` -- `world` is a builtin
+' module (world.setBackground etc.) and a parameter that shadows a module name is
+' silently mis-transpiled (the body refs resolve to a broken class path and throw
+' "rccast is not defined" at runtime, with NO compile diagnostic). Keep it `wld`.
+'
 ' Phase 2 scope: no screen projection (Phase 3), no occlusion-window early-out
 ' (Phase 3), no upper regions (Phase 8), no diagonal tiles (Phase 7).
 
@@ -117,7 +122,7 @@ function stepMarch()
 endfunction
 
 ' Marches from (ox, oy) along direction (dx, dy). Fills the span arrays.
-function cast(world as RcWorld, ox, oy, dx, dy)
+function cast(wld as RcWorld, ox, oy, dx, dy)
     dim runFloor
     dim runCeil
     dim iters
@@ -132,8 +137,8 @@ function cast(world as RcWorld, ox, oy, dx, dy)
     self.reset()
     self.beginMarch(ox, oy, dx, dy)
 
-    runFloor = world.floorHeightAt(self.mMapX, self.mMapY)
-    runCeil = world.ceilHeightAt(self.mMapX, self.mMapY)
+    runFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
+    runCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
 
     iters = 0
     while iters < RcConfig.RC_MAX_MARCH_ITERS
@@ -144,7 +149,7 @@ function cast(world as RcWorld, ox, oy, dx, dy)
             return
         endif
 
-        wallHere = world.wallAt(self.mMapX, self.mMapY)
+        wallHere = wld.wallAt(self.mMapX, self.mMapY)
         if wallHere > 0 then
             if self.mSide = 0 then
                 wallX = oy + self.mEntryDist * dy
@@ -152,24 +157,24 @@ function cast(world as RcWorld, ox, oy, dx, dy)
                 wallX = ox + self.mEntryDist * dx
             endif
             u = wallX - math.floor(wallX)
-            self.addSpan(RcConfig.RC_SPAN_WALL, self.mEntryDist, runFloor, runCeil, self.mMapX, self.mMapY, self.mSide, u, world.wallTexAt(self.mMapX, self.mMapY))
+            self.addSpan(RcConfig.RC_SPAN_WALL, self.mEntryDist, runFloor, runCeil, self.mMapX, self.mMapY, self.mSide, u, wld.wallTexAt(self.mMapX, self.mMapY))
             return
         endif
 
-        cellFloor = world.floorHeightAt(self.mMapX, self.mMapY)
-        cellCeil = world.ceilHeightAt(self.mMapX, self.mMapY)
+        cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
+        cellCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
 
         if cellFloor <> runFloor then
             lo = math.min(runFloor, cellFloor)
             hi = math.max(runFloor, cellFloor)
-            self.addSpan(RcConfig.RC_SPAN_FLOORSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, world.floorTexAt(self.mMapX, self.mMapY))
+            self.addSpan(RcConfig.RC_SPAN_FLOORSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, wld.floorTexAt(self.mMapX, self.mMapY))
             runFloor = cellFloor
         endif
 
         if cellCeil <> runCeil then
             lo = math.min(runCeil, cellCeil)
             hi = math.max(runCeil, cellCeil)
-            self.addSpan(RcConfig.RC_SPAN_CEILSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, world.ceilTexAt(self.mMapX, self.mMapY))
+            self.addSpan(RcConfig.RC_SPAN_CEILSTEP, self.mEntryDist, lo, hi, self.mMapX, self.mMapY, self.mSide, 0, wld.ceilTexAt(self.mMapX, self.mMapY))
             runCeil = cellCeil
         endif
     endwhile
@@ -179,7 +184,7 @@ endfunction
 ' within RcConfig.RC_MAX_DIST. Shares beginMarch/stepMarch with cast().
 ' Does NOT touch the span arrays -- a caller that interleaves los() and cast()
 ' still reads the last cast()'s spans from spanCount()/spanKind(i)/...
-function los(world as RcWorld, ox, oy, dx, dy)
+function los(wld as RcWorld, ox, oy, dx, dy)
     dim iters
     self.beginMarch(ox, oy, dx, dy)
     iters = 0
@@ -189,7 +194,7 @@ function los(world as RcWorld, ox, oy, dx, dy)
         if self.mEntryDist > RcConfig.RC_MAX_DIST then
             return -1
         endif
-        if world.wallAt(self.mMapX, self.mMapY) > 0 then
+        if wld.wallAt(self.mMapX, self.mMapY) > 0 then
             return self.mEntryDist
         endif
     endwhile

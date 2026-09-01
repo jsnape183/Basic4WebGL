@@ -899,6 +899,21 @@ git commit -m "docs(raycaster): Phase 2 RcCast guide section + roadmap"
 
 ## Notes for later phases (not this plan)
 
+- **softBASIC footgun — never name a parameter or local after a builtin module.**
+  `world`, `math`, `array`, `string`, `input`, `camera`, `hud`, `stage`, `pen`,
+  `drawing`, `scenemanager`, `tween`, `collision`, `pathfinding`, `save`, `file`,
+  `audio`, `assetmanager`, `gfx`, `keyboard`, `controller` are all registered
+  modules. A method parameter that shadows one (`function cast(world as RcWorld,
+  ...)`) transpiles with **zero diagnostics**, but the body's `world.method()`
+  refs are silently emitted as a broken `<class>.<method>.world` chain that throws
+  `ReferenceError: <class> is not defined` only at runtime (surfaces as Cypress
+  `ERR`). Hit in Phase 2 — `RcCast.cast/los`'s world param is now `wld`.
+- **`tests/lib/Basic4WebGL/integration/raycasterDemoSmoke.test.ts`** now
+  transpiles + *evaluates* each phase demo (stubbed `_sb`), runs the deferred
+  module bodies, and drives `RcCast.cast/los` against a duck-typed world. The
+  transpile guard only checks diagnostics; this catches runtime `ReferenceError`s
+  in the committed suite. Extend its per-phase assertions as `RcRender`,
+  `RcMover`, etc. land.
 - **Phase 3 (`RcRender`)** consumes `RcCast`: loops `RC_COLS` columns, computes each ray dir from camera yaw + FOV, calls `cast`, converts each span's `dist`/`lo`/`hi` → `screenTop`/`screenBottom` via the projection, applies the per-column occlusion window (spec §5.1), and draws strips. This is where the §5.3 `drawing`-throughput benchmark happens — hold the contingency until then.
 - The `cast` early-out on the occlusion window (spec §4.1 step 3) is added in Phase 3 as an optional `maxScreenSpan` param or a callback — deferred now because Phase 2 has no screen space.
 - Floor/ceiling **step** spans currently fire on any `!=` (rise OR fall). Phase 3 decides how a "fall" (pit) span is drawn vs a "rise". If that distinction turns out to matter to the cast, revisit — for now the renderer has `lo`/`hi` + the running context it rebuilds.
