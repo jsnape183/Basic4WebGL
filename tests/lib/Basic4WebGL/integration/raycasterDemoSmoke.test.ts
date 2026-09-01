@@ -93,6 +93,7 @@ function evalDemo(code: string) {
        RcWorld: typeof _sb_rcworld !== 'undefined' ? _sb_rcworld : null,
        RcRender: typeof _sb_rcrender !== 'undefined' ? _sb_rcrender : null,
        RcMover: typeof _sb_rcmover !== 'undefined' ? _sb_rcmover : null,
+       RcLights: typeof _sb_rclights !== 'undefined' ? _sb_rclights : null,
      };`,
   );
   const mod = factory(_sb, _createArray, ...Object.values(helpers), { log() {} });
@@ -104,7 +105,19 @@ function evalDemo(code: string) {
     RcMover:
       | (new (w: unknown, x: number, y: number, radius: number, bodyHeight: number) => RcMoverLike)
       | null;
+    RcLights: (new (w: unknown) => RcLightsLike) | null;
   };
+}
+
+interface RcLightsLike {
+  addpoint(x: number, y: number, z: number, intensity: number, radiusCells: number): number;
+  movelight(handle: number, x: number, y: number): void;
+  setlightintensity(handle: number, intensity: number): void;
+  removelight(handle: number): void;
+  update(): void;
+  samplecell(col: number, row: number): number;
+  setambient(level: number): void;
+  bakestatic(): void;
 }
 
 interface RcMoverLike {
@@ -145,6 +158,7 @@ const stubWorld = {
   ceiltexat: () => '',
   widthcells: () => 8,
   heightcells: () => 4,
+  lightat: () => 0,
 };
 
 describe('raycaster phase demos smoke-execute', () => {
@@ -195,5 +209,17 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => m.step(16)).not.toThrow();
     expect(typeof m.x()).toBe('number');
     expect(typeof m.onground()).toBe('number');
+  });
+
+  test.each(phaseDirs)('%s: RcLights (if present) update/sample run', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcLights) return; // phases without RcLights.bas
+    const L = new mod.RcLights(stubWorld);
+    const h = L.addpoint(2, 2, 0.5, 1, 5);
+    L.movelight(h, 3, 3);
+    L.setlightintensity(h, 0.8);
+    L.update();
+    expect(typeof L.samplecell(2, 2)).toBe('number');
+    expect(() => L.removelight(h)).not.toThrow();
   });
 });
