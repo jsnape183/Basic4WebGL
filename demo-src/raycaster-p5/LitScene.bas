@@ -64,10 +64,14 @@ function runProbes()
     endif
     self.probe("lit near flashlight", ok2, 72)
 
+    self.lights.moveLight(self.torch, 10.5, 6.5)
+    self.lights.update()
     ok3 = 0
-    if self.lights.sampleCell(2, 3) > RcConfig.RC_AMBIENT + 0.05 then
+    if self.lights.sampleCell(2, 3) > RcConfig.RC_AMBIENT + 0.1 then
         ok3 = 1
     endif
+    self.lights.moveLight(self.torch, 3.5, 3.5)
+    self.lights.update()
     self.probe("static bake present", ok3, 92)
 
     ok4 = 0
@@ -77,7 +81,7 @@ function runProbes()
     self.probe("shadow darker than lit", ok4, 112)
 
     ok5 = 0
-    self.lights.moveLight(self.torch, 9.5, 6.5)
+    self.lights.moveLight(self.torch, 8.5, 6.5)
     self.lights.update()
     movedVal = self.lights.sampleCell(9, 6)
     if movedVal > RcConfig.RC_AMBIENT + 0.2 then
