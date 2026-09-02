@@ -375,15 +375,18 @@ describe('raycaster phase demos smoke-execute', () => {
   // angle straight into the wedge, and the signed-distance predicate that must
   // stay true — the body centre never crosses to the solid side. Chord of cell
   // (3,3) is world x+y=7 (nw/se) or x-y=0 (ne/sw).
+  // Math.atan2(dy, dx); after turn(ang) the body drives (cos ang, sin ang).
+  // Each case must drive INTO the solid wedge so the push-out is what keeps the
+  // predicate true — not the drive direction.
   const DIAG_MOVER_CASES = [
-    // nw solid (x+y<=7 solid): spawn SE of the chord, drive NW.
+    // nw solid (world x+y<=7): spawn open (x+y>7), drive NW (-x,-y) at the wedge.
     { code: 1, x: 4.4, y: 3.6, ang: Math.atan2(-1, -1), ok: (x: number, y: number) => x + y > 7.0 },
-    // ne solid (x-y>=0 solid): spawn NW of the chord (x<y), drive toward -x+y... i.e. NW.
-    { code: 2, x: 3.4, y: 3.7, ang: Math.atan2(1, -1), ok: (x: number, y: number) => x - y < 0.0 },
-    // se solid (x+y>=7 solid): spawn NW of the chord, drive SE.
+    // ne solid (world x-y>=0): spawn open (x-y<0), drive NE (+x,-y) at the wedge.
+    { code: 2, x: 3.4, y: 3.7, ang: Math.atan2(-1, 1), ok: (x: number, y: number) => x - y < 0.0 },
+    // se solid (world x+y>=7): spawn open (x+y<7), drive SE (+x,+y) at the wedge.
     { code: 3, x: 3.4, y: 3.4, ang: Math.atan2(1, 1), ok: (x: number, y: number) => x + y < 7.0 },
-    // sw solid (x-y<=0 solid): spawn SE of the chord (x>y), drive SE.
-    { code: 4, x: 3.7, y: 3.4, ang: Math.atan2(-1, 1), ok: (x: number, y: number) => x - y > 0.0 },
+    // sw solid (world x-y<=0): spawn open (x-y>0), drive SW (-x,+y) at the wedge.
+    { code: 4, x: 3.7, y: 3.4, ang: Math.atan2(1, -1), ok: (x: number, y: number) => x - y > 0.0 },
   ];
 
   test.each(phaseDirs)('%s: RcMover slides along a diagonal face instead of tunnelling', (dirName) => {

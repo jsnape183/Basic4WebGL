@@ -51,7 +51,6 @@ function runProbes()
     dim ok6
     dim probeCast as RcCast
     dim sc
-    dim mc
     dim mv as RcMover
     dim i
     dim dlos
