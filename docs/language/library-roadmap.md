@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-02 (raycaster library Phase 6b shipped — `RcRender` fills floor/ceiling horizontal surfaces as flat per-column strips)
+> Last updated: 2026-09-02 (raycaster library Phase 7 shipped — corner-solid 45° diagonal-wall tiles: `RcWorld.diagAt`, `RcCast.diagHit`, `RcMover` slide)
 
 ---
 
@@ -393,7 +393,22 @@ count as a probe hook. Floor/ceiling *textures* are still not sampled. Demo:
 `raycaster-p6-actors` gains a staircase + a pit, and the ledge NPC is grounded on
 a step top.
 
-Phases 7–10 (diagonal tiles, upper regions, optimisation)
+Phase 7 shipped: corner-solid 45° diagonal-wall tiles. Authored as `diag:nw` /
+`diag:ne` / `diag:se` / `diag:sw` marker tags on an open (walls-layer 0) cell —
+the code names the corner the solid triangle fills. `RcWorld` gains `diagArr` +
+`diagAt(col,row)`; `RcConfig` gains `RC_DIAG_NW..SW` (1–4) and `RC_SPAN_SIDE_DIAG`
+(2). `RcCast.diagHit()` — a shared ray-vs-45°-chord test called by both `cast()`
+and `los()` when the DDA lands in a diag cell — emits a wall span at the chord
+crossing (or at cell entry for a grazing/inside hit) with `side =
+RC_SPAN_SIDE_DIAG`; a miss keeps marching. `RcRender` draws that span with the
+y-face wall shade and samples the half-open diag cell's own light. `RcMover.step()`
+adds one push-out pass per frame — the body centre is shoved along the chord
+normal to `rad` clearance, giving a smooth 45° slide. Demo: `raycaster-p7-diagonals`
+(`DiagScene.bas`) — an octagonal room (4 corner tiles) + a canted `<`-chevron
+dead-end passage, 6 probes. Deferred: diagonal wall texturing (`spanU` is 0), a
+dedicated diagonal shade, `diag:` + floor/ceiling-step in one cell.
+
+Phases 8–10 (upper regions, optimisation)
 remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
@@ -401,14 +416,16 @@ remain, tracked in
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Phase 4 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Phase 5 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Phase 6 plan:
-`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-6.md`. Guide:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-6.md`. Phase 7 plan:
+`docs/superpowers/plans/2026-09-02-raycaster-phase-7-diagonal-tiles.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Upper regions
 have a fixed height and no per-region textures; `RcCast` stops at the first wall (no
-see-through windows yet), ignores upper regions, and treats diagonal-wall tiles as
-empty; `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
+see-through windows yet) and ignores upper regions; diagonal-wall tiles are
+supported (Phase 7) but flat-shaded (no wall texture / wall-U) and cannot combine
+with a floor/ceiling step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is
 all billboard clipping needs), not per-span. `RcRender` fills floor/ceiling
 horizontal surfaces (step tops, pit floors, ceiling undersides, soffits) as flat

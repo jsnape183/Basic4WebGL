@@ -18,6 +18,7 @@ Draw your level in the Tilemap Editor:
   - `door`, `lift`, `water`, `sky` mark special cells
   - `upper:vent` gives the cell a second space above it
   - `light:` marks a cell as lit (Phase 1 records this as a simple on/off flag; proper light levels come with the lighting phase)
+  - `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` makes the cell a 45° diagonal wall — the named corner is solid, the opposite half is open floor. Leave the `walls` tile at `0` for that cell (the diagonal *is* the wall). Line several up along one direction for a canted wall; put one in each corner of a square room for an octagon.
 
 Build the world once, then read from it:
 
@@ -52,6 +53,7 @@ Every accessor takes a cell column and row as whole numbers, starting at `0`.
 | `wld.flagsAt(col, row)` | bitset: `1` door, `2` lift, `4` water, `8` sky (out of bounds = `0`) |
 | `wld.hasUpperAt(col, row)` | `1` if the cell has a space above it, otherwise `0` |
 | `wld.wallTexAt(col, row)` | the cell's `tex:` texture name, or `""` |
+| `wld.diagAt(col, row)` | `0` not diagonal, or `RcConfig.RC_DIAG_NW` / `_NE` / `_SE` / `_SW` (`1`–`4`) — the solid corner of a 45° diagonal cell (out of bounds = `0`) |
 
 Any cell outside the map counts as a solid wall, so `wallAt` returns `1` there.
 The other accessors still return a sensible standard value for out-of-bounds
@@ -62,6 +64,25 @@ cells, but you would normally check `wallAt` first.
 `light:` currently just marks a cell (a proper light *level* comes with the
 lighting phase). Upper regions get a fixed height and no textures yet. Keep
 `ceil:` and `upper:` tags on the same marker.
+
+### Diagonal walls
+
+A cell tagged `diag:nw`, `diag:ne`, `diag:se`, or `diag:sw` is a 45° wall: the
+named corner is a solid triangle, the opposite triangle is open floor you can
+walk on. The `walls` tile for that cell stays `0` — the marker *is* the wall.
+
+To cut a square room into an octagon, tag one corner cell each way:
+
+```
+' markers on the four corner cells of a room:
+'   diag:nw   top-left        diag:ne   top-right
+'   diag:sw   bottom-left     diag:se   bottom-right
+```
+
+Line several same-direction tags up along a diagonal for a continuous canted
+wall. `RcCast` and `RcMover` both understand the 45° face — rays and line-of-sight
+stop at it, and a mover slides along it. Diagonal faces are flat-shaded (no
+texture yet), and a diagonal cell can't also carry a `floor:` / `ceil:` step.
 
 ## RcCast — casting rays
 
@@ -114,10 +135,12 @@ enemy see the player" checks. It does not disturb the spans from the last `cast`
 
 ### Phase 2 limits
 
-The ray stops at the first wall (no "see-through" windows yet), ignores rooms
-stacked above a cell, and treats diagonal-wall tiles as empty. The direction
-`(dx, dy)` doesn't need to be a unit vector — distances come out in world units
-regardless.
+The ray stops at the first wall (no "see-through" windows yet) and ignores rooms
+stacked above a cell. Diagonal-wall tiles *are* handled (see below): the ray
+tests the 45° chord, and `los` stops at it too. A wall span from a diagonal has
+`spanSide(i)` equal to `RcConfig.RC_SPAN_SIDE_DIAG` and `spanU(i)` of `0`
+(diagonal faces aren't textured yet). The direction `(dx, dy)` doesn't need to be
+a unit vector — distances come out in world units regardless.
 
 ## RcRender — drawing the view
 
@@ -158,8 +181,9 @@ surfaces are plain shaded fills for now.
 
 Everything is flat-shaded — no wall, floor, or ceiling textures yet. You can see
 across a pit to the wall beyond, and the pit floor and step surfaces are now
-filled in, but only as plain shaded strips. Rooms stacked above a cell and angled
-walls come in later phases.
+filled in, but only as plain shaded strips. Diagonal-wall tiles are drawn (with
+the darker of the two wall shades) but not textured. Rooms stacked above a cell
+come in a later phase.
 
 ## RcMover — walking around
 
@@ -200,7 +224,9 @@ endfunction
 ### Phase 4 limits
 
 Movers don't collide with each other yet, lifts don't move, and rooms stacked
-above a cell aren't handled. Tune movement with `RcConfig.RC_MOVE_SPEED`,
+above a cell aren't handled. A mover slides smoothly along a 45° diagonal wall,
+but at very high speeds (well past `RC_MOVE_SPEED`) it can clip through the thin
+tip of the solid wedge. Tune movement with `RcConfig.RC_MOVE_SPEED`,
 `RC_STEP_UP`, `RC_GRAVITY`, `RC_JUMP_VEL`.
 
 ## RcLights — light and shadow

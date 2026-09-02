@@ -101,7 +101,8 @@ is the spatial index for DDA traversal, mover collision, and `.stm` authoring.
 
 | Array | Meaning |
 |---|---|
-| `wall(i)` | 0 = empty; >0 = wall texture id (full-height opaque blocker); a diagonal-tile id selects a 45° chord + rotation |
+| `wall(i)` | 0 = empty; >0 = wall texture id (full-height opaque blocker). *As built (Phase 7):* diagonals are **not** a `wall` id — see `diag(i)`. |
+| `diag(i)` | *(Phase 7)* 0 = not diagonal; `RC_DIAG_NW..SW` (1–4) = a corner-solid 45° tile, the code naming the corner the solid triangle fills. `wall(i)` stays 0. Populated from a `diag:` marker; read via `RcWorld.diagAt(col,row)`. |
 | `floorH(i)`, `ceilH(i)` | floor / ceiling height of this cell's **main region**, world units. `0` / standard reproduce today's flat behaviour. |
 | `floorTex(i)`, `ceilTex(i)` | surface texture ids (image names; resolution to a drawable is `RcRender`'s job) |
 | `upper(i)` | index into the upper-region arrays, or `-1` |
@@ -124,10 +125,12 @@ grid).
 
 The `.stm` tilemap is a **top-down floorplan**, not a picture of the game:
 
-- Tile palette is tiny: one "wall" placeholder tile, one "floor/open" placeholder,
-  one "diagonal" placeholder with 4 rotations. No per-texture tilemap art.
+- Tile palette is tiny: one "wall" placeholder tile, one "floor/open" placeholder.
+  No per-texture tilemap art.
 - Everything else rides on **marker tags**: `tex:concrete`, `floor:2 ftex:grating`,
-  `ceil:6 ctex:pipes`, `upper:vent`, `light:spot`, `door`, `water`, `sky`.
+  `ceil:6 ctex:pipes`, `upper:vent`, `light:spot`, `door`, `water`, `sky`. *As built
+  (Phase 7):* diagonals too — `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` on an
+  open (walls-layer 0) cell, naming the corner the solid triangle fills.
 - `.stm` markers carry a single free-text `tag` string (`{ row, col, tag }`), not
   structured properties. `RcWorld` parses space-separated `key:value` / bare-flag
   tokens from that string and merges multiple markers on one cell. No `.stm`
@@ -175,6 +178,16 @@ DDA lands the ray in the cell; a single ray/segment intersection against the
 tile's 45° chord (one of 4 canned segments) yields hit point, perpendicular
 distance, wall-U. No change to the march.
 
+**As built (Phase 7):** `RcCast.diagHit(dg, ox, oy, dx, dy, cx, cy, entryDist, exitDist)`,
+called right after the `wall > 0` check (full wall wins) whenever `wld.diagAt(cx,cy) > 0`.
+Signed chord function `f` (anti-diagonal `u+v-1` for `nw`/`se`; main-diagonal `u-v`
+for `ne`/`sw`). Ray entered on/inside the solid side → hit at `entryDist`. Else
+solve the chord for the ray parameter `s`; hit at `s` iff `entryDist ≤ s ≤ exitDist`
+(else the ray stays in the open triangle → keep marching). `s` is already the
+perpendicular distance — RcCast's march tracks the un-normalised ray parameter.
+Emits `RC_SPAN_WALL` with `side = RC_SPAN_SIDE_DIAG`, `u = 0`. Shared verbatim by
+`los()`.
+
 ### 4.3 Shared LOS path
 
 `RcCast.los(x, y, dx, dy)` runs the same DDA march with no span construction,
@@ -210,6 +223,11 @@ tail flushes the last pending pair). Four new shade kinds — `RC_SHADE_FLOOR_TO
 / `RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` — distinguish
 step tops, pit floors, ceiling undersides, and soffits. Floor/ceiling textures
 are still not sampled.
+
+**As built (Phase 7):** a diagonal-tile wall span arrives with `side =
+RC_SPAN_SIDE_DIAG`; `renderFrame` remaps that to the y-face wall shade before
+`drawStrip` (a dedicated diagonal shade is deferred) and samples the half-open
+diagonal cell's own light-grid entry rather than a step-back cell.
 
 There is **no texture atlas** — each wall texture is its own preloaded image;
 `drawImageStrip` samples the column. Multiple textures = multiple images, which is
@@ -325,6 +343,13 @@ from step-up and head-clearance.
   - which region (main vs `upper`) the actor is in, by height
 - Read-back: `actor.x()`, `y()`, `z()`, `angle()`, `pitch()`, `onGround()`,
   `regionId()`.
+
+**As built (Phase 7):** the diagonal case is one push-out pass per frame *after*
+the per-axis slides — if the centre lands inside a diag cell's solid wedge it is
+shoved along the unit chord normal to `rad` clearance, which produces a smooth 45°
+slide. `blocked()` is untouched (a diag cell reads as open through it). Same speed
+ceiling as the single-cell slide invariant: a body fast enough to cross the thin
+tip of the wedge in one frame is not caught.
 - `RcRender.bindCamera(actor)` — the view follows this actor. Player and enemies
   use the **same mover**; an enemy is an actor with no camera bound.
 
@@ -490,8 +515,21 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    ceiling undersides / soffits as flat per-column strips. *Demo:*
    `raycaster-p6-actors` gains a staircase + a pit; the ledge NPC is grounded.
    **[DONE]**
-7. **Diagonal-wall tiles** (`RcWorld` + `RcCast` + `RcMover`).
-   *Demo:* an octagonal room + a canted corridor.
+7. **Diagonal-wall tiles** (`RcWorld` + `RcCast` + `RcMover`). **[DONE 2026-09-02]**
+   *Demo:* `raycaster-p7-diagonals` (`DiagScene.bas`) — an octagonal room (4
+   corner-solid tiles) + a canted dead-end passage (a `<`-chevron of two diag
+   tiles), 6 probes on `diagAt`, cast/los diagonal hits, mover slide + free-walk.
+   **As built:** authored as `diag:nw|ne|se|sw` marker tags (corner the solid
+   triangle fills), not a wall id — walls-layer stays 0. `RcWorld.diagArr` /
+   `diagAt(col,row)`. `RcCast.diagHit()` (shared by `cast()` + `los()`): signed
+   chord function; hit at cell-entry if the ray enters on the solid side, else at
+   the chord-crossing ray parameter if it lies within the cell traversal. Span
+   `side = RC_SPAN_SIDE_DIAG`; wall-U = 0 (flat-shaded, v1). `RcRender` maps that
+   side to the y-face wall shade and samples the diagonal cell's own light entry.
+   `RcMover.step()` runs one push-out pass per frame — centre shoved along the
+   chord normal to `rad` clearance = a smooth 45° slide (same speed limit as the
+   single-cell slide invariant). Deferred: diagonal wall texturing, a dedicated
+   diagonal shade, `diag:` + floor/ceiling-step in one cell (diag cells are flat).
 8. **One upper region per cell** (single portal hop).
    *Demo:* a walkway you see under; a room under a lobby you drop into.
 9. **Optimisation + benchmark pass.** Whatever the accumulated demos show is slow —
