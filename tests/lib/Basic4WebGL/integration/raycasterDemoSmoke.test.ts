@@ -94,6 +94,7 @@ function evalDemo(code: string) {
        RcRender: typeof _sb_rcrender !== 'undefined' ? _sb_rcrender : null,
        RcMover: typeof _sb_rcmover !== 'undefined' ? _sb_rcmover : null,
        RcLights: typeof _sb_rclights !== 'undefined' ? _sb_rclights : null,
+       RcActors: typeof _sb_rcactors !== 'undefined' ? _sb_rcactors : null,
      };`,
   );
   const mod = factory(_sb, _createArray, ...Object.values(helpers), { log() {} });
@@ -106,7 +107,21 @@ function evalDemo(code: string) {
       | (new (w: unknown, x: number, y: number, radius: number, bodyHeight: number) => RcMoverLike)
       | null;
     RcLights: (new (w: unknown) => RcLightsLike) | null;
+    RcActors: (new (w: unknown) => RcActorsLike) | null;
   };
+}
+
+interface RcActorsLike {
+  add(imageName: string, x: number, y: number, z: number, frameW: number, frameH: number): unknown;
+  remove(act: unknown): void;
+  near(x: number, y: number, r: number): unknown;
+  los(x: number, y: number, dx: number, dy: number): number;
+  hitscan(x: number, y: number, dx: number, dy: number, rng: number): unknown;
+  hitkind(): number;
+  hitdist(): number;
+  activecount(): number;
+  actorat(i: number): unknown;
+  poolsize(): number;
 }
 
 interface RcLightsLike {
@@ -202,6 +217,11 @@ describe('raycaster phase demos smoke-execute', () => {
       r.bindlights(L);
       expect(() => r.renderframe()).not.toThrow();
     }
+    if (mod.RcActors) {
+      const A = new mod.RcActors(stubWorld);
+      r.bindactors(A);
+      expect(() => r.renderframe()).not.toThrow();
+    }
     expect(() => r.depthat(0)).not.toThrow();
     expect(typeof r.worldtoscreenx(3, 3)).toBe('number');
     // Camera at (2,2) looking +x (angle 0); a point at x=1 is behind the plane.
@@ -234,5 +254,18 @@ describe('raycaster phase demos smoke-execute', () => {
     L.update();
     expect(typeof L.samplecell(2, 2)).toBe('number');
     expect(() => L.removelight(h)).not.toThrow();
+  });
+
+  test.each(phaseDirs)('%s: RcActors (if present) pool + queries run', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcActors) return;
+    const A = new mod.RcActors(stubWorld);
+    const act = A.add('barrel.png', 2, 2, 0, 32, 32) as { visible(): number } | 0;
+    expect(act).not.toBe(0);
+    expect(A.activecount()).toBe(1);
+    expect(() => A.near(2, 2, 5)).not.toThrow();
+    expect(() => A.los(1.5, 1.5, 1, 0)).not.toThrow();
+    expect(() => A.hitscan(1.5, 1.5, 1, 0, 20)).not.toThrow();
+    expect(typeof A.hitkind()).toBe('number');
   });
 });
