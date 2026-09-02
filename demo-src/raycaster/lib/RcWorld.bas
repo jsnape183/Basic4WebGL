@@ -276,7 +276,7 @@ endfunction
 function upperCeilAt(col, row)
     dim raw
     if self.inBounds(col, row) = 0 then
-        return 1.0 + RcConfig.RC_STD_CEIL
+        return RcConfig.RC_STD_CEIL + RcConfig.RC_STD_CEIL
     endif
     raw = self.upCeilHArr(row * self.cols + col)
     if raw < 0 then

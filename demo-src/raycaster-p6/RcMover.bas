@@ -257,7 +257,8 @@ function step(dt)
         ' climb onto the walkway.
         if self.wld.upperKindAt(fcx, fcy) = 1 then
             otherFloor = self.wld.upperFloorAt(fcx, fcy)
-            if math.abs(self.pz - otherFloor) <= RcConfig.RC_STEP_UP then
+            ' grounded gate: don't snap onto the walkway mid-jump
+            if math.abs(self.pz - otherFloor) <= RcConfig.RC_STEP_UP and self.grounded = 1 then
                 self.region = 1
                 self.pz = otherFloor
             endif

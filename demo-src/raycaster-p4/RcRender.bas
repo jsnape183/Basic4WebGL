@@ -500,16 +500,26 @@ function renderFrame()
                     pShade = RcConfig.RC_SHADE_UPPER_FLOOR
                 endif
                 if camRegion = 0 then
-                    ' the other region is ABOVE -> fill from the current window top
-                    ' down to the portal plane, then eat the window from the top
-                    self.drawStrip(destX, winTop, sBot, winTop, winBot, pShade, lite)
+                    ' the other region is ABOVE -> fill down to the portal plane
+                    ' (or just the wall band for a thick portal wall), then eat
+                    ' the window from the top
+                    if kind = RcConfig.RC_SPAN_PORTAL_WALL then
+                        self.drawStrip(destX, sTop, sBot, winTop, winBot, pShade, lite)
+                    else
+                        self.drawStrip(destX, winTop, sBot, winTop, winBot, pShade, lite)
+                    endif
                     if sBot > winTop then
                         winTop = sBot
                     endif
                 else
                     ' the other region is BELOW -> fill from the portal plane down
-                    ' to the current window bottom, then eat from the bottom
-                    self.drawStrip(destX, sTop, winBot, winTop, winBot, pShade, lite)
+                    ' to the window bottom (or just the wall band), then eat from
+                    ' the bottom
+                    if kind = RcConfig.RC_SPAN_PORTAL_WALL then
+                        self.drawStrip(destX, sTop, sBot, winTop, winBot, pShade, lite)
+                    else
+                        self.drawStrip(destX, sTop, winBot, winTop, winBot, pShade, lite)
+                    endif
                     if sTop < winBot then
                         winBot = sTop
                     endif
