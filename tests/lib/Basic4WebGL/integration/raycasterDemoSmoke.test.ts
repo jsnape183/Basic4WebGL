@@ -220,6 +220,7 @@ describe('raycaster phase demos smoke-execute', () => {
     }
     if (mod.RcActors) {
       const A = new mod.RcActors(stubWorld);
+      A.add('x.png', 2, 2, 0, 32, 32);
       r.bindactors(A);
       expect(() => r.renderframe()).not.toThrow();
     }

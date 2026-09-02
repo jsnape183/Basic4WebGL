@@ -35,6 +35,8 @@ dim fDirY
 dim fPlaneX
 dim fPlaneY
 dim depthArr(0)
+dim actorOrderIdx(0)
+dim actorOrderDepth(0)
 
 Constructor(w as RcWorld)
     dim di
@@ -102,9 +104,113 @@ function worldToScreenX(wx, wy)
     return (self.viewW / 2) * (1.0 + tX / depth)
 endfunction
 
-' Billboard pass -- projects RcActors against depthArr. Filled in Phase 6 Task 5.
+' Billboard pass -- project every visible RcActor, sort far->near, and draw each
+' as depth-clipped vertical strips against depthArr (spec §5.4 / §8). One source
+' frame is a horizontal slice frameW px wide at (frame index * frameW); the
+' sprite is drawn RC_ACTOR_HEIGHT world-units tall, width scaled by frameW/frameH.
+' No per-actor tint yet -- drawImageStrip has no tint param (spec §5.3 rung 3).
 function drawActors()
-    return
+    dim n
+    dim i
+    dim j
+    dim m
+    dim a as RcActor
+    dim relX
+    dim relY
+    dim invDet
+    dim depth
+    dim tX
+    dim cx
+    dim feetY
+    dim headY
+    dim hPx
+    dim wPx
+    dim fw
+    dim fh
+    dim leftPx
+    dim c0
+    dim c1
+    dim c
+    dim centerPx
+    dim frac
+    dim srcX
+    dim tmpI
+    dim tmpD
+
+    invDet = 1.0 / (self.fPlaneX * self.fDirY - self.fDirX * self.fPlaneY)
+    n = self.boundActors.poolSize()
+
+    ' collect visible, in-front actors with their forward depth
+    array.clear(self.actorOrderIdx)
+    array.clear(self.actorOrderDepth)
+    for i = 0 to n - 1
+        a = self.boundActors.actorAt(i)
+        if a.visible() = 1 then
+            relX = a.x() - self.camX
+            relY = a.y() - self.camY
+            depth = invDet * (0 - self.fPlaneY * relX + self.fPlaneX * relY)
+            if depth > 0.05 then
+                array.push(self.actorOrderIdx, i)
+                array.push(self.actorOrderDepth, depth)
+            endif
+        endif
+    next i
+
+    ' insertion sort by depth descending (far first) -- pool is small (<= 32)
+    m = array.arrLength(self.actorOrderIdx)
+    for i = 1 to m - 1
+        tmpI = self.actorOrderIdx(i)
+        tmpD = self.actorOrderDepth(i)
+        j = i - 1
+        while j >= 0 and self.actorOrderDepth(j) < tmpD
+            self.actorOrderIdx(j + 1) = self.actorOrderIdx(j)
+            self.actorOrderDepth(j + 1) = self.actorOrderDepth(j)
+            j = j - 1
+        endwhile
+        self.actorOrderIdx(j + 1) = tmpI
+        self.actorOrderDepth(j + 1) = tmpD
+    next i
+
+    for i = 0 to m - 1
+        a = self.boundActors.actorAt(self.actorOrderIdx(i))
+        depth = self.actorOrderDepth(i)
+        fw = a.frameW()
+        fh = a.frameH()
+        if fh <= 0 then
+            fh = 1
+        endif
+
+        relX = a.x() - self.camX
+        relY = a.y() - self.camY
+        tX = invDet * (self.fDirY * relX - self.fDirX * relY)
+        cx = (self.viewW / 2) * (1.0 + tX / depth)
+
+        feetY = self.projectY(a.z(), depth)
+        headY = self.projectY(a.z() + RcConfig.RC_ACTOR_HEIGHT, depth)
+        hPx = feetY - headY
+        wPx = hPx * (fw / fh)
+
+        leftPx = cx - wPx / 2
+        c0 = math.floor(leftPx / RcConfig.RC_STRIP_W)
+        c1 = math.floor((cx + wPx / 2) / RcConfig.RC_STRIP_W)
+        if c0 < 0 then
+            c0 = 0
+        endif
+        if c1 > self.cols - 1 then
+            c1 = self.cols - 1
+        endif
+
+        for c = c0 to c1
+            if depth < self.depthAt(c) then
+                centerPx = c * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
+                frac = (centerPx - leftPx) / wPx
+                if frac >= 0 and frac <= 1 then
+                    srcX = math.floor(a.frame() * fw + frac * fw)
+                    drawing.drawImageStrip(a.image(), srcX, centerPx, (feetY + headY) / 2, RcConfig.RC_STRIP_W, hPx)
+                endif
+            endif
+        next c
+    next i
 endfunction
 
 function bindLights(lights)
