@@ -1,5 +1,27 @@
 # Release Notes
 
+## v0.7.2 — 2026-09-02
+
+### Raycaster library: diagonal walls
+
+- A cell tagged `diag:nw`, `diag:ne`, `diag:se`, or `diag:sw` is now a 45° wall — the named corner is solid, the opposite half is open floor you can walk on. Leave the `walls` tile at `0`; the marker *is* the wall. Line several up for a canted corridor, or put one in each corner of a square room to make it an octagon. Rays, line-of-sight, and player/enemy collision all understand the angled face, and a body slides smoothly along it. Diagonal faces are flat-shaded (no texture yet) and can't also carry a `floor:` / `ceil:` step. New demo: **Raycaster P7 — Diagonal Tiles**.
+
+### Raycaster library: upper regions (a second level per cell)
+
+- A cell can have a second space stacked on top of it — a walkway you glimpse under, a balcony, a room above a lobby. You draw it as its own tile layer named `upper`, top-down like `walls`, with three tile types: solid upper floor, upper wall, and a hole. Raise `ceil:` on the cells under the walkway to set its height; `uceil:3` sets the headroom up there. `RcWorld` picks up the `upper` layer automatically. `RcMover` tracks which level you're on (`me.regionId()`): walk onto a level walkway or climb a staircase onto it and you step up; walk off the edge or into a hole and you fall back down. Current limits — the two levels share one light grid, light and shots don't pass through the hole, and you need authored stairs to climb back up. New demo: **Raycaster P8 — Upper Regions**.
+
+### Raycaster library: renderer rework
+
+- The first-person renderer's occlusion model was rebuilt from a single visible "window" per screen column to a list of visible slices. This is what lets you see the room *below* a walkway and the ceiling *above* it through a hole at the same time — the old model could only show one. Floor and ceiling lighting is now smoothly blended between cells instead of stepping in hard ~1-metre bands (which used to look like shadows of walls that weren't there); walls and sprites are still lit per-cell.
+
+### New: `tilemapset.hasLayer(name)`
+
+- `hasLayer("<layer>")` returns `true` / `false` — check whether a tilemap has an optional layer before reading it (calling `layer()` on a missing layer is an error).
+
+### Tooling
+
+- `npm run build:demo` now assigns deterministic ids, so re-running it doesn't churn the committed demo export files.
+
 ## v0.7.1 — 2026-09-02
 
 ### New: softBASIC raycaster library
