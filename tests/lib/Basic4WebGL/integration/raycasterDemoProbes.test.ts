@@ -143,4 +143,13 @@ describe('raycaster phase demo probes execute', () => {
       probeCount: 9,
     });
   });
+
+  test('P7 DiagScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p7',
+      stm: 'p7room.stm',
+      sceneGlobal: '_sb_diagscene',
+      probeCount: 6,
+    });
+  });
 });

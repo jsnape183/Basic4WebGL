@@ -47,4 +47,9 @@ describe('devDemoRegistry', () => {
     const p6 = devDemoRegistry.find((d) => d.slug === 'raycaster-p6-actors');
     expect(p6?.file).toBe('RaycasterP6Actors');
   });
+
+  test('includes the Phase 7 diagonal-tiles demo', () => {
+    const p7 = devDemoRegistry.find((d) => d.slug === 'raycaster-p7-diagonals');
+    expect(p7?.file).toBe('RaycasterP7Diagonals');
+  });
 });

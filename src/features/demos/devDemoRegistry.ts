@@ -63,4 +63,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP6Actors',
   },
+  {
+    slug: 'raycaster-p7-diagonals',
+    name: 'Raycaster P7 — Diagonal Tiles',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 7 probe: corner-solid 45° diagonal-wall tiles — RcWorld parses diag: markers, RcCast ray-tests the chord in cast/los, RcMover slides along the 45° face. Octagonal room + a canted dead-end passage.',
+    docsSlug: '',
+    file: 'RaycasterP7Diagonals',
+  },
 ];
