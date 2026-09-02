@@ -30,4 +30,8 @@ const
     RC_HIT_NONE = 0
     RC_HIT_WALL = 1
     RC_HIT_ACTOR = 2
+    RC_SHADE_FLOOR_TOP = 4
+    RC_SHADE_PIT_FLOOR = 5
+    RC_SHADE_CEIL_UNDER = 6
+    RC_SHADE_SOFFIT = 7
 endconst

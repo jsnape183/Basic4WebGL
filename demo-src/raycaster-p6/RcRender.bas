@@ -275,6 +275,18 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     if shadeKind = 3 then
         g = 65
     endif
+    if shadeKind = 4 then
+        g = 105
+    endif
+    if shadeKind = 5 then
+        g = 60
+    endif
+    if shadeKind = 6 then
+        g = 80
+    endif
+    if shadeKind = 7 then
+        g = 50
+    endif
     rr = math.clamp(g * lightLevel, 0, 255)
     gg = math.clamp(g * lightLevel, 0, 255)
     bb = math.clamp((g + 25) * lightLevel, 0, 255)
