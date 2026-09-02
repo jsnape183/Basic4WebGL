@@ -272,7 +272,7 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
         b = winBot
     endif
     if b <= t then
-        return
+        return 0
     endif
     g = 150
     if shadeKind = 1 then
@@ -302,6 +302,23 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     pen.setLineWidth(0)
     pen.setFillColor(rr, gg, bb)
     drawing.drawRect(destX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t)
+    return 1
+endfunction
+
+' Draw one flat horizontal surface at world height hh, from depth dNear to dFar,
+' as a per-column strip. Orders the two projected Ys so drawStrip always gets
+' top < bottom (a floor below eye and a ceiling above it project inverted).
+' Bumps surfCountLast only when a strip is actually painted.
+function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite)
+    dim ya
+    dim yb
+    ya = self.projectY(hh, dNear)
+    yb = self.projectY(hh, dFar)
+    if ya <= yb then
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, ya, yb, winTop, winBot, kind, lite)
+    else
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yb, ya, winTop, winBot, kind, lite)
+    endif
 endfunction
 
 function renderFrame()
@@ -341,8 +358,6 @@ function renderFrame()
     dim scD
     dim scKind
     dim scLite
-    dim yF
-    dim yN
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -400,6 +415,7 @@ function renderFrame()
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
         self.depthArr(col) = RcConfig.RC_MAX_DIST
 
+        ' pending floor/ceiling surface: world-height, near-depth, shade kind, light
         hitWall = 0
         sfH = runFloorH
         sfD = 0
@@ -436,14 +452,8 @@ function renderFrame()
             endif
 
             if kind = RcConfig.RC_SPAN_WALL then
-                yF = self.projectY(sfH, d)
-                yN = self.projectY(sfH, sfD)
-                self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-                self.surfCountLast = self.surfCountLast + 1
-                yF = self.projectY(scH, d)
-                yN = self.projectY(scH, scD)
-                self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-                self.surfCountLast = self.surfCountLast + 1
+                self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
+                self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                 hitWall = 1
                 self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i), lite)
                 self.depthArr(col) = d
@@ -455,10 +465,7 @@ function renderFrame()
                 ' the window open -- farther geometry shows through (documented header gap).
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    yF = self.projectY(sfH, d)
-                    yN = self.projectY(sfH, sfD)
-                    self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-                    self.surfCountLast = self.surfCountLast + 1
+                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
                     if newH > runFloorH then
                         newY = self.projectY(newH, d)
@@ -473,14 +480,13 @@ function renderFrame()
                         sfKind = RcConfig.RC_SHADE_FLOOR_TOP
                     endif
                     sfH = newH
+                    ' RcCast records the cell just ENTERED (its floor = newH, the first cell
+                    ' of this segment), so `lite` here is that segment's own light -- correct.
                     sfLite = lite
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    yF = self.projectY(scH, d)
-                    yN = self.projectY(scH, scD)
-                    self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-                    self.surfCountLast = self.surfCountLast + 1
+                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
                     if newH < runCeilH then
                         newY = self.projectY(newH, d)
@@ -507,14 +513,8 @@ function renderFrame()
         endwhile
 
         if hitWall = 0 then
-            yF = self.projectY(sfH, RcConfig.RC_MAX_DIST)
-            yN = self.projectY(sfH, sfD)
-            self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-            self.surfCountLast = self.surfCountLast + 1
-            yF = self.projectY(scH, RcConfig.RC_MAX_DIST)
-            yN = self.projectY(scH, scD)
-            self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-            self.surfCountLast = self.surfCountLast + 1
+            self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite)
+            self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite)
         endif
     next col
 

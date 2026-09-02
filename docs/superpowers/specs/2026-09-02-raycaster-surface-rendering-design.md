@@ -45,6 +45,8 @@ yTop    = projectY(h, dFar)      ' the far edge climbs toward the horizon
 
 Draw it with the existing `drawStrip(destX, yTop, yBottom, winTop, winBot, shadeKind, lite)` — it already clips to the window, flat-shades by `shadeKind`, multiplies by `lite`, and emits `drawing.drawRect(destX, mid, RC_STRIP_W, height)`.
 
+**Screen ordering is not the same for a floor and a ceiling.** A floor below eye level has its *far* edge higher on screen (`projectY(h, dFar) < projectY(h, dNear)`); a ceiling above eye level has its *far* edge lower. `drawStrip` requires `yTop < yBottom` and silently no-ops otherwise. A `drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite)` helper projects both edges and passes the smaller as `yTop` — one place to get the sign right, called from all six sites (WALL ×2, FLOORSTEP, CEILSTEP, tail ×2). It also fixes the same-inversion case of a floor step that rises *above* eye level. `drawStrip` returns `1`/`0` (drew / clipped) so `surfaceCount()` counts only real strips.
+
 ### 2.2 The mechanism — stash-and-defer
 
 The surface between floor step *N* and the next floor event is at the height established *at* step *N*, over depths `[dN, dNext]`. `dNext` isn't known until the loop reaches the next span, so the surface draw is **deferred one iteration**.

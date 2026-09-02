@@ -318,9 +318,15 @@ describe('raycaster phase demos smoke-execute', () => {
   // floors) between the risers. Drive a real renderFrame with a stepped corridor
   // and a drawRect spy; the two full-screen background fills have w === 320, the
   // per-column strips have w === 4.
+  // Deviation from plan Step 13: the plan orders the corridor "step up (0.3) then
+  // pit (-0.25)", but a forward-facing camera can never see that pit floor — the
+  // near lip of the raised step occludes it (winBot clamps at the step), so the
+  // "pit floor below the rim" / dark-grey assertions would be unsatisfiable. Order
+  // it "pit (-0.3) then step up (0.3)" instead: same surface kinds exercised
+  // (PIT_FLOOR, FLOOR_TOP, CEIL_UNDER), pit now genuinely visible.
   const stubWorld2 = {
-    floorheightat: (c: number) => (c < 4 ? 0 : c < 6 ? 0.3 : -0.25),
-    ceilheightat: () => 1,
+    floorheightat: (c: number) => (c < 4 ? 0 : c < 6 ? -0.3 : 0.3),
+    ceilheightat: (c: number) => (c < 5 ? 1 : 1.4),
     wallat: (c: number) => (c <= 0 || c >= 8 ? 1 : 0),
     walltexat: () => '',
     floortexat: () => '',
@@ -332,11 +338,16 @@ describe('raycaster phase demos smoke-execute', () => {
 
   test.each(phaseDirs)('%s: renderFrame draws floor/pit surfaces', (dirName) => {
     const rects: any[][] = [];
+    const fills: number[][] = [];
     const overrides = {
       getStageWidth: () => 320,
       getStageHeight: () => 200,
+      setFillColor: (...a: unknown[]) => {
+        fills.push(a as number[]);
+        return undefined;
+      },
       drawRect: (...a: unknown[]) => {
-        rects.push(a);
+        rects.push([...(a as number[]), fills[fills.length - 1]]);
         return undefined;
       },
     };
@@ -347,13 +358,27 @@ describe('raycaster phase demos smoke-execute', () => {
     r.setcamera(2, 2, 0, 0);
     r.renderframe();
 
-    expect(r.surfacecount()).toBeGreaterThan(0);
+    expect(r.surfacecount()).toBeGreaterThan(3);
 
-    const strips = rects.filter((a) => a[2] === 4).map((a) => a[1] as number);
-    // Step-top of floor height 0.3 projects to ≈ 100 + 0.2 * (200 / d); d ≈ 2–4 → ≈ 110–120.
-    expect(strips.some((midY) => Math.abs(midY - 113) <= 25)).toBe(true);
-    // Pit floor (height -0.25) is drawn lower on screen than the step-top rim.
-    const stepTop = strips.find((midY) => Math.abs(midY - 113) <= 25) as number;
-    expect(strips.some((midY) => midY > stepTop + 10)).toBe(true);
+    // drawRect args: (destX, midY, w, h, [r,g,b]). Background fills have w === 320.
+    // Isolate the horizontal-SURFACE strips by their drawStrip greys (index 1 of
+    // setFillColor, lightLevel 1.0): FLOOR_TOP=105, PIT_FLOOR=60, CEIL_UNDER=80,
+    // SOFFIT=50 — distinct from risers (90/65) and walls (150/115).
+    const SURF_GREYS = new Set([105, 60, 80, 50]);
+    const surf = rects
+      .filter((a) => a[2] === 4 && SURF_GREYS.has((a[4] as number[])?.[1]))
+      .map((a) => ({ midY: a[1] as number, grey: (a[4] as number[])[1] }));
+
+    // Step-top of floor height 0.3 projects to ≈ 100 + 0.2 * (200 / d); d ≈ 4–6 → ≈ 107–110.
+    const stepTop = surf.find((s) => s.grey === 105 && Math.abs(s.midY - 113) <= 25);
+    expect(stepTop, 'a FLOOR_TOP surface near the step rim').toBeDefined();
+    // Pit floor (PIT_FLOOR grey, height -0.3) is drawn lower on screen than the rim.
+    expect(surf.some((s) => s.grey === 60 && s.midY > (stepTop as { midY: number }).midY + 10)).toBe(
+      true,
+    );
+    // Ceiling underside (rising ceiling → CEIL_UNDER) draws above the horizon.
+    // Regression guard for the Critical bug: silently skipped before the ordering
+    // fix in drawSurface (drawStrip's `b <= t` guard drops the inverted strip).
+    expect(surf.some((s) => s.grey === 80 && s.midY < 100)).toBe(true);
   });
 });

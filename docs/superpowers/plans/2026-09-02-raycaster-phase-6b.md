@@ -164,7 +164,29 @@ function surfaceCount()
 endfunction
 ```
 
-- [ ] **Step 3: `renderFrame` dim block.** Add these hoisted locals to `renderFrame`'s `dim` list:
+- [ ] **Step 2b: `drawSurface()` helper** (added in the Task 2 code review — do NOT inline the surface draw). A floor surface below eye level and a ceiling surface above it project with *opposite* near/far screen ordering; centralise it so `drawStrip` never gets `sTop > sBot` (which it silently skips). `drawStrip` gains a `1`/`0` return (drew / clipped) so `surfaceCount()` is honest.
+
+```basic
+' Draw one flat horizontal surface at world height hh, from depth dNear to dFar,
+' as a per-column strip. Orders the two projected Ys so drawStrip always gets
+' top < bottom (a floor below eye and a ceiling above it project inverted).
+' Bumps surfCountLast only when a strip is actually painted.
+function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite)
+    dim ya
+    dim yb
+    ya = self.projectY(hh, dNear)
+    yb = self.projectY(hh, dFar)
+    if ya <= yb then
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, ya, yb, winTop, winBot, kind, lite)
+    else
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yb, ya, winTop, winBot, kind, lite)
+    endif
+endfunction
+```
+
+And in `drawStrip`, change the two early `return`s (the `b <= t` guard and, if present, any other) plus the end of the function to **return 1 on a real draw, 0 on a clipped skip** — the wall/riser callers ignore the value (harmless). Concretely: `if b <= t then return 0 endif` at the guard, and `return 1` as the last line after `drawing.drawRect(...)`.
+
+- [ ] **Step 3: `renderFrame` dim block.** Add these hoisted locals to `renderFrame`'s `dim` list (NO `yF`/`yN` — the helper owns projection):
 
 ```basic
     dim hitWall
@@ -176,8 +198,6 @@ endfunction
     dim scD
     dim scKind
     dim scLite
-    dim yF
-    dim yN
 ```
 
 - [ ] **Step 4: Reset the counter.** Near the top of `renderFrame` (with `bgLite`), add `self.surfCountLast = 0`.
@@ -204,14 +224,8 @@ endfunction
 
 ```basic
             if kind = RcConfig.RC_SPAN_WALL then
-                yF = self.projectY(sfH, d)
-                yN = self.projectY(sfH, sfD)
-                self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-                self.surfCountLast = self.surfCountLast + 1
-                yF = self.projectY(scH, d)
-                yN = self.projectY(scH, scD)
-                self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-                self.surfCountLast = self.surfCountLast + 1
+                self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
+                self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                 hitWall = 1
                 self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i), lite)
                 self.depthArr(col) = d
@@ -223,10 +237,7 @@ endfunction
 ```basic
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    yF = self.projectY(sfH, d)
-                    yN = self.projectY(sfH, sfD)
-                    self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-                    self.surfCountLast = self.surfCountLast + 1
+                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
                     if newH > runFloorH then
                         newY = self.projectY(newH, d)
@@ -250,10 +261,7 @@ endfunction
 ```basic
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    yF = self.projectY(scH, d)
-                    yN = self.projectY(scH, scD)
-                    self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-                    self.surfCountLast = self.surfCountLast + 1
+                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
                     if newH < runCeilH then
                         newY = self.projectY(newH, d)
@@ -279,14 +287,8 @@ endfunction
 
 ```basic
         if hitWall = 0 then
-            yF = self.projectY(sfH, RcConfig.RC_MAX_DIST)
-            yN = self.projectY(sfH, sfD)
-            self.drawStrip(destX, yF, yN, winTop, winBot, sfKind, sfLite)
-            self.surfCountLast = self.surfCountLast + 1
-            yF = self.projectY(scH, RcConfig.RC_MAX_DIST)
-            yN = self.projectY(scH, scD)
-            self.drawStrip(destX, yF, yN, winTop, winBot, scKind, scLite)
-            self.surfCountLast = self.surfCountLast + 1
+            self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite)
+            self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite)
         endif
 ```
 
@@ -304,7 +306,7 @@ for d in 3 4 5 6; do cp demo-src/raycaster/lib/RcRender.bas demo-src/raycaster-p
   - The Phase-6 occlusion test already added an `evalDemo(code, sbOverrides)` overrides param and a `getStageWidth`/`getStageHeight` + `drawImageStrip` spy pattern. Reuse it; also spy `drawRect`. Override keys are the `_sb.<name>` method names verbatim from the `.bas` `call(...)` strings — `drawImageStrip`, `drawRect`, `getStageWidth`, `getStageHeight` (camelCase, same as the Phase-6 test's `drawImageStrip` key which is known to work).
   - Add `surfacecount(): number` to `RcRenderLike`.
   - New `test.each(phaseDirs)('%s: renderFrame draws floor/pit surfaces', ...)`:
-    - `stubWorld2` — a corridor (wall at `c >= 8`) whose `floorheightat(c,r)` returns `0` for `c < 4`, `0.3` for `4 <= c < 6` (a step up), `-0.25` for `c >= 6` (a drop) — and `ceilheightat` constant `1`. `widthcells: 12`, `heightcells: 4`.
+    - `stubWorld2` — a corridor (wall at `c >= 8`) whose `floorheightat(c,r)` returns `0` for `c < 4`, `0.3` for `4 <= c < 6` (a step up), `-0.25` for `c >= 6` (a drop); **`ceilheightat(c,r)` returns `1` for `c < 5` and `1.4` for `c >= 5` (a ceiling that rises — its `CEIL_UNDER` underside must draw)**. `widthcells: 12`, `heightcells: 4`.
     - `const rects: any[][] = []` via `drawRect: (...a) => { rects.push(a); }` in overrides; `getStageWidth: () => 320`, `getStageHeight: () => 200`.
     - `const r = new mod.RcRender(stubWorld2); r.setcamera(2, 2, 0, 0);` (camera in the `c<4` flat zone, looking `+x`).
     - `if (!mod.RcRender) return;` — this test needs no `RcActors`, so it can run for p3–p6.
@@ -312,8 +314,11 @@ for d in 3 4 5 6; do cp demo-src/raycaster/lib/RcRender.bas demo-src/raycaster-p
     - `expect(r.surfacecount()).toBeGreaterThan(0);`
     - `drawRect` args are `(destX, midY, w, h)`. The two background fills are `drawRect(160, 100, 320, 200)` and `drawRect(160, ~150, 320, ~100)` — filter those out (w === 320). The remaining rects are strips (w === `RC_STRIP_W` === 4).
     - **Step-top present, at the right height:** for a centre-ish column, there must be a strip whose vertical band brackets `projectY(0.3, someDepthInThatCell)`. Compute the expected screen Y with the same formula (`scy=100`, `viewH=200`, `camZ=0`, `RC_EYE_Z=0.5`, `camPitch=0`): `projectY(0.3, d) = 100 + (0.5 - 0.3) * (200 / d)`. For `d` in the `0.3` cell (≈ 2 to 4 world units from camera at x=2), that's ≈ `100 + 0.2*(200/3)` ≈ `113`. Assert **some** strip rect at a centre column has `midY` within, say, `±25` of that AND grey brighter than the pit (see below). Keep the tolerance loose — the point is "a floor surface is drawn roughly where the step is", not pixel-exactness.
-    - **Pit floor is drawn BELOW the rim:** the `-0.25` surface projects LOWER on screen (larger Y) than the `0` / `0.3` surfaces. Assert the lowest-`midY` non-background strip in a far column corresponds to a darker fill than the step-top strip (the pit uses `RC_SHADE_PIT_FLOOR` g=60 vs floor-top g=105) — i.e. capture `pen.setFillColor` via a `setfillcolor` spy too, or simpler: assert there exists a strip with `midY` greater than the step-top strip's `midY` (pit floor lower on screen). This catches a `sfKind` sign inversion.
-  - Keep it to ~2–3 assertions. If the geometry maths gets fiddly, fall back to: `surfacecount() > 0` **and** total non-background `drawRect` count increased vs a `stubWorld` with flat floor+ceiling (no steps → far fewer surface strips). Report which form you used.
+    - **Pit floor is drawn BELOW the rim:** assert there exists a strip with `midY` greater (lower on screen) than the step-top strip's `midY`.
+    - **Ceiling underside draws:** assert at least one `w === 4` (`a[2] === RC_STRIP_W`) strip has `midY < 100` (above the horizon at `scy = 100`). Before this task's ceiling-ordering fix this assertion **fails** (ceiling surfaces silently skipped) — it is the regression guard for the Critical bug.
+    - **Kind selection not inverted:** spy `pen.setFillColor` (`_sb.setFillColor` — check `src/lib/Basic4WebGL/defs/pen.bas`; override key `setFillColor`). Capture `(r,g,b)` per `drawRect` (they're issued back-to-back). Assert the pit-floor strip's grey (`RC_SHADE_PIT_FLOOR` → g≈60) is **darker** than the step-top strip's (`RC_SHADE_FLOOR_TOP` → g≈105). Catches a `sfKind` / `scKind` `<`/`>` inversion. If pairing colours to rects is awkward, at minimum assert the set of distinct greys drawn includes both a "bright" (>95) and a "dark" (<70) surface value.
+  - `surfacecount()` is now honest (only counts real draws — Step 2b) so `expect(r.surfacecount()).toBeGreaterThan(3)` is a fair loose sanity check alongside the specific assertions above.
+  - If the colour-pairing maths gets genuinely fiddly, the floor + ceiling + `surfacecount` assertions are the must-haves; report what you dropped and why.
 
 - [ ] **Step 14: Verify.** `npx vitest run tests/lib/Basic4WebGL/integration/raycasterDemo` green. `npx vitest run` full green. `npx vite build` clean.
 
