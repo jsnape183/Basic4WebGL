@@ -202,6 +202,15 @@ Each visible strip is one `drawing.drawImageStrip(texImage, texU, destX, destY,
 stripW, stripH)` call — exactly the primitive the current demo uses. Floor/ceiling
 step surfaces use a flat-shaded `drawing.drawRect`. Sky spans use a gradient rect.
 
+**As built (6b):** the flat-shaded fill now also covers the *horizontal* surface
+between risers, per column — a `drawSurface()` helper in `RcRender` stashes each
+pending floor/ceiling surface (world height, near depth, shade kind, light) and
+draws it one span-loop iteration later, once the far depth is known (a post-loop
+tail flushes the last pending pair). Four new shade kinds — `RC_SHADE_FLOOR_TOP`
+/ `RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` — distinguish
+step tops, pit floors, ceiling undersides, and soffits. Floor/ceiling textures
+are still not sampled.
+
 There is **no texture atlas** — each wall texture is its own preloaded image;
 `drawImageStrip` samples the column. Multiple textures = multiple images, which is
 fine.
@@ -476,6 +485,11 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    *Demo:* `raycaster-p6-actors` (`ActorScene.bas`) — 3 NPC billboards (floor /
    raised ledge / hidden behind a wall stub) + 6 probes on projection, hitscan,
    occlusion, `near`, and `los`.
+
+   **6b. Horizontal surface rendering.** RcRender fills step tops / pit floors /
+   ceiling undersides / soffits as flat per-column strips. *Demo:*
+   `raycaster-p6-actors` gains a staircase + a pit; the ledge NPC is grounded.
+   **[DONE]**
 7. **Diagonal-wall tiles** (`RcWorld` + `RcCast` + `RcMover`).
    *Demo:* an octagonal room + a canted corridor.
 8. **One upper region per cell** (single portal hop).

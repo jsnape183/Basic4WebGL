@@ -147,11 +147,19 @@ endfunction
 | `ren.projectY(height, distance)` | screen Y for a world height at a distance (mostly internal) |
 | `ren.columnCount()` | how many vertical strips wide the view is |
 
+`RcRender` also fills the flat, horizontal surfaces you see wherever a floor or
+ceiling changes height — the top of a step, the floor of a pit, the underside of
+a raised ceiling, and the soffit under a dropped ceiling. Each is drawn as a
+flat-shaded strip, one per screen column, shaded a little differently so a step
+still reads as a step. Floor and ceiling *textures* aren't sampled yet — these
+surfaces are plain shaded fills for now.
+
 ### Phase 3 limits
 
-Everything is flat-shaded — no wall textures yet. You can see across a pit to the
-wall beyond, but the inside of the pit isn't drawn specially. Rooms stacked above
-a cell and angled walls come in later phases.
+Everything is flat-shaded — no wall, floor, or ceiling textures yet. You can see
+across a pit to the wall beyond, and the pit floor and step surfaces are now
+filled in, but only as plain shaded strips. Rooms stacked above a cell and angled
+walls come in later phases.
 
 ## RcMover — walking around
 

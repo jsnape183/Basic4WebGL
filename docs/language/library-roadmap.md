@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-02 (raycaster library Phase 6 shipped — `RcActors` billboard pool + `los` / `hitscan` / `near` ray queries)
+> Last updated: 2026-09-02 (raycaster library Phase 6b shipped — `RcRender` fills floor/ceiling horizontal surfaces as flat per-column strips)
 
 ---
 
@@ -381,6 +381,18 @@ array is still open (`docs/roadmap.md` deferred issue #33 follow-up). No
 `assetmanager` image-size accessor was needed — `RcActors.add` takes explicit
 `frameW` / `frameH`.
 
+Phase 6b shipped: `RcRender` fills the flat *horizontal* surfaces between
+floor/ceiling risers — step tops, pit floors, ceiling undersides, soffits — as
+flat per-column strips, completing the flat-shaded render before Phase 7's
+diagonal walls. A `drawSurface()` helper stashes each pending surface (world
+height, near depth, shade kind, light) and paints it one span-loop iteration
+later, once the far depth is known; `RcConfig` gains `RC_SHADE_FLOOR_TOP` /
+`RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` (greys
+105/60/80/50), and `RcRender.surfaceCount()` returns last frame's surface-strip
+count as a probe hook. Floor/ceiling *textures* are still not sampled. Demo:
+`raycaster-p6-actors` gains a staircase + a pit, and the ledge NPC is grounded on
+a step top.
+
 Phases 7–10 (diagonal tiles, upper regions, optimisation)
 remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
@@ -398,8 +410,9 @@ have a fixed height and no per-region textures; `RcCast` stops at the first wall
 see-through windows yet), ignores upper regions, and treats diagonal-wall tiles as
 empty; `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is
-all billboard clipping needs), not per-span, and it doesn't draw a pit floor or
-under-ledge surface when the occlusion window is left open. `RcActor` tint is
+all billboard clipping needs), not per-span. `RcRender` fills floor/ceiling
+horizontal surfaces (step tops, pit floors, ceiling undersides, soffits) as flat
+per-column strips but does not sample floor/ceiling textures. `RcActor` tint is
 stored but not drawn (needs `drawImageStrip` `tint`, spec §5.3 rung 3); billboards
 are a single horizontal frame strip (no vertical frames / 8-direction sprites); no
 actor-vs-actor collision; `hitscan`'s actor test is a fixed 0.4-cell perpendicular
