@@ -21,7 +21,10 @@ import { packageModules } from '../../../../src/constants/packageModules';
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
-function makeSbStub(probeLog: string[], stm: { walls: number[][]; markers: unknown[]; tw: number; th: number }) {
+function makeSbStub(
+  probeLog: string[],
+  stm: { walls: number[][]; upper?: number[][]; markers: unknown[]; tw: number; th: number },
+) {
   const cache = new Map<string, unknown>();
   const handler: ProxyHandler<Record<string, unknown>> = {
     get(target, prop: string) {
@@ -52,8 +55,11 @@ function makeSbStub(probeLog: string[], stm: { walls: number[][]; markers: unkno
   stub.tileAt = (_h: unknown, px: number, py: number) => {
     const c = Math.floor(px / stm.tw);
     const r = Math.floor(py / stm.th);
-    return stm.walls[r]?.[c] ?? 0;
+    const grid = _h === 'LAYER:upper' && stm.upper ? stm.upper : stm.walls;
+    return grid[r]?.[c] ?? 0;
   };
+  stub.hasLayer = (_h: unknown, name: string) =>
+    name === 'walls' || (name === 'upper' && !!stm.upper);
   stub.allMarkers = () => stm.markers.map((m) => ({ ...(m as object) }));
   stub.getStageWidth = () => 640;
   stub.getStageHeight = () => 400;
@@ -98,6 +104,7 @@ function runPhaseProbes(opts: { dir: string; stm: string; sceneGlobal: string; p
   const stmJson = JSON.parse(readFileSync(`${opts.dir}/assets/${opts.stm}`, 'utf-8'));
   const stm = {
     walls: stmJson.layers.walls as number[][],
+    upper: stmJson.layers.upper as number[][] | undefined,
     markers: stmJson.layers.tags.markers as unknown[],
     tw: stmJson.tileWidth as number,
     th: stmJson.tileHeight as number,
@@ -149,6 +156,15 @@ describe('raycaster phase demo probes execute', () => {
       dir: 'demo-src/raycaster-p7',
       stm: 'p7room.stm',
       sceneGlobal: '_sb_diagscene',
+      probeCount: 6,
+    });
+  });
+
+  test('P8 PortalScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p8',
+      stm: 'p8room.stm',
+      sceneGlobal: '_sb_portalscene',
       probeCount: 6,
     });
   });

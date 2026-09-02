@@ -72,4 +72,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP7Diagonals',
   },
+  {
+    slug: 'raycaster-p8-upper',
+    name: 'Raycaster P8 — Upper Regions',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 8 probe: one optional upper region per cell — a walkway you see under, climb onto, and drop through a hole. Authored as a second `upper` .stm tile layer.',
+    docsSlug: '',
+    file: 'RaycasterP8Upper',
+  },
 ];
