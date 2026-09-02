@@ -21,6 +21,11 @@ Class
 '     cell per axis, so it only stays tunnel-proof while
 '     max_speed * RC_MAX_STEP_DT < rad. A faster body (Phase 6 enemies,
 '     knockback) needs a swept check.
+'   - diagonal tiles: step() runs ONE push-out pass per frame after the axis
+'     moves -- if the centre lands inside a diag cell's solid wedge it is pushed
+'     back out along the chord normal (a smooth 45-degree slide). Same speed
+'     limit as the slide invariant: a body fast enough to cross the thin part of
+'     the wedge in one frame is not caught.
 dim wld as RcWorld
 dim px
 dim py
@@ -107,6 +112,15 @@ function step(dt)
     dim cy
     dim groundH
     dim steppingUp
+    dim dcx
+    dim dcy
+    dim dgc
+    dim lu
+    dim lv
+    dim sd
+    dim push
+    dim dnx
+    dim dny
 
     dsec = dt / 1000.0
     if dsec > RcConfig.RC_MAX_STEP_DT then
@@ -138,6 +152,44 @@ function step(dt)
         cy = self.edgeCell(ny, moveY)
         if self.blocked(math.floor(self.px), cy) = 0 then
             self.py = ny
+        endif
+    endif
+
+    ' Diagonal push-out: keep the body centre at least `rad` off the 45-degree
+    ' chord of the diag cell it now occupies, on the open side.
+    dcx = math.floor(self.px)
+    dcy = math.floor(self.py)
+    dgc = self.wld.diagAt(dcx, dcy)
+    if dgc > 0 then
+        lu = self.px - dcx
+        lv = self.py - dcy
+        sd = 0
+        dnx = 0
+        dny = 0
+        if dgc = RcConfig.RC_DIAG_NW then
+            sd = (lu + lv - 1.0) * 0.70710678
+            dnx = 0.70710678
+            dny = 0.70710678
+        endif
+        if dgc = RcConfig.RC_DIAG_SE then
+            sd = (1.0 - lu - lv) * 0.70710678
+            dnx = 0 - 0.70710678
+            dny = 0 - 0.70710678
+        endif
+        if dgc = RcConfig.RC_DIAG_NE then
+            sd = (lv - lu) * 0.70710678
+            dnx = 0 - 0.70710678
+            dny = 0.70710678
+        endif
+        if dgc = RcConfig.RC_DIAG_SW then
+            sd = (lu - lv) * 0.70710678
+            dnx = 0.70710678
+            dny = 0 - 0.70710678
+        endif
+        if sd < self.rad then
+            push = self.rad - sd
+            self.px = self.px + dnx * push
+            self.py = self.py + dny * push
         endif
     endif
 

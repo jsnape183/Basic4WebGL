@@ -354,6 +354,66 @@ describe('raycaster phase demos smoke-execute', () => {
     lightat: () => 0,
   };
 
+  // Center cell (3,3) is a diagonal of the given code; everything else open,
+  // bordered at 0 and 7.
+  function makeDiagStub(code: number) {
+    return {
+      floorheightat: () => 0,
+      ceilheightat: () => 1,
+      wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
+      diagat: (c: number, r: number) => (c === 3 && r === 3 ? code : 0),
+      walltexat: () => '',
+      floortexat: () => '',
+      ceiltexat: () => '',
+      widthcells: () => 8,
+      heightcells: () => 8,
+      lightat: () => 0,
+    };
+  }
+
+  // For each corner code: spawn point on the OPEN side near the chord, a drive
+  // angle straight into the wedge, and the signed-distance predicate that must
+  // stay true — the body centre never crosses to the solid side. Chord of cell
+  // (3,3) is world x+y=7 (nw/se) or x-y=0 (ne/sw).
+  const DIAG_MOVER_CASES = [
+    // nw solid (x+y<=7 solid): spawn SE of the chord, drive NW.
+    { code: 1, x: 4.4, y: 3.6, ang: Math.atan2(-1, -1), ok: (x: number, y: number) => x + y > 7.0 },
+    // ne solid (x-y>=0 solid): spawn NW of the chord (x<y), drive toward -x+y... i.e. NW.
+    { code: 2, x: 3.4, y: 3.7, ang: Math.atan2(1, -1), ok: (x: number, y: number) => x - y < 0.0 },
+    // se solid (x+y>=7 solid): spawn NW of the chord, drive SE.
+    { code: 3, x: 3.4, y: 3.4, ang: Math.atan2(1, 1), ok: (x: number, y: number) => x + y < 7.0 },
+    // sw solid (x-y<=0 solid): spawn SE of the chord (x>y), drive SE.
+    { code: 4, x: 3.7, y: 3.4, ang: Math.atan2(-1, 1), ok: (x: number, y: number) => x - y > 0.0 },
+  ];
+
+  test.each(phaseDirs)('%s: RcMover slides along a diagonal face instead of tunnelling', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcMover) return;
+
+    for (const cs of DIAG_MOVER_CASES) {
+      const m = new mod.RcMover(makeDiagStub(cs.code) as unknown, cs.x, cs.y, 0.3, 0.6) as unknown as RcMoverLike;
+      m.turn(cs.ang);
+      for (let i = 0; i < 40; i++) {
+        m.move(2.6, 0); // RC_MOVE_SPEED
+        m.step(50);
+      }
+      expect(
+        cs.ok(m.x(), m.y()),
+        `code ${cs.code}: ended (${m.x().toFixed(2)},${m.y().toFixed(2)}) — must stay on the open side`,
+      ).toBe(true);
+      expect(Math.hypot(m.x() - cs.x, m.y() - cs.y)).toBeGreaterThan(0.05); // actually moved
+    }
+
+    // Free walk: no diagonal on the path -> travels far.
+    const free = new mod.RcMover(makeDiagStub(3) as unknown, 1.5, 1.5, 0.3, 0.6) as unknown as RcMoverLike;
+    free.turn(0); // +x, row 1, never touches the (3,3) diagonal
+    for (let i = 0; i < 40; i++) {
+      free.move(2.6, 0);
+      free.step(50);
+    }
+    expect(free.x()).toBeGreaterThan(4.0);
+  });
+
   test.each(phaseDirs)('%s: RcCast resolves a diagonal tile as a wall span', (dirName) => {
     const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
     if (!mod.RcCast) return; // phase 1 has no RcCast
