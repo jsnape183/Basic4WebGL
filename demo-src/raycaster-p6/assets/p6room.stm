@@ -18,11 +18,21 @@
     "tags": {
       "type": "markers",
       "markers": [
+        { "row": 1, "col": 1, "tag": "light" },
+
+        { "row": 3, "col": 4, "tag": "floor:-0.3" },
+        { "row": 3, "col": 5, "tag": "floor:-0.3" },
+        { "row": 4, "col": 4, "tag": "floor:-0.3" },
+        { "row": 4, "col": 5, "tag": "floor:-0.3" },
+
+        { "row": 7, "col": 8,  "tag": "floor:0.15" },
+        { "row": 8, "col": 8,  "tag": "floor:0.15" },
+        { "row": 7, "col": 9,  "tag": "floor:0.3" },
+        { "row": 8, "col": 9,  "tag": "floor:0.3" },
         { "row": 7, "col": 10, "tag": "floor:0.4" },
-        { "row": 7, "col": 11, "tag": "floor:0.4" },
         { "row": 8, "col": 10, "tag": "floor:0.4" },
-        { "row": 8, "col": 11, "tag": "floor:0.4" },
-        { "row": 1, "col": 1, "tag": "light" }
+        { "row": 7, "col": 11, "tag": "floor:0.4" },
+        { "row": 8, "col": 11, "tag": "floor:0.4" }
       ]
     }
   }

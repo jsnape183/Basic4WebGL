@@ -72,6 +72,9 @@ function runProbes()
     dim n1x
     dim n2 as RcActor
     dim dw
+    dim ok7
+    dim ok8
+    dim ok9
 
     self.ren.setCamera(3.0, 3.0, 0, 0)
     halfW = stage.width() / 2
@@ -131,6 +134,30 @@ function runProbes()
         ok6 = 1
     endif
     self.probe("los sees the wall", ok6, 152)
+
+    ' 7 - staircase geometry loaded (0 -> 0.15 -> 0.3 -> 0.4 up to the ledge)
+    ok7 = 0
+    if math.abs(self.wld.floorHeightAt(9, 7) - 0.3) < 0.01 then
+        if math.abs(self.wld.floorHeightAt(11, 7) - 0.4) < 0.01 then
+            ok7 = 1
+        endif
+    endif
+    self.probe("staircase loaded", ok7, 172)
+
+    ' 8 - pit geometry loaded (floor:-0.3). abs(x + 0.3) avoids a negative literal in the compare.
+    ok8 = 0
+    if math.abs(self.wld.floorHeightAt(4, 3) + 0.3) < 0.01 then
+        ok8 = 1
+    endif
+    self.probe("pit loaded", ok8, 192)
+
+    ' 9 - the surface pass drew horizontal strips last frame
+    self.ren.renderFrame()
+    ok9 = 0
+    if self.ren.surfaceCount() > 0 then
+        ok9 = 1
+    endif
+    self.probe("surfaces drawn", ok9, 212)
 endfunction
 
 function probe(label, passed, y)

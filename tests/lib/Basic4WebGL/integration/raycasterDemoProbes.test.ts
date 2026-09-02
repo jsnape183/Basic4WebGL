@@ -140,7 +140,7 @@ describe('raycaster phase demo probes execute', () => {
       dir: 'demo-src/raycaster-p6',
       stm: 'p6room.stm',
       sceneGlobal: '_sb_actorscene',
-      probeCount: 6,
+      probeCount: 9,
     });
   });
 });
