@@ -946,7 +946,7 @@ git commit -m "test(raycaster): Phase 6 actor demo + hitscan/occlusion/near prob
   name: 'Raycaster P6 — Actors',
   tags: ['Raycaster', 'Engine Phase'],
   description:
-    'Phase 6 probe: RcActors — a billboard pool projected into the view, depth-clipped per column against the wall buffer (behind-wall barrel stays hidden), plus los / hitscan / near ray queries.',
+    'Phase 6 probe: RcActors — a billboard pool projected into the view, depth-clipped per column against the wall buffer (the NPC behind the wall stub stays hidden), plus los / hitscan / near ray queries.',
   docsSlug: '',
   file: 'RaycasterP6Actors',
 },

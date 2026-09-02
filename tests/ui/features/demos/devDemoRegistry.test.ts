@@ -42,4 +42,9 @@ describe('devDemoRegistry', () => {
     const p5 = devDemoRegistry.find((d) => d.slug === 'raycaster-p5-lit');
     expect(p5?.file).toBe('RaycasterP5Lit');
   });
+
+  test('includes the Phase 6 actors demo', () => {
+    const p6 = devDemoRegistry.find((d) => d.slug === 'raycaster-p6-actors');
+    expect(p6?.file).toBe('RaycasterP6Actors');
+  });
 });

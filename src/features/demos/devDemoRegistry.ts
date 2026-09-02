@@ -54,4 +54,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP5Lit',
   },
+  {
+    slug: 'raycaster-p6-actors',
+    name: 'Raycaster P6 — Actors',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 6 probe: RcActors — a billboard pool projected into the view, depth-clipped per column against the wall buffer (the NPC behind the wall stub stays hidden), plus los / hitscan / near ray queries.',
+    docsSlug: '',
+    file: 'RaycasterP6Actors',
+  },
 ];
