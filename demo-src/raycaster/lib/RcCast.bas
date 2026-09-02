@@ -17,7 +17,8 @@ Class
 ' "rccast is not defined" at runtime, with NO compile diagnostic). Keep it `wld`.
 '
 ' Phase 2 scope: no screen projection (Phase 3), no occlusion-window early-out
-' (Phase 3), no upper regions (Phase 8), diagonal tiles: Phase 7 (diagHit).
+' (Phase 3), diagonal tiles: Phase 7 (diagHit).
+' upper regions: Phase 8 (setRegion + RC_SPAN_PORTAL_* spans).
 
 dim kindArr(0)
 dim distArr(0)
@@ -41,8 +42,21 @@ dim mSideY
 dim mEntryDist
 dim mSide
 
+' Which region the camera is in (0 = lower / default, 1 = upper). Set out-of-band
+' by RcRender before its column loop; cast() stays a 5-arg function.
+dim castRegion
+
 Constructor()
+    self.castRegion = 0
 EndConstructor
+
+function setRegion(r)
+    self.castRegion = r
+endfunction
+
+function regionOf()
+    return self.castRegion
+endfunction
 
 function reset()
     array.clear(self.kindArr)
@@ -136,13 +150,20 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
     dim dg
     dim exitD
     dim dh
+    dim seeOther
 
     self.reset()
     self.beginMarch(ox, oy, dx, dy)
 
-    runFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
-    runCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
+    if self.castRegion = 1 then
+        runFloor = wld.upperFloorAt(self.mMapX, self.mMapY)
+        runCeil = wld.upperCeilAt(self.mMapX, self.mMapY)
+    else
+        runFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
+        runCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
+    endif
 
+    seeOther = 0
     iters = 0
     while iters < RcConfig.RC_MAX_MARCH_ITERS
         iters = iters + 1
@@ -152,7 +173,14 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
             return
         endif
 
-        wallHere = wld.wallAt(self.mMapX, self.mMapY)
+        if self.castRegion = 1 then
+            wallHere = 0
+            if wld.upperKindAt(self.mMapX, self.mMapY) = 2 then
+                wallHere = 1
+            endif
+        else
+            wallHere = wld.wallAt(self.mMapX, self.mMapY)
+        endif
         if wallHere > 0 then
             if self.mSide = 0 then
                 wallX = oy + self.mEntryDist * dy
@@ -164,21 +192,56 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
             return
         endif
 
-        dg = wld.diagAt(self.mMapX, self.mMapY)
-        if dg > 0 then
-            exitD = self.mSideX
-            if self.mSideY < exitD then
-                exitD = self.mSideY
-            endif
-            dh = self.diagHit(dg, ox, oy, dx, dy, self.mMapX, self.mMapY, self.mEntryDist, exitD)
-            if dh >= 0 then
-                self.addSpan(RcConfig.RC_SPAN_WALL, dh, runFloor, runCeil, self.mMapX, self.mMapY, RcConfig.RC_SPAN_SIDE_DIAG, 0, wld.wallTexAt(self.mMapX, self.mMapY))
-                return
+        if self.castRegion = 0 then
+            dg = wld.diagAt(self.mMapX, self.mMapY)
+            if dg > 0 then
+                exitD = self.mSideX
+                if self.mSideY < exitD then
+                    exitD = self.mSideY
+                endif
+                dh = self.diagHit(dg, ox, oy, dx, dy, self.mMapX, self.mMapY, self.mEntryDist, exitD)
+                if dh >= 0 then
+                    self.addSpan(RcConfig.RC_SPAN_WALL, dh, runFloor, runCeil, self.mMapX, self.mMapY, RcConfig.RC_SPAN_SIDE_DIAG, 0, wld.wallTexAt(self.mMapX, self.mMapY))
+                    return
+                endif
             endif
         endif
 
-        cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
-        cellCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
+        ' Portal: once the ray crosses a hole, emit the OTHER region's geometry.
+        if seeOther = 0 then
+            if wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
+                seeOther = 1
+            endif
+        endif
+        if seeOther = 1 then
+            if self.castRegion = 0 then
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 2 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_WALL, self.mEntryDist, wld.upperFloorAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                endif
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 1 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_FLOOR, self.mEntryDist, wld.upperFloorAt(self.mMapX, self.mMapY), wld.upperFloorAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_CEIL, self.mEntryDist, wld.upperCeilAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                    return
+                endif
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_CEIL, self.mEntryDist, wld.upperCeilAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                endif
+            else
+                self.addSpan(RcConfig.RC_SPAN_PORTAL_FLOOR, self.mEntryDist, wld.floorHeightAt(self.mMapX, self.mMapY), wld.floorHeightAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                if wld.wallAt(self.mMapX, self.mMapY) > 0 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_WALL, self.mEntryDist, wld.floorHeightAt(self.mMapX, self.mMapY), wld.ceilHeightAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                    return
+                endif
+            endif
+        endif
+
+        if self.castRegion = 1 then
+            cellFloor = wld.upperFloorAt(self.mMapX, self.mMapY)
+            cellCeil = wld.upperCeilAt(self.mMapX, self.mMapY)
+        else
+            cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
+            cellCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
+        endif
 
         if cellFloor <> runFloor then
             lo = math.min(runFloor, cellFloor)

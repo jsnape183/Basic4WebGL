@@ -158,6 +158,8 @@ interface RcCastLike {
   spancount(): number;
   spanside(i: number): number;
   spandist(i: number): number;
+  spankind(i: number): number;
+  setregion(r: number): void;
 }
 
 interface RcRenderLike {
@@ -179,6 +181,9 @@ const stubWorld = {
   ceilheightat: () => 1,
   wallat: (c: number) => (c <= 0 || c >= 6 ? 1 : 0),
   diagat: () => 0,
+  upperkindat: () => 0,
+  upperfloorat: () => 1,
+  upperceilat: () => 2,
   walltexat: () => '',
   floortexat: () => '',
   ceiltexat: () => '',
@@ -332,6 +337,9 @@ describe('raycaster phase demos smoke-execute', () => {
     ceilheightat: (c: number) => (c < 5 ? 1 : 1.4),
     wallat: (c: number) => (c <= 0 || c >= 8 ? 1 : 0),
     diagat: () => 0,
+    upperkindat: () => 0,
+    upperfloorat: () => 1,
+    upperceilat: () => 2,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -346,6 +354,30 @@ describe('raycaster phase demos smoke-execute', () => {
     ceilheightat: () => 1,
     wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
     diagat: (c: number, r: number) => (c === 3 && r === 3 ? 3 : 0), // 3 = RC_DIAG_SE
+    upperkindat: () => 0,
+    upperfloorat: () => 1,
+    upperceilat: () => 2,
+    walltexat: () => '',
+    floortexat: () => '',
+    ceiltexat: () => '',
+    widthcells: () => 8,
+    heightcells: () => 8,
+    lightat: () => 0,
+  };
+
+  // 8x8 bordered room. A walkway (upper floor, id 1) spans row 3, cols 2..5,
+  // with a hole (id 3) at col 4. Upper ceiling 2.0, upper floor 1.0 (= ceilH).
+  const stubWorldUpper = {
+    floorheightat: () => 0,
+    ceilheightat: () => 1,
+    wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
+    diagat: () => 0,
+    upperkindat: (c: number, r: number) => {
+      if (r !== 3 || c < 2 || c > 5) return 0;
+      return c === 4 ? 3 : 1; // hole at col 4, plank elsewhere on the strip
+    },
+    upperfloorat: () => 1,
+    upperceilat: () => 2,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -362,6 +394,9 @@ describe('raycaster phase demos smoke-execute', () => {
       ceilheightat: () => 1,
       wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
       diagat: (c: number, r: number) => (c === 3 && r === 3 ? code : 0),
+      upperkindat: () => 0,
+      upperfloorat: () => 1,
+      upperceilat: () => 2,
       walltexat: () => '',
       floortexat: () => '',
       ceiltexat: () => '',
@@ -442,6 +477,36 @@ describe('raycaster phase demos smoke-execute', () => {
     const m = rc.spancount();
     expect(rc.spanside(m - 1)).not.toBe(2);
     expect(rc.los(stubWorldDiag, 1.5, 5.5, 1, 0)).toBeCloseTo(5.5, 1);
+  });
+
+  test.each(phaseDirs)('%s: RcCast emits a portal span through an upper-region hole', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcCast) return;
+    const rc = new mod.RcCast() as RcCastLike & { spankind(i: number): number; setregion(r: number): void };
+
+    // region 0 (camera in the lower room). Ray from (1.5,3.5) heading +x passes
+    // through the hole cell (4,3): a PORTAL span (kind 3/4/5) must appear.
+    rc.setregion(0);
+    rc.cast(stubWorldUpper, 1.5, 3.5, 1, 0);
+    let sawPortal = false;
+    for (let i = 0; i < rc.spancount(); i++) {
+      const k = rc.spankind(i);
+      if (k === 3 || k === 4 || k === 5) sawPortal = true;
+    }
+    expect(sawPortal).toBe(true);
+
+    // Control: a ray one row over (row 4) never meets the walkway → no portal span.
+    rc.cast(stubWorldUpper, 1.5, 4.5, 1, 0);
+    let sawPortal2 = false;
+    for (let i = 0; i < rc.spancount(); i++) {
+      const k = rc.spankind(i);
+      if (k === 3 || k === 4 || k === 5) sawPortal2 = true;
+    }
+    expect(sawPortal2).toBe(false);
+
+    // setregion default (never called) behaves as region 0 for the existing suites.
+    const rc2 = new mod.RcCast() as RcCastLike;
+    expect(() => rc2.cast(stubWorld, 1.5, 1.5, 1, 0)).not.toThrow();
   });
 
   // A diagonal wall span carries side = RC_SPAN_SIDE_DIAG (2), which collides with
