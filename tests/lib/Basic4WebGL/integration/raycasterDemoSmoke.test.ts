@@ -134,6 +134,7 @@ interface RcLightsLike {
   removelight(handle: number): void;
   update(): void;
   samplecell(col: number, row: number): number;
+  sampleat(x: number, y: number): number;
   setambient(level: number): void;
   bakestatic(): void;
 }

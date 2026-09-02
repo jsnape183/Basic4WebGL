@@ -1,8 +1,9 @@
 Class
 ' RcLights -- a per-cell light grid for a raycaster scene (spec §6).
 ' Ambient + baked static lights (from `light:` tags) + up to RC_LIGHT_CAP dynamic
-' point lights, each wall-occluded via RcCast.los. RcRender samples sampleCell()
-' per strip and multiplies its base shade.
+' point lights, each wall-occluded via RcCast.los. As of the renderer rework,
+' RcRender uses sampleAt() (bilinear) for floor/ceiling surfaces and sampleCell()
+' (per-cell) for walls, multiplying the base shade.
 '
 ' The RcWorld field is `wld`, NEVER `world`.
 '
@@ -183,6 +184,31 @@ function sampleCell(col, row)
     endif
     idx = row * self.cols + col
     return math.clamp(self.ambient + self.staticArr(idx) + self.dynArr(idx), 0, 1)
+endfunction
+
+' Bilinear light at a world point (cell centres are at integer + 0.5).
+function sampleAt(worldX, worldY)
+    dim fx
+    dim fy
+    dim c0
+    dim r0
+    dim tx
+    dim ty
+    dim a
+    dim b
+    dim c
+    dim e
+    fx = worldX - 0.5
+    fy = worldY - 0.5
+    c0 = math.floor(fx)
+    r0 = math.floor(fy)
+    tx = fx - c0
+    ty = fy - r0
+    a = self.sampleCell(c0, r0)
+    b = self.sampleCell(c0 + 1, r0)
+    c = self.sampleCell(c0, r0 + 1)
+    e = self.sampleCell(c0 + 1, r0 + 1)
+    return a * (1 - tx) * (1 - ty) + b * tx * (1 - ty) + c * (1 - tx) * ty + e * tx * ty
 endfunction
 
 EndClass
