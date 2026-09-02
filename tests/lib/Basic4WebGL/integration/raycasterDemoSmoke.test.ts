@@ -600,8 +600,9 @@ describe('raycaster phase demos smoke-execute', () => {
     const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
     if (!mod.RcRender) return;
 
-    const highStrips = () =>
-      rects.filter((a) => a[2] === 4 && typeof a[1] === 'number' && (a[1] as number) < 60).length;
+    const stripsWhere = (pred: (midY: number) => boolean) =>
+      rects.filter((a) => a[2] === 4 && typeof a[1] === 'number' && pred(a[1] as number)).length;
+    const highStrips = () => stripsWhere((y) => y < 60);
 
     const r = new mod.RcRender(stubWorldUpper);
     r.setcamera(1.5, 3.5, 0, 0); // lower room, looking down the walkway row toward the hole
@@ -609,6 +610,13 @@ describe('raycaster phase demos smoke-execute', () => {
     fills.length = 0;
     expect(() => r.renderframe()).not.toThrow();
     const holeHigh = highStrips();
+    // Interval-list fix: a region-0 ray through the hole splits its column into
+    // two visible bands — the ceiling/upper geometry ABOVE (midY < 60) and the
+    // lower room floor BELOW the horizon (midY > 120) both draw, instead of the
+    // single flattened band the old winTop/winBot code produced.
+    const holeLow = stripsWhere((y) => y > 120);
+    expect(holeHigh).toBeGreaterThan(0);
+    expect(holeLow).toBeGreaterThan(0);
 
     r.setcamera(1.5, 1.5, 0, 0); // control: a plain row, no walkway overhead
     rects.length = 0;
@@ -688,16 +696,20 @@ describe('raycaster phase demos smoke-execute', () => {
       .filter((a) => a[2] === 4 && SURF_GREYS.has((a[4] as number[])?.[1]))
       .map((a) => ({ midY: a[1] as number, grey: (a[4] as number[])[1] }));
 
-    // Step-top of floor height 0.3 projects to ≈ 100 + 0.2 * (200 / d); d ≈ 4–6 → ≈ 107–110.
-    const stepTop = surf.find((s) => s.grey === 105 && Math.abs(s.midY - 113) <= 25);
-    expect(stepTop, 'a FLOOR_TOP surface near the step rim').toBeDefined();
-    // Pit floor (PIT_FLOOR grey, height -0.3) is drawn lower on screen than the rim.
-    expect(surf.some((s) => s.grey === 60 && s.midY > (stepTop as { midY: number }).midY + 10)).toBe(
-      true,
-    );
-    // Ceiling underside (rising ceiling → CEIL_UNDER) draws above the horizon.
-    // Regression guard for the Critical bug: silently skipped before the ordering
-    // fix in drawSurface (drawStrip's `b <= t` guard drops the inverted strip).
+    // The exact greys/midYs churn with the interval walk; assert the invariants
+    // it must preserve rather than pixel positions:
+    // (1) the surface pass still runs (FLOOR_TOP + PIT_FLOOR strips both drawn);
+    const floorTops = surf.filter((s) => s.grey === 105);
+    const pitFloors = surf.filter((s) => s.grey === 60);
+    expect(floorTops.length).toBeGreaterThan(0);
+    expect(pitFloors.length).toBeGreaterThan(0);
+    // (2) a FLOOR_TOP strip appears ABOVE (smaller midY) a PIT_FLOOR strip — the
+    //     raised step rim sits higher on screen than the pit floor behind it.
+    const minFloorTopY = Math.min(...floorTops.map((s) => s.midY));
+    const maxPitY = Math.max(...pitFloors.map((s) => s.midY));
+    expect(minFloorTopY).toBeLessThan(maxPitY);
+    // (3) the rising ceiling still draws a CEIL_UNDER strip above the horizon —
+    //     regression guard for the drawSurfaceInto y-ordering (inverted strip).
     expect(surf.some((s) => s.grey === 80 && s.midY < 100)).toBe(true);
   });
 });

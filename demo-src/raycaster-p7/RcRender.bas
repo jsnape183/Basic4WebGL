@@ -60,6 +60,8 @@ dim intvBot(0)
 dim occTop(0)
 dim occBot(0)
 dim iDestX
+dim fRayX
+dim fRayY
 
 Constructor(w as RcWorld)
     dim di
@@ -80,6 +82,8 @@ Constructor(w as RcWorld)
     self.boundActors = 0
     self.surfCountLast = 0
     self.iDestX = 0
+    self.fRayX = 0
+    self.fRayY = 0
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -329,19 +333,25 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
 endfunction
 
 ' Draw one flat horizontal surface at world height hh, from depth dNear to dFar,
-' as a per-column strip. Orders the two projected Ys so drawStrip always gets
-' top < bottom (a floor below eye and a ceiling above it project inverted).
-' Bumps surfCountLast only when a strip is actually painted.
-function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite)
+' clipped into every visible interval, then occlude its own projected band.
+' Orders the two projected Ys so the band always has top <= bottom (a floor below
+' eye and a ceiling above it project inverted). Bumps surfCountLast per strip.
+function drawSurfaceInto(hh, dNear, dFar, kind, lite)
     dim ya
     dim yb
+    dim yTop
+    dim yBot
     ya = self.projectY(hh, dNear)
     yb = self.projectY(hh, dFar)
     if ya <= yb then
-        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, ya, yb, winTop, winBot, kind, lite)
+        yTop = ya
+        yBot = yb
     else
-        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yb, ya, winTop, winBot, kind, lite)
+        yTop = yb
+        yBot = ya
     endif
+    self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, lite)
+    self.occlude(yTop, yBot)
 endfunction
 
 ' --- Interval-list occlusion primitives (renderer rework) -------------------
@@ -466,8 +476,6 @@ function renderFrame()
     dim rayY
     dim i
     dim n
-    dim winTop
-    dim winBot
     dim runFloorH
     dim runCeilH
     dim kind
@@ -476,14 +484,12 @@ function renderFrame()
     dim sBot
     dim destX
     dim newH
-    dim newY
     dim camCol
     dim camRow
     dim horizon
     dim fh
     dim lite
     dim bgLite
-    dim hitWall
     dim sfH
     dim sfD
     dim sfKind
@@ -494,7 +500,6 @@ function renderFrame()
     dim scLite
     dim wshade
     dim camRegion
-    dim pShade
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -559,8 +564,13 @@ function renderFrame()
 
         self.rc.cast(self.wld, self.camX, self.camY, rayX, rayY)
 
-        winTop = 0
-        winBot = self.viewH
+        destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
+        self.iDestX = destX
+        self.fRayX = rayX
+        self.fRayY = rayY
+        self.resetIntervals()
+        self.depthArr(col) = RcConfig.RC_MAX_DIST
+
         if camRegion = 1 then
             runFloorH = self.wld.upperFloorAt(camCol, camRow)
             runCeilH = self.wld.upperCeilAt(camCol, camRow)
@@ -568,11 +578,8 @@ function renderFrame()
             runFloorH = self.wld.floorHeightAt(camCol, camRow)
             runCeilH = self.wld.ceilHeightAt(camCol, camRow)
         endif
-        destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
-        self.depthArr(col) = RcConfig.RC_MAX_DIST
 
         ' pending floor/ceiling surface: world-height, near-depth, shade kind, light
-        hitWall = 0
         sfH = runFloorH
         sfD = 0
         sfKind = RcConfig.RC_SHADE_FLOOR_TOP
@@ -589,140 +596,122 @@ function renderFrame()
         n = self.rc.spanCount()
         i = 0
         while i < n
-            kind = self.rc.spanKind(i)
-            d = self.rc.spanDist(i)
-            sTop = self.projectY(self.rc.spanHi(i), d)
-            sBot = self.projectY(self.rc.spanLo(i), d)
+            if self.intervalCount() = 0 then
+                i = n
+            else
+                kind = self.rc.spanKind(i)
+                d = self.rc.spanDist(i)
+                sTop = self.projectY(self.rc.spanHi(i), d)
+                sBot = self.projectY(self.rc.spanLo(i), d)
 
-            lite = 1.0
-            if self.boundLights <> 0 then
-                if kind = RcConfig.RC_SPAN_WALL then
-                    if self.rc.spanSide(i) = RcConfig.RC_SPAN_SIDE_DIAG then
-                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
-                    else
-                        if self.rc.spanSide(i) = 0 then
-                            lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                lite = 1.0
+                if self.boundLights <> 0 then
+                    if kind = RcConfig.RC_SPAN_WALL then
+                        if self.rc.spanSide(i) = RcConfig.RC_SPAN_SIDE_DIAG then
+                            lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
                         else
-                            lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                            if self.rc.spanSide(i) = 0 then
+                                lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                            else
+                                lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                            endif
                         endif
+                    else
+                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
                     endif
-                else
-                    lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
                 endif
-            endif
 
-            if kind = RcConfig.RC_SPAN_PORTAL_WALL or kind = RcConfig.RC_SPAN_PORTAL_CEIL or kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
-                pShade = 1
-                if kind = RcConfig.RC_SPAN_PORTAL_CEIL then
-                    pShade = 3
-                endif
-                if kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
-                    pShade = RcConfig.RC_SHADE_UPPER_FLOOR
-                endif
-                if camRegion = 0 then
-                    ' the other region is ABOVE -> fill down to the portal plane
-                    ' (or just the wall band for a thick portal wall), then eat
-                    ' the window from the top
-                    if kind = RcConfig.RC_SPAN_PORTAL_WALL then
-                        self.drawStrip(destX, sTop, sBot, winTop, winBot, pShade, lite)
-                    else
-                        self.drawStrip(destX, winTop, sBot, winTop, winBot, pShade, lite)
-                    endif
-                    if sBot > winTop then
-                        winTop = sBot
-                    endif
+                ' Span-kind ladder (softBASIC has no elseif -- nested if is deliberate).
+                if kind = RcConfig.RC_SPAN_PORTAL_WALL then
+                    ' Opaque mid-air band (the OTHER region's wall through a hole).
+                    self.drawInto(sTop, sBot, 1, lite)
+                    self.occlude(sTop, sBot)
+                    i = i + 1
                 else
-                    ' the other region is BELOW -> fill from the portal plane down
-                    ' to the window bottom (or just the wall band), then eat from
-                    ' the bottom
-                    if kind = RcConfig.RC_SPAN_PORTAL_WALL then
-                        self.drawStrip(destX, sTop, sBot, winTop, winBot, pShade, lite)
+                    if kind = RcConfig.RC_SPAN_PORTAL_CEIL then
+                        ' Upper ceiling seen up through a hole -- flat fill above the plane.
+                        self.drawInto(0, sBot, 3, lite)
+                        self.occlude(0, sBot)
+                        i = i + 1
                     else
-                        self.drawStrip(destX, sTop, winBot, winTop, winBot, pShade, lite)
-                    endif
-                    if sTop < winBot then
-                        winBot = sTop
-                    endif
-                endif
-                i = i + 1
-            else
-            if kind = RcConfig.RC_SPAN_WALL then
-                self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
-                self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
-                hitWall = 1
-                wshade = self.rc.spanSide(i)
-                if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
-                    wshade = 1
-                endif
-                self.drawStrip(destX, sTop, sBot, winTop, winBot, wshade, lite)
-                self.depthArr(col) = d
-                i = n
-            else
-                ' Floor and ceiling steps are mirror images: a floor RISE clamps winBot from
-                ' below (can't see under a raised floor); a ceiling DROP clamps winTop from
-                ' above (can't see above a lowered ceiling). A floor DROP / ceiling RISE leaves
-                ' the window open -- farther geometry shows through (documented header gap).
-                if kind = RcConfig.RC_SPAN_FLOORSTEP then
-                    if self.rc.spanLo(i) = runFloorH then
-                        newH = self.rc.spanHi(i)
-                    else
-                        newH = self.rc.spanLo(i)
-                    endif
-                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
-                    if newH > runFloorH then
-                        newY = self.projectY(newH, d)
-                        if newY < winBot then
-                            winBot = newY
+                        if kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
+                            if camRegion = 0 then
+                                ' plank underside overhead -> fill above the plane
+                                self.drawInto(0, sBot, RcConfig.RC_SHADE_UPPER_FLOOR, lite)
+                                self.occlude(0, sBot)
+                            else
+                                ' lower room floor down through a hole -> fill below the plane
+                                self.drawInto(sTop, self.viewH, RcConfig.RC_SHADE_UPPER_FLOOR, lite)
+                                self.occlude(sTop, self.viewH)
+                            endif
+                            i = i + 1
+                        else
+                            if kind = RcConfig.RC_SPAN_WALL then
+                                ' Full opaque blocker: flush both pending surfaces, draw
+                                ' the face, clear the interval list, end the column.
+                                self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite)
+                                self.drawSurfaceInto(scH, scD, d, scKind, scLite)
+                                wshade = self.rc.spanSide(i)
+                                if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
+                                    wshade = 1
+                                endif
+                                self.drawInto(sTop, sBot, wshade, lite)
+                                self.depthArr(col) = d
+                                array.clear(self.intvTop)
+                                array.clear(self.intvBot)
+                                i = n
+                            else
+                                ' FLOORSTEP / CEILSTEP -- riser occludes only its own band.
+                                if kind = RcConfig.RC_SPAN_FLOORSTEP then
+                                    if self.rc.spanLo(i) = runFloorH then
+                                        newH = self.rc.spanHi(i)
+                                    else
+                                        newH = self.rc.spanLo(i)
+                                    endif
+                                    self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite)
+                                    self.drawInto(sTop, sBot, 2, lite)
+                                    self.occlude(sTop, sBot)
+                                    sfD = d
+                                    if newH < runFloorH then
+                                        sfKind = RcConfig.RC_SHADE_PIT_FLOOR
+                                    else
+                                        sfKind = RcConfig.RC_SHADE_FLOOR_TOP
+                                    endif
+                                    sfH = newH
+                                    ' RcCast records the cell just ENTERED (its floor = newH),
+                                    ' so `lite` here is that segment's own light -- correct.
+                                    sfLite = lite
+                                    runFloorH = newH
+                                else
+                                    if self.rc.spanLo(i) = runCeilH then
+                                        newH = self.rc.spanHi(i)
+                                    else
+                                        newH = self.rc.spanLo(i)
+                                    endif
+                                    self.drawSurfaceInto(scH, scD, d, scKind, scLite)
+                                    self.drawInto(sTop, sBot, 3, lite)
+                                    self.occlude(sTop, sBot)
+                                    scD = d
+                                    if newH < runCeilH then
+                                        scKind = RcConfig.RC_SHADE_SOFFIT
+                                    else
+                                        scKind = RcConfig.RC_SHADE_CEIL_UNDER
+                                    endif
+                                    scH = newH
+                                    scLite = lite
+                                    runCeilH = newH
+                                endif
+                                i = i + 1
+                            endif
                         endif
                     endif
-                    sfD = d
-                    if newH < runFloorH then
-                        sfKind = RcConfig.RC_SHADE_PIT_FLOOR
-                    else
-                        sfKind = RcConfig.RC_SHADE_FLOOR_TOP
-                    endif
-                    sfH = newH
-                    ' RcCast records the cell just ENTERED (its floor = newH, the first cell
-                    ' of this segment), so `lite` here is that segment's own light -- correct.
-                    sfLite = lite
-                    runFloorH = newH
-                else
-                    if self.rc.spanLo(i) = runCeilH then
-                        newH = self.rc.spanHi(i)
-                    else
-                        newH = self.rc.spanLo(i)
-                    endif
-                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
-                    if newH < runCeilH then
-                        newY = self.projectY(newH, d)
-                        if newY > winTop then
-                            winTop = newY
-                        endif
-                    endif
-                    scD = d
-                    if newH < runCeilH then
-                        scKind = RcConfig.RC_SHADE_SOFFIT
-                    else
-                        scKind = RcConfig.RC_SHADE_CEIL_UNDER
-                    endif
-                    scH = newH
-                    scLite = lite
-                    runCeilH = newH
                 endif
-                i = i + 1
-            endif
-            endif
-
-            if winTop >= winBot then
-                i = n
             endif
         endwhile
 
-        if hitWall = 0 then
-            self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite)
-            self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite)
+        if self.intervalCount() > 0 then
+            self.drawSurfaceInto(sfH, sfD, RcConfig.RC_MAX_DIST, sfKind, sfLite)
+            self.drawSurfaceInto(scH, scD, RcConfig.RC_MAX_DIST, scKind, scLite)
         endif
     next col
 
