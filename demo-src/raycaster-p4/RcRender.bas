@@ -341,6 +341,13 @@ function drawSurfaceInto(hh, dNear, dFar, kind, lite)
     dim yb
     dim yTop
     dim yBot
+    dim useLite
+    dim dMid
+    useLite = lite
+    if self.boundLights <> 0 then
+        dMid = (dNear + dFar) / 2
+        useLite = self.boundLights.sampleAt(self.camX + self.fRayX * dMid, self.camY + self.fRayY * dMid)
+    endif
     ya = self.projectY(hh, dNear)
     yb = self.projectY(hh, dFar)
     if ya <= yb then
@@ -350,7 +357,7 @@ function drawSurfaceInto(hh, dNear, dFar, kind, lite)
         yTop = yb
         yBot = ya
     endif
-    self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, lite)
+    self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
     self.occlude(yTop, yBot)
 endfunction
 
@@ -589,7 +596,7 @@ function renderFrame()
         sfLite = 1.0
         scLite = 1.0
         if self.boundLights <> 0 then
-            sfLite = self.boundLights.sampleCell(camCol, camRow)
+            sfLite = self.boundLights.sampleAt(self.camX, self.camY)
             scLite = sfLite
         endif
 
@@ -617,7 +624,7 @@ function renderFrame()
                             endif
                         endif
                     else
-                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
+                        lite = self.boundLights.sampleAt(self.camX + rayX * d, self.camY + rayY * d)
                     endif
                 endif
 

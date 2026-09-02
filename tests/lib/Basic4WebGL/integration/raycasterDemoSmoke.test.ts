@@ -713,4 +713,80 @@ describe('raycaster phase demos smoke-execute', () => {
     //     regression guard for the drawSurfaceInto y-ordering (inverted strip).
     expect(surf.some((s) => s.grey === 80 && s.midY < 100)).toBe(true);
   });
+
+  // Task 5: floor/ceiling surfaces are lit via RcLights.sampleAt (bilinear), not
+  // sampleCell (per-cell). Bind a lights stub whose per-cell light is a hard
+  // stepped ramp (a distinct value per cell, no smoothing) but whose sampleAt
+  // bilinearly blends the 4 surrounding cells. The old sampleCell-only path seeds
+  // the floor light ONCE from the camera cell and flushes every column's floor
+  // strip with that single value; the bilinear path re-samples per column at the
+  // surface's own depth midpoint, so the floor strips span many brightnesses
+  // across the column fan (which sweeps the hit point through a range of rows).
+  const checkerLights = {
+    samplecell: (col: number, row: number) =>
+      Math.max(0, Math.min(1, 0.12 + 0.13 * col + 0.05 * row)),
+    sampleat(worldX: number, worldY: number) {
+      const fx = worldX - 0.5;
+      const fy = worldY - 0.5;
+      const c0 = Math.floor(fx);
+      const r0 = Math.floor(fy);
+      const tx = fx - c0;
+      const ty = fy - r0;
+      const a = this.samplecell(c0, r0);
+      const b = this.samplecell(c0 + 1, r0);
+      const c = this.samplecell(c0, r0 + 1);
+      const e = this.samplecell(c0 + 1, r0 + 1);
+      return (
+        a * (1 - tx) * (1 - ty) +
+        b * tx * (1 - ty) +
+        c * (1 - tx) * ty +
+        e * tx * ty
+      );
+    },
+  };
+
+  test.each(phaseDirs)('%s: renderFrame lights floor surfaces with bilinear sampleAt', (dirName) => {
+    const rects: any[][] = [];
+    const fills: number[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      setFillColor: (...a: unknown[]) => {
+        fills.push(a as number[]);
+        return undefined;
+      },
+      drawRect: (...a: unknown[]) => {
+        rects.push([...(a as number[]), fills[fills.length - 1]]);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcRender) return;
+    if (!mod.RcLights) return;
+
+    const r = new mod.RcRender(stubWorld);
+    r.bindlights(checkerLights as unknown);
+    // Angled so the column fan spreads across cells in BOTH x and y (a
+    // straight-down-the-corridor camera has constant rayX -> constant sample x).
+    r.setcamera(2, 2, 0.4, 0); // flat floor, looking across the open corridor
+    r.renderframe();
+
+    // Floor-surface strips: w === 4 (RC_STRIP_W), below the horizon (midY > 105),
+    // and a FLOOR_TOP-family grey (<= 106 — excludes walls at 115/150).
+    const floorBrights = rects
+      .filter(
+        (a) =>
+          a[2] === 4 &&
+          typeof a[1] === 'number' &&
+          (a[1] as number) > 105 &&
+          typeof (a[4] as number[] | undefined)?.[1] === 'number' &&
+          (a[4] as number[])[1] <= 106,
+      )
+      .map((a) => (a[4] as number[])[1]);
+
+    expect(floorBrights.length).toBeGreaterThan(0);
+    // sampleCell-only path -> one seeded value for the whole floor. Bilinear
+    // per-column re-sampling -> a spread of intermediate brightnesses.
+    expect(new Set(floorBrights.map((g) => Math.round(g))).size).toBeGreaterThan(2);
+  });
 });
