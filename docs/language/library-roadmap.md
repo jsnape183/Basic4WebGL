@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-02 (raycaster library Phase 7 shipped — corner-solid 45° diagonal-wall tiles: `RcWorld.diagAt`, `RcCast.diagHit`, `RcMover` slide)
+> Last updated: 2026-09-02 (raycaster library Phase 8 shipped — one optional upper region per cell, authored as a second `upper` tile layer; `RcCast` portal spans, `RcMover` region field, `tilemapset.hasLayer`)
 
 ---
 
@@ -408,7 +408,29 @@ normal to `rad` clearance, giving a smooth 45° slide. Demo: `raycaster-p7-diago
 dead-end passage, 6 probes. Deferred: diagonal wall texturing (`spanU` is 0), a
 dedicated diagonal shade, `diag:` + floor/ceiling-step in one cell.
 
-Phases 8–10 (upper regions, optimisation)
+Phase 8 shipped: one optional upper region per cell (a stacked space entered
+through a hole — a walkway you see under, a balcony, a room under a lobby).
+Authored as a second `.stm` tile layer `upper` (id 1 solid upper floor / 2 upper
+wall / 3 hole), drawn top-down like `walls`; no markers for the geometry. New
+generic engine method `tilemapset.hasLayer(name)`. `RcWorld` gains `upKindArr` +
+`upperKindAt` / `upperFloorAt` (= that cell's `ceilHeightAt`) / `upperCeilAt`
+(default `ceilH + RC_STD_CEIL`, `uceil:N` marker override); the old `upper:<name>`
+marker is removed. `RcCast.setRegion(r)` (0 lower / 1 upper) picks the primary
+region and emits the other region's geometry as `RC_SPAN_PORTAL_WALL/CEIL/FLOOR`
+once a ray crosses a hole (`cast()` stays 5-arg; `los()` region-blind).
+`RcRender` reads `camRegion` from the bound mover's `regionId()`, seeds each
+column from that region, and eats the occlusion window from the top (camera
+lower) or bottom (camera upper) — a single-window approximation, no mid-band
+split. `RcMover` carries one `region` field with a single boundary-crossing swap
+rule (walk onto a level plank → up; step off a plank → fall), plus
+`enterRegion(r)` / `regionId()`. Demo: `raycaster-p8-upper` (`PortalScene.bas`) —
+a railed walkway you see under, climb a staircase onto, and drop through a hole,
+6 probes. `raycaster-p1`'s `upper:vent` probe migrated to the layer. Deferred:
+per-region lighting (region-blind — flagged for revisit once real environments
+exist), light / line-of-sight / hitscan through the portal, auto climb-back
+without stairs, mid-band occlusion, upper-region textures.
+
+Phases 9–10 (optimisation, docs)
 remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
@@ -417,15 +439,20 @@ remain, tracked in
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Phase 5 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Phase 6 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-6.md`. Phase 7 plan:
-`docs/superpowers/plans/2026-09-02-raycaster-phase-7-diagonal-tiles.md`. Guide:
+`docs/superpowers/plans/2026-09-02-raycaster-phase-7-diagonal-tiles.md`. Phase 8 plan:
+`docs/superpowers/plans/2026-09-02-raycaster-phase-8-upper-regions.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
-spot cones). Moving lights are fully recomputed every frame (no caching). Upper regions
-have a fixed height and no per-region textures; `RcCast` stops at the first wall (no
-see-through windows yet) and ignores upper regions; diagonal-wall tiles are
-supported (Phase 7) but flat-shaded (no wall texture / wall-U) and cannot combine
-with a floor/ceiling step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
+spot cones). Moving lights are fully recomputed every frame (no caching). `RcCast` stops
+at the first wall (no see-through windows yet). Upper regions (Phase 8) render one
+level per cell but are region-blind for lighting (an upper strip samples the room
+below it), don't pass light / line-of-sight / hitscan through the portal, are
+flat-shaded (no `uFloorTex`/etc.), and have no diagonals; a body can't climb back
+up a hole without authored stairs, and the through-portal view uses a
+single-window occlusion approximation (no mid-band split). Diagonal-wall tiles
+are supported (Phase 7) but flat-shaded (no wall texture / wall-U) and cannot
+combine with a floor/ceiling step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is
 all billboard clipping needs), not per-span. `RcRender` fills floor/ceiling
 horizontal surfaces (step tops, pit floors, ceiling undersides, soffits) as flat

@@ -114,23 +114,36 @@ access is slower and the cast loop touches these on every step.)
 
 ### 3.2 Upper-region arrays (the single portal hop)
 
-`upFloorH()`, `upCeilH()`, `upFloorTex()`, `upCeilTex()`, `upWallTex()` — one entry
-per distinct `upper:<name>` referenced. Describes the space **above** a cell's
-`ceilH`, entered through a hole in that ceiling. Exactly one level. Enough for:
-walkway over a room, vent above a corridor, sniper balcony, basement under a lobby.
-Not a multi-storey tower — acceptable, the concept's areas are compact (32–48
-grid).
+Describes the space **above** a cell's `ceilH`, entered through a hole in that
+ceiling. Exactly one level. Enough for: walkway over a room, vent above a
+corridor, sniper balcony, basement under a lobby. Not a multi-storey tower —
+acceptable, the concept's areas are compact (32–48 grid).
+
+**As built (Phase 8):** not marker-name-indexed arrays — a second `.stm` **tile
+layer** named `upper`, read into a per-cell `upKindArr(i)` ∈ {0 none, 1 solid
+upper floor, 2 upper wall, 3 hole}. `RcWorld.upperKindAt(col,row)`,
+`upperFloorAt` (= that cell's own `ceilHeightAt` — the upper floor sits on the
+room ceiling line), `upperCeilAt` (default `ceilH + RC_STD_CEIL`, per-cell
+override via a `uceil:N` marker). "Above" and "below" are one mechanism: a
+"basement under a lobby" authors the lobby as the upper layer, the basement as
+the main. Deferred: `upFloorTex` / `upCeilTex` / `upWallTex` (flat-shaded);
+per-region lighting (region-blind — flagged for revisit); `los()` / hitscan /
+light through the portal; auto climb-back without authored stairs.
 
 ### 3.3 Authoring — semantic, not pictorial
 
 The `.stm` tilemap is a **top-down floorplan**, not a picture of the game:
 
 - Tile palette is tiny: one "wall" placeholder tile, one "floor/open" placeholder.
-  No per-texture tilemap art.
+  No per-texture tilemap art. *As built (Phase 8):* an optional second tile layer
+  `upper` uses three placeholder tiles (id 1 solid upper floor / 2 upper wall /
+  3 hole) to draw the upper region as its own top-down plan.
 - Everything else rides on **marker tags**: `tex:concrete`, `floor:2 ftex:grating`,
-  `ceil:6 ctex:pipes`, `upper:vent`, `light:spot`, `door`, `water`, `sky`. *As built
-  (Phase 7):* diagonals too — `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` on an
-  open (walls-layer 0) cell, naming the corner the solid triangle fills.
+  `ceil:6 ctex:pipes`, `light:spot`, `door`, `water`, `sky`, `uceil:3` (Phase 8 —
+  upper-region ceiling height). *As built (Phase 7):* diagonals too —
+  `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` on an open (walls-layer 0) cell,
+  naming the corner the solid triangle fills. *(The old `upper:<name>` marker is
+  gone — Phase 8's `upper` tile layer replaces it.)*
 - `.stm` markers carry a single free-text `tag` string (`{ row, col, tag }`), not
   structured properties. `RcWorld` parses space-separated `key:value` / bare-flag
   tokens from that string and merges multiple markers on one cell. No `.stm`
@@ -168,6 +181,18 @@ call — no per-frame allocation in softBASIC either).
      also emit the upper region's floor/ceiling spans (the one portal hop)
 3. Terminate on: opaque full-height wall hit, OR `RC_MAX_DIST`, OR the occlusion
    window has closed (§5.1).
+
+**As built (Phase 8 — the portal hop).** `RcCast.setRegion(r)` (0 lower / 1 upper,
+set once per frame by `RcRender`; `cast()` keeps its 5-arg signature). Primary
+spans read the camera's region (region 1 → `upperFloorAt` / `upperCeilAt` /
+`upperKindAt = 2` walls). A `seeOther` latch turns on when a ray enters a hole
+cell (`upperKindAt = 3`); from there `cast()` also emits the **other** region's
+geometry as `RC_SPAN_PORTAL_WALL` / `_CEIL` / `_FLOOR` — a solid plank beyond the
+hole (or a lower wall, for a downward look) caps it and `return`s. `RcRender`
+knows which way each portal span occludes from `camRegion` alone (camera lower →
+portal is above → eat the window from the top; camera upper → below → eat from
+the bottom), so portal spans carry no side flag. `los()` is region-blind — light
+and hitscan do not cross the portal (deferred).
 4. Each span carries: `distance`, `screenTop`, `screenBottom`, `kind`, `texId`,
    `texU`, `worldMidY` (the point lighting samples, §6). Held in parallel arrays
    `spanDist()`, `spanTop()`, … capped at `RC_MAX_SPANS` (default 12) per column.
@@ -228,6 +253,16 @@ are still not sampled.
 RC_SPAN_SIDE_DIAG`; `renderFrame` remaps that to the y-face wall shade before
 `drawStrip` (a dedicated diagonal shade is deferred) and samples the half-open
 diagonal cell's own light-grid entry rather than a step-back cell.
+
+**As built (Phase 8):** `renderFrame` reads `camRegion` from the bound mover's
+`regionId()` (height fallback otherwise), seeds each column from that region's
+heights, and calls `self.rc.setRegion(camRegion)`. `RC_SPAN_PORTAL_*` spans draw
+a flat strip and eat the single occlusion window from the top (camera lower) or
+bottom (camera upper) — the render-fidelity-A approximation, no mid-band split.
+One new shade kind `RC_SHADE_UPPER_FLOOR` (grey 70) for a plank underside seen
+from below. Portal-span lighting is region-blind — sampled from the lower
+region's light grid regardless of which region the strip belongs to (documented
+v1 limit, flagged for revisit).
 
 There is **no texture atlas** — each wall texture is its own preloaded image;
 `drawImageStrip` samples the column. Multiple textures = multiple images, which is
@@ -350,6 +385,17 @@ shoved along the unit chord normal to `rad` clearance, which produces a smooth 4
 slide. `blocked()` is untouched (a diag cell reads as open through it). Same speed
 ceiling as the single-cell slide invariant: a body fast enough to cross the thin
 tip of the wedge in one frame is not caught.
+
+**As built (Phase 8):** one `region` field (0/1), never "half in both rooms".
+`blocked()` and the vertical resolver read the active region's floor/ceiling
+(region 1 → `upperKindAt = 2` walls, `upperFloorAt` / `upperCeilAt`). One
+boundary-crossing swap rule in `step()`: walk onto a level solid upper floor
+(`upperKindAt = 1` within `RC_STEP_UP` of your `z`) → region 1 + snap; step off
+the upper floor onto anything that isn't a plank (`upperKindAt <> 1`) → region 0
+immediately, and lower-region gravity finishes the fall. `enterRegion(r)` snaps a
+body into a region for a lobby spawn. The diagonal push-out is now guarded to
+region 0. No authored `lift`/stairs auto-transition beyond the one rule; climbing
+back up needs authored stairs.
 - `RcRender.bindCamera(actor)` — the view follows this actor. Player and enemies
   use the **same mover**; an enemy is an actor with no camera bound.
 
@@ -530,8 +576,24 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    chord normal to `rad` clearance = a smooth 45° slide (same speed limit as the
    single-cell slide invariant). Deferred: diagonal wall texturing, a dedicated
    diagonal shade, `diag:` + floor/ceiling-step in one cell (diag cells are flat).
-8. **One upper region per cell** (single portal hop).
-   *Demo:* a walkway you see under; a room under a lobby you drop into.
+8. **One upper region per cell** (single portal hop). **[DONE 2026-09-02]**
+   *Demo:* `raycaster-p8-upper` (`PortalScene.bas`) — a room with a railed
+   walkway you see under, climb a staircase onto, walk, and drop through a hole
+   back down; 6 probes on the `upper` layer read, heights, portal-span casting,
+   and both mover region transitions.
+   **As built:** authored as a second `.stm` tile layer `upper` (id 1 solid
+   floor / 2 wall / 3 hole), read by `RcWorld` into `upKindArr` +
+   `upperKindAt` / `upperFloorAt` (= `ceilHeightAt`) / `upperCeilAt` (`uceil:N`
+   marker or `ceilH + RC_STD_CEIL`). `RcCast.setRegion(r)` + `RC_SPAN_PORTAL_*`
+   spans through a hole (`cast()` stays 5-arg; `los()` region-blind).
+   `RcRender` seeds columns per `camRegion` and eats the single occlusion window
+   from the top/bottom by region (render-fidelity A — no mid-band split);
+   `RC_SHADE_UPPER_FLOOR`. `RcMover` one `region` field + one boundary-crossing
+   swap rule + `enterRegion(r)` / `regionId()`. Generic engine add:
+   `tilemapset.hasLayer(name)`. `raycaster-p1`'s `upper:vent` probe migrated to
+   the layer. Deferred: per-region lighting (region-blind — flagged for
+   revisit), `los`/hitscan/light through the portal, auto climb-back, mid-band
+   occlusion, `upFloorTex`/etc., diagonals in the upper region.
 9. **Optimisation + benchmark pass.** Whatever the accumulated demos show is slow —
    most likely the final `drawing` batched-strip rung, plus static-light caching in
    `RcLights`, plus constant tuning.
