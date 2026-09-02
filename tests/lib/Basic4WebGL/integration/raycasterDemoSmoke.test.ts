@@ -119,6 +119,7 @@ interface RcActorsLike {
   hitscan(x: number, y: number, dx: number, dy: number, rng: number): unknown;
   hitkind(): number;
   hitdist(): number;
+  hitactor(): unknown;
   activecount(): number;
   actorat(i: number): unknown;
   poolsize(): number;
@@ -267,5 +268,8 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => A.los(1.5, 1.5, 1, 0)).not.toThrow();
     expect(() => A.hitscan(1.5, 1.5, 1, 0, 20)).not.toThrow();
     expect(typeof A.hitkind()).toBe('number');
+    expect(A.hitscan(1.5, 1.5, 1, 0, 20)).toBe(0); // marches to the stub wall, no actor on the ray
+    expect(A.hitkind()).toBe(1); // RC_HIT_WALL
+    expect(A.near(2, 2, 5)).toBe(act); // the barrel we added
   });
 });

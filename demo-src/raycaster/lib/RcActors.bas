@@ -97,6 +97,7 @@ function near(x, y, r)
     for i = 0 to RcConfig.RC_ACTOR_POOL - 1
         a = self.pool(i)
         if a.visible() = 1 then
+            ' inlined, not a.distanceTo(x, y): a method call with args on a pool-element local fails to parse in an expression
             ddx = a.x() - x
             ddy = a.y() - y
             d = math.sqrt(ddx * ddx + ddy * ddy)
@@ -116,9 +117,9 @@ function los(x, y, dx, dy)
     return self.rc.los(self.wld, x, y, dx, dy)
 endfunction
 
-' Nearest hit along the ray (x,y)+(dx,dy) within range rng. (dx, dy) MUST be
-' normalized -- actor hits are found by projecting each actor onto the ray in
-' euclidean space, which only matches the wall distance if |dir| = 1.
+' Nearest hit along the ray (x,y)+(dx,dy) within range rng. (dx, dy) is
+' normalized internally -- actor hits are found by projecting each actor onto the
+' ray in euclidean space, which only matches the wall distance if |dir| = 1.
 ' Returns the hit RcActor, or 0 for a wall hit or a miss. Populates
 ' hKind/hDist/hX/hY.
 function hitscan(x, y, dx, dy, rng)
@@ -132,10 +133,19 @@ function hitscan(x, y, dx, dy, rng)
     dim closest
     dim closestD
     dim limit
+    dim dlen
 
     self.hKind = RcConfig.RC_HIT_NONE
     self.hDist = -1
+    self.hX = 0
+    self.hY = 0
     self.hActor = 0
+
+    dlen = math.sqrt(dx * dx + dy * dy)
+    if dlen > 0 then
+        dx = dx / dlen
+        dy = dy / dlen
+    endif
 
     wallD = self.rc.los(self.wld, x, y, dx, dy)
     limit = rng
@@ -193,6 +203,10 @@ endfunction
 
 function hitY()
     return self.hY
+endfunction
+
+function hitActor()
+    return self.hActor
 endfunction
 
 EndClass

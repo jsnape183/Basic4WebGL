@@ -37,6 +37,7 @@
 - Function-scoped `dim`s must be **hoisted to the top of the function**.
 - **`Class` must be line 1** of a `.bas` file. One class per file. `Extends scene` for a scene class.
 - Typed **function-locals of user classes** work (`dim a as RcMover` then `a.x()`), and typed **`self`-field** access works (`self.ren.renderFrame()`). **Method calls** on external instances work. **Untyped `.field` reads** on an external instance do **not** parse — always go through a method (`RcCast` exposes `spanKind(i)` not `.kindArr(i)`; do the same).
+- **METHOD-CALL PARSE LIMIT (confirmed Phase 6):** `someLocal.method(arg1, arg2)` in an **expression** fails to parse when `someLocal` is a typed local assigned from an array element (`a = self.pool(i)` then `d = a.distanceTo(x, y)` → `Expected OpenParen got Comma`). So does `self.arr(i).method(args)` (method chained on an array index). **What works:** zero-arg calls anywhere (`a.visible()`, `a.x()`), `local.method(args)` as a bare **statement** (`a.reset(...)`), and **`self.field.method(args)` in expressions** (`self.rc.los(...)`). Design element classes with **zero-arg accessors** and let the caller do the arithmetic. If you need a method result in an expression, call it on a `self.` field or split it: `dim tmp` / `tmp = self.things.pick(a, b)` / then use `tmp`.
 - **Passing an array as a parameter and mutating `arr(i) = v` inside** — used successfully in `RcLights` Phase 5 (`splat(grid, ...)` was refactored *away* from this to a `which`-flag form; check `RcLights.bas` for which shape shipped and follow it). If unsure, keep arrays as **member** arrays and branch internally rather than passing them.
 - `math`: `sin cos tan pi() abs floor min max clamp val sqrt sign`. No `math.pow` (`x * x`). `math.atan2` — **verify** in `src/lib/Basic4WebGL/defs/math.bas` before using; if absent, avoid it (billboard math below does not need it).
 - Scene lifecycle: `Constructor()`, `onenter()`, `onupdate(delta)` — **`delta` is milliseconds**. `bare return` in a function is valid.
@@ -883,7 +884,7 @@ self.runProbes()
 2. **behind-camera guard** — `bx = self.ren.worldToScreenX(1.0, 3.0)` (behind the camera at x=3); pass if `bx < 0`.
 3. **hitscan hits the floor barrel** — `hit = self.actors.hitscan(3.0, 3.0, 1, 0, RcConfig.RC_HITSCAN_RANGE)`; pass if `hit <> 0 and self.actors.hitKind() = RcConfig.RC_HIT_ACTOR and hit.x() = 6.5 and hit.y() = 3.0`.
 4. **wall blocks hitscan to the hidden barrel** — `hit = self.actors.hitscan(3.0, 2.5, 1, 0, RcConfig.RC_HITSCAN_RANGE)` — aimed straight at the hidden barrel at `(9.5, 2.5)`, but the wall cell `(8, 2)` is in the way. Pass if `hit = 0 and self.actors.hitKind() = RcConfig.RC_HIT_WALL and math.abs(self.actors.hitDist() - 5.0) < 0.1` (wall face x=8 − origin x=3).
-5. **`near` finds the closest barrel** — pass if `self.actors.near(6.5, 3.2, 2.0)` is `<> 0` and its `.x() = 6.5`, **and** `self.actors.near(0.5, 0.5, 1.0) = 0`.
+5. **`near` finds the closest barrel** — `dim n1` / `n1 = self.actors.near(6.5, 3.2, 2.0)` (split the call — don't write `self.actors.near(...).x()`, method-on-call-result won't parse); pass if `n1 <> 0 and n1.x() = 6.5`, **and** `self.actors.near(0.5, 0.5, 1.0) = 0` (compared inline is fine — no chained method).
 6. **`los` sees the wall** — `d = self.actors.los(3.0, 2.5, 1, 0)`; pass if `d > 0 and math.abs(d - 5.0) < 0.1`.
 
 `onupdate(delta)`:
