@@ -114,4 +114,24 @@ describe('packageDemo', () => {
     expect(result.project).toEqual({ name: 'My Demo' });
     expect(result.folders).toEqual([]);
   });
+
+  test('is deterministic — same input produces byte-identical output', () => {
+    const build = () =>
+      packageDemo(
+        'Repeatable Demo',
+        [
+          { name: 'Main.bas', source: 'print 1' },
+          { name: 'Scene.bas', source: 'print 2' },
+        ],
+        [{ name: 'tiles.png', bytes: Buffer.from([9, 8, 7]) }]
+      );
+    expect(JSON.stringify(build())).toBe(JSON.stringify(build()));
+  });
+
+  test('ids differ across projects and across file vs asset', () => {
+    const a = packageDemo('Demo A', [{ name: 'Main.bas', source: 'x' }], [{ name: 'Main.png', bytes: Buffer.from([1]) }]);
+    const b = packageDemo('Demo B', [{ name: 'Main.bas', source: 'x' }], []);
+    expect(a.files[0].id).not.toBe(b.files[0].id); // project name is part of the key
+    expect(a.files[0].id).not.toBe(a.assets[0].id); // "file" vs "asset" kind, same name
+  });
 });

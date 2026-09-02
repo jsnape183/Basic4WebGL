@@ -1,5 +1,13 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v5 as uuidv5 } from 'uuid';
 import type { ProjectExportJson } from '../../src/features/projects/exportProject';
+
+// Deterministic ids: build:demo is a pure function of the source dir, so re-running
+// it must produce byte-identical output (no churn in the committed .b4wgl.json).
+// These ids are internal handles within one export file — importProject re-keys
+// everything on import, so their actual values never matter downstream.
+const DEMO_ID_NS = '6f9b1d2e-8a3c-4e7f-9b1a-2c3d4e5f6a7b';
+const deterministicId = (projectName: string, kind: string, name: string) =>
+  uuidv5(`${projectName}:${kind}:${name}`, DEMO_ID_NS);
 
 export type { ProjectExportJson };
 
@@ -55,7 +63,7 @@ export function packageDemo(
 ): ProjectExportJson {
   const sortedFiles = [...basFiles].sort((a, b) => a.name.localeCompare(b.name));
   const files = sortedFiles.map((f) => ({
-    id: uuidv4(),
+    id: deterministicId(projectName, 'file', f.name),
     name: f.name,
     source: f.source,
     folderId: null,
@@ -64,7 +72,7 @@ export function packageDemo(
 
   const sortedAssets = [...assets].sort((a, b) => a.name.localeCompare(b.name));
   const assetEntries = sortedAssets.map((a) => ({
-    id: uuidv4(),
+    id: deterministicId(projectName, 'asset', a.name),
     name: a.name,
     content: `data:${mimeTypeFor(a.name)};base64,${a.bytes.toString('base64')}`,
     folderId: null,
