@@ -17,6 +17,7 @@ import TermNode from '@Basic4WebGL/nodes/TermNode';
 import VariableNode from '@Basic4WebGL/nodes/VariableNode';
 import PropertyTermNode from '@Basic4WebGL/nodes/PropertyTermNode';
 import PropertyMethodTermNode from '@Basic4WebGL/nodes/PropertyMethodTermNode';
+import FunctionTermNode from '@Basic4WebGL/nodes/FunctionTermNode';
 import { symbolTypes, scopeTypes } from '../../../symbolTypes';
 import tokens from '@Basic4WebGL/tokens';
 import resolveIndexableSymbol from './helpers/resolveIndexableSymbol';
@@ -154,17 +155,29 @@ class VariableFactorRule implements IParserRule {
           );
         }
 
+        // Method call on the instance: obj.method(args) in expression context.
+        // Parse the argument list in the CURRENT scope — NOT the instance's
+        // member scope — so an argument that shares a name with a zero-arg
+        // method on the instance's class (e.g. a parameter `x` where the class
+        // also has an `x()` accessor) still resolves to the caller's own
+        // local/parameter rather than being parsed as a call to that method
+        // ("Expected OpenParen got Comma"). Only the method symbol itself needs
+        // to resolve against the instance's cloned members. This mirrors the
+        // statement path in ObjectPropertyRule, which has always parsed its
+        // args outside the instance scope.
+        const args = getParserRule('ExpressionList').parse(
+          tokenStream,
+          symbolTable,
+          undefined
+        );
+        let methodSymbol;
         symbolTable.setScope(name);
-        let node: Tree;
         try {
-          node = getParserRule('FunctionFactor').parse(tokenStream, symbolTable, {
-            name: memberName,
-            receiver: ownerFormatted,
-          });
+          methodSymbol = symbolTable.get(memberName, 'Function');
         } finally {
           symbolTable.clearScope();
         }
-        return node;
+        return new FunctionTermNode(methodSymbol, args, loc, ownerFormatted);
       }
 
       // Property chain read: build the full chain. Also track each segment
