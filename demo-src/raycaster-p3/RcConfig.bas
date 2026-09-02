@@ -44,4 +44,5 @@ const
     RC_SPAN_PORTAL_CEIL = 4
     RC_SPAN_PORTAL_FLOOR = 5
     RC_SHADE_UPPER_FLOOR = 8
+    RC_MAX_INTERVALS = 6
 endconst
