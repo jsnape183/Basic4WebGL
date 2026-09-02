@@ -3,10 +3,11 @@
 // Assets and persisted state now live in IndexedDB (see
 // docs/superpowers/plans/2026-08-30-indexeddb-asset-storage.md), so the old
 // Cypress approach of hand-writing `localStorage['persist:softBASIC']` no
-// longer works. Instead the e2e specs call `window.__seedProject`, which runs
-// the app's real project-creation code paths (including `putAssetBlob`) and
-// then flushes redux-persist so a subsequent full-page navigation to the edit
-// route rehydrates the seeded project from IndexedDB.
+// longer works. Instead the e2e specs call `window.__seedProject`, which waits
+// for redux-persist to finish its initial rehydrate, runs the app's real
+// project-creation code paths (including `putAssetBlob`), and then flushes
+// redux-persist so a subsequent full-page navigation to the edit route
+// rehydrates the seeded project from IndexedDB.
 //
 // This module is imported once by `src/App.tsx`. The whole body is behind an
 // `import.meta.env.DEV` / `window.Cypress` guard. In a production `vite build`
@@ -49,6 +50,26 @@ if (
     const { putAssetBlob } = await import('./lib/storage/assetBlobStore');
     const { dataUrlToBlob } = await import('./lib/storage/dataUrl');
     const { store, persistor } = await import('./store');
+
+    // Wait for redux-persist to finish rehydrating before dispatching. On a
+    // cold page load the spec can call this hook before the initial REHYDRATE
+    // has landed; if we dispatch first, that late REHYDRATE merges the (empty)
+    // stored state back over the store with `autoMergeLevel1` and silently
+    // drops the project we just added — so `persistor.flush()` writes an empty
+    // state and the follow-up `cy.visit` rehydrates nothing. This was the
+    // cause of the intermittent first-test failure in `tutorials.cy.ts`.
+    await new Promise<void>((resolve) => {
+      if (persistor.getState().bootstrapped) {
+        resolve();
+        return;
+      }
+      const unsubscribe = persistor.subscribe(() => {
+        if (persistor.getState().bootstrapped) {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
 
     const projectId = spec.id ?? uuidv4();
 
