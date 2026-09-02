@@ -238,6 +238,12 @@ shows it's needed.
 already keeps a per-column `zbuffer` in softBASIC — this extends it). `RcActors`
 clips billboards against it.
 
+**As built (Phase 6):** the depth buffer is **per-column only** —
+`RcRender.depthArr`, one nearest-wall perpendicular distance per screen column,
+filled during the wall pass. There is no per-span depth list: a column's DDA
+terminates at its first wall, and one nearest-wall distance per column is all
+billboard occlusion needs.
+
 ### 5.5 The frame
 
 `RcRender.renderFrame()` is called from the game's `onframe` (or an `RcEngine.tick`
@@ -338,16 +344,21 @@ camera state through the bound actor.
 
 ## 8. Actors / billboards / LOS (`RcActors`, softBASIC)
 
-- `RcActors.add(imageName, x, y, z)` → billboard object; `.setFrame(i)`,
-  `.setPosition()`, `.setTint()`, `.remove()`. Backed by a fixed pool of `sprite`
-  instances (created once, hidden/shown), not create/destroy per frame.
-- Depth-sorted against the per-column span depth (§5.4); occluded by walls and
+- `RcActors.add(imageName, x, y, z, frameW, frameH)` → billboard object;
+  `.setFrame(i)`, `.setPosition()`, `.setTint()`, `.remove()`.
+  **As built:** billboards draw through `drawing.drawImageStrip` per column —
+  whose engine layer already pools `PIXI.Sprite` and caches strip textures
+  (Phase 5's `drawing.js` work) — so `RcActor` is pure data and there is no
+  separate `sprite` pool to manage.
+- Depth-clipped against the per-column wall depth (§5.4); occluded by walls and
   ledges; lit via §6.3.
 - `RcCast.los(x, y, dx, dy)` → distance to first opaque hit or -1.
-- `RcActors.hitscan(x, y, dx, dy, range)` → a `RayHit` (reuses
-  `src/lib/Basic4WebGL/defs/rayhit.bas`) naming the billboard or wall hit — for
-  weapons and enemy fire.
-- `RcRender.worldToScreenX(x, y)` → column index, for reticle / aim assist.
+- `RcActors.hitscan(x, y, dx, dy, range)` → the hit `RcActor` or `0` (wall hit /
+  miss), plus `hitKind()` / `hitDist()` / `hitX()` / `hitY()` / `hitActor()`
+  accessors — matching `RcCast`'s span-accessor style. `rayhit.bas` was left
+  unused.
+- `RcRender.worldToScreenX(x, y)` → screen pixel X (or -1 if behind camera), for
+  reticle / aim assist.
 
 ---
 
@@ -380,6 +391,20 @@ in that order, each gated on a benchmark. Each is generic and separately specced
 - `math` helpers if a hot trig/vector op is missing and doing it in `.bas` is a
   measured bottleneck.
 - Nothing else is anticipated.
+
+### 9.5 As built — Phase 6
+
+- **No `assetmanager` image-size accessor was needed.** `RcActors.add` takes
+  explicit `frameW` / `frameH` arguments (the sprite's source frame size in
+  pixels), so the library never has to ask the engine how big an image is.
+- **One language fix was made:** `fix(transpiler)` `8098c42` — a method call with
+  arguments on a function-local object, used in an *expression* context
+  (`d = a.distanceTo(x, y)` where `a` is a `dim a as RcActor` local), now parses.
+  It previously mis-scoped the argument list against the receiver's class, so an
+  argument identifier that matched a zero-arg accessor on that class
+  (`x` vs. `RcActor.x()`) parsed as a nested call and tripped on the comma. The
+  sibling `arr(i).method(args)` shape on an *untyped* array is still open
+  (`docs/roadmap.md` deferred issue #33 follow-up).
 
 ### 9.4 Resolved tuning constants
 
@@ -441,9 +466,11 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    generic `drawImageStrip(tint)` need if not already done.
    *Demo:* dark room, camera flashlight + one flickering wall light, hard shadow
    edge.
-6. **`RcActors`: billboard pool, depth-sort vs spans, `los` / `hitscan`.**
-   *Demo:* billboards on different floor levels, ledge occlusion, click to hitscan
-   and log the hit.
+6. **`RcActors`: billboard pool, depth-clip vs per-column wall depth, `los` /
+   `hitscan` / `near`, `RcRender.worldToScreenX`.** **[DONE]**
+   *Demo:* `raycaster-p6-actors` (`ActorScene.bas`) — 3 NPC billboards (floor /
+   raised ledge / hidden behind a wall stub) + 6 probes on projection, hitscan,
+   occlusion, `near`, and `los`.
 7. **Diagonal-wall tiles** (`RcWorld` + `RcCast` + `RcMover`).
    *Demo:* an octagonal room + a canted corridor.
 8. **One upper region per cell** (single portal hop).

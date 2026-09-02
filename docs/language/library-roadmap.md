@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-01 (raycaster library Phase 5 shipped — `RcLights` per-cell light grid with ambient, static, and dynamic point lights)
+> Last updated: 2026-09-02 (raycaster library Phase 6 shipped — `RcActors` billboard pool + `los` / `hitscan` / `near` ray queries)
 
 ---
 
@@ -352,22 +352,58 @@ was marginal at the Phase 3 throughput checkpoint (16ms / 127 columns) and criti
 once lighting and textures add per-strip cost. Post-pooling frame-time: **TBD** — measure
 `raycaster-p3-roomview` HUD (Phase 3 baseline was 16 ms / 127 cols).
 
-Phases 6–10 (actors, diagonal tiles, upper regions, optimisation)
+Phase 6 shipped: `RcActors` — a fixed pool of `RcActor` billboards (pure-data:
+image name, source frame size, world `(x, y)` + feet height `z`, frame index,
+tint, visible flag; `add` / `remove` flip the visible flag, never allocate).
+`RcRender.bindActors(actors)` + a new `drawActors()` pass projects every visible
+billboard and draws it as depth-clipped vertical strips. **Occlusion was resolved
+without a bespoke PIXI sprite pool:** each billboard column is drawn through the
+existing `drawing.drawImageStrip` (whose engine layer already pools `PIXI.Sprite`
+and caches strip textures — Phase 5's `drawing.js` work) and clipped against a new
+per-column `RcRender.depthArr` — one nearest-wall perpendicular distance per
+screen column, filled during the wall pass. `RcActor` is therefore pure data and
+there is no separate sprite pool to manage. Ray queries share an owned `RcCast`:
+`actors.los(x, y, dx, dy)` → wall distance or `-1`; `actors.hitscan(x, y, dx, dy,
+range)` → the hit `RcActor` or `0`, with `hitKind()` / `hitDist()` / `hitX()` /
+`hitY()` / `hitActor()` accessors (matching `RcCast`'s span-accessor style — the
+`src/lib/Basic4WebGL/defs/rayhit.bas` data class was **not** used and stays
+unused); `actors.near(x, y, r)` → nearest visible actor or `0`.
+`RcRender.worldToScreenX(x, y)` → screen pixel X or `-1` (behind camera), for a
+reticle. Demo: `raycaster-p6-actors` (`ActorScene.bas`; 3 NPC billboards — floor
+/ raised ledge / hidden behind a wall stub — + 6 probes on projection, hitscan,
+occlusion, `near`, and `los`), wired into `devDemoRegistry` and `demos.cy.ts`.
+**Language fix made during this phase:** `fix(transpiler)` `8098c42` — a method
+call with arguments on a function-local object, used in expression context
+(`d = a.distanceTo(x, y)` where `a` is a `dim a as RcActor` local), now parses;
+it previously failed when an argument name collided with a zero-arg accessor on
+the receiver's class. The sibling `arr(i).method(args)` shape on an *untyped*
+array is still open (`docs/roadmap.md` deferred issue #33 follow-up). No
+`assetmanager` image-size accessor was needed — `RcActors.add` takes explicit
+`frameW` / `frameH`.
+
+Phases 7–10 (diagonal tiles, upper regions, optimisation)
 remain, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-3.md`. Phase 4 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-4.md`. Phase 5 plan:
-`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Guide:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Phase 6 plan:
+`docs/superpowers/plans/2026-09-01-raycaster-engine-phase-6.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Upper regions
 have a fixed height and no per-region textures; `RcCast` stops at the first wall (no
 see-through windows yet), ignores upper regions, and treats diagonal-wall tiles as
-empty; `RcRender` has no per-span depth buffer for sprite occlusion yet, and doesn't
-draw a pit floor or under-ledge surface when the occlusion window is left open.
+empty; `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
+nearest-wall distance each — a column's DDA terminates at its first wall, which is
+all billboard clipping needs), not per-span, and it doesn't draw a pit floor or
+under-ledge surface when the occlusion window is left open. `RcActor` tint is
+stored but not drawn (needs `drawImageStrip` `tint`, spec §5.3 rung 3); billboards
+are a single horizontal frame strip (no vertical frames / 8-direction sprites); no
+actor-vs-actor collision; `hitscan`'s actor test is a fixed 0.4-cell perpendicular
+corridor, not a projected-billboard-width test.
 
 ---
 

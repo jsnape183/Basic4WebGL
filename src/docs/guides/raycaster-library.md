@@ -235,3 +235,111 @@ once when the world loads.
 Light is a single brightness value — no colour yet. Only point lights (no spot
 cones). Moving lights are fully recomputed every frame (no caching). At most
 `RcConfig.RC_LIGHT_CAP` moving lights contribute at once.
+
+## RcActors — billboards and ray hits
+
+`RcActors` is a pool of flat, always-facing-you sprites — an enemy, a barrel, a
+pickup — projected into the 3D view and clipped column by column against the
+walls in front of them, so a billboard behind a pillar or below a ledge is hidden
+correctly. The same object also answers ray questions: line of sight, "what's
+nearest", and a hitscan for shooting.
+
+Bind it to the renderer once, then add a billboard for each thing in the world:
+
+```basic
+dim actors as RcActors
+
+function onenter()
+  self.actors = new RcActors(self.wld)
+  self.ren.bindActors(self.actors)
+
+  ' an enemy sprite: image, x, y, feet height z, and the source frame size
+  dim ghoul as RcActor
+  self.ghoul = self.actors.add("ghoul.png", 8, 5, 0, 64, 64)
+endfunction
+
+function onupdate(delta)
+  self.ren.renderFrame()   ' draws the world, then the billboards on top
+
+  if input.pressed("fire") then
+    dim aimX
+    dim aimY
+    aimX = math.cos(self.me.angle())
+    aimY = math.sin(self.me.angle())
+    dim hit as RcActor
+    self.hit = self.actors.hitscan(self.me.x(), self.me.y(), aimX, aimY, 20)
+    if self.hit <> 0 then
+      self.hit.setTint(255, 60, 60)   ' flag the actor we shot
+      self.score = self.score + 10
+    endif
+  endif
+endfunction
+```
+
+`add` gives you back an `RcActor`, or `0` if the pool is already full.
+`frameW` / `frameH` are the sprite's source size in pixels — one frame of a
+horizontal strip.
+
+| Call | Does |
+|---|---|
+| `new RcActors(world)` | a billboard pool for a loaded `RcWorld` |
+| `actors.add(image, x, y, z, frameW, frameH)` | claim a billboard; returns an `RcActor`, or `0` if the pool is full |
+| `actors.remove(actor)` | free a billboard back to the pool |
+| `actors.activeCount()` | how many billboards are in use |
+| `actors.poolSize()` | the fixed pool capacity (`RcConfig.RC_ACTOR_POOL`) |
+| `actors.actorAt(i)` | the pooled `RcActor` at slot `i` (`0` to `poolSize() - 1`) |
+| `actors.near(x, y, r)` | the nearest visible actor within radius `r` of `(x, y)`, or `0` |
+| `actors.los(x, y, dx, dy)` | distance to the first wall along `(dx, dy)`, or `-1` if none in range |
+| `actors.hitscan(x, y, dx, dy, range)` | fire a ray; returns the actor it hits, or `0` for a wall hit or a miss |
+
+`(dx, dy)` is a direction — `hitscan` normalises it for you, so `math.cos` /
+`math.sin` of an angle is fine.
+
+### Reading a hitscan
+
+`hitscan` returns the hit `RcActor` (or `0`), and leaves the full result on the
+`RcActors` for the calling frame:
+
+| Call | Returns |
+|---|---|
+| `actors.hitKind()` | `RcConfig.RC_HIT_NONE`, `RcConfig.RC_HIT_WALL`, or `RcConfig.RC_HIT_ACTOR` |
+| `actors.hitDist()` | distance from the ray origin to the hit, or `-1` |
+| `actors.hitX()` / `actors.hitY()` | world position of the hit |
+| `actors.hitActor()` | the hit `RcActor`, same as the return value (`0` on a wall hit or miss) |
+
+### One billboard (`RcActor`)
+
+An `RcActor` is plain data — you never `new` one, `actors.add` hands them out.
+
+| Call | Does |
+|---|---|
+| `actor.setPosition(x, y)` | move the billboard on the floor plane |
+| `actor.setHeight(z)` | set its feet height (raise it onto a ledge) |
+| `actor.setFrame(i)` | pick frame `i` of the source strip |
+| `actor.setTint(r, g, b)` | set an RGB tint (`0`–`255` each) — stored, not drawn yet (see limits) |
+| `actor.setVisible(v)` | `1` to show, `0` to hide |
+| `actor.image()` | its image name |
+| `actor.frameW()` / `actor.frameH()` | its source frame size in pixels |
+| `actor.x()` / `actor.y()` / `actor.z()` | its world position and feet height |
+| `actor.frame()` | its current frame index |
+| `actor.visible()` | `1` if shown, `0` if hidden |
+| `actor.distanceTo(px, py)` | straight-line distance from the actor to `(px, py)` |
+
+### Placing a reticle
+
+`RcRender` can tell you where a world point lands on screen, so you can draw a
+marker over the thing you're aiming at:
+
+| Call | Returns |
+|---|---|
+| `RcRender.bindActors(actors)` | draw this pool's billboards each `renderFrame()` |
+| `ren.worldToScreenX(x, y)` | the screen pixel X of world point `(x, y)`, or `-1` if it is behind the camera |
+
+### Phase 6 limits
+
+Tint is stored on the actor but not drawn yet — that waits on a `tint` parameter
+for `drawImageStrip` (spec §5.3 rung 3). A billboard is a single horizontal frame
+strip — no vertical frames, and no 8-direction sprites that change with your
+viewing angle. Actors don't collide with each other. The `hitscan` actor test is
+a fixed 0.4-cell corridor either side of the ray, not a check against each
+billboard's projected width.
