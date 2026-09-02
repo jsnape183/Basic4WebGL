@@ -1,6 +1,6 @@
 # Raycaster Phase 6b — Horizontal Surface Rendering — Design Spec
 
-**Status:** approved (brainstorm 2026-09-02) — ready for implementation plan.
+**Status:** SHIPPED 2026-09-02 (`68d4ba1`..`6f69741`). All four surfaces, per-column `drawStrip` strips via a `drawSurface(destX, hh, dNear, dFar, ...)` helper that orders the projected edges (a floor below eye and a ceiling above it project inverted — the helper is the single place that gets the sign right), stash-and-defer one loop iteration, kind fixed at stash time, post-loop tail flush. `RcRender.surfaceCount()` debug hook. `drawStrip` returns `1`/`0` so the count is honest. p6 demo: pit + staircase, 3 probes. Deferred as planned: floor/ceiling texturing, distance fog, the batched-strip primitive.
 
 **Amends:** `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md` §5.2 (completes what "Floor/ceiling step surfaces use a flat-shaded `drawing.drawRect`" was always meant to mean) and its §11 phasing (inserts 6b before Phase 7).
 
