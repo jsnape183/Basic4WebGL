@@ -107,9 +107,11 @@ describe('Dim rule', () => {
     expect(new DimRule().generate(d, undefined)).toBe('let onenter_arr = _createArray([]);');
   });
 
-  test('class-scope array emits prototype form without let', () => {
+  // Roadmap #35: class array fields init per-instance in the constructor
+  // (RootRule injects this), not once on the shared prototype.
+  test('class-scope array emits per-instance constructor form without let', () => {
     const d = node(nodeTypes.Dim, classArrSym('arr', 'Enemy'), [emptyList(nodeTypes.VariableList)]);
-    expect(new DimRule().generate(d, undefined)).toBe('_sb_Enemy.prototype.arr = _createArray([]);');
+    expect(new DimRule().generate(d, undefined)).toBe('this.arr = _createArray([]);');
   });
 });
 

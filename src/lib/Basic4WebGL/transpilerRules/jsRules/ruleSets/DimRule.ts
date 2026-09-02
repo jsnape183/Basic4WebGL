@@ -6,7 +6,7 @@ import {
 import { Tree } from '@CompilerLib/tree';
 import nodeTypes from '../../../nodeTypes';
 import { scopeTypes } from '../../../symbolTypes';
-import { doChild, formatSymbol, prefixClass } from '../helpers/transpilerHelpers';
+import { doChild, formatSymbol } from '../helpers/transpilerHelpers';
 
 @RegisterTranspilerRule(nodeTypes.Dim)
 class DimRule implements IGeneratable {
@@ -14,8 +14,12 @@ class DimRule implements IGeneratable {
     const sizes = doChild(node, 0, table);
     const rhs = `_createArray([${sizes}])`;
 
+    // Class array fields are initialised per-instance, in the constructor —
+    // RootRule injects this `this.x = ...` line after any super() call
+    // (roadmap #35: a prototype initializer meant two instances shared one
+    // array). Scalar fields keep their prototype default (VariableDimRule).
     if (node.data.scope.type === scopeTypes.Class) {
-      return `${prefixClass(node.data.scope.name)}.prototype.${node.data.name} = ${rhs};`;
+      return `this.${node.data.name} = ${rhs};`;
     }
 
     if (

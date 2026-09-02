@@ -153,14 +153,17 @@ describe('TypedArrayDimRule', () => {
       .toBe('let onenter_bullets = _createTypedArray([20], () => null);');
   });
 
-  test('class-scope typed array emits prototype form', () => {
+  // Roadmap #35: class-scope array/dict/typed-array fields are initialised
+  // per-instance in the constructor (RootRule injects this line), not once on
+  // the prototype where two instances would share one object.
+  test('class-scope typed array emits per-instance constructor form', () => {
     const dims = node(nodeTypes.ExpressionList, null, [term('3')]);
     const n = node(nodeTypes.TypedArrayDim, {
       arraySymbol: arrSym('tiles', classScope('Level')),
       classSymbol: classSym('Tile'),
     }, [dims]);
     expect(new TypedArrayDimRule().generate(n, undefined))
-      .toBe('_sb_Level.prototype.tiles = _createTypedArray([3], () => null);');
+      .toBe('this.tiles = _createTypedArray([3], () => null);');
   });
 
   test('multi-dimensional typed array', () => {
