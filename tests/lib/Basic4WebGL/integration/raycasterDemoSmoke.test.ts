@@ -714,6 +714,91 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(surf.some((s) => s.grey === 80 && s.midY < 100)).toBe(true);
   });
 
+  // Renderer-rework review: a FLOOR RISE must occlude the geometry behind/under
+  // its rim. Corridor: flat floor to c<6, a step UP to 0.4 for 6<=c<9, then a
+  // deep pit at -1.0 from c>=9, and a border wall at c>=20. Camera at (2,2)
+  // looking +x sees the step rim; the deep pit floor (PIT_FLOOR grey 60) and the
+  // far border wall (wall grey 150/115) both project BELOW the rim line and must
+  // be clipped away by the step's riser occlusion. Verified deliberate-break:
+  // commenting the FLOORSTEP `self.occlude(sTop, sBot)` in RcRender.renderFrame
+  // makes this fail — a border-wall strip leaks to y~105..117 and a PIT_FLOOR
+  // strip to y~117..125, both below the rim.
+  const stubFloorRise = {
+    floorheightat: (c: number) => (c < 6 ? 0 : c < 9 ? 0.4 : -1.0),
+    ceilheightat: () => 1.5,
+    wallat: (c: number) => (c <= 0 || c >= 20 ? 1 : 0),
+    diagat: () => 0,
+    upperkindat: () => 0,
+    upperfloorat: () => 1,
+    upperceilat: () => 2,
+    walltexat: () => '',
+    floortexat: () => '',
+    ceiltexat: () => '',
+    widthcells: () => 24,
+    heightcells: () => 6,
+    lightat: () => 0,
+  };
+
+  test.each(phaseDirs)('%s: renderFrame — a floor rise occludes geometry behind its rim', (dirName) => {
+    const rects: any[][] = [];
+    const fills: number[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      setFillColor: (...a: unknown[]) => {
+        fills.push(a as number[]);
+        return undefined;
+      },
+      drawRect: (...a: unknown[]) => {
+        rects.push([...(a as number[]), fills[fills.length - 1]]);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcRender) return;
+
+    const r = new mod.RcRender(stubFloorRise);
+    r.setcamera(2, 2, 0, 0); // looking +x, straight at the raised step
+    r.renderframe();
+
+    // Screen Y of the step top (h = 0.4) at the far border-wall distance
+    // (perp ~18 from x=2 to the x=20 wall face). NOTHING farther than the step
+    // may paint below this line.
+    const rimY = r.projecty(0.4, 18);
+
+    // Strips that must never fall below the rim: border-wall faces (grey 150
+    // x-face / 115 y-face) and the deep-pit floor (PIT_FLOOR grey 60), all
+    // per-column (w === 4). Grey is index 1 of the captured [r,g,b].
+    const leaked = rects
+      .filter((a) => {
+        const rgb = a[4] as number[] | undefined;
+        return (
+          a[2] === 4 &&
+          Array.isArray(rgb) &&
+          (rgb[1] === 150 || rgb[1] === 115 || rgb[1] === 60) &&
+          typeof a[1] === 'number' &&
+          typeof a[3] === 'number'
+        );
+      })
+      .map((a) => ({ grey: (a[4] as number[])[1], top: (a[1] as number) - (a[3] as number) / 2 }))
+      .filter((s) => s.top > rimY + 1);
+
+    expect(leaked).toEqual([]);
+
+    // Sanity: the border wall IS on screen above the rim — otherwise the
+    // assertion above would pass vacuously.
+    const wallStripsAboveRim = rects.filter((a) => {
+      const rgb = a[4] as number[] | undefined;
+      return (
+        a[2] === 4 &&
+        Array.isArray(rgb) &&
+        (rgb[1] === 150 || rgb[1] === 115) &&
+        (a[1] as number) - (a[3] as number) / 2 <= rimY + 1
+      );
+    });
+    expect(wallStripsAboveRim.length).toBeGreaterThan(0);
+  });
+
   // Task 5: floor/ceiling surfaces are lit via RcLights.sampleAt (bilinear), not
   // sampleCell (per-cell). Bind a lights stub whose per-cell light is a hard
   // stepped ramp (a distinct value per cell, no smoothing) but whose sampleAt

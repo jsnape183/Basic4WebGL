@@ -125,6 +125,72 @@ describe('RcRender interval-list occlusion primitives', () => {
     return r;
   }
 
+  // The interval primitives expose no boundary accessor, so read the actual
+  // visible [top, bot] pairs back through drawInto + the drawRect spy: drawStrip
+  // paints drawRect(iDestX, (t+b)/2, RC_STRIP_W, b-t) for each visible interval
+  // when the surface strip [0, viewH] is drawn into it (no clipping happens, so
+  // the painted band IS the interval). midY ± height/2 recovers [top, bot].
+  const VIEW_H = 200;
+  function readIntervals(r: RcRenderLike): Array<{ top: number; bot: number }> {
+    strips.length = 0;
+    r.drawinto(0, VIEW_H, 0, 1.0);
+    return strips
+      .filter((a) => a[2] === 4) // RC_STRIP_W strips only
+      .map((a) => {
+        const midY = a[1] as number;
+        const h = a[3] as number;
+        return { top: midY - h / 2, bot: midY + h / 2 };
+      })
+      .sort((p, q) => p.top - q.top);
+  }
+
+  function expectIntervals(
+    got: Array<{ top: number; bot: number }>,
+    want: Array<[number, number]>,
+  ) {
+    expect(got.length).toBe(want.length);
+    want.forEach(([t, b], i) => {
+      expect(Math.abs(got[i].top - t)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(got[i].bot - b)).toBeLessThanOrEqual(0.5);
+    });
+  }
+
+  test('interval boundaries: mid-band split is exact', () => {
+    const r = newRender();
+    r.resetintervals();
+    expectIntervals(readIntervals(r), [[0, 200]]);
+    r.occlude(80, 120);
+    expect(r.intervalcount()).toBe(2);
+    expectIntervals(readIntervals(r), [
+      [0, 80],
+      [120, 200],
+    ]);
+  });
+
+  test('interval boundaries: a spanning occlude trims both bands', () => {
+    const r = newRender();
+    r.resetintervals();
+    r.occlude(80, 120); // -> [0,80] [120,200]
+    r.occlude(60, 140); // spans the gap -> [0,60] [140,200]
+    expect(r.intervalcount()).toBe(2);
+    expectIntervals(readIntervals(r), [
+      [0, 60],
+      [140, 200],
+    ]);
+  });
+
+  test('interval boundaries: top-shrink keeps the far remnant, not the near one', () => {
+    const r = newRender();
+    r.resetintervals();
+    r.occlude(80, 120); // -> [0,80] [120,200]
+    r.occlude(0, 40); // shrink [0,80] from the top -> [40,80], NOT [0,40]
+    expect(r.intervalcount()).toBe(2);
+    expectIntervals(readIntervals(r), [
+      [40, 80],
+      [120, 200],
+    ]);
+  });
+
   test('resetIntervals gives one full-height interval', () => {
     const r = newRender();
     r.resetintervals();
