@@ -331,9 +331,9 @@ git commit -m "feat(raycaster): RcRender draws floor/ceiling horizontal surfaces
 
 ---
 
-## Task 3: `p6room.stm` — add a staircase and a pit
+## Task 3: `p6room.stm` — add a staircase and a pit  **[DONE by coordinator — `82…` — a reviewer only sanity-checks]**
 
-**Files:** Modify `demo-src/raycaster-p6/assets/p6room.stm`.
+**Files:** Modify `demo-src/raycaster-p6/assets/p6room.stm`. **As shipped:** pit `floor:-0.3` at cols **4–5**, rows 3–4 (dead ahead of the spawn camera at (3,3); the floor NPC at (6.5,3) stands on solid ground just past its far rim — untouched, so Phase-6 probes 1/3 are unaffected). Staircase `floor:0.15` (cols 8, rows 7–8) → `floor:0.3` (cols 9) → existing `floor:0.4` ledge (cols 10–11). `light` marker unchanged. 15 markers total (10×14 grid).
 
 - [ ] **Step 1: Room.** Keep the existing walls grid (14×10, border walls, wall stub at row 2–3 col 8) and the `light` marker. Extend the `tags.markers` list — keep the ledge, add the stair + pit:
 
@@ -385,7 +385,9 @@ git commit -m "test(raycaster): p6 room gains a staircase + a pit (Phase 6b)"
 
 ---
 
-## Task 4: `ActorScene` probes + rebuild export
+## Task 4: `ActorScene` probes + rebuild export  **[DONE by coordinator — same commit as Task 3]**
+
+As shipped: probe 7 `floorHeightAt(9,7)≈0.3` + `floorHeightAt(11,7)≈0.4`; probe 8 `math.abs(floorHeightAt(4,3) + 0.3) < 0.01` (pit); probe 9 `self.ren.renderFrame()` then `self.ren.surfaceCount() > 0`. `raycasterDemoProbes` P6 `probeCount: 9`. Export rebuilt (`npm run build:demo -- demo-src/raycaster-p6 RaycasterP6Actors`). Original Task-4 text below is the spec.
 
 **Files:** Modify `demo-src/raycaster-p6/ActorScene.bas`; re-sync it is NOT needed (it's demo-only, not a canonical lib file). Rebuild `src/docs/demos/RaycasterP6Actors.b4wgl.json`. Modify `tests/lib/Basic4WebGL/integration/raycasterDemoProbes.test.ts`.
 
