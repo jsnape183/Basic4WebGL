@@ -150,6 +150,8 @@ interface RcMoverLike {
   turn(dAngle: number): void;
   look(dPitch: number): void;
   jump(): void;
+  regionid(): number;
+  enterregion(r: number): void;
 }
 
 interface RcCastLike {
@@ -450,6 +452,49 @@ describe('raycaster phase demos smoke-execute', () => {
       free.step(50);
     }
     expect(free.x()).toBeGreaterThan(4.0);
+  });
+
+  test.each(phaseDirs)('%s: RcMover swaps region crossing onto a level upper floor', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcMover) return;
+
+    // stubWorldUpper: walkway on row 3, cols 2..5, upperFloorAt = 1.0.
+    // A body at room-floor height (z=0) can't be on the walkway; but make a
+    // variant where the walkway floor is level (0) with the room so the
+    // transition rule fires on the boundary.
+    const level = {
+      ...stubWorldUpper,
+      ceilheightat: () => 1, // room ceiling
+      upperfloorat: () => 0, // walkway level with the room floor
+      upperceilat: () => 1,
+    };
+    const m = new mod.RcMover(level as unknown, 1.5, 3.5, 0.3, 0.6) as unknown as RcMoverLike & {
+      regionid(): number;
+      enterregion(r: number): void;
+    };
+    expect(m.regionid()).toBe(0);
+    m.turn(0); // +x
+    for (let i = 0; i < 30; i++) {
+      m.move(2.6, 0);
+      m.step(50);
+    }
+    // walked from col 1 (no upper) onto the walkway strip (cols 2..5) at equal height
+    expect(m.regionid()).toBe(1);
+
+    // enterRegion + drive into the hole (col 4) → fall back to region 0
+    const m2 = new mod.RcMover(stubWorldUpper as unknown, 2.5, 3.5, 0.3, 0.6) as unknown as RcMoverLike & {
+      regionid(): number;
+      enterregion(r: number): void;
+    };
+    m2.enterregion(1);
+    expect(m2.regionid()).toBe(1);
+    m2.turn(0);
+    for (let i = 0; i < 30; i++) {
+      m2.move(2.6, 0);
+      m2.step(50);
+    }
+    expect(m2.regionid()).toBe(0);
+    expect(m2.z()).toBeCloseTo(0, 1); // landed on the room floor
   });
 
   test.each(phaseDirs)('%s: RcCast resolves a diagonal tile as a wall span', (dirName) => {

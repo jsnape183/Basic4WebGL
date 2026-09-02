@@ -10,8 +10,13 @@ Class
 ' The RcWorld field is `wld`, NEVER `world` (builtin module -> silent
 ' mis-transpile -> runtime ReferenceError).
 '
-' Deferred (spec): actor-vs-actor collision (§7.1), animated lifts, region
-' resolution main-vs-upper (Phase 8).
+' Phase 8: one `region` field (0 lower / 1 upper). Never half in both rooms. A
+' single boundary-crossing swap rule in step() flips it: walk onto a level solid
+' upper floor (id 1) from the lower room -> region 1; step off the upper floor
+' onto a hole/void (id <> 1) -> region 0 and let lower-room gravity finish the
+' fall. blocked()/the vertical resolver read the active region's floor + ceiling.
+'
+' Deferred (spec): actor-vs-actor collision (§7.1), animated lifts.
 '   - vertical ceiling collision: pz is only clamped at the floor, so a jump can
 '     pass the head through a low ceiling. Safe only while the jump apex clears
 '     the lowest ceiling over any reachable floor (RC_JUMP_VEL^2 / (2*RC_GRAVITY)
@@ -39,6 +44,7 @@ dim grounded
 dim mvFwd
 dim mvStrafe
 dim wantJump
+dim region
 
 Constructor(w as RcWorld, x, y, radius, bodyHeight)
     self.wld = w
@@ -54,7 +60,30 @@ Constructor(w as RcWorld, x, y, radius, bodyHeight)
     self.mvFwd = 0
     self.mvStrafe = 0
     self.wantJump = 0
+    self.region = 0
+    if w.upperKindAt(math.floor(x), math.floor(y)) = 1 then
+        if self.pz >= w.upperFloorAt(math.floor(x), math.floor(y)) then
+            self.region = 1
+        endif
+    endif
 EndConstructor
+
+' Force the body into a region and snap its feet to that region's floor. The
+' scene calls this to spawn a body already in the upper region.
+function enterRegion(r)
+    self.region = r
+    if r = 1 then
+        self.pz = self.wld.upperFloorAt(math.floor(self.px), math.floor(self.py))
+    else
+        self.pz = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
+    endif
+    self.vz = 0
+    self.grounded = 1
+endfunction
+
+function regionId()
+    return self.region
+endfunction
 
 ' intent -- REPLACED each frame and cleared by step(); turn()/look() apply immediately and accumulate.
 function move(fwd, strafe)
@@ -77,6 +106,23 @@ endfunction
 ' A cell blocks the body at the current feet height if it's a wall, its floor is
 ' too high to step onto, or its ceiling leaves less than body-height of headroom.
 function blocked(cx, cy)
+    if self.region = 1 then
+        if self.wld.upperKindAt(cx, cy) = 2 then
+            return 1
+        endif
+        if self.wld.upperKindAt(cx, cy) <> 1 then
+            ' hole or void: not "blocked", but no floor here -- step()'s
+            ' vertical resolver / transition rule handles the drop.
+            return 0
+        endif
+        if self.wld.upperFloorAt(cx, cy) - self.pz > RcConfig.RC_STEP_UP then
+            return 1
+        endif
+        if self.wld.upperCeilAt(cx, cy) - self.pz < self.ht then
+            return 1
+        endif
+        return 0
+    endif
     if self.wld.wallAt(cx, cy) > 0 then
         return 1
     endif
@@ -121,6 +167,9 @@ function step(dt)
     dim push
     dim dnx
     dim dny
+    dim fcx
+    dim fcy
+    dim otherFloor
 
     dsec = dt / 1000.0
     if dsec > RcConfig.RC_MAX_STEP_DT then
@@ -160,7 +209,7 @@ function step(dt)
     dcx = math.floor(self.px)
     dcy = math.floor(self.py)
     dgc = self.wld.diagAt(dcx, dcy)
-    if dgc > 0 then
+    if dgc > 0 and self.region = 0 then
         lu = self.px - dcx
         lv = self.py - dcy
         sd = 0
@@ -193,6 +242,28 @@ function step(dt)
         endif
     endif
 
+    ' Region transition -- one boundary-crossing swap, after the horizontal moves
+    ' and the diagonal push-out, before jump/gravity. No half-in-both-rooms state.
+    fcx = math.floor(self.px)
+    fcy = math.floor(self.py)
+    if self.region = 1 then
+        ' Stepped off the upper floor onto a hole/void: drop into the lower room
+        ' now and let normal lower-region gravity + collision finish the fall.
+        if self.wld.upperKindAt(fcx, fcy) <> 1 then
+            self.region = 0
+        endif
+    else
+        ' Standing where a level solid upper floor is within step-up reach:
+        ' climb onto the walkway.
+        if self.wld.upperKindAt(fcx, fcy) = 1 then
+            otherFloor = self.wld.upperFloorAt(fcx, fcy)
+            if math.abs(self.pz - otherFloor) <= RcConfig.RC_STEP_UP then
+                self.region = 1
+                self.pz = otherFloor
+            endif
+        endif
+    endif
+
     if self.wantJump = 1 then
         if self.grounded = 1 then
             self.vz = RcConfig.RC_JUMP_VEL
@@ -205,7 +276,15 @@ function step(dt)
     ' occupied. groundH below current feet + within step-up -> snap up (walking
     ' onto a low ledge). Otherwise integrate gravity and land when feet reach it
     ' (walking off a ledge / into a pit / descending a jump).
-    groundH = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
+    if self.region = 1 then
+        groundH = self.wld.upperFloorAt(math.floor(self.px), math.floor(self.py))
+        if self.wld.upperKindAt(math.floor(self.px), math.floor(self.py)) <> 1 then
+            ' no upper floor underfoot -- fall toward the lower floor
+            groundH = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
+        endif
+    else
+        groundH = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
+    endif
     steppingUp = 0
     if self.grounded = 1 and groundH > self.pz then
         if groundH - self.pz <= RcConfig.RC_STEP_UP then

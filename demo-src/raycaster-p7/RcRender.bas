@@ -418,12 +418,16 @@ function renderFrame()
     camCol = math.floor(self.camX)
     camRow = math.floor(self.camY)
 
-    ' Camera region. Height-based fallback for now.
-    ' Phase 8 / Task 6: switch to self.boundMover.regionId() once RcMover carries it.
+    ' Camera region: the bound mover carries it authoritatively; with no mover
+    ' bound, derive it from the camera height against this cell's upper floor.
     camRegion = 0
-    if self.wld.upperKindAt(camCol, camRow) > 0 then
-        if self.camZ >= self.wld.upperFloorAt(camCol, camRow) then
-            camRegion = 1
+    if self.boundMover <> 0 then
+        camRegion = self.boundMover.regionId()
+    else
+        if self.wld.upperKindAt(camCol, camRow) > 0 then
+            if self.camZ >= self.wld.upperFloorAt(camCol, camRow) then
+                camRegion = 1
+            endif
         endif
     endif
     self.rc.setRegion(camRegion)
