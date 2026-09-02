@@ -103,6 +103,19 @@ Not every `.bas` file is descriptor-generated — `math`, `string`, `array`, `di
 
 ---
 
+## Compiler or transpiler issues — pause, don't work around
+
+When you hit a softBASIC syntax that **should** work but fails to parse, transpile, or compile — a legitimate language construct the compiler rejects, a parser limitation, wrong transpiler output — **do not silently rewrite the code to dodge it.** Working around compiler bugs quietly lets the language rot: the bug stays hidden, the docs/demos accumulate unnatural code, and the next person hits the same wall.
+
+Instead:
+
+1. **Stop and tell the user** what construct failed and what the ideal code would look like. Distinguish a genuine compiler/transpiler defect from your own syntax mistake (check the `.bas` def file and API reference first — see the API cross-reference rule).
+2. **Offer to spin up a subagent** to fix the compiler/transpiler issue properly (lexer/parser/transpiler in `src/lib/Basic4WebGL/`, TDD as per the six-step process, full `npx vitest run` before commit). Known limitations are tracked in memory (e.g. softBASIC method-call arg parse limits) and in `docs/language/library-roadmap.md` — check whether it's already known.
+3. **If a temporary workaround is unavoidable** to keep moving (e.g. the user declines the fix for now), mark it clearly in a comment (`' WORKAROUND: <construct> fails to parse — see <issue/roadmap ref>`) so it can be found later.
+4. **Once the compiler fix lands, refactor the workaround away** — restore the natural, optimum code the workaround was standing in for, and re-verify.
+
+---
+
 ## Creating demos
 
 See `docs/demo-authoring-guide.md` for the full workflow: the pre-production questions to ask before writing any code (concept, required assets with dimensions/animation details, controls, whether new engine features are needed), the two ways to build a demo (live in the app vs. hand-write + `scripts/buildDemo.ts`), and the mandatory production checklist — including a `cypress/e2e/demos.cy.ts` spec, which is not optional.

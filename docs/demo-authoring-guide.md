@@ -45,6 +45,17 @@ Two paths — pick based on complexity.
 3. **Still required, exactly like Path A's last step:** load the result into the running app (Demos page → Try Demo, or import the JSON directly) and click Run to verify zero console `ERR` entries. The script only assembles the file — it doesn't prove the code is correct.
 4. Commit `demo-src/<slug>/` to git alongside the generated `.b4wgl.json` — it's the maintainable plain-text source for that demo (easier to edit and diff than the opaque JSON blob), not a throwaway scratch folder.
 
+## Hitting a compiler or transpiler wall
+
+If a natural piece of softBASIC — a construct that genuinely should work — fails to parse, transpile, or compile while building the demo, **do not quietly rewrite it into something uglier to get past it.** That hides a real language bug and leaves the demo carrying unnatural code as a permanent example.
+
+Follow `CLAUDE.md`'s "Compiler or transpiler issues — pause, don't work around":
+
+1. First rule out your own syntax mistake against the `.bas` def file / API reference.
+2. If it's a real compiler/transpiler defect, **stop and tell the user**, showing the ideal code, and **offer to spin up a subagent** to fix it properly (TDD, full `npx vitest run`).
+3. Any unavoidable temporary workaround gets a `' WORKAROUND:` comment naming the construct and a reference.
+4. When the fix lands, **refactor the workaround out** — put the natural code back, re-export the `.b4wgl.json`, and re-verify zero `ERR` entries.
+
 ## Step 4: Production checklist (mandatory, no exceptions)
 
 - [ ] `.b4wgl.json` verified to run with zero `ERR` console entries.
@@ -52,6 +63,7 @@ Two paths — pick based on complexity.
 - [ ] `demoRegistry.ts` entry (with a `file` basename — not an inline `json` blob).
 - [ ] `docs/manifest.ts` nav entry under `Demos`.
 - [ ] `cypress/e2e/demos.cy.ts` — add an entry to the `DEMOS` array (slug, title, waitMs). Each demo is seeded through the dev/Cypress-only `window.__seedDemo(slug)` hook (registered in `src/pages/DemosPage.tsx`), which runs the app's real `loadDemoJson(slug) → importProject → putAssetBlob` path — the same thing clicking "Try Demo" does. Assets and persisted state now live in IndexedDB, so there is no `localStorage['persist:softBASIC']` key to hand-write; the hook is the only sane seed path. The shared helper `cypress/support/seedProject.ts` (`seedProject` / `seedAndRun`, backed by `window.__seedProject` in `src/devSeed.ts`) covers the non-demo specs the same way. **Mandatory — a demo isn't done without this.**
+- [ ] No silent compiler/transpiler workarounds left in the shipped code — any that were needed are either fixed (workaround refactored out) or carry a `' WORKAROUND:` comment and were raised with the user (see "Hitting a compiler or transpiler wall" above).
 - [ ] If the demo needed new engine functions: they went through the full six-step "Adding a new language feature or library module" process from `CLAUDE.md`, including the descriptor+generator pipeline if the module is descriptor-driven (see `CLAUDE.md`'s "Descriptor-generated `.bas` files" section) — never a hand-edited `.bas` file.
 
 ## The assembler script: `scripts/buildDemo.ts`
