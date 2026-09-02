@@ -14,12 +14,11 @@ import { packageModules } from '../../../../src/constants/packageModules';
 // so nothing was baked and the "static bake present" probe threw only under
 // Cypress.
 //
-// This test transpiles the P5 demo, evaluates it against an `_sb` stub wired to
-// the real `p5room.stm` grid + markers, runs `LitScene.onenter()` (which calls
-// `runProbes()`), and asserts every probe reported OK. A failed probe raises the
-// same caught runtimeError Cypress sees, failing this test in-suite.
+// This test transpiles each phase demo, evaluates it against an `_sb` stub wired
+// to that demo's real `.stm` grid + markers, runs the scene's `onenter()` (which
+// calls `runProbes()`), and asserts every probe reported OK. A failed probe
+// raises the same caught runtimeError Cypress sees, failing this test in-suite.
 
-const DIR = 'demo-src/raycaster-p5';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
 function makeSbStub(probeLog: string[], stm: { walls: number[][]; markers: unknown[]; tw: number; th: number }) {
@@ -66,7 +65,7 @@ function makeSbStub(probeLog: string[], stm: { walls: number[][]; markers: unkno
   return stub;
 }
 
-function evalScene(code: string, stub: ReturnType<typeof makeSbStub>) {
+function evalScene(code: string, stub: ReturnType<typeof makeSbStub>, sceneGlobal: string) {
   const deferred: Array<() => void> = [];
   (stub as Record<string, unknown>)._deferModuleBody = (cb: () => void) => deferred.push(cb);
 
@@ -88,42 +87,60 @@ function evalScene(code: string, stub: ReturnType<typeof makeSbStub>) {
     '_createArray',
     ...Object.keys(helpers),
     'console',
-    `${code}\n; return typeof _sb_litscene !== 'undefined' ? _sb_litscene : null;`,
+    `${code}\n; return typeof ${sceneGlobal} !== 'undefined' ? ${sceneGlobal} : null;`,
   );
   const Scene = factory(stub, _createArray, ...Object.values(helpers), { log() {} });
   deferred.forEach((cb) => cb());
   return Scene as (new () => { onenter(): void }) | null;
 }
 
-describe('raycaster P5 demo probes execute', () => {
-  test('LitScene.onenter runs runProbes and every probe passes', () => {
-    const stmJson = JSON.parse(readFileSync(`${DIR}/assets/p5room.stm`, 'utf-8'));
-    const stm = {
-      walls: stmJson.layers.walls as number[][],
-      markers: stmJson.layers.tags.markers as unknown[],
-      tw: stmJson.tileWidth as number,
-      th: stmJson.tileHeight as number,
-    };
+function runPhaseProbes(opts: { dir: string; stm: string; sceneGlobal: string; probeCount: number }) {
+  const stmJson = JSON.parse(readFileSync(`${opts.dir}/assets/${opts.stm}`, 'utf-8'));
+  const stm = {
+    walls: stmJson.layers.walls as number[][],
+    markers: stmJson.layers.tags.markers as unknown[],
+    tw: stmJson.tileWidth as number,
+    th: stmJson.tileHeight as number,
+  };
 
-    const names = readdirSync(DIR)
-      .filter((n) => n.endsWith('.bas'))
-      .sort();
-    const raw = names.map((name) => ({ name, source: readFileSync(`${DIR}/${name}`, 'utf-8') }));
-    const { files, error } = sortByDependencies(raw);
-    expect(error, 'dependency sort').toBeUndefined();
-    const result = compiler.transpile({ lib, files });
-    expect(result.diagnostics, 'diagnostics').toEqual([]);
+  const names = readdirSync(opts.dir)
+    .filter((n) => n.endsWith('.bas'))
+    .sort();
+  const raw = names.map((name) => ({ name, source: readFileSync(`${opts.dir}/${name}`, 'utf-8') }));
+  const { files, error } = sortByDependencies(raw);
+  expect(error, 'dependency sort').toBeUndefined();
+  const result = compiler.transpile({ lib, files });
+  expect(result.diagnostics, 'diagnostics').toEqual([]);
 
-    const probeLog: string[] = [];
-    const stub = makeSbStub(probeLog, stm);
-    const Scene = evalScene(String(result.code), stub);
-    expect(Scene, 'LitScene class present').toBeTruthy();
+  const probeLog: string[] = [];
+  const stub = makeSbStub(probeLog, stm);
+  const Scene = evalScene(String(result.code), stub, opts.sceneGlobal);
+  expect(Scene, `${opts.sceneGlobal} class present`).toBeTruthy();
 
-    const scene = new Scene!();
-    expect(() => scene.onenter()).not.toThrow();
+  const scene = new Scene!();
+  expect(() => scene.onenter()).not.toThrow();
 
-    const results = probeLog.filter((l) => l.includes(': OK') || l.includes(': FAIL'));
-    expect(results.length, 'probe count').toBe(6);
-    expect(results.filter((l) => l.includes(': FAIL'))).toEqual([]);
+  const results = probeLog.filter((l) => l.includes(': OK') || l.includes(': FAIL'));
+  expect(results.length, 'probe count').toBe(opts.probeCount);
+  expect(results.filter((l) => l.includes(': FAIL'))).toEqual([]);
+}
+
+describe('raycaster phase demo probes execute', () => {
+  test('P5 LitScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p5',
+      stm: 'p5room.stm',
+      sceneGlobal: '_sb_litscene',
+      probeCount: 6,
+    });
+  });
+
+  test('P6 ActorScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p6',
+      stm: 'p6room.stm',
+      sceneGlobal: '_sb_actorscene',
+      probeCount: 6,
+    });
   });
 });
