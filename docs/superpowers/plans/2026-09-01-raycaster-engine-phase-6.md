@@ -37,7 +37,7 @@
 - Function-scoped `dim`s must be **hoisted to the top of the function**.
 - **`Class` must be line 1** of a `.bas` file. One class per file. `Extends scene` for a scene class.
 - Typed **function-locals of user classes** work (`dim a as RcMover` then `a.x()`), and typed **`self`-field** access works (`self.ren.renderFrame()`). **Method calls** on external instances work. **Untyped `.field` reads** on an external instance do **not** parse — always go through a method (`RcCast` exposes `spanKind(i)` not `.kindArr(i)`; do the same).
-- **METHOD-CALL PARSE LIMIT (confirmed Phase 6):** `someLocal.method(arg1, arg2)` in an **expression** fails to parse when `someLocal` is a typed local assigned from an array element (`a = self.pool(i)` then `d = a.distanceTo(x, y)` → `Expected OpenParen got Comma`). So does `self.arr(i).method(args)` (method chained on an array index). **What works:** zero-arg calls anywhere (`a.visible()`, `a.x()`), `local.method(args)` as a bare **statement** (`a.reset(...)`), and **`self.field.method(args)` in expressions** (`self.rc.los(...)`). Design element classes with **zero-arg accessors** and let the caller do the arithmetic. If you need a method result in an expression, call it on a `self.` field or split it: `dim tmp` / `tmp = self.things.pick(a, b)` / then use `tmp`.
+- **METHOD-CALL PARSE (Phase 6):** `someLocal.method(arg1, arg2)` in an **expression** (`d = a.distanceTo(x, y)`) — **FIXED, commit `8098c42`.** Still broken: `self.arr(i).method(args)` — a method call chained directly onto an array-index expression (`Expected NewLine … got Dot`, roadmap #33). Split it: `dim e` / `e = self.arr(i)` / `e.method(args)`. Also still broken: `.method()` chained onto a call result (`self.actors.near(x,y,r).x()`) — split with a local. Zero-arg calls, bare-statement arg calls, and `self.field.method(args)` in expressions all work.
 - **Passing an array as a parameter and mutating `arr(i) = v` inside** — used successfully in `RcLights` Phase 5 (`splat(grid, ...)` was refactored *away* from this to a `which`-flag form; check `RcLights.bas` for which shape shipped and follow it). If unsure, keep arrays as **member** arrays and branch internally rather than passing them.
 - `math`: `sin cos tan pi() abs floor min max clamp val sqrt sign`. No `math.pow` (`x * x`). `math.atan2` — **verify** in `src/lib/Basic4WebGL/defs/math.bas` before using; if absent, avoid it (billboard math below does not need it).
 - Scene lifecycle: `Constructor()`, `onenter()`, `onupdate(delta)` — **`delta` is milliseconds**. `bare return` in a function is valid.
@@ -637,7 +637,7 @@ git commit -m "feat(raycaster): RcActors.bas billboard pool + near/los/hitscan (
 
 ## Task 5: `RcRender.drawActors()` — the billboard pass
 
-**Files:** Modify `demo-src/raycaster/lib/RcRender.bas`; re-sync `demo-src/raycaster-p{3,4,5}/RcRender.bas`.
+**Files:** Modify `demo-src/raycaster/lib/RcRender.bas`; re-sync `demo-src/raycaster-p{3,4,5}/RcRender.bas`. **Also** copy `RcActor.bas` + `RcActors.bas` into `demo-src/raycaster-p{3,4,5}/` — `drawActors` has `dim a as RcActor` (a typed local), so `raycasterDemoTranspile.test.ts` (which transpiles each phase dir standalone) needs those two files present there. lib-sync auto-picks them up.
 
 - [ ] **Step 1: Add the two scratch member arrays.** In `RcRender.bas`'s `dim` block (with the other Phase-6 fields from Task 1) add:
 
