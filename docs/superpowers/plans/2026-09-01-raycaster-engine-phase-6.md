@@ -196,7 +196,7 @@ git commit -m "feat(raycaster): RcRender per-column depth buffer + worldToScreen
 
 ## Task 2: `RcConfig` — actor constants
 
-**Files:** Modify `demo-src/raycaster/lib/RcConfig.bas`; re-sync every `demo-src/raycaster-p{1..5}/RcConfig.bas`.
+**Files:** Modify `demo-src/raycaster/lib/RcConfig.bas`; re-sync every phase dir that **already has** a `RcConfig.bas` copy (p2–p5 — p1 has only `RcWorld.bas`/`MapProbeScene.bas` and does not use `RcConfig`, so do NOT create one there).
 
 - [ ] **Step 1:** Insert before `endconst`:
 
@@ -214,7 +214,7 @@ git commit -m "feat(raycaster): RcRender per-column depth buffer + worldToScreen
 - [ ] **Step 2:** Re-sync:
 
 ```bash
-for d in 1 2 3 4 5; do cp demo-src/raycaster/lib/RcConfig.bas demo-src/raycaster-p$d/RcConfig.bas; done
+for d in 2 3 4 5; do cp demo-src/raycaster/lib/RcConfig.bas demo-src/raycaster-p$d/RcConfig.bas; done
 ```
 
 - [ ] **Step 3:** `npx vitest run tests/lib/Basic4WebGL/integration/raycasterDemo` green.
@@ -222,7 +222,7 @@ for d in 1 2 3 4 5; do cp demo-src/raycaster/lib/RcConfig.bas demo-src/raycaster
 - [ ] **Step 4: Commit.**
 
 ```bash
-git add demo-src/raycaster/lib/RcConfig.bas demo-src/raycaster-p1 demo-src/raycaster-p2 demo-src/raycaster-p3 demo-src/raycaster-p4 demo-src/raycaster-p5
+git add demo-src/raycaster/lib/RcConfig.bas demo-src/raycaster-p2 demo-src/raycaster-p3 demo-src/raycaster-p4 demo-src/raycaster-p5
 git commit -m "feat(raycaster): RcConfig actor + hitscan constants"
 ```
 
