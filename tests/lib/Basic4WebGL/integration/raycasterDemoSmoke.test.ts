@@ -381,6 +381,42 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(rc.los(stubWorldDiag, 1.5, 5.5, 1, 0)).toBeCloseTo(5.5, 1);
   });
 
+  // A diagonal wall span carries side = RC_SPAN_SIDE_DIAG (2), which collides with
+  // drawStrip's shadeKind 2 (floor-step riser, grey 90). renderFrame must remap it
+  // to the y-face wall grey (115) before drawing.
+  test.each(phaseDirs)('%s: renderFrame shades a diagonal wall as a wall, not a floor riser', (dirName) => {
+    const fills: number[][] = [];
+    const rects: unknown[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      setFillColor: (...a: unknown[]) => {
+        fills.push(a as number[]);
+        return undefined;
+      },
+      drawRect: (...a: unknown[]) => {
+        rects.push([...(a as unknown[]), fills[fills.length - 1]]);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcRender) return;
+
+    const r = new mod.RcRender(stubWorldDiag);
+    r.setcamera(1.5, 1.5, Math.PI / 4, 0); // looking SE straight at the diagonal
+    r.renderframe();
+
+    // Per-column strips have w === 4 (RC_STRIP_W); backgrounds have w === 320.
+    const greys = rects
+      .filter((a) => a[2] === 4)
+      .map((a) => (a[4] as number[] | undefined)?.[1])
+      .filter((g): g is number => typeof g === 'number');
+
+    expect(greys.length).toBeGreaterThan(0);
+    expect(greys).toContain(115); // y-face wall grey — the remapped diagonal
+    expect(greys).not.toContain(90); // floor-riser grey — the un-remapped bug
+  });
+
   test.each(phaseDirs)('%s: renderFrame draws floor/pit surfaces', (dirName) => {
     const rects: any[][] = [];
     const fills: number[][] = [];

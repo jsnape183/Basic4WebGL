@@ -11,6 +11,10 @@ Class
 ' soffits) are drawn as flat per-column strips. Floor/ceiling *textures* are
 ' still not sampled.
 '
+' Phase 7: a diagonal-tile wall arrives as a span with side RC_SPAN_SIDE_DIAG;
+' it is drawn with the y-face wall shade and its light is sampled from the
+' (half-open) diagonal cell itself.
+'
 ' Phase 6: depthArr holds the nearest wall's perpendicular distance per screen
 ' column; drawActors() (when bindActors() is set) projects RcActors billboards
 ' and clips them column-by-column against it. Billboards are NOT lit yet -- that
@@ -358,6 +362,7 @@ function renderFrame()
     dim scD
     dim scKind
     dim scLite
+    dim wshade
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -441,10 +446,14 @@ function renderFrame()
             lite = 1.0
             if self.boundLights <> 0 then
                 if kind = RcConfig.RC_SPAN_WALL then
-                    if self.rc.spanSide(i) = 0 then
-                        lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                    if self.rc.spanSide(i) = RcConfig.RC_SPAN_SIDE_DIAG then
+                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
                     else
-                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                        if self.rc.spanSide(i) = 0 then
+                            lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                        else
+                            lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                        endif
                     endif
                 else
                     lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
@@ -455,7 +464,11 @@ function renderFrame()
                 self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
                 self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                 hitWall = 1
-                self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i), lite)
+                wshade = self.rc.spanSide(i)
+                if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
+                    wshade = 1
+                endif
+                self.drawStrip(destX, sTop, sBot, winTop, winBot, wshade, lite)
                 self.depthArr(col) = d
                 i = n
             else
