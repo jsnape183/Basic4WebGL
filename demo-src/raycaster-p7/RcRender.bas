@@ -52,6 +52,14 @@ dim depthArr(0)
 dim actorOrderIdx(0)
 dim actorOrderDepth(0)
 dim surfCountLast
+' Per-column visible screen-Y interval list (renderer rework). Parallel arrays,
+' top < bot. occTop/occBot are reused scratch (no per-frame alloc). iDestX is the
+' current column's strip centre X -- set by renderFrame (Task 3); drawInto reads it.
+dim intvTop(0)
+dim intvBot(0)
+dim occTop(0)
+dim occBot(0)
+dim iDestX
 
 Constructor(w as RcWorld)
     dim di
@@ -71,6 +79,7 @@ Constructor(w as RcWorld)
     self.boundLights = 0
     self.boundActors = 0
     self.surfCountLast = 0
+    self.iDestX = 0
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -333,6 +342,117 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite)
     else
         self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yb, ya, winTop, winBot, kind, lite)
     endif
+endfunction
+
+' --- Interval-list occlusion primitives (renderer rework) -------------------
+' Not yet wired into renderFrame (that is Task 3). See the design spec §1.
+
+' Reset the column to one full-height visible interval [0, viewH].
+function resetIntervals()
+    array.clear(self.intvTop)
+    array.clear(self.intvBot)
+    array.push(self.intvTop, 0)
+    array.push(self.intvBot, self.viewH)
+endfunction
+
+' Number of visible intervals still open in this column.
+function intervalCount()
+    return array.arrLength(self.intvTop)
+endfunction
+
+' Find the shortest interval and rebuild the list without it. occTop/occBot are
+' reused as scratch here -- safe, occlude() has finished reading them by the time
+' it calls this.
+function dropThinnest()
+    dim k
+    dim n
+    dim minIdx
+    dim minH
+    dim h
+    n = array.arrLength(self.intvTop)
+    if n <= 1 then
+        return
+    endif
+    minIdx = 0
+    minH = self.intvBot(0) - self.intvTop(0)
+    for k = 1 to n - 1
+        h = self.intvBot(k) - self.intvTop(k)
+        if h < minH then
+            minH = h
+            minIdx = k
+        endif
+    next k
+    array.clear(self.occTop)
+    array.clear(self.occBot)
+    for k = 0 to n - 1
+        if k <> minIdx then
+            array.push(self.occTop, self.intvTop(k))
+            array.push(self.occBot, self.intvBot(k))
+        endif
+    next k
+    array.clear(self.intvTop)
+    array.clear(self.intvBot)
+    for k = 0 to array.arrLength(self.occTop) - 1
+        array.push(self.intvTop, self.occTop(k))
+        array.push(self.intvBot, self.occBot(k))
+    next k
+endfunction
+
+' Subtract the opaque screen band [oTop, oBot] from every visible interval,
+' splitting an interval when the band lands in its middle. Then enforce the cap
+' by repeatedly dropping the thinnest interval.
+function occlude(oTop, oBot)
+    dim k
+    dim t
+    dim b
+    dim cnt
+    if oBot <= oTop then
+        return
+    endif
+    array.clear(self.occTop)
+    array.clear(self.occBot)
+    cnt = array.arrLength(self.intvTop)
+    for k = 0 to cnt - 1
+        t = self.intvTop(k)
+        b = self.intvBot(k)
+        if oBot <= t or oTop >= b then
+            array.push(self.occTop, t)
+            array.push(self.occBot, b)
+        else
+            if oTop > t then
+                array.push(self.occTop, t)
+                array.push(self.occBot, oTop)
+            endif
+            if oBot < b then
+                array.push(self.occTop, oBot)
+                array.push(self.occBot, b)
+            endif
+        endif
+    next k
+    array.clear(self.intvTop)
+    array.clear(self.intvBot)
+    cnt = array.arrLength(self.occTop)
+    for k = 0 to cnt - 1
+        array.push(self.intvTop, self.occTop(k))
+        array.push(self.intvBot, self.occBot(k))
+    next k
+    while array.arrLength(self.intvTop) > RcConfig.RC_MAX_INTERVALS
+        self.dropThinnest()
+    endwhile
+endfunction
+
+' Draw the surface strip [sTop, sBot] clipped into each visible interval. Returns
+' the total number of strips actually painted.
+function drawInto(sTop, sBot, shadeKind, lite)
+    dim k
+    dim total
+    dim n
+    total = 0
+    n = array.arrLength(self.intvTop)
+    for k = 0 to n - 1
+        total = total + self.drawStrip(self.iDestX, sTop, sBot, self.intvTop(k), self.intvBot(k), shadeKind, lite)
+    next k
+    return total
 endfunction
 
 function renderFrame()
