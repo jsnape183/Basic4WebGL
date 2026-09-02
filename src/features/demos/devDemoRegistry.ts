@@ -59,7 +59,7 @@ export const devDemoRegistry: DemoEntry[] = [
     name: 'Raycaster P6 — Actors',
     tags: ['Raycaster', 'Engine Phase'],
     description:
-      'Phase 6 probe: RcActors — a billboard pool projected into the view, depth-clipped per column against the wall buffer (the NPC behind the wall stub stays hidden), plus los / hitscan / near ray queries.',
+      'Phase 6/6b probe: RcActors billboards depth-clipped per column against the wall buffer (the NPC behind the wall stub stays hidden) + los/hitscan/near; RcRender now also fills floor/ceiling horizontal surfaces (a pit you see into, a staircase up to the ledge) so the ledge NPC stands on solid ground.',
     docsSlug: '',
     file: 'RaycasterP6Actors',
   },
