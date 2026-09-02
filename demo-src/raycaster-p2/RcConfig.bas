@@ -24,4 +24,10 @@ const
     RC_LIGHT_CAP = 4
     RC_AMBIENT = 0.12
     RC_STATIC_INTENSITY = 0.9
+    RC_ACTOR_POOL = 32
+    RC_ACTOR_HEIGHT = 1.0
+    RC_HITSCAN_RANGE = 24.0
+    RC_HIT_NONE = 0
+    RC_HIT_WALL = 1
+    RC_HIT_ACTOR = 2
 endconst
