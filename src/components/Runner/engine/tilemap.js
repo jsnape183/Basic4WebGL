@@ -208,6 +208,12 @@ const _sbTilemaps = {
     return layer;
   },
 
+  // True if the set has a tile layer with this name. Lets callers probe for an
+  // optional layer without getTileMapSetLayer's throw.
+  hasLayer(setHandle, name) {
+    return Boolean(setHandle._layerContainers && setHandle._layerContainers[name]);
+  },
+
   // Convenience method for `TileMapSet.tileAt(name, x, y)` — looks up the
   // named layer and delegates to the same `tileAt` used everywhere else, so
   // there is exactly one offset-accumulation implementation, not two.

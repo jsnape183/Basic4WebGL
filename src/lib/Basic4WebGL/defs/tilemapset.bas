@@ -31,4 +31,8 @@ function tileHeight()
     return call("_sb.tileHeight(this._handle)")
 endfunction
 
+function hasLayer(name)
+    return call("_sb.hasLayer(this._handle, haslayer_name)")
+endfunction
+
 EndClass

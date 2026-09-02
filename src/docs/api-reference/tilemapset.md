@@ -45,6 +45,27 @@ function onupdate()
 endfunction
 ```
 
+## hasLayer(name)
+
+Checks whether the loaded `.stm` file has a layer with this name. Use it to test for an optional layer before calling `layer(name)`, which stops the game with an error if the layer isn't there.
+
+| Parameter | Type   | Description |
+|-----------|--------|--------------|
+| name      | string | The layer name to look for |
+
+**Returns:** `true` if the layer exists, `false` if it doesn't.
+
+```bas
+dim level as tilemapset("level1.stm")
+dim ceiling as tilemaplayer
+
+function onenter()
+  if level.hasLayer("upper") then
+    ceiling = level.layer("upper")
+  endif
+endfunction
+```
+
 ## tileAt(name, x, y)
 
 Returns the tile ID at a given world position on the named layer — a shortcut for calling `layer(name)` and then `tileAt(x, y)` on the result, when you just want a quick lookup and don't need to keep the layer around.

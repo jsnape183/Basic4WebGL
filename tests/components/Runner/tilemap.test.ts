@@ -168,6 +168,18 @@ describe('getTileMapSetLayer', () => {
   });
 });
 
+describe('hasLayer — probe for an optional tile layer without throwing', () => {
+  test('true for present layers, false for a missing one', () => {
+    const { hasLayer } = loadTilemap();
+    const setHandle = {
+      _layerContainers: { walls: makeLayerHandle(), upper: makeLayerHandle() },
+    };
+    expect(hasLayer(setHandle, 'walls')).toBe(true);
+    expect(hasLayer(setHandle, 'upper')).toBe(true);
+    expect(hasLayer(setHandle, 'nope')).toBe(false);
+  });
+});
+
 describe('tileAtInSet — TileMapSet.tileAt(name, x, y) convenience method', () => {
   // Called bound (`tilemap.tileAtInSet(...)`, not destructured) — this
   // engine module follows the project-wide convention of calling sibling

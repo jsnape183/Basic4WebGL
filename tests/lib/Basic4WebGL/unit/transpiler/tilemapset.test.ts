@@ -251,6 +251,30 @@ describe('TileMapSet — allMarkers', () => {
   });
 });
 
+describe('TileMapSet — hasLayer', () => {
+  test('compiles without error', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim has',
+      '  has = tm.hasLayer("upper")',
+      'endfunction',
+    ].join('\n'));
+    expect(result.diagnostics).toHaveLength(0);
+  });
+
+  test('emits _sb.hasLayer(', () => {
+    const result = transpileWithTileMapSet([
+      'function test()',
+      '  dim tm as TileMapSet',
+      '  dim has',
+      '  has = tm.hasLayer("upper")',
+      'endfunction',
+    ].join('\n'));
+    expect(result.code).toContain('_sb.hasLayer(');
+  });
+});
+
 describe('TileMapSet — tileWidth', () => {
   test('compiles without error', () => {
     const result = transpileWithTileMapSet([
