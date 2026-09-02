@@ -1014,7 +1014,7 @@ git commit -m "docs(raycaster): Phase 6 RcActors guide + roadmap + spec reconcil
 
 ## Notes for later phases (not this plan)
 
-- **Per-actor tint** — arrives with `drawImageStrip(tint)` (spec §5.3 rung 3) + textured walls. `RcActor` already stores `tr/tg/tb` and `drawActors` already computes the feet light sample; wire them into the strip draw then.
+- **Per-actor tint / lighting** — arrives with `drawImageStrip(tint)` (spec §5.3 rung 3) + textured walls. `RcActor` already stores `tr/tg/tb`; `drawActors` does NOT yet sample `boundLights` at the actor's feet (add `boundLights.sampleCell(math.floor(a.x()), math.floor(a.y()))` there) — wire both the tint and the light sample into the strip draw then.
 - **Phase 7 — diagonal-wall tiles** (`RcWorld` + `RcCast` + `RcMover`). `RcRender.depthArr` and `drawActors` need no change (still one wall per column).
 - **Actor-vs-actor collision** (spec §7.1) — `RcActors.resolveOverlap()` pushing circles apart; belongs with a gameplay-demo phase, not the foundation.
 - **8-direction / animated billboards** — `RcActor.setFacing(angle)` picking a frame row; needs `drawImageStrip` to gain a `srcY` / frame-rect parameter (generic engine change) or a `sprite`-sheet frame accessor.

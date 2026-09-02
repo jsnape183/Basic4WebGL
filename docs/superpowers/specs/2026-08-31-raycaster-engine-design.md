@@ -352,6 +352,11 @@ camera state through the bound actor.
   separate `sprite` pool to manage.
 - Depth-clipped against the per-column wall depth (§5.4); occluded by walls and
   ledges; lit via §6.3.
+  **As built (Phase 6):** occlusion (walls + ledges, per column) is done;
+  **actor lighting is deferred** — `drawActors()` draws billboards at full
+  brightness because `drawImageStrip` has no tint parameter yet (§5.3 rung 3).
+  `RcActor` stores `tint`; wiring the §6.3 feet-sample into the draw waits on
+  the textured-walls / `drawImageStrip(tint)` pass.
 - `RcCast.los(x, y, dx, dy)` → distance to first opaque hit or -1.
 - `RcActors.hitscan(x, y, dx, dy, range)` → the hit `RcActor` or `0` (wall hit /
   miss), plus `hitKind()` / `hitDist()` / `hitX()` / `hitY()` / `hitActor()`

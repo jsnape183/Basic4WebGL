@@ -3,15 +3,18 @@ Class
 ' (spec §7.3 -- the `camera` module is inert in a raycast scene). Call
 ' renderFrame() from the scene's onupdate(delta).
 '
-' Phase 3 v1: FLAT-SHADED strips (drawing.drawRect, shaded by distance + surface
-' kind). No wall textures / atlas / vertical texture-clip yet. The occlusion
-' model handles floor/ceiling RISES + flat sky/floor fill; seeing INTO a pit or
-' UNDER a ledge (floor drop / ceiling rise revealing farther geometry) is a
-' later refinement -- the window is left open there so farther spans show
-' through, but the pit floor / under-ledge surface is not specially drawn.
+' FLAT-SHADED strips (drawing.drawRect, shaded by distance + surface kind, and
+' by RcLights per strip when bindLights() is set -- Phase 5). No wall textures /
+' atlas / vertical texture-clip yet. The occlusion model handles floor/ceiling
+' RISES + flat sky/floor fill; seeing INTO a pit or UNDER a ledge (floor drop /
+' ceiling rise revealing farther geometry) is a later refinement -- the window
+' is left open there so farther spans show through, but the pit floor /
+' under-ledge surface is not specially drawn.
 '
-' Also not yet implemented: a per-span depth buffer for sprite occlusion (§5.4)
-' and any lighting model (§6) -- strips are shaded by surface kind/side only.
+' Phase 6: depthArr holds the nearest wall's perpendicular distance per screen
+' column; drawActors() (when bindActors() is set) projects RcActors billboards
+' and clips them column-by-column against it. Billboards are NOT lit yet -- that
+' waits on a tint parameter for drawImageStrip (spec §5.3 rung 3 / §6.3).
 '
 ' The RcWorld parameter is `wld`, NEVER `world` (builtin module -> silent
 ' mis-transpile -> runtime ReferenceError).

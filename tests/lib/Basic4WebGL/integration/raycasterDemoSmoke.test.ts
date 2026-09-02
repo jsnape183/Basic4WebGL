@@ -41,7 +41,7 @@ function transpileDemo(dir: string): string {
 // also an object, so arbitrarily deep `_sb.a.b.c()` chains never throw. Real
 // properties assigned by the harness (e.g. `_sb._deferModuleBody`) win over the
 // auto-vivified ones.
-function makeSbStub() {
+function makeSbStub(overrides: Record<string, unknown> = {}) {
   const cache = new Map<string, unknown>();
   const handler: ProxyHandler<Record<string, unknown>> = {
     get(target, prop: string) {
@@ -61,12 +61,14 @@ function makeSbStub() {
       return stub;
     },
   };
-  const stub = new Proxy(function () {} as never, handler);
-  return stub as Record<string, unknown> & ((...a: unknown[]) => unknown);
+  const stub = new Proxy(function () {} as never, handler) as Record<string, unknown> &
+    ((...a: unknown[]) => unknown);
+  Object.assign(stub, overrides);
+  return stub;
 }
 
-function evalDemo(code: string) {
-  const _sb = makeSbStub();
+function evalDemo(code: string, sbOverrides: Record<string, unknown> = {}) {
+  const _sb = makeSbStub(sbOverrides);
   const deferred: Array<() => void> = [];
   (_sb as Record<string, unknown>)._deferModuleBody = (cb: () => void) => deferred.push(cb);
 
@@ -272,5 +274,42 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(A.hitscan(1.5, 1.5, 1, 0, 20)).toBe(0); // marches to the stub wall, no actor on the ray
     expect(A.hitkind()).toBe(1); // RC_HIT_WALL
     expect(A.near(2, 2, 5)).toBe(act); // the barrel we added
+  });
+
+  // The per-column occlusion predicate (`depth < self.depthAt(c)`) is the one
+  // piece of drawActors that no other test or Cypress "no ERR" check exercises —
+  // a `<`/`>` inversion or column off-by-one would pass everything. Drive a real
+  // renderFrame (real stage size so the column loop runs) with a drawImageStrip
+  // spy: move ONE billboard from the open corridor to behind the col-6 wall and
+  // watch the strip count go to zero. (One RcActors instance — see the
+  // dim-x(0)-is-prototype-shared transpiler bug, roadmap #35.)
+  test.each(phaseDirs)('%s: drawActors clips a billboard behind a wall', (dirName) => {
+    const strips: unknown[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      drawImageStrip: (...a: unknown[]) => {
+        strips.push(a);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcActors || !mod.RcRender) return;
+
+    const r = new mod.RcRender(stubWorld);
+    r.setcamera(2, 2, 0, 0); // in the corridor (open cols 1..5), looking +x
+
+    const actors = new mod.RcActors(stubWorld);
+    const npc = actors.add('npc.png', 4, 2, 0, 32, 32) as { setposition(x: number, y: number): void };
+    r.bindactors(actors);
+
+    strips.length = 0;
+    r.renderframe();
+    expect(strips.length).toBeGreaterThan(0); // dead ahead in the open → draws
+
+    npc.setposition(9, 2); // behind the wall that starts at col 6
+    strips.length = 0;
+    r.renderframe();
+    expect(strips.length).toBe(0); // occluded → no strips
   });
 });
