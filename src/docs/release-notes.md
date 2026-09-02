@@ -1,5 +1,25 @@
 # Release Notes
 
+## v0.7.1 — 2026-09-02
+
+### New: softBASIC raycaster library
+
+- A set of reusable softBASIC modules for building a first-person, DOOM-style raycaster entirely in game code — no engine changes. `RcWorld` reads a tagged tilemap into a queryable world; `RcCast` marches rays and returns an ordered near→far list of wall / floor-step / ceiling-step spans plus a shared line-of-sight check; `RcRender` draws the first-person view (flat-shaded columns, per-column occlusion, floor/ceiling surfaces, distance + light shading); `RcMover` is a height-aware body with circle-vs-wall collision, step-up, gravity and jumping; `RcLights` is a per-cell light grid with ambient, baked static lights and wall-occluded dynamic point lights; `RcActors` is a billboard pool with depth-clipped sprites and `los` / `hitscan` / `near` ray queries. **45° diagonal-wall tiles** are supported — tag a cell `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` and the named corner becomes a solid 45° face that rays, line-of-sight and the mover all understand (a body slides along it). New in-app guide: **Docs → Building a Raycaster**. The library ships as the unlisted `raycaster-p1`…`raycaster-p7` demos.
+
+### New: tilemap marker and metric accessors
+
+- `tilemapset` gains `allMarkers()` (every marker in the map), `tileWidth()` and `tileHeight()`. A `Marker` now carries `col`, `row` and `tag`, so you can read a marker layer as structured per-cell data instead of only matching by tag.
+
+### Fixes
+
+- **Transpiler: a collection field on a class was shared between all instances of that class.** `dim scores(0)` (or a `dim … as dictionary`) written directly in a class body was created once and attached to the class prototype, so every object of that class read and wrote the *same* array or dictionary — pushing to one enemy's inventory pushed to all of them. Collection fields are now initialised per-instance in the constructor, like every other field. Scalar fields were never affected.
+- **Transpiler: `result = thing.doSomething(a, b)` could fail to parse.** A method call *with arguments* on a local object, used inside an expression, broke when one of the argument names matched a zero-argument accessor on that object's class (e.g. passing `x` to a method on a class that also has an `x()` accessor). It now parses correctly.
+- **`.stm` and `.json` assets failed to load in some cases** — a tilemap or JSON asset stored without a MIME type made the loader hand back `null`, surfacing later as `Cannot read properties of null (reading 'tileWidth')`. These text assets are now decoded directly rather than relying on the browser/PIXI guessing their type.
+
+### Performance
+
+- The `drawing` module now pools its `Graphics` and `Sprite` objects and caches stripped sub-textures per scene, instead of allocating and destroying them every frame. This also fixes a slow per-frame texture memory leak. Any game that draws shapes or image strips in a loop benefits; games that only move sprites are unaffected.
+
 ## v0.7.0 — 2026-08-31
 
 ### New: controller / gamepad support
