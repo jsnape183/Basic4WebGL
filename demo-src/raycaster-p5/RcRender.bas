@@ -15,6 +15,13 @@ Class
 ' it is drawn with the y-face wall shade and its light is sampled from the
 ' (half-open) diagonal cell itself.
 '
+' Phase 8: the camera's region (0 lower / 1 upper) is derived each frame and
+' pushed to RcCast via setRegion(). RcCast then emits the OTHER region's geometry
+' as RC_SPAN_PORTAL_WALL/CEIL/FLOOR spans once a ray crosses a hole; the span walk
+' below draws them and eats the screen window from the TOP (camera lower, looking
+' up) or the BOTTOM (camera upper, looking down). Portal-span lighting is
+' region-blind (sampled from the lower-region light grid) -- a documented v1 limit.
+'
 ' Phase 6: depthArr holds the nearest wall's perpendicular distance per screen
 ' column; drawActors() (when bindActors() is set) projects RcActors billboards
 ' and clips them column-by-column against it. Billboards are NOT lit yet -- that
@@ -300,6 +307,9 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     if shadeKind = 7 then
         g = 50
     endif
+    if shadeKind = 8 then
+        g = 70
+    endif
     rr = math.clamp(g * lightLevel, 0, 255)
     gg = math.clamp(g * lightLevel, 0, 255)
     bb = math.clamp((g + 25) * lightLevel, 0, 255)
@@ -363,6 +373,8 @@ function renderFrame()
     dim scKind
     dim scLite
     dim wshade
+    dim camRegion
+    dim pShade
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -406,6 +418,16 @@ function renderFrame()
     camCol = math.floor(self.camX)
     camRow = math.floor(self.camY)
 
+    ' Camera region. Height-based fallback for now.
+    ' Phase 8 / Task 6: switch to self.boundMover.regionId() once RcMover carries it.
+    camRegion = 0
+    if self.wld.upperKindAt(camCol, camRow) > 0 then
+        if self.camZ >= self.wld.upperFloorAt(camCol, camRow) then
+            camRegion = 1
+        endif
+    endif
+    self.rc.setRegion(camRegion)
+
     for col = 0 to self.cols - 1
         cameraX = (2.0 * col / self.cols) - 1.0
         rayX = dirX + planeX * cameraX
@@ -415,8 +437,13 @@ function renderFrame()
 
         winTop = 0
         winBot = self.viewH
-        runFloorH = self.wld.floorHeightAt(camCol, camRow)
-        runCeilH = self.wld.ceilHeightAt(camCol, camRow)
+        if camRegion = 1 then
+            runFloorH = self.wld.upperFloorAt(camCol, camRow)
+            runCeilH = self.wld.upperCeilAt(camCol, camRow)
+        else
+            runFloorH = self.wld.floorHeightAt(camCol, camRow)
+            runCeilH = self.wld.ceilHeightAt(camCol, camRow)
+        endif
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
         self.depthArr(col) = RcConfig.RC_MAX_DIST
 
@@ -460,6 +487,31 @@ function renderFrame()
                 endif
             endif
 
+            if kind = RcConfig.RC_SPAN_PORTAL_WALL or kind = RcConfig.RC_SPAN_PORTAL_CEIL or kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
+                pShade = 1
+                if kind = RcConfig.RC_SPAN_PORTAL_CEIL then
+                    pShade = 3
+                endif
+                if kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
+                    pShade = RcConfig.RC_SHADE_UPPER_FLOOR
+                endif
+                if camRegion = 0 then
+                    ' the other region is ABOVE -> fill from the current window top
+                    ' down to the portal plane, then eat the window from the top
+                    self.drawStrip(destX, winTop, sBot, winTop, winBot, pShade, lite)
+                    if sBot > winTop then
+                        winTop = sBot
+                    endif
+                else
+                    ' the other region is BELOW -> fill from the portal plane down
+                    ' to the current window bottom, then eat from the bottom
+                    self.drawStrip(destX, sTop, winBot, winTop, winBot, pShade, lite)
+                    if sTop < winBot then
+                        winBot = sTop
+                    endif
+                endif
+                i = i + 1
+            else
             if kind = RcConfig.RC_SPAN_WALL then
                 self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
                 self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
@@ -518,6 +570,7 @@ function renderFrame()
                     runCeilH = newH
                 endif
                 i = i + 1
+            endif
             endif
 
             if winTop >= winBot then

@@ -509,6 +509,47 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => rc2.cast(stubWorld, 1.5, 1.5, 1, 0)).not.toThrow();
   });
 
+  // Phase 8: with an upper-region hole in view, renderFrame must walk the
+  // RC_SPAN_PORTAL_* spans RcCast emits and draw extra strips high on the screen
+  // (the walkway underside / upper geometry seen up through the hole) — and never
+  // throw. Compared against a control row with no walkway overhead.
+  test.each(phaseDirs)('%s: renderFrame draws portal strips through an upper-region hole', (dirName) => {
+    const rects: unknown[][] = [];
+    const fills: number[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      setFillColor: (...a: unknown[]) => {
+        fills.push(a as number[]);
+        return undefined;
+      },
+      drawRect: (...a: unknown[]) => {
+        rects.push([...(a as unknown[]), fills[fills.length - 1]]);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcRender) return;
+
+    const highStrips = () =>
+      rects.filter((a) => a[2] === 4 && typeof a[1] === 'number' && (a[1] as number) < 60).length;
+
+    const r = new mod.RcRender(stubWorldUpper);
+    r.setcamera(1.5, 3.5, 0, 0); // lower room, looking down the walkway row toward the hole
+    rects.length = 0;
+    fills.length = 0;
+    expect(() => r.renderframe()).not.toThrow();
+    const holeHigh = highStrips();
+
+    r.setcamera(1.5, 1.5, 0, 0); // control: a plain row, no walkway overhead
+    rects.length = 0;
+    fills.length = 0;
+    r.renderframe();
+    const plainHigh = highStrips();
+
+    expect(holeHigh).toBeGreaterThan(plainHigh);
+  });
+
   // A diagonal wall span carries side = RC_SPAN_SIDE_DIAG (2), which collides with
   // drawStrip's shadeKind 2 (floor-step riser, grey 90). renderFrame must remap it
   // to the y-face wall grey (115) before drawing.
