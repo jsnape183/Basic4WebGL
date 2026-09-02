@@ -34,4 +34,9 @@ const
     RC_SHADE_PIT_FLOOR = 5
     RC_SHADE_CEIL_UNDER = 6
     RC_SHADE_SOFFIT = 7
+    RC_DIAG_NW = 1
+    RC_DIAG_NE = 2
+    RC_DIAG_SE = 3
+    RC_DIAG_SW = 4
+    RC_SPAN_SIDE_DIAG = 2
 endconst
