@@ -39,4 +39,9 @@ const
     RC_DIAG_SE = 3
     RC_DIAG_SW = 4
     RC_SPAN_SIDE_DIAG = 2
+    RC_STD_CEIL = 1.0
+    RC_SPAN_PORTAL_WALL = 3
+    RC_SPAN_PORTAL_CEIL = 4
+    RC_SPAN_PORTAL_FLOOR = 5
+    RC_SHADE_UPPER_FLOOR = 8
 endconst
