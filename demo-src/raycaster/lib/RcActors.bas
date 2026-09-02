@@ -90,17 +90,12 @@ function near(x, y, r)
     dim best
     dim bestD
     dim d
-    dim ddx
-    dim ddy
     best = 0
     bestD = r
     for i = 0 to RcConfig.RC_ACTOR_POOL - 1
         a = self.pool(i)
         if a.visible() = 1 then
-            ' inlined, not a.distanceTo(x, y): a method call with args on a pool-element local fails to parse in an expression
-            ddx = a.x() - x
-            ddy = a.y() - y
-            d = math.sqrt(ddx * ddx + ddy * ddy)
+            d = a.distanceTo(x, y)
             if d <= bestD then
                 bestD = d
                 best = a
