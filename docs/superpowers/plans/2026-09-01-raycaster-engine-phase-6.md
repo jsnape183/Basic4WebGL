@@ -972,16 +972,16 @@ git commit -m "test(raycaster): wire Phase 6 actor demo into dev registry + e2e"
 
 **Files:** `src/docs/guides/raycaster-library.md`, `docs/roadmap.md`, `docs/language/library-roadmap.md`, `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`, and (only if Task 5a happened) `src/docs/api-reference/assetmanager.md`.
 
-- [ ] **Step 1: Guide.** After the `## RcLights` section add `## RcActors — billboards and ray hits`. Verify every signature against the shipped `.bas`:
-  - `new RcActors(world)`; `actors.add(image, x, y, z)` → an actor or `0` (pool full); `actor.setPosition(x,y)` / `setHeight(z)` / `setFrame(i)` / `setTint(r,g,b)` / `setVisible(v)`; `actor.x()/y()/z()/frame()/visible()/distanceTo(px,py)`.
-  - `actors.remove(actor)`, `actors.activeCount()`, `actors.near(x, y, r)` → actor or `0`.
+- [ ] **Step 1: Guide.** After the `## RcLights` section add `## RcActors — billboards and ray hits`. **Verify every signature against the shipped `demo-src/raycaster/lib/RcActors.bas` + `RcActor.bas` + `RcRender.bas` — do not write from memory.** Expect (confirm each):
+  - `new RcActors(world)`; `actors.add(image, x, y, z, frameW, frameH)` → an actor or `0` (pool full — `frameW`/`frameH` are the sprite's source pixel size); `actor.setPosition(x,y)` / `setHeight(z)` / `setFrame(i)` / `setTint(r,g,b)` / `setVisible(v)`; `actor.image()/frameW()/frameH()/x()/y()/z()/frame()/visible()/distanceTo(px,py)`.
+  - `actors.remove(actor)`, `actors.activeCount()`, `actors.poolSize()`, `actors.actorAt(i)`, `actors.near(x, y, r)` → actor or `0`.
   - `actors.los(x, y, dx, dy)` → wall distance or `-1`.
-  - `actors.hitscan(x, y, dx, dy, range)` → the hit actor or `0`; then `actors.hitKind()` (`RcConfig.RC_HIT_NONE/WALL/ACTOR`), `hitDist()`, `hitX()`, `hitY()`.
+  - `actors.hitscan(x, y, dx, dy, range)` → the hit actor or `0` (direction normalized internally); then `actors.hitKind()` (`RcConfig.RC_HIT_NONE/WALL/ACTOR`), `hitDist()`, `hitX()`, `hitY()`, `hitActor()`.
   - `RcRender.bindActors(actors)`, `RcRender.worldToScreenX(x, y)` → pixel X or `-1`.
-  - A short `.bas` example: spawn a barrel, hitscan from the player each frame, log what it hits.
-  - **Phase 6 limits** subsection: no per-actor tint yet (stored, not drawn — waiting on `drawImageStrip(tint)`); single horizontal frame strip only (no vertical frames, no 8-direction sprites); no actor-vs-actor collision; hitscan actor test is a fixed 0.4-cell ray corridor, not a true billboard-width test.
+  - A short `.bas` example (game-style — an enemy sprite, not `foo`): spawn an NPC, each frame hitscan from the player forward and if it hits an actor tint it / react.
+  - **Phase 6 limits** subsection: no per-actor tint yet (stored on the actor, not drawn — waiting on `drawImageStrip(tint)`, spec §5.3 rung 3); single horizontal frame strip only (no vertical frames, no 8-direction sprites); no actor-vs-actor collision; the `hitscan` actor test is a fixed 0.4-cell perpendicular corridor, not a true projected-billboard-width test.
 
-- [ ] **Step 2: `docs/roadmap.md`** — extend the raycaster bullet: "Phase 6 shipped: `RcActors` — billboard pool projected into the view and depth-clipped per screen column against a new `RcRender` wall-depth buffer, plus `los` / `hitscan` / `near` ray queries and `RcRender.worldToScreenX`." Update "Phases 7–10 remain."
+- [ ] **Step 2: `docs/roadmap.md`** — extend the raycaster bullet: "Phase 6 shipped: `RcActors` — billboard pool projected into the view and depth-clipped per screen column against a new `RcRender` wall-depth buffer, plus `los` / `hitscan` / `near` ray queries and `RcRender.worldToScreenX`." Update "Phases 7–10 remain." Also note the parser fix made during Phase 6: "`fix(transpiler)` `8098c42` — method call with args on a local object in an expression (`d = a.dist(x, y)`) now parses; the sibling `arr(i).method(args)` shape is tracked as #33." (Check whether roadmap #33 already exists — the transpiler-fix subagent added it — and just cross-reference it if so.)
 
 - [ ] **Step 3: `docs/language/library-roadmap.md`** — same update; if it tracks a specific "actors / billboards" line item, mark it done and record how occlusion was actually resolved (per-column strip draw via the existing `drawImageStrip` + a new per-column `depthArr`, not a PIXI sprite pool).
 
@@ -989,8 +989,8 @@ git commit -m "test(raycaster): wire Phase 6 actor demo into dev registry + e2e"
   - Replace "Backed by a fixed pool of `sprite` instances" with: billboards draw through `drawing.drawImageStrip` (whose engine layer already pools `PIXI.Sprite` and caches strip textures), so `RcActor` is pure data and there is no separate sprite pool to manage.
   - Replace "`RcActors.hitscan(...)` → a `RayHit` (reuses `rayhit.bas`)" with: `hitscan` returns the hit `RcActor` or `0`, plus `hitKind()/hitDist()/hitX()/hitY()` accessors — matching `RcCast`'s span-accessor style. Note `rayhit.bas` was left unused.
   - In §5.4, note the depth buffer is **per-column** (`RcRender.depthArr`), recording the nearest wall distance; there is no per-span depth list (a column terminates at its first wall, which is all billboard occlusion needs).
-  - If Task 5a happened, add `assetmanager.imageWidth/imageHeight` to §9's "engine changes made" list; if the explicit-frame-size fallback was used instead, note that.
-  - Update §11 phase 6 line to past tense with the actual demo description.
+  - §9 "engine changes": no `assetmanager` accessor was needed — `RcActors.add` takes explicit `frameW`/`frameH` (the game knows its art). Do add the language fix that WAS made: `fix(transpiler)` `8098c42` — `local.method(args)` in an expression. Note the still-open `arr(i).method(args)` shape (roadmap #33).
+  - Update §11 phase 6 line to past tense with the actual demo description (`raycaster-p6-actors`: 3 NPC billboards — floor / raised ledge / hidden behind a wall stub — + 6 probes on projection / hitscan / occlusion / near / los).
 
 - [ ] **Step 5:** `npx vitest run` + `npx vite build` (docs changes can still break the docs manifest build). Commit.
 
