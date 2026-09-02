@@ -29,8 +29,15 @@ dim cols
 dim camZ
 dim boundMover
 dim boundLights
+dim boundActors
+dim fDirX
+dim fDirY
+dim fPlaneX
+dim fPlaneY
+dim depthArr(0)
 
 Constructor(w as RcWorld)
+    dim di
     self.wld = w
     self.rc = new RcCast()
     self.camX = 2.0
@@ -45,10 +52,59 @@ Constructor(w as RcWorld)
     self.camZ = 0
     self.boundMover = 0
     self.boundLights = 0
+    self.boundActors = 0
+    self.fDirX = 1
+    self.fDirY = 0
+    self.fPlaneX = 0
+    self.fPlaneY = self.fovScale
+    for di = 0 to self.cols - 1
+        array.push(self.depthArr, RcConfig.RC_MAX_DIST)
+    next di
 EndConstructor
 
 function bindCamera(mover)
     self.boundMover = mover
+endfunction
+
+function bindActors(actors)
+    self.boundActors = actors
+endfunction
+
+' Perpendicular wall distance for screen column col. Out-of-range columns return
+' 0 (nearer than any wall) so a billboard clipped against them never draws
+' off-screen; an in-range column with no wall hit returns RcConfig.RC_MAX_DIST.
+function depthAt(col)
+    if col < 0 then
+        return 0
+    endif
+    if col >= self.cols then
+        return 0
+    endif
+    return self.depthArr(col)
+endfunction
+
+' Screen pixel X of world point (wx, wy) along the current camera basis, or -1
+' if the point is behind the camera plane. Uses last renderFrame()'s basis.
+function worldToScreenX(wx, wy)
+    dim relX
+    dim relY
+    dim invDet
+    dim depth
+    dim tX
+    relX = wx - self.camX
+    relY = wy - self.camY
+    invDet = 1.0 / (self.fPlaneX * self.fDirY - self.fDirX * self.fPlaneY)
+    depth = invDet * (0 - self.fPlaneY * relX + self.fPlaneX * relY)
+    if depth <= 0.05 then
+        return -1
+    endif
+    tX = invDet * (self.fDirY * relX - self.fDirX * relY)
+    return (self.viewW / 2) * (1.0 + tX / depth)
+endfunction
+
+' Billboard pass -- projects RcActors against depthArr. Filled in Phase 6 Task 5.
+function drawActors()
+    return
 endfunction
 
 function bindLights(lights)
@@ -180,6 +236,10 @@ function renderFrame()
     dirY = math.sin(self.camAngle)
     planeX = 0 - dirY * self.fovScale
     planeY = dirX * self.fovScale
+    self.fDirX = dirX
+    self.fDirY = dirY
+    self.fPlaneX = planeX
+    self.fPlaneY = planeY
 
     camCol = math.floor(self.camX)
     camRow = math.floor(self.camY)
@@ -196,6 +256,7 @@ function renderFrame()
         runFloorH = self.wld.floorHeightAt(camCol, camRow)
         runCeilH = self.wld.ceilHeightAt(camCol, camRow)
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
+        self.depthArr(col) = RcConfig.RC_MAX_DIST
 
         n = self.rc.spanCount()
         i = 0
@@ -220,6 +281,7 @@ function renderFrame()
 
             if kind = RcConfig.RC_SPAN_WALL then
                 self.drawStrip(destX, sTop, sBot, winTop, winBot, self.rc.spanSide(i), lite)
+                self.depthArr(col) = d
                 i = n
             else
                 ' Floor and ceiling steps are mirror images: a floor RISE clamps winBot from
@@ -255,6 +317,10 @@ function renderFrame()
             endif
         endwhile
     next col
+
+    if self.boundActors <> 0 then
+        self.drawActors()
+    endif
 endfunction
 
 EndClass

@@ -147,6 +147,9 @@ interface RcRenderLike {
   bindlights(lights: unknown): void;
   projecty(h: number, d: number): number;
   columncount(): number;
+  depthat(col: number): number;
+  worldtoscreenx(x: number, y: number): number;
+  bindactors(a: unknown): void;
 }
 
 // Open corridor with a wall at column >= 6 (and the col-0 border).
@@ -199,6 +202,10 @@ describe('raycaster phase demos smoke-execute', () => {
       r.bindlights(L);
       expect(() => r.renderframe()).not.toThrow();
     }
+    expect(() => r.depthat(0)).not.toThrow();
+    expect(typeof r.worldtoscreenx(3, 3)).toBe('number');
+    // Camera at (2,2) looking +x (angle 0); a point at x=1 is behind the plane.
+    expect(r.worldtoscreenx(1, 2)).toBe(-1);
     expect(() => r.projecty(0.5, 5)).not.toThrow();
     const p = r.projecty(0.5, 5);
     expect(Number.isNaN(p) || p === r.projecty(0.5, 99)).toBe(true);
