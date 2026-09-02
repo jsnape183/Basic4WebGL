@@ -225,14 +225,24 @@ weapon/enemy-fire (§8). One code path.
 
 ### 5.1 Per-column occlusion window
 
-Walk the column's spans **far → near**, maintaining a vertical window
-`[top, bottom]` in screen pixels (starts full-height):
+Walk the column's spans **near → far**, clipping each to whatever's still visible
+and removing what it occludes.
 
-1. Clip the span's `[screenTop, screenBottom]` to the window.
-2. If anything's visible, draw it (§5.2).
-3. Shrink the window by what the span occupies — walls / floor-steps eat from the
-   bottom, ceiling-steps from the top.
-4. When `top >= bottom`, the column is done — stop (and tell `RcCast` to stop).
+**As built (renderer rework 2026-09-02):** the "one shrinking `[top, bottom]`
+window" model could not represent an opaque band in the *middle* of a column (a
+walkway plank underside, a railing seen from below — the Phase-8 demo made this
+unmissable), so it was replaced by a **per-column list of visible screen-Y
+intervals** (`RcRender.intvTop` / `intvBot`, capped at `RC_MAX_INTERVALS` = 6,
+thinnest dropped on overflow). Two primitives drive the walk:
+`drawInto(sTop, sBot, shade, lite)` draws a strip clipped into every visible
+interval; `occlude(oTop, oBot)` subtracts a screen band from every interval,
+**splitting one in two** when the band lands in its middle and dropping any that
+vanish. Each span occludes exactly its own projected band: a full wall clears the
+list entirely and ends the column; a floor/ceiling-step riser occludes its own
+riser band; a horizontal surface (`drawSurfaceInto`) draws *and* occludes its
+band; a portal wall occludes its band without ending the walk. The walk stops
+when `intervalCount()` reaches 0. This retired the "render-fidelity A / no
+mid-band split" approximation the Phase-8 spec accepted.
 
 ### 5.2 Drawing a strip
 
@@ -240,27 +250,32 @@ Each visible strip is one `drawing.drawImageStrip(texImage, texU, destX, destY,
 stripW, stripH)` call — exactly the primitive the current demo uses. Floor/ceiling
 step surfaces use a flat-shaded `drawing.drawRect`. Sky spans use a gradient rect.
 
-**As built (6b):** the flat-shaded fill now also covers the *horizontal* surface
-between risers, per column — a `drawSurface()` helper in `RcRender` stashes each
-pending floor/ceiling surface (world height, near depth, shade kind, light) and
-draws it one span-loop iteration later, once the far depth is known (a post-loop
-tail flushes the last pending pair). Four new shade kinds — `RC_SHADE_FLOOR_TOP`
-/ `RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` — distinguish
-step tops, pit floors, ceiling undersides, and soffits. Floor/ceiling textures
-are still not sampled.
+**As built (6b, updated by the renderer rework):** the flat-shaded fill also
+covers the *horizontal* surface between risers, per column — a pending
+floor/ceiling surface (world height, near depth, shade kind, light) is stashed
+and flushed one span-loop iteration later once the far depth is known (post-loop
+tail flushes the last pair). Four shade kinds — `RC_SHADE_FLOOR_TOP` /
+`RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` — distinguish
+step tops, pit floors, ceiling undersides, soffits. The flush is now
+`drawSurfaceInto(hh, dNear, dFar, kind, lite)`: it draws the surface into every
+visible interval (§5.1) *and* `occlude`s its own projected band. Floor/ceiling
+textures still not sampled.
 
 **As built (Phase 7):** a diagonal-tile wall span arrives with `side =
 RC_SPAN_SIDE_DIAG`; `renderFrame` remaps that to the y-face wall shade before
 `drawStrip` (a dedicated diagonal shade is deferred) and samples the half-open
 diagonal cell's own light-grid entry rather than a step-back cell.
 
-**As built (Phase 8):** `renderFrame` reads `camRegion` from the bound mover's
-`regionId()` (height fallback otherwise), seeds each column from that region's
-heights, and calls `self.rc.setRegion(camRegion)`. `RC_SPAN_PORTAL_*` spans draw
-a flat strip and eat the single occlusion window from the top (camera lower) or
-bottom (camera upper) — the render-fidelity-A approximation, no mid-band split.
-One new shade kind `RC_SHADE_UPPER_FLOOR` (grey 70) for a plank underside seen
-from below. Portal-span lighting is region-blind — sampled from the lower
+**As built (Phase 8, updated by the renderer rework):** `renderFrame` reads
+`camRegion` from the bound mover's `regionId()` (height fallback otherwise),
+seeds each column from that region's heights, and calls
+`self.rc.setRegion(camRegion)`. `RC_SPAN_PORTAL_*` spans now `drawInto` a fill
+and `occlude` their band on the interval list (§5.1) — a portal ceiling/floor
+plane occludes from itself up (camera lower) or down (camera upper); a portal
+wall occludes just its band. The single-window "eat from top/bottom" model and
+its no-mid-band-split limitation are gone. `RC_SHADE_UPPER_FLOOR` (grey 70) for a
+plank underside seen from below. Portal-span lighting is region-blind — sampled
+from the lower
 region's light grid regardless of which region the strip belongs to (documented
 v1 limit, flagged for revisit).
 
@@ -329,8 +344,13 @@ as a gradient.
   `RcCast.los()` march from light to cell centre; accumulate into a dynamic-light
   array. ~8 × ~12 lights ≈ a couple thousand short marches, independent of screen
   resolution.
-- A strip's tint = ambient + sample of (static + dynamic) arrays at the strip's
-  `worldMidY` cell (nearest-cell in v1; bilinear later if it reads badly).
+- A strip's tint = ambient + sample of (static + dynamic) arrays.
+  **As built (renderer rework 2026-09-02):** walls use `RcLights.sampleCell(col,row)`
+  (nearest-cell, at the open cell in front of the wall face). Floor/ceiling
+  **surfaces** use `RcLights.sampleAt(worldX, worldY)` — a bilinear blend of the
+  four surrounding cells at the ray's world hit point (`cam + rayDir·d`, sampled
+  at the surface's depth midpoint). This killed the hard ~1-cell brightness steps
+  that read as "shadows of walls that aren't there" on an open floor.
 - **Wall occlusion of light falls out of the LOS march for free** — a cell the
   light can't see stays dark. "Light spilling under a door" works day one.
 - **Light cap:** `RC_LIGHT_CAP` nearest lights per cell (default 4); rest ignored.
@@ -347,7 +367,8 @@ as a gradient.
 
 ### 6.3 Sprites
 
-Billboards sample the same arrays at their base cell — one lookup per sprite.
+Billboards sample the same arrays at their base cell — one lookup per sprite
+(`sampleCell`, not the bilinear `sampleAt` — a sprite is at one cell).
 
 ### 6.4 Applying the tint
 
@@ -586,14 +607,19 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    `upperKindAt` / `upperFloorAt` (= `ceilHeightAt`) / `upperCeilAt` (`uceil:N`
    marker or `ceilH + RC_STD_CEIL`). `RcCast.setRegion(r)` + `RC_SPAN_PORTAL_*`
    spans through a hole (`cast()` stays 5-arg; `los()` region-blind).
-   `RcRender` seeds columns per `camRegion` and eats the single occlusion window
-   from the top/bottom by region (render-fidelity A — no mid-band split);
-   `RC_SHADE_UPPER_FLOOR`. `RcMover` one `region` field + one boundary-crossing
-   swap rule + `enterRegion(r)` / `regionId()`. Generic engine add:
-   `tilemapset.hasLayer(name)`. `raycaster-p1`'s `upper:vent` probe migrated to
-   the layer. Deferred: per-region lighting (region-blind — flagged for
-   revisit), `los`/hitscan/light through the portal, auto climb-back, mid-band
-   occlusion, `upFloorTex`/etc., diagonals in the upper region.
+   `RcRender` seeds columns per `camRegion`; `RC_SPAN_PORTAL_*` spans draw + occlude
+   on the interval list (§5.1); `RC_SHADE_UPPER_FLOOR`. `RcMover` one `region`
+   field + one boundary-crossing swap rule + `enterRegion(r)` / `regionId()`.
+   Generic engine add: `tilemapset.hasLayer(name)`. `raycaster-p1`'s `upper:vent`
+   probe migrated to the layer.
+   **Renderer rework (2026-09-02):** the single-window occlusion → a per-column
+   interval list (§5.1); bilinear floor/ceiling light (§6.1). Fixed the p8
+   walkway-underside / ceiling-hole garbage and the floor-lighting bands.
+   Deferred: per-region lighting (region-blind — flagged for revisit),
+   `los`/hitscan/light through the portal, auto climb-back, `upFloorTex`/etc.,
+   diagonals in the upper region, and the **lower↔upper camera transition still
+   reads slightly jarring** — parked until there's a fully textured level to
+   judge it against.
 9. **Optimisation + benchmark pass.** Whatever the accumulated demos show is slow —
    most likely the final `drawing` batched-strip rung, plus static-light caching in
    `RcLights`, plus constant tuning.

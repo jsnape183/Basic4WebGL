@@ -123,9 +123,7 @@ New span kinds (added to `RcConfig`, after the Phase-7 constants):
 
 ### 4.2 Per-column span walk
 
-The existing near→far walk with `winTop` / `winBot`, plus handling for the portal span kinds:
-- Project via `projectY` (unchanged), draw a flat strip via `drawStrip`.
-- Eat the window from the **top** (`side = 2`) or **bottom** (`side = 3`) — the same clamp the existing ceiling-step (top) and floor-step / wall (bottom) cases already do. **No mid-band split** (render-fidelity A).
+**As shipped:** the single `winTop` / `winBot` window, portal spans eating it from the top (camera lower) or bottom (camera upper). **Superseded 2026-09-02 by the renderer rework** (`docs/superpowers/specs/2026-09-02-raycaster-renderer-rework-design.md`): the window is now a per-column interval list; portal spans `drawInto` + `occlude` a band without ending the walk; the "no mid-band split" limitation is gone. §4.4's first two bullets and §7's mid-band-occlusion item no longer apply.
 
 ### 4.3 Shading
 
@@ -222,7 +220,7 @@ Numeric thresholds derived from `p8room.stm`; the plan spells them out and notes
 - **Per-region lighting** — v1 is region-blind (§4.4). *Revisit once real environments exist* — the brainstorm explicitly left this open pending evidence it's a real blocker.
 - **`los()` / hitscan / light through the portal** — a bullet or torchlight from the room does not reach the mezzanine. Region-blind `los()`.
 - **Climbing back up without authored stairs** — once you drop through a hole you're in the lower region; there's no auto "climb back". A `lift` cell that carries you between regions is deferred.
-- **Mid-band occlusion** (render-fidelity B — per-column interval list) — permanently unless a real demo shows the single-window approximation is unacceptable.
+- ~~**Mid-band occlusion** (render-fidelity B — per-column interval list) — permanently unless a real demo shows the single-window approximation is unacceptable.~~ **The p8 demo showed it unacceptable — built 2026-09-02, see the renderer-rework spec.**
 - **More than two stacked levels** — permanently cut (engine-spec §2.1).
 - **Diagonals in the upper region** — not supported; `diag:` is region-0 only.
 - **Full Phase-6b horizontal-surface fill for through-portal geometry** — the far region gets flat strips.

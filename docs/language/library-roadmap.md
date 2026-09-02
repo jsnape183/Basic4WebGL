@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-02 (raycaster library Phase 8 shipped — one optional upper region per cell, authored as a second `upper` tile layer; `RcCast` portal spans, `RcMover` region field, `tilemapset.hasLayer`)
+> Last updated: 2026-09-02 (raycaster library Phase 8 + renderer rework — per-column interval occlusion replaces the single window; `RcLights.sampleAt` bilinear surface light)
 
 ---
 
@@ -418,17 +418,30 @@ generic engine method `tilemapset.hasLayer(name)`. `RcWorld` gains `upKindArr` +
 marker is removed. `RcCast.setRegion(r)` (0 lower / 1 upper) picks the primary
 region and emits the other region's geometry as `RC_SPAN_PORTAL_WALL/CEIL/FLOOR`
 once a ray crosses a hole (`cast()` stays 5-arg; `los()` region-blind).
-`RcRender` reads `camRegion` from the bound mover's `regionId()`, seeds each
-column from that region, and eats the occlusion window from the top (camera
-lower) or bottom (camera upper) — a single-window approximation, no mid-band
-split. `RcMover` carries one `region` field with a single boundary-crossing swap
-rule (walk onto a level plank → up; step off a plank → fall), plus
-`enterRegion(r)` / `regionId()`. Demo: `raycaster-p8-upper` (`PortalScene.bas`) —
-a railed walkway you see under, climb a staircase onto, and drop through a hole,
-6 probes. `raycaster-p1`'s `upper:vent` probe migrated to the layer. Deferred:
-per-region lighting (region-blind — flagged for revisit once real environments
-exist), light / line-of-sight / hitscan through the portal, auto climb-back
-without stairs, mid-band occlusion, upper-region textures.
+`RcRender` reads `camRegion` from the bound mover's `regionId()` and seeds each
+column from that region. `RcMover` carries one `region` field with a single
+boundary-crossing swap rule (walk onto a level plank → up; step off a plank →
+fall), plus `enterRegion(r)` / `regionId()`. Demo: `raycaster-p8-upper`
+(`PortalScene.bas`) — a railed walkway you see under, climb a staircase onto, and
+drop through a hole, 6 probes. `raycaster-p1`'s `upper:vent` probe migrated to
+the layer.
+
+Renderer rework shipped (2026-09-02): the p8 demo exposed two inadequate models.
+(1) The single per-column occlusion window could not represent a mid-column
+opaque band (a plank underside / a railing seen from below), so the walkway and
+hole rendered as garbage. It's replaced by a per-column list of visible screen-Y
+intervals — `RcRender.resetIntervals` / `occlude(top,bot)` (splits an interval
+when a band lands mid-way; capped at `RC_MAX_INTERVALS = 6`, thinnest dropped) /
+`drawInto` / `drawSurfaceInto`. A full wall clears the list and ends the column;
+every other surface occludes exactly its own projected band. (2) `RcLights` was
+nearest-cell only, so a torch gradient across a floor showed hard ~1-unit
+brightness bands that read as fake wall shadows. New `RcLights.sampleAt(x,y)`
+bilinear-blends the 4 surrounding cells; `RcRender` uses it for floor/ceiling
+surfaces, `sampleCell` for walls and sprites. Deferred: per-region lighting
+(region-blind — flagged for revisit), light / line-of-sight / hitscan through the
+portal, auto climb-back without stairs, upper-region textures, and the lower↔upper
+camera transition still reads a touch abrupt (parked until a textured level
+exists to judge it against).
 
 Phases 9–10 (optimisation, docs)
 remain, tracked in
@@ -444,13 +457,14 @@ remain, tracked in
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
-spot cones). Moving lights are fully recomputed every frame (no caching). `RcCast` stops
-at the first wall (no see-through windows yet). Upper regions (Phase 8) render one
-level per cell but are region-blind for lighting (an upper strip samples the room
-below it), don't pass light / line-of-sight / hitscan through the portal, are
-flat-shaded (no `uFloorTex`/etc.), and have no diagonals; a body can't climb back
-up a hole without authored stairs, and the through-portal view uses a
-single-window occlusion approximation (no mid-band split). Diagonal-wall tiles
+spot cones). Moving lights are fully recomputed every frame (no caching). Floor/ceiling
+surface light is bilinear-interpolated between cells; walls and sprites are lit per-cell.
+`RcCast` stops at the first wall (no see-through windows yet). Upper regions (Phase 8)
+render one level per cell but are region-blind for lighting (an upper strip samples the
+room below it), don't pass light / line-of-sight / hitscan through the portal, are
+flat-shaded (no `uFloorTex`/etc.), and have no diagonals; a body can't climb back up a
+hole without authored stairs, and the lower↔upper camera transition still reads a touch
+abrupt. Diagonal-wall tiles
 are supported (Phase 7) but flat-shaded (no wall texture / wall-U) and cannot
 combine with a floor/ceiling step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is

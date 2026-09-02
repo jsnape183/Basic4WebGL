@@ -127,8 +127,8 @@ already up top, call `me.enterRegion(1)` after creating it.
 **Limits (for now):** lighting is shared between the two levels (a mezzanine
 isn't lit separately, and a room light doesn't stop at the plank overhead); light
 and shots don't travel through the hole; once you've dropped through a hole you
-need authored stairs to get back up; and the view *through* a hole is a good
-approximation, not pixel-exact, at glancing angles.
+need authored stairs to get back up; and the moment your camera crosses between
+levels can still look a touch abrupt.
 
 ## RcCast — casting rays
 
@@ -228,11 +228,12 @@ surfaces are plain shaded fills for now.
 ### Phase 3 limits
 
 Everything is flat-shaded — no wall, floor, or ceiling textures yet. You can see
-across a pit to the wall beyond, and the pit floor and step surfaces are now
-filled in, but only as plain shaded strips. Diagonal-wall tiles are drawn (with
-the darker of the two wall shades) but not textured. Upper regions are drawn
-too — the view *through* a hole is a close approximation rather than pixel-exact
-at glancing angles, and an upper strip is lit by the room below it.
+across a pit to the wall beyond, and the pit floor and step surfaces are filled
+in, but only as plain shaded strips. Diagonal-wall tiles are drawn (with the
+darker of the two wall shades) but not textured. Upper regions are drawn too, and
+you can see the room below *and* the ceiling above through a hole at the same
+time. Floor and ceiling light is smoothly blended between cells; walls and
+sprites are lit per-cell. An upper strip is still lit by the room below it.
 
 ## RcMover — walking around
 
