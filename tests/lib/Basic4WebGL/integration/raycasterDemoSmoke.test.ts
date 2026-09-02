@@ -168,6 +168,7 @@ interface RcRenderLike {
   depthat(col: number): number;
   worldtoscreenx(x: number, y: number): number;
   bindactors(a: unknown): void;
+  surfacecount(): number;
 }
 
 // Open corridor with a wall at column >= 6 (and the col-0 border).
@@ -311,5 +312,48 @@ describe('raycaster phase demos smoke-execute', () => {
     strips.length = 0;
     r.renderframe();
     expect(strips.length).toBe(0); // occluded → no strips
+  });
+
+  // Phase 6b: renderFrame draws flat horizontal-surface strips (step tops, pit
+  // floors) between the risers. Drive a real renderFrame with a stepped corridor
+  // and a drawRect spy; the two full-screen background fills have w === 320, the
+  // per-column strips have w === 4.
+  const stubWorld2 = {
+    floorheightat: (c: number) => (c < 4 ? 0 : c < 6 ? 0.3 : -0.25),
+    ceilheightat: () => 1,
+    wallat: (c: number) => (c <= 0 || c >= 8 ? 1 : 0),
+    walltexat: () => '',
+    floortexat: () => '',
+    ceiltexat: () => '',
+    widthcells: () => 12,
+    heightcells: () => 4,
+    lightat: () => 0,
+  };
+
+  test.each(phaseDirs)('%s: renderFrame draws floor/pit surfaces', (dirName) => {
+    const rects: any[][] = [];
+    const overrides = {
+      getStageWidth: () => 320,
+      getStageHeight: () => 200,
+      drawRect: (...a: unknown[]) => {
+        rects.push(a);
+        return undefined;
+      },
+    };
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+    if (!mod.RcRender) return;
+
+    const r = new mod.RcRender(stubWorld2);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+
+    expect(r.surfacecount()).toBeGreaterThan(0);
+
+    const strips = rects.filter((a) => a[2] === 4).map((a) => a[1] as number);
+    // Step-top of floor height 0.3 projects to ≈ 100 + 0.2 * (200 / d); d ≈ 2–4 → ≈ 110–120.
+    expect(strips.some((midY) => Math.abs(midY - 113) <= 25)).toBe(true);
+    // Pit floor (height -0.25) is drawn lower on screen than the step-top rim.
+    const stepTop = strips.find((midY) => Math.abs(midY - 113) <= 25) as number;
+    expect(strips.some((midY) => midY > stepTop + 10)).toBe(true);
   });
 });
