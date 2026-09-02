@@ -795,9 +795,9 @@ git commit -m "feat(raycaster): RcRender.drawActors billboard pass, depth-clippe
 
 ## Task 6: Phase 6 room + billboard art
 
-**Files:** Create `demo-src/raycaster-p6/assets/p6room.stm`, `demo-src/raycaster-p6/assets/rc_placeholder_tiles.png` (copy from `demo-src/raycaster-p5/assets/`), `demo-src/raycaster-p6/assets/rc_barrel.png`.
+**Files:** Create `demo-src/raycaster-p6/assets/p6room.stm`, `demo-src/raycaster-p6/assets/rc_placeholder_tiles.png` (copy from `demo-src/raycaster-p5/assets/`), `demo-src/raycaster-p6/assets/rc_enemy.png` (copy from `demo-src/raycaster/assets/enemy.png` — a 64×64 transparent raycaster billboard sprite from the shipped raycaster demo; reuse rather than generate, same as p1 reused BulletHell's tilesheet). **DONE by coordinator — this task's files already exist and are committed; a reviewer only needs to sanity-check them.**
 
-- [ ] **Step 1: Room.** A 14×10 room with: (a) a raised-floor ledge region (floor height `0.4` over a 3×3 block) so an actor can stand higher than the camera; (b) a short wall stub so one actor sits fully behind it (occlusion test); (c) open floor for a third actor. Ceiling `1.0`, most floor `0`. Validate the JSON parses.
+- [ ] **Step 1: Room.** A 14-wide × 10-tall room with: (a) a raised-floor ledge (floor height `0.4`) at cells (col 10-11, row 7-8) so an actor stands higher than the camera; (b) a wall stub at (col 8, rows 2-3) so an actor at (9.5, 2.5) sits fully behind it (occlusion test); (c) open floor for a third actor at (6.5, 3.0). Ceiling `1.0`, floor `0` elsewhere. Validate the JSON parses.
 
 ```json
 { "tileWidth": 16, "tileHeight": 16, "tileImage": "rc_placeholder_tiles.png",
@@ -826,14 +826,9 @@ git commit -m "feat(raycaster): RcRender.drawActors billboard pass, depth-clippe
 
 Verify `RcWorld.applyKv` handles `floor:<n>` → `floorHArr` (it does — `if key = "floor" then self.floorHArr(idx) = math.val(v)`). Confirm the ledge cells' `floorHeightAt` reads `0.4` after load.
 
-- [ ] **Step 2: Billboard art.** `rc_barrel.png` — a single 32×32 frame, an obviously non-square-coloured upright shape (e.g. a grey barrel with a dark rim) on a transparent background, so occlusion/scaling is visually unambiguous. One frame is fine (frame strip = the image itself). Keep it tiny (< 2 KB).
+- [ ] **Step 2: Billboard art.** `rc_enemy.png` — the shipped raycaster demo's `enemy.png` (64×64, transparent, a single-frame upright sprite). Copied, not generated. In Task 7's `RcActors.add(...)` calls the frame size is `64, 64`.
 
-- [ ] **Step 3: Commit.**
-
-```bash
-git add demo-src/raycaster-p6/assets
-git commit -m "test(raycaster): Phase 6 room (ledge + occluder wall) + barrel billboard"
-```
+- [ ] **Step 3: Commit.** `test(raycaster): Phase 6 room (ledge + occluder wall) + billboard sprite`.
 
 ---
 
@@ -853,13 +848,14 @@ scenemanager.register("actors", scn)
 scenemanager.switch("actors")
 ```
 
-- [ ] **Step 2: `ActorScene.bas`.** `Class` / `Extends scene`. Fields: `tm as tilemapset`, `wld as RcWorld`, `ren as RcRender`, `me as RcMover`, `lights as RcLights`, `actors as RcActors`, `barrelFloor`, `barrelLedge`, `barrelHidden` (RcActor refs — store untyped, they are objects), `torch`, hud texts, `lastMouse`.
+- [ ] **Step 2: `ActorScene.bas`.** `Class` / `Extends scene`. Fields: `tm as tilemapset`, `wld as RcWorld`, `ren as RcRender`, `me as RcMover`, `lights as RcLights`, `actors as RcActors`, `npcFloor`, `npcLedge`, `npcHidden` (RcActor refs — store untyped), `torch`, `titleText as Text`, `hintText as Text`, `lastMouse`.
 
-`Constructor()` — `input.bind` WASD/QE/arrows like `demo-src/raycaster-p5/LitScene.bas`.
+`Constructor()` — `input.bind` WASD/QE like `demo-src/raycaster-p5/LitScene.bas` (`fwd`/`back`/`sl`/`sr`/`tl`/`tr`/`jump`).
 
 `onenter()`:
 ```
 world.setBackground(0, 0, 0)
+self.lastMouse = 0
 self.tm = new tilemapset("p6room.stm")
 self.wld = new RcWorld(self.tm, "walls")
 self.ren = new RcRender(self.wld)
@@ -870,39 +866,38 @@ self.ren.bindCamera(self.me)
 self.ren.bindLights(self.lights)
 self.ren.bindActors(self.actors)
 self.torch = self.lights.addPoint(3.0, 3.0, 0.5, 0.9, RcConfig.RC_LIGHT_RANGE)
-self.barrelFloor  = self.actors.add("rc_barrel.png", 6.5, 3.0, 0.0, 32, 32)   ' open floor, dead ahead
-self.barrelLedge  = self.actors.add("rc_barrel.png", 10.5, 7.5, 0.4, 32, 32)  ' on the raised ledge (floor 0.4)
-self.barrelHidden = self.actors.add("rc_barrel.png", 9.5, 2.5, 0.0, 32, 32)   ' behind the col-8 wall stub
+self.npcFloor  = self.actors.add("rc_enemy.png", 6.5, 3.0, 0.0, 64, 64)   ' open floor, dead ahead
+self.npcLedge  = self.actors.add("rc_enemy.png", 10.5, 7.5, 0.4, 64, 64)  ' on the raised ledge (floor 0.4)
+self.npcHidden = self.actors.add("rc_enemy.png", 9.5, 2.5, 0.0, 64, 64)   ' behind the col-8 wall stub
 self.lights.update()
-' hud text (title + hint), see LitScene
+' hud title + hint text, see LitScene's onenter
 self.runProbes()
 ```
 
-`runProbes()` — 6 probes, each via the copied `probe(label, passed, y)` helper. Every check is a boolean that, when false, feeds `probe(..., 0, y)` which throws → `ERR`. Compute `viewW` once: `dim viewW` / `viewW = stage.width()`; `dim halfW` / `halfW = viewW / 2`. Compare actor identity by spawn position (`hit.x() = 6.5 and hit.y() = 3.0`) — do **not** rely on object-ref `=` equality (unproven in softBASIC).
+`runProbes()` — 6 probes via a copied `probe(label, passed, y)` helper (copy it verbatim from `demo-src/raycaster-p5/LitScene.bas` — renders `label + ": OK|FAIL"` and on `passed = 0` throws via `array.arrLength(missing)` on an unassigned `dim missing`). Every check is a boolean fed to `probe(..., <0-or-1>, y)`. Hoist all `dim`s to the top of `runProbes`. Compute `dim halfW` / `halfW = stage.width() / 2` once. Compare actor identity by spawn position (`n1.x() = 6.5`) — NOT object-ref `=` (unproven in softBASIC).
 
-1. **projection sane** — camera spawns at `(3,3)`, angle `0` (looking `+x`); `worldToScreenX` reads the last frame's basis, and `RcRender.renderFrame` hasn't run yet in `onenter`, so the basis is the Constructor default (`fDirX=1, fDirY=0, fPlaneX=0, fPlaneY=fovScale`) with `camX/camY` still `2.0/2.0` (bindCamera doesn't copy until renderFrame). **So call `self.ren.renderFrame()` once at the top of `runProbes`** to populate the basis + `camX/camY` from the mover, then: `sx = self.ren.worldToScreenX(6.5, 3.0)`; pass if `math.abs(sx - halfW) < 12` (barrel dead ahead → centre column).
-2. **behind-camera guard** — `bx = self.ren.worldToScreenX(1.0, 3.0)` (behind the camera at x=3); pass if `bx < 0`.
-3. **hitscan hits the floor barrel** — `hit = self.actors.hitscan(3.0, 3.0, 1, 0, RcConfig.RC_HITSCAN_RANGE)`; pass if `hit <> 0 and self.actors.hitKind() = RcConfig.RC_HIT_ACTOR and hit.x() = 6.5 and hit.y() = 3.0`.
-4. **wall blocks hitscan to the hidden barrel** — `hit = self.actors.hitscan(3.0, 2.5, 1, 0, RcConfig.RC_HITSCAN_RANGE)` — aimed straight at the hidden barrel at `(9.5, 2.5)`, but the wall cell `(8, 2)` is in the way. Pass if `hit = 0 and self.actors.hitKind() = RcConfig.RC_HIT_WALL and math.abs(self.actors.hitDist() - 5.0) < 0.1` (wall face x=8 − origin x=3).
-5. **`near` finds the closest barrel** — `dim n1` / `n1 = self.actors.near(6.5, 3.2, 2.0)` (split the call — don't write `self.actors.near(...).x()`, method-on-call-result won't parse); pass if `n1 <> 0 and n1.x() = 6.5`, **and** `self.actors.near(0.5, 0.5, 1.0) = 0` (compared inline is fine — no chained method).
-6. **`los` sees the wall** — `d = self.actors.los(3.0, 2.5, 1, 0)`; pass if `d > 0 and math.abs(d - 5.0) < 0.1`.
+Set the camera basis explicitly first (renderFrame hasn't run, and it's the cleanest way): `self.ren.setCamera(3.0, 3.0, 0, 0)` — sets `camX/camY = 3` and angle 0; the Constructor-default `fDir*` basis already corresponds to angle 0 (`fDirX=1, fDirY=0, fPlaneX=0, fPlaneY=fovScale`), so `worldToScreenX` is well-defined.
 
-`onupdate(delta)`:
+1. **projection sane** — `dim sx` / `sx = self.ren.worldToScreenX(6.5, 3.0)` (NPC dead ahead of the camera at (3,3) looking +x → centre column); pass if `math.abs(sx - halfW) < 12`.
+2. **behind-camera guard** — `dim bx` / `bx = self.ren.worldToScreenX(1.0, 3.0)` (behind the camera); pass if `bx < 0`.
+3. **hitscan hits the floor NPC** — `dim hit` / `hit = self.actors.hitscan(3.0, 3.0, 1, 0, RcConfig.RC_HITSCAN_RANGE)`; pass if `hit <> 0 and self.actors.hitKind() = RcConfig.RC_HIT_ACTOR and hit.x() = 6.5 and hit.y() = 3.0`.
+4. **wall blocks hitscan to the hidden NPC** — `hit = self.actors.hitscan(3.0, 2.5, 1, 0, RcConfig.RC_HITSCAN_RANGE)` — aimed straight at the hidden NPC at `(9.5, 2.5)`, wall cell `(8, 2)` in the way. Pass if `hit = 0 and self.actors.hitKind() = RcConfig.RC_HIT_WALL and math.abs(self.actors.hitDist() - 5.0) < 0.1` (wall face x=8 − origin x=3).
+5. **`near` finds the closest NPC** — `dim n1` / `n1 = self.actors.near(6.5, 3.2, 2.0)` (split — don't chain `.x()` on the call result); `dim n2` / `n2 = self.actors.near(0.5, 0.5, 1.0)`; pass if `n1 <> 0 and n1.x() = 6.5 and n2 = 0`.
+6. **`los` sees the wall** — `dim dw` / `dw = self.actors.los(3.0, 2.5, 1, 0)`; pass if `dw > 0 and math.abs(dw - 5.0) < 0.1`.
+
+`onupdate(delta)` (hoist `dim dx` / `dim dy` / `dim h` to the top):
 ```
-' WASD/QE/arrows drive -> self.me.step(delta)  (copy from LitScene)
+' WASD/QE drive -> self.me.step(delta)  (copy the input polling from LitScene's onupdate)
 self.lights.moveLight(self.torch, self.me.x(), self.me.y())
 self.lights.update()
-' click-to-hitscan: edge-detect input.mouseDown()
+' click-to-hitscan along the camera forward: edge-detect input.mouseDown()
 if input.mouseDown() = 1 then
     if self.lastMouse = 0 then
-        dim dx
-        dim dy
         dx = math.cos(self.me.angle())
         dy = math.sin(self.me.angle())
-        dim h
         h = self.actors.hitscan(self.me.x(), self.me.y(), dx, dy, RcConfig.RC_HITSCAN_RANGE)
         if h <> 0 then
-            h.setTint(255, 80, 80)   ' stored, not yet drawn -- harmless
+            h.setTint(255, 80, 80)   ' stored, not drawn yet -- harmless
         endif
     endif
 endif
