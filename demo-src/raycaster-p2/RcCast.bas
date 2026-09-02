@@ -215,17 +215,19 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
         endif
         if seeOther = 1 then
             if self.castRegion = 0 then
-                if wld.upperKindAt(self.mMapX, self.mMapY) = 2 then
-                    self.addSpan(RcConfig.RC_SPAN_PORTAL_WALL, self.mEntryDist, wld.upperFloorAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
-                    return
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_CEIL, self.mEntryDist, wld.upperCeilAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
                 endif
                 if wld.upperKindAt(self.mMapX, self.mMapY) = 1 then
                     self.addSpan(RcConfig.RC_SPAN_PORTAL_FLOOR, self.mEntryDist, wld.upperFloorAt(self.mMapX, self.mMapY), wld.upperFloorAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
-                    self.addSpan(RcConfig.RC_SPAN_PORTAL_CEIL, self.mEntryDist, wld.upperCeilAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
-                    return
+                    seeOther = 0
                 endif
-                if wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
-                    self.addSpan(RcConfig.RC_SPAN_PORTAL_CEIL, self.mEntryDist, wld.upperCeilAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 2 then
+                    self.addSpan(RcConfig.RC_SPAN_PORTAL_WALL, self.mEntryDist, wld.upperFloorAt(self.mMapX, self.mMapY), wld.upperCeilAt(self.mMapX, self.mMapY), self.mMapX, self.mMapY, 0, 0, "")
+                    seeOther = 0
+                endif
+                if wld.upperKindAt(self.mMapX, self.mMapY) = 0 then
+                    seeOther = 0
                 endif
             else
                 if wld.upperKindAt(self.mMapX, self.mMapY) <> 1 then
@@ -244,6 +246,15 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
         else
             cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
             cellCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
+        endif
+
+        ' Hole cell = discontinuity in the primary region: the region's own
+        ' surface is absent there, so open the occlusion window through it.
+        if self.castRegion = 0 and wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
+            cellCeil = wld.upperCeilAt(self.mMapX, self.mMapY)
+        endif
+        if self.castRegion = 1 and wld.upperKindAt(self.mMapX, self.mMapY) = 3 then
+            cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
         endif
 
         if cellFloor <> runFloor then

@@ -530,15 +530,21 @@ describe('raycaster phase demos smoke-execute', () => {
     const rc = new mod.RcCast() as RcCastLike & { spankind(i: number): number; setregion(r: number): void };
 
     // region 0 (camera in the lower room). Ray from (1.5,3.5) heading +x passes
-    // through the hole cell (4,3): a PORTAL span (kind 3/4/5) must appear.
+    // through the hole cell (4,3), a plank at col 5, then the col-7 border wall.
+    // A PORTAL span (kind 3/4/5) must appear AND the march must NOT stop at the
+    // plank — the terminal RC_SPAN_WALL (kind 0) for the border wall behind it
+    // must also be emitted (before the fix it returned early at col 5).
     rc.setregion(0);
     rc.cast(stubWorldUpper, 1.5, 3.5, 1, 0);
     let sawPortal = false;
+    let sawWall = false;
     for (let i = 0; i < rc.spancount(); i++) {
       const k = rc.spankind(i);
       if (k === 3 || k === 4 || k === 5) sawPortal = true;
+      if (k === 0) sawWall = true;
     }
     expect(sawPortal).toBe(true);
+    expect(sawWall).toBe(true);
 
     // Control: a ray one row over (row 4) never meets the walkway → no portal span.
     rc.cast(stubWorldUpper, 1.5, 4.5, 1, 0);
@@ -552,6 +558,24 @@ describe('raycaster phase demos smoke-execute', () => {
     // setregion default (never called) behaves as region 0 for the existing suites.
     const rc2 = new mod.RcCast() as RcCastLike;
     expect(() => rc2.cast(stubWorld, 1.5, 1.5, 1, 0)).not.toThrow();
+  });
+
+  test.each(phaseDirs)('%s: RcCast in region 1 shows the walkway gap at a hole', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcCast) return;
+    const rc = new mod.RcCast() as RcCastLike & { spankind(i: number): number; setregion(r: number): void };
+
+    // Camera on the walkway (region 1). Ray from (1.5,3.5) heading +x crosses the
+    // hole cell (4,3): the upper floor is absent there, so a FLOORSTEP span
+    // (kind 1) must be emitted (the walkway floor drop). Before the fix the
+    // primary floor pass saw upperFloorAt everywhere and emitted none.
+    rc.setregion(1);
+    rc.cast(stubWorldUpper, 1.5, 3.5, 1, 0);
+    let sawFloorStep = false;
+    for (let i = 0; i < rc.spancount(); i++) {
+      if (rc.spankind(i) === 1) sawFloorStep = true;
+    }
+    expect(sawFloorStep).toBe(true);
   });
 
   // Phase 8: with an upper-region hole in view, renderFrame must walk the

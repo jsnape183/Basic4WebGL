@@ -543,7 +543,11 @@ function renderFrame()
                 ' above (can't see above a lowered ceiling). A floor DROP / ceiling RISE leaves
                 ' the window open -- farther geometry shows through (documented header gap).
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
-                    newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
+                    if self.rc.spanLo(i) = runFloorH then
+                        newH = self.rc.spanHi(i)
+                    else
+                        newH = self.rc.spanLo(i)
+                    endif
                     self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
                     if newH > runFloorH then
@@ -564,7 +568,11 @@ function renderFrame()
                     sfLite = lite
                     runFloorH = newH
                 else
-                    newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
+                    if self.rc.spanLo(i) = runCeilH then
+                        newH = self.rc.spanHi(i)
+                    else
+                        newH = self.rc.spanLo(i)
+                    endif
                     self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite)
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
                     if newH < runCeilH then
