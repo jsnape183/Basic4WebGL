@@ -17,7 +17,7 @@ Class
 ' "rccast is not defined" at runtime, with NO compile diagnostic). Keep it `wld`.
 '
 ' Phase 2 scope: no screen projection (Phase 3), no occlusion-window early-out
-' (Phase 3), no upper regions (Phase 8), no diagonal tiles (Phase 7).
+' (Phase 3), no upper regions (Phase 8), diagonal tiles: Phase 7 (diagHit).
 
 dim kindArr(0)
 dim distArr(0)
@@ -133,6 +133,9 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
     dim u
     dim lo
     dim hi
+    dim dg
+    dim exitD
+    dim dh
 
     self.reset()
     self.beginMarch(ox, oy, dx, dy)
@@ -161,6 +164,19 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
             return
         endif
 
+        dg = wld.diagAt(self.mMapX, self.mMapY)
+        if dg > 0 then
+            exitD = self.mSideX
+            if self.mSideY < exitD then
+                exitD = self.mSideY
+            endif
+            dh = self.diagHit(dg, ox, oy, dx, dy, self.mMapX, self.mMapY, self.mEntryDist, exitD)
+            if dh >= 0 then
+                self.addSpan(RcConfig.RC_SPAN_WALL, dh, runFloor, runCeil, self.mMapX, self.mMapY, RcConfig.RC_SPAN_SIDE_DIAG, 0, wld.wallTexAt(self.mMapX, self.mMapY))
+                return
+            endif
+        endif
+
         cellFloor = wld.floorHeightAt(self.mMapX, self.mMapY)
         cellCeil = wld.ceilHeightAt(self.mMapX, self.mMapY)
 
@@ -186,6 +202,9 @@ endfunction
 ' still reads the last cast()'s spans from spanCount()/spanKind(i)/...
 function los(wld as RcWorld, ox, oy, dx, dy)
     dim iters
+    dim dg
+    dim exitD
+    dim dh
     self.beginMarch(ox, oy, dx, dy)
     iters = 0
     while iters < RcConfig.RC_MAX_MARCH_ITERS
@@ -197,8 +216,80 @@ function los(wld as RcWorld, ox, oy, dx, dy)
         if wld.wallAt(self.mMapX, self.mMapY) > 0 then
             return self.mEntryDist
         endif
+        dg = wld.diagAt(self.mMapX, self.mMapY)
+        if dg > 0 then
+            exitD = self.mSideX
+            if self.mSideY < exitD then
+                exitD = self.mSideY
+            endif
+            dh = self.diagHit(dg, ox, oy, dx, dy, self.mMapX, self.mMapY, self.mEntryDist, exitD)
+            if dh >= 0 then
+                return dh
+            endif
+        endif
     endwhile
     return -1
+endfunction
+
+' Ray-parameter distance of a diagonal-chord hit in cell (cx,cy), or -1 for a
+' miss (ray stays in the cell's open triangle). dg = RcConfig.RC_DIAG_* ;
+' entryDist/exitDist = ray params where the ray enters/leaves the cell.
+function diagHit(dg, ox, oy, dx, dy, cx, cy, entryDist, exitDist)
+    dim eps
+    dim ex0
+    dim ey0
+    dim f0
+    dim denom
+    dim solidPos
+    dim s
+
+    eps = 0.00001
+    ex0 = ox + entryDist * dx
+    ey0 = oy + entryDist * dy
+    f0 = 0
+    denom = 0
+    solidPos = 0
+    s = 0
+
+    if dg = RcConfig.RC_DIAG_NW or dg = RcConfig.RC_DIAG_SE then
+        f0 = (ex0 - cx) + (ey0 - cy) - 1.0
+        denom = dx + dy
+    else
+        f0 = (ex0 - cx) - (ey0 - cy)
+        denom = dx - dy
+    endif
+
+    if dg = RcConfig.RC_DIAG_SE or dg = RcConfig.RC_DIAG_NE then
+        solidPos = 1
+    endif
+
+    ' entered already on / inside the solid side -> hit at the cell boundary
+    if solidPos = 1 then
+        if f0 >= 0 - eps then
+            return entryDist
+        endif
+    else
+        if f0 <= eps then
+            return entryDist
+        endif
+    endif
+
+    ' does the ray cross the chord inside this cell?
+    if math.abs(denom) < eps then
+        return 0 - 1
+    endif
+    if dg = RcConfig.RC_DIAG_NW or dg = RcConfig.RC_DIAG_SE then
+        s = (cx + cy + 1.0 - ox - oy) / denom
+    else
+        s = (cx - cy - ox + oy) / denom
+    endif
+    if s < entryDist - eps then
+        return 0 - 1
+    endif
+    if s > exitDist + eps then
+        return 0 - 1
+    endif
+    return s
 endfunction
 
 function spanCount()

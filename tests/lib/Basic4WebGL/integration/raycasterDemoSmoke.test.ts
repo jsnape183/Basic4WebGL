@@ -156,6 +156,8 @@ interface RcCastLike {
   cast(w: unknown, ox: number, oy: number, dx: number, dy: number): void;
   los(w: unknown, ox: number, oy: number, dx: number, dy: number): number;
   spancount(): number;
+  spanside(i: number): number;
+  spandist(i: number): number;
 }
 
 interface RcRenderLike {
@@ -176,6 +178,7 @@ const stubWorld = {
   floorheightat: () => 0,
   ceilheightat: () => 1,
   wallat: (c: number) => (c <= 0 || c >= 6 ? 1 : 0),
+  diagat: () => 0,
   walltexat: () => '',
   floortexat: () => '',
   ceiltexat: () => '',
@@ -328,6 +331,7 @@ describe('raycaster phase demos smoke-execute', () => {
     floorheightat: (c: number) => (c < 4 ? 0 : c < 6 ? -0.3 : 0.3),
     ceilheightat: (c: number) => (c < 5 ? 1 : 1.4),
     wallat: (c: number) => (c <= 0 || c >= 8 ? 1 : 0),
+    diagat: () => 0,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -335,6 +339,47 @@ describe('raycaster phase demos smoke-execute', () => {
     heightcells: () => 4,
     lightat: () => 0,
   };
+
+  // A single SE-solid diagonal at cell (3,3) in an 8x8 bordered room.
+  const stubWorldDiag = {
+    floorheightat: () => 0,
+    ceilheightat: () => 1,
+    wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
+    diagat: (c: number, r: number) => (c === 3 && r === 3 ? 3 : 0), // 3 = RC_DIAG_SE
+    walltexat: () => '',
+    floortexat: () => '',
+    ceiltexat: () => '',
+    widthcells: () => 8,
+    heightcells: () => 8,
+    lightat: () => 0,
+  };
+
+  test.each(phaseDirs)('%s: RcCast resolves a diagonal tile as a wall span', (dirName) => {
+    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
+    if (!mod.RcCast) return; // phase 1 has no RcCast
+    const rc = new mod.RcCast() as RcCastLike & {
+      spanside(i: number): number;
+      spandist(i: number): number;
+    };
+
+    // Ray SE from (1.5,1.5) straight at the SE-solid chord of cell (3,3):
+    // crosses the chord at world (3.5,3.5), ray param s = 2.0.
+    rc.cast(stubWorldDiag, 1.5, 1.5, 1, 1);
+    const n = rc.spancount();
+    expect(n).toBeGreaterThan(0);
+    expect(rc.spanside(n - 1)).toBe(2); // RC_SPAN_SIDE_DIAG
+    expect(rc.spandist(n - 1)).toBeCloseTo(2.0, 1);
+
+    // los agrees with cast on the diagonal (spec: light/bullets match the eye).
+    expect(rc.los(stubWorldDiag, 1.5, 1.5, 1, 1)).toBeCloseTo(2.0, 1);
+
+    // Control: a ray that never meets the diagonal cell hits a normal border
+    // wall — side is NOT the diagonal value.
+    rc.cast(stubWorldDiag, 1.5, 5.5, 1, 0);
+    const m = rc.spancount();
+    expect(rc.spanside(m - 1)).not.toBe(2);
+    expect(rc.los(stubWorldDiag, 1.5, 5.5, 1, 0)).toBeCloseTo(5.5, 1);
+  });
 
   test.each(phaseDirs)('%s: renderFrame draws floor/pit surfaces', (dirName) => {
     const rects: any[][] = [];
