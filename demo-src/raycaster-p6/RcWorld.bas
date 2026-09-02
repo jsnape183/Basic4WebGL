@@ -5,6 +5,9 @@ Class
 ' Cell index = row * cols + col. Heights are in world units; 0 = standard floor,
 ' 1.0 = standard ceiling (RC_STD_CEIL). Negative floor = pit.
 ' flags bitset: 1 door, 2 lift, 4 water, 8 sky.
+' diagArr: 0 = not diagonal, else a corner code 1=nw 2=ne 3=se 4=sw (a
+' corner-solid 45-degree tile; mirrors RcConfig.RC_DIAG_* -- kept as bare
+' literals here because raycaster-p1 does not bundle RcConfig).
 '
 ' A `light` tag (bare, or `light:<anything>`) sets lightArr(idx) to a 0/1 flag;
 ' RcLights.bakeStatic reads it as a static light source at RC_STATIC_INTENSITY.
@@ -27,6 +30,7 @@ dim ceilTexArr(0)
 dim upperArr(0)
 dim lightArr(0)
 dim flagsArr(0)
+dim diagArr(0)
 
 dim upNames(0)
 dim upFloorHArr(0)
@@ -61,6 +65,7 @@ function build(tm as tilemapset, wallsLayerName)
         array.push(self.upperArr, -1)
         array.push(self.lightArr, 0)
         array.push(self.flagsArr, 0)
+        array.push(self.diagArr, 0)
     next i
 
     dim col
@@ -180,6 +185,20 @@ function applyKv(idx, key, v)
     if key = "light" then
         self.lightArr(idx) = 1
     endif
+    if key = "diag" then
+        if v = "nw" then
+            self.diagArr(idx) = 1
+        endif
+        if v = "ne" then
+            self.diagArr(idx) = 2
+        endif
+        if v = "se" then
+            self.diagArr(idx) = 3
+        endif
+        if v = "sw" then
+            self.diagArr(idx) = 4
+        endif
+    endif
     if key = "upper" then
         self.upperArr(idx) = self.upperRegion(v, self.ceilHArr(idx))
     endif
@@ -250,6 +269,13 @@ function flagsAt(col, row)
         return 0
     endif
     return self.flagsArr(row * self.cols + col)
+endfunction
+
+function diagAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0
+    endif
+    return self.diagArr(row * self.cols + col)
 endfunction
 
 function hasUpperAt(col, row)
