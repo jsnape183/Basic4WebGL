@@ -14,6 +14,6 @@ function clear()
     call("_sb.clearDrawing()")
 endfunction
 
-function drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight)
-    call("_sb.drawImageStrip(drawimagestrip_imageName, drawimagestrip_srcX, drawimagestrip_destX, drawimagestrip_destY, drawimagestrip_destWidth, drawimagestrip_destHeight)")
+function drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot)
+    call("_sb.drawImageStrip(drawimagestrip_imageName, drawimagestrip_srcX, drawimagestrip_destX, drawimagestrip_destY, drawimagestrip_destWidth, drawimagestrip_destHeight, drawimagestrip_tint, drawimagestrip_srcVTop, drawimagestrip_srcVBot)")
 endfunction

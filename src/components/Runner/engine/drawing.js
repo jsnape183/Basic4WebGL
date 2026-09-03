@@ -8,7 +8,7 @@ const _sbDrawing = (() => {
   const _liveS = [];                // drawn this frame
   const _poolG = [];                // free Graphics; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
   const _poolS = [];                // free Sprites; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
-  const _texCache = new Map();      // `${imageName}:${srcX}` -> PIXI.Texture
+  const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
 
   function _componentToHex(c) {
     const hex = Math.floor(c).toString(16);
@@ -40,16 +40,27 @@ const _sbDrawing = (() => {
     _liveS.push(s);
     return s;
   }
-  function _texFor(imageName, srcX) {
-    const key = imageName + ':' + srcX;
+  function _texFor(imageName, srcX, srcVTop, srcVBot) {
+    const vt = srcVTop === undefined ? 0 : srcVTop;
+    const vb = srcVBot === undefined ? 1 : srcVBot;
+    const qt = Math.round(vt * 1000) / 1000;   // quantise so a jittering clip
+    const qb = Math.round(vb * 1000) / 1000;   // doesn't churn the cache
+    const key = imageName + ':' + srcX + ':' + qt + ':' + qb;
     let t = _texCache.get(key);
     if (!t) {
       const base = _sbAssets.get(imageName);
       t = new PIXI.Texture({
         source: base.source,
-        frame: new PIXI.Rectangle(srcX, 0, 1, base.height),
+        frame: new PIXI.Rectangle(srcX, qt * base.height, 1, Math.max(1, (qb - qt) * base.height)),
       });
       _texCache.set(key, t);
+      // LRU cap — evict oldest if over (Map preserves insertion order)
+      if (_texCache.size > 512) {
+        const oldest = _texCache.keys().next().value;
+        const old = _texCache.get(oldest);
+        _texCache.delete(oldest);
+        if (old && old.destroy) old.destroy();
+      }
     }
     return t;
   }
@@ -88,11 +99,12 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
-    drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight) {
+    drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot) {
       const o = _acquireS();
-      o.texture = _texFor(imageName, srcX);
+      o.texture = _texFor(imageName, srcX, srcVTop, srcVBot);
       o.width = destWidth;
       o.height = destHeight;
+      o.tint = tint === undefined ? 0xffffff : tint;
       o.anchor.set(0.5, 0.5);
       o.position.set(destX, destY);
       return o;

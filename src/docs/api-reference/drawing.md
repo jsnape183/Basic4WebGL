@@ -62,7 +62,7 @@ function onupdate(delta)
 endfunction
 ```
 
-## drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight)
+## drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot)
 
 Draws a single vertical column of pixels from an image to the screen. This is the building block for column-based renderers such as raycasters — call it once per screen column to build up a scene one vertical strip at a time.
 
@@ -76,6 +76,9 @@ The source column is always 1 pixel wide, taken from `srcX` and stretched to `de
 | destY      | number | Vertical centre of the destination strip on screen |
 | destWidth  | number | Width of the strip on screen in pixels |
 | destHeight | number | Height of the strip on screen in pixels |
+| tint       | number | Optional. Colour to multiply the strip by, as a packed `red * 65536 + green * 256 + blue` number (0–255 per channel). Defaults to white (no tint). |
+| srcVTop    | number | Optional. Top of the vertical slice to read from the source, as a fraction 0–1. Defaults to 0. |
+| srcVBot    | number | Optional. Bottom of the vertical slice to read from the source, as a fraction 0–1. Defaults to 1. Use `srcVTop`/`srcVBot` to draw only a vertical slice of the source — for a strip that is partly hidden behind something closer. |
 
 ```bas
 function onupdate(delta)

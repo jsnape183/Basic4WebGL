@@ -24,8 +24,8 @@ Class
 '
 ' Phase 6: depthArr holds the nearest wall's perpendicular distance per screen
 ' column; drawActors() (when bindActors() is set) projects RcActors billboards
-' and clips them column-by-column against it. Billboards are NOT lit yet -- that
-' waits on a tint parameter for drawImageStrip (spec §5.3 rung 3 / §6.3).
+' and clips them column-by-column against it. Billboards are tinted by the
+' actor's sampled light via drawImageStrip's tint parameter (spec §5.3 rung 3 / §6.3).
 '
 ' The RcWorld parameter is `wld`, NEVER `world` (builtin module -> silent
 ' mis-transpile -> runtime ReferenceError).
@@ -137,7 +137,7 @@ endfunction
 ' as depth-clipped vertical strips against depthArr (spec §5.4 / §8). One source
 ' frame is a horizontal slice frameW px wide at (frame index * frameW); the
 ' sprite is drawn RC_ACTOR_HEIGHT world-units tall, width scaled by frameW/frameH.
-' No per-actor tint yet -- drawImageStrip has no tint param (spec §5.3 rung 3).
+' Each billboard is tinted by its cell's sampled light (spec §5.3 rung 3).
 function drawActors()
     dim n
     dim i
@@ -165,6 +165,9 @@ function drawActors()
     dim srcX
     dim tmpI
     dim tmpD
+    dim aLite
+    dim aCh
+    dim aTint
 
     invDet = 1.0 / (self.fPlaneX * self.fDirY - self.fDirX * self.fPlaneY)
     n = self.boundActors.poolSize()
@@ -235,7 +238,13 @@ function drawActors()
                 frac = (centerPx - leftPx) / wPx
                 if frac >= 0 and frac <= 1 then
                     srcX = math.floor(a.frame() * fw + frac * fw)
-                    drawing.drawImageStrip(a.image(), srcX, centerPx, (feetY + headY) / 2, RcConfig.RC_STRIP_W, hPx)
+                    aLite = 1.0
+                    if self.boundLights <> 0 then
+                        aLite = self.boundLights.sampleAt(a.x(), a.y())
+                    endif
+                    aCh = 255 * aLite
+                    aTint = self.packTint(aCh, aCh, aCh)
+                    drawing.drawImageStrip(a.image(), srcX, centerPx, (feetY + headY) / 2, RcConfig.RC_STRIP_W, hPx, aTint, 0, 1)
                 endif
             endif
         next c
@@ -266,6 +275,13 @@ endfunction
 ' small over-count from window-clipped strips is fine.
 function surfaceCount()
     return self.surfCountLast
+endfunction
+
+' Pack three 0..255 colour channels into a single tint number (no bitwise ops in
+' softBASIC -- multiply by the channel place values). Used for billboard and
+' textured-wall tints.
+function packTint(r, g, b)
+    return math.floor(math.clamp(r, 0, 255)) * 65536 + math.floor(math.clamp(g, 0, 255)) * 256 + math.floor(math.clamp(b, 0, 255))
 endfunction
 
 ' Screen Y of world height h at perpendicular distance d.

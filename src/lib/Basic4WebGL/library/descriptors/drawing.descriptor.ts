@@ -25,9 +25,9 @@ export const drawingDescriptor: ModuleDescriptor = {
     },
     {
       name: 'drawImageStrip',
-      params: ['imageName', 'srcX', 'destX', 'destY', 'destWidth', 'destHeight'],
+      params: ['imageName', 'srcX', 'destX', 'destY', 'destWidth', 'destHeight', 'tint', 'srcVTop', 'srcVBot'],
       body: (p, _self) =>
-        `_sb.drawImageStrip(${p.imageName}, ${p.srcX}, ${p.destX}, ${p.destY}, ${p.destWidth}, ${p.destHeight})`,
+        `_sb.drawImageStrip(${p.imageName}, ${p.srcX}, ${p.destX}, ${p.destY}, ${p.destWidth}, ${p.destHeight}, ${p.tint}, ${p.srcVTop}, ${p.srcVBot})`,
     },
   ],
 };

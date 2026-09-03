@@ -5,6 +5,7 @@ let gfxCreated = 0;
 let spriteCreated = 0;
 let textureCreated = 0;
 let destroyed = 0;
+let lastTexOpts: any = null;
 
 class FakeGraphics {
   visible = true; position = { set() {} }; pivot = { set() {} };
@@ -15,12 +16,16 @@ class FakeGraphics {
   destroy() { destroyed++; }
 }
 class FakeSprite {
-  visible = true; width = 0; height = 0; anchor = { set() {} }; position = { set() {} };
+  visible = true; width = 0; height = 0; tint = 0xffffff; anchor = { set() {} }; position = { set() {} };
   texture: unknown;
   constructor(t?: unknown) { spriteCreated++; this.texture = t; }
   destroy() { destroyed++; }
 }
-class FakeTexture { constructor() { textureCreated++; } destroy() { destroyed++; } }
+class FakeTexture {
+  opts: any;
+  constructor(opts?: unknown) { textureCreated++; this.opts = opts; lastTexOpts = opts; }
+  destroy() { destroyed++; }
+}
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
 class FakeContainer {
   children: unknown[] = [];
@@ -31,10 +36,11 @@ class FakeContainer {
 
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = 0;
+  lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
   const PIXI = { Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture, Rectangle: FakeRectangle };
   const worldContainer = new FakeContainer();
-  const _sbAssets = { get: () => ({ source: {}, width: 16, height: 64 }) };
+  const _sbAssets = { get: () => ({ source: {}, width: 64, height: 64 }) };
   const factory = new Function(
     'PIXI', 'worldContainer', '_sbAssets',
     `${src}\n; return _sbDrawing;`,
@@ -111,5 +117,34 @@ describe('drawing — object pooling', () => {
     d.drawRect(0, 0, 10, 10);         // pops the detached pooled object
     expect(worldContainer.children.length).toBe(1);        // re-attached
     expect((worldContainer.children[0] as any).visible).toBe(true);
+  });
+});
+
+describe('drawing — drawImageStrip tint + vertical source clip', () => {
+  test('drawImageStrip applies tint', () => {
+    const { d } = loadDrawing();
+    const s = d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0x804020);
+    expect(s.tint).toBe(0x804020);
+    const s2 = d.drawImageStrip('w.png', 3, 0, 0, 4, 40); // 6-arg -> default white
+    expect(s2.tint).toBe(0xffffff);
+  });
+
+  test('drawImageStrip clips source V', () => {
+    const { d } = loadDrawing();
+    d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 0.75);
+    let rect = lastTexOpts.frame;
+    expect(rect.y).toBe(16);
+    expect(rect.h).toBe(32);
+    d.drawImageStrip('w.png', 7, 0, 0, 4, 40); // 6-arg -> full height
+    rect = lastTexOpts.frame;
+    expect(rect.y).toBe(0);
+    expect(rect.h).toBe(64);
+  });
+
+  test('_texCache key includes V window', () => {
+    const { d } = loadDrawing();
+    d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0, 1);
+    d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 1);
+    expect(textureCreated).toBe(2);
   });
 });
