@@ -42,10 +42,10 @@ function onenter()
   self.probe("floor tags", okFloor, 96)
 
   okMisc = 0
-  if self.wld.hasUpperAt(2, 1) = 1 and self.wld.upperKindAt(2, 1) = 1 and self.wld.flagsAt(3, 2) = 1 and self.wld.flagsAt(3, 1) = 8 then
+  if self.wld.flagsAt(3, 2) = 1 and self.wld.flagsAt(3, 1) = 8 then
     okMisc = 1
   endif
-  self.probe("upper/door/sky", okMisc, 118)
+  self.probe("door/sky", okMisc, 118)
 
   self.drawGrid()
 endfunction

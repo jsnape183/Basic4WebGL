@@ -151,8 +151,6 @@ interface RcMoverLike {
   turn(dAngle: number): void;
   look(dPitch: number): void;
   jump(): void;
-  regionid(): number;
-  enterregion(r: number): void;
 }
 
 interface RcCastLike {
@@ -163,7 +161,6 @@ interface RcCastLike {
   spandist(i: number): number;
   spankind(i: number): number;
   spanu(i: number): number;
-  setregion(r: number): void;
 }
 
 interface RcRenderLike {
@@ -185,9 +182,6 @@ const stubWorld = {
   ceilheightat: () => 1,
   wallat: (c: number) => (c <= 0 || c >= 6 ? 1 : 0),
   diagat: () => 0,
-  upperkindat: () => 0,
-  upperfloorat: () => 1,
-  upperceilat: () => 2,
   walltexat: () => '',
   floortexat: () => '',
   ceiltexat: () => '',
@@ -344,9 +338,6 @@ describe('raycaster phase demos smoke-execute', () => {
     ceilheightat: (c: number) => (c < 5 ? 1 : 1.4),
     wallat: (c: number) => (c <= 0 || c >= 8 ? 1 : 0),
     diagat: () => 0,
-    upperkindat: () => 0,
-    upperfloorat: () => 1,
-    upperceilat: () => 2,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -364,33 +355,6 @@ describe('raycaster phase demos smoke-execute', () => {
     ceilheightat: () => 1,
     wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
     diagat: (c: number, r: number) => (c === 3 && r === 3 ? 3 : 0), // 3 = RC_DIAG_SE
-    upperkindat: () => 0,
-    upperfloorat: () => 1,
-    upperceilat: () => 2,
-    walltexat: () => '',
-    floortexat: () => '',
-    ceiltexat: () => '',
-    hassurfacecolor: () => 0,
-    floorcolat: () => -1,
-    ceilcolat: () => -1,
-    widthcells: () => 8,
-    heightcells: () => 8,
-    lightat: () => 0,
-  };
-
-  // 8x8 bordered room. A walkway (upper floor, id 1) spans row 3, cols 2..5,
-  // with a hole (id 3) at col 4. Upper ceiling 2.0, upper floor 1.0 (= ceilH).
-  const stubWorldUpper = {
-    floorheightat: () => 0,
-    ceilheightat: () => 1,
-    wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
-    diagat: () => 0,
-    upperkindat: (c: number, r: number) => {
-      if (r !== 3 || c < 2 || c > 5) return 0;
-      return c === 4 ? 3 : 1; // hole at col 4, plank elsewhere on the strip
-    },
-    upperfloorat: () => 1,
-    upperceilat: () => 2,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -410,9 +374,6 @@ describe('raycaster phase demos smoke-execute', () => {
       ceilheightat: () => 1,
       wallat: (c: number, r: number) => (c <= 0 || c >= 7 || r <= 0 || r >= 7 ? 1 : 0),
       diagat: (c: number, r: number) => (c === 3 && r === 3 ? code : 0),
-      upperkindat: () => 0,
-      upperfloorat: () => 1,
-      upperceilat: () => 2,
       walltexat: () => '',
       floortexat: () => '',
       ceiltexat: () => '',
@@ -471,49 +432,6 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(free.x()).toBeGreaterThan(4.0);
   });
 
-  test.each(phaseDirs)('%s: RcMover swaps region crossing onto a level upper floor', (dirName) => {
-    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
-    if (!mod.RcMover) return;
-
-    // stubWorldUpper: walkway on row 3, cols 2..5, upperFloorAt = 1.0.
-    // A body at room-floor height (z=0) can't be on the walkway; but make a
-    // variant where the walkway floor is level (0) with the room so the
-    // transition rule fires on the boundary.
-    const level = {
-      ...stubWorldUpper,
-      ceilheightat: () => 1, // room ceiling
-      upperfloorat: () => 0, // walkway level with the room floor
-      upperceilat: () => 1,
-    };
-    const m = new mod.RcMover(level as unknown, 1.5, 3.5, 0.3, 0.6) as unknown as RcMoverLike & {
-      regionid(): number;
-      enterregion(r: number): void;
-    };
-    expect(m.regionid()).toBe(0);
-    m.turn(0); // +x
-    for (let i = 0; i < 30; i++) {
-      m.move(2.6, 0);
-      m.step(50);
-    }
-    // walked from col 1 (no upper) onto the walkway strip (cols 2..5) at equal height
-    expect(m.regionid()).toBe(1);
-
-    // enterRegion + drive into the hole (col 4) → fall back to region 0
-    const m2 = new mod.RcMover(stubWorldUpper as unknown, 2.5, 3.5, 0.3, 0.6) as unknown as RcMoverLike & {
-      regionid(): number;
-      enterregion(r: number): void;
-    };
-    m2.enterregion(1);
-    expect(m2.regionid()).toBe(1);
-    m2.turn(0);
-    for (let i = 0; i < 30; i++) {
-      m2.move(2.6, 0);
-      m2.step(50);
-    }
-    expect(m2.regionid()).toBe(0);
-    expect(m2.z()).toBeCloseTo(0, 1); // landed on the room floor
-  });
-
   test.each(phaseDirs)('%s: RcCast resolves a diagonal tile as a wall span', (dirName) => {
     const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
     if (!mod.RcCast) return; // phase 1 has no RcCast
@@ -554,109 +472,6 @@ describe('raycaster phase demos smoke-execute', () => {
     const m = rc.spancount();
     expect(rc.spanside(m - 1)).not.toBe(2);
     expect(rc.los(stubWorldDiag, 1.5, 5.5, 1, 0)).toBeCloseTo(5.5, 1);
-  });
-
-  test.each(phaseDirs)('%s: RcCast emits a portal span through an upper-region hole', (dirName) => {
-    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
-    if (!mod.RcCast) return;
-    const rc = new mod.RcCast() as RcCastLike & { spankind(i: number): number; setregion(r: number): void };
-
-    // region 0 (camera in the lower room). Ray from (1.5,3.5) heading +x passes
-    // through the hole cell (4,3), a plank at col 5, then the col-7 border wall.
-    // A PORTAL span (kind 3/4/5) must appear AND the march must NOT stop at the
-    // plank — the terminal RC_SPAN_WALL (kind 0) for the border wall behind it
-    // must also be emitted (before the fix it returned early at col 5).
-    rc.setregion(0);
-    rc.cast(stubWorldUpper, 1.5, 3.5, 1, 0);
-    let sawPortal = false;
-    let sawWall = false;
-    for (let i = 0; i < rc.spancount(); i++) {
-      const k = rc.spankind(i);
-      if (k === 3 || k === 4 || k === 5) sawPortal = true;
-      if (k === 0) sawWall = true;
-    }
-    expect(sawPortal).toBe(true);
-    expect(sawWall).toBe(true);
-
-    // Control: a ray one row over (row 4) never meets the walkway → no portal span.
-    rc.cast(stubWorldUpper, 1.5, 4.5, 1, 0);
-    let sawPortal2 = false;
-    for (let i = 0; i < rc.spancount(); i++) {
-      const k = rc.spankind(i);
-      if (k === 3 || k === 4 || k === 5) sawPortal2 = true;
-    }
-    expect(sawPortal2).toBe(false);
-
-    // setregion default (never called) behaves as region 0 for the existing suites.
-    const rc2 = new mod.RcCast() as RcCastLike;
-    expect(() => rc2.cast(stubWorld, 1.5, 1.5, 1, 0)).not.toThrow();
-  });
-
-  test.each(phaseDirs)('%s: RcCast in region 1 shows the walkway gap at a hole', (dirName) => {
-    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`));
-    if (!mod.RcCast) return;
-    const rc = new mod.RcCast() as RcCastLike & { spankind(i: number): number; setregion(r: number): void };
-
-    // Camera on the walkway (region 1). Ray from (1.5,3.5) heading +x crosses the
-    // hole cell (4,3): the upper floor is absent there, so a FLOORSTEP span
-    // (kind 1) must be emitted (the walkway floor drop). Before the fix the
-    // primary floor pass saw upperFloorAt everywhere and emitted none.
-    rc.setregion(1);
-    rc.cast(stubWorldUpper, 1.5, 3.5, 1, 0);
-    let sawFloorStep = false;
-    for (let i = 0; i < rc.spancount(); i++) {
-      if (rc.spankind(i) === 1) sawFloorStep = true;
-    }
-    expect(sawFloorStep).toBe(true);
-  });
-
-  // Phase 8: with an upper-region hole in view, renderFrame must walk the
-  // RC_SPAN_PORTAL_* spans RcCast emits and draw extra strips high on the screen
-  // (the walkway underside / upper geometry seen up through the hole) — and never
-  // throw. Compared against a control row with no walkway overhead.
-  test.each(phaseDirs)('%s: renderFrame draws portal strips through an upper-region hole', (dirName) => {
-    const rects: unknown[][] = [];
-    const fills: number[][] = [];
-    const overrides = {
-      getStageWidth: () => 320,
-      getStageHeight: () => 200,
-      setFillColor: (...a: unknown[]) => {
-        fills.push(a as number[]);
-        return undefined;
-      },
-      drawRect: (...a: unknown[]) => {
-        rects.push([...(a as unknown[]), fills[fills.length - 1]]);
-        return undefined;
-      },
-    };
-    const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
-    if (!mod.RcRender) return;
-
-    const stripsWhere = (pred: (midY: number) => boolean) =>
-      rects.filter((a) => a[2] === 4 && typeof a[1] === 'number' && pred(a[1] as number)).length;
-    const highStrips = () => stripsWhere((y) => y < 60);
-
-    const r = new mod.RcRender(stubWorldUpper);
-    r.setcamera(1.5, 3.5, 0, 0); // lower room, looking down the walkway row toward the hole
-    rects.length = 0;
-    fills.length = 0;
-    expect(() => r.renderframe()).not.toThrow();
-    const holeHigh = highStrips();
-    // Interval-list fix: a region-0 ray through the hole splits its column into
-    // two visible bands — the ceiling/upper geometry ABOVE (midY < 60) and the
-    // lower room floor BELOW the horizon (midY > 120) both draw, instead of the
-    // single flattened band the old winTop/winBot code produced.
-    const holeLow = stripsWhere((y) => y > 120);
-    expect(holeHigh).toBeGreaterThan(0);
-    expect(holeLow).toBeGreaterThan(0);
-
-    r.setcamera(1.5, 1.5, 0, 0); // control: a plain row, no walkway overhead
-    rects.length = 0;
-    fills.length = 0;
-    r.renderframe();
-    const plainHigh = highStrips();
-
-    expect(holeHigh).toBeGreaterThan(plainHigh);
   });
 
   // A diagonal wall span carries side = RC_SPAN_SIDE_DIAG (2), which collides with
@@ -759,9 +574,6 @@ describe('raycaster phase demos smoke-execute', () => {
     ceilheightat: () => 1.5,
     wallat: (c: number) => (c <= 0 || c >= 20 ? 1 : 0),
     diagat: () => 0,
-    upperkindat: () => 0,
-    upperfloorat: () => 1,
-    upperceilat: () => 2,
     walltexat: () => '',
     floortexat: () => '',
     ceiltexat: () => '',
@@ -958,79 +770,4 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(flat!.rects.filter((a) => a[2] === 4).length).toBeGreaterThan(0);
   });
 
-  // Task 6: a floor cell with a texture set blits horizontal-surface strips via
-  // drawing.drawFloorStrip (perspective mesh) instead of the flat drawRect path.
-  // Locks the near/far orientation: for a floor the near edge is LOWER on screen
-  // (bigger Y) and its world point is CLOSER to the camera than the far edge.
-  test.each(phaseDirs)('%s: renderFrame blits textured floor surfaces via drawFloorStrip', (dirName) => {
-    const floorLights = {
-      samplecell: () => 0.6,
-      sampleat: () => 0.6,
-    };
-    const runWith = (floorTex: string) => {
-      const floors: unknown[][] = [];
-      const rects: unknown[][] = [];
-      const overrides = {
-        getStageWidth: () => 320,
-        getStageHeight: () => 200,
-        drawFloorStrip: (...a: unknown[]) => {
-          floors.push(a);
-          return undefined;
-        },
-        drawRect: (...a: unknown[]) => {
-          rects.push(a);
-          return undefined;
-        },
-      };
-      const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
-      if (!mod.RcRender) return null;
-      const world = { ...stubWorld, floortexat: () => floorTex };
-      const r = new mod.RcRender(world);
-      r.bindlights(floorLights as unknown); // plain RcRender method — present all phases
-      r.setcamera(2, 2, 0, 0);
-      r.renderframe();
-      return { floors, rects };
-    };
-
-    const textured = runWith('floor.png');
-    if (!textured) return;
-
-    expect(textured.floors.length).toBeGreaterThan(0);
-
-    for (const a of textured.floors as number[][]) {
-      const [name, destX, yNear, yFar, , , , , stripW, tint] = a as unknown as [
-        string,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-        number,
-      ];
-      expect(name).toBe('floor.png');
-      expect((destX - 2) % 4).toBe(0); // strip centre = col*4 + RC_STRIP_W/2
-      expect(stripW).toBe(4);
-      expect(yNear).toBeGreaterThan(yFar); // floor: near edge lower on screen
-      expect(typeof tint).toBe('number');
-      expect(tint).toBeGreaterThan(0);
-      expect(tint).toBeLessThan(0xffffff); // light 0.6 < 1 → tinted, not white
-    }
-
-    // The near world point must be spatially closer to the camera than the far.
-    const s = (textured.floors as number[][])[0];
-    const wNearX = s[4];
-    const wNearY = s[5];
-    const wFarX = s[6];
-    const wFarY = s[7];
-    expect(Math.hypot(wNearX - 2, wNearY - 2)).toBeLessThan(Math.hypot(wFarX - 2, wFarY - 2));
-
-    // Untextured control: flat drawRect surface strips, zero drawFloorStrip calls.
-    const flat = runWith('');
-    expect(flat).not.toBeNull();
-    expect(flat!.floors.length).toBe(0);
-    expect(flat!.rects.filter((a) => (a as unknown[])[2] === 4).length).toBeGreaterThan(0);
-  });
 });

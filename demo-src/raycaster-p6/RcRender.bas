@@ -15,12 +15,12 @@ Class
 ' it is drawn with the y-face wall shade and its light is sampled from the
 ' (half-open) diagonal cell itself.
 '
-' Phase 8: the camera's region (0 lower / 1 upper) is derived each frame and
-' pushed to RcCast via setRegion(). RcCast then emits the OTHER region's geometry
-' as RC_SPAN_PORTAL_WALL/CEIL/FLOOR spans once a ray crosses a hole; the span walk
-' below draws them and eats the screen window from the TOP (camera lower, looking
-' up) or the BOTTOM (camera upper, looking down). Portal-span lighting is
-' region-blind (sampled from the lower-region light grid) -- a documented v1 limit.
+' Occlusion is a single per-column window [winTop, winBot]: a floor RISE clamps
+' winBot up from the ground, a ceiling DROP clamps winTop down; a floor DROP or
+' ceiling RISE leaves the window open so farther geometry shows through. Wall
+' faces blit textured (drawWallStrip) when a wall texture resolves, else flat.
+' Floor/ceiling surfaces are flat-shaded, coloured per tile by fcol:/ccol: tags,
+' and lit by RcLights.sampleAt (bilinear). Floor/ceiling TEXTURES are not drawn.
 '
 ' Phase 6: depthArr holds the nearest wall's perpendicular distance per screen
 ' column; drawActors() (when bindActors() is set) projects RcActors billboards
@@ -52,21 +52,9 @@ dim depthArr(0)
 dim actorOrderIdx(0)
 dim actorOrderDepth(0)
 dim surfCountLast
-' Per-column visible screen-Y interval list (renderer rework). Parallel arrays,
-' top < bot. occTop/occBot are reused scratch (no per-frame alloc). iDestX is the
-' current column's strip centre X -- set by renderFrame (Task 3); drawInto reads it.
-dim intvTop(0)
-dim intvBot(0)
-dim occTop(0)
-dim occBot(0)
-dim iDestX
-dim fRayX
-dim fRayY
 ' Scene-level texture defaults (Phase texturing). "" = untextured (flat grey
 ' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
 dim defWallTex
-dim defFloorTex
-dim defCeilTex
 
 Constructor(w as RcWorld)
     dim di
@@ -86,12 +74,7 @@ Constructor(w as RcWorld)
     self.boundLights = 0
     self.boundActors = 0
     self.surfCountLast = 0
-    self.iDestX = 0
-    self.fRayX = 0
-    self.fRayY = 0
     self.defWallTex = ""
-    self.defFloorTex = ""
-    self.defCeilTex = ""
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -302,21 +285,6 @@ function projectY(h, d)
     return self.scy + (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
 endfunction
 
-' Inverse of projectY: the perpendicular distance at which a horizontal surface
-' at world height hh projects to screen Y `y`. Guards the horizon singularity
-' (returns RC_MAX_DIST). For a ceiling (hh above eye) the numerator is negative,
-' so the sign of `denom` flips too -- the identity holds for both.
-function distAtScreenY(hh, y)
-    dim denom
-    dim horizon
-    horizon = self.scy + self.camPitch
-    denom = y - horizon
-    if math.abs(denom) < 0.0001 then
-        return RcConfig.RC_MAX_DIST
-    endif
-    return (self.camZ + RcConfig.RC_EYE_Z - hh) * self.viewH / denom
-endfunction
-
 ' Draws a vertical strip [sTop..sBot] clipped to [winTop..winBot], flat-shaded.
 ' shadeKind: 0 wall x-side, 1 wall y-side, 2 floor-step, 3 ceil-step.
 function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
@@ -359,9 +327,6 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     if shadeKind = 7 then
         g = 50
     endif
-    if shadeKind = 8 then
-        g = 70
-    endif
     rr = math.clamp(g * lightLevel, 0, 255)
     gg = math.clamp(g * lightLevel, 0, 255)
     bb = math.clamp((g + 25) * lightLevel, 0, 255)
@@ -371,152 +336,10 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     return 1
 endfunction
 
-' Draw one flat horizontal surface at world height hh, from depth dNear to dFar,
-' clipped into every visible interval, then occlude its own projected band.
-' Orders the two projected Ys so the band always has top <= bottom (a floor below
-' eye and a ceiling above it project inverted). Bumps surfCountLast per strip.
-' texName "" -> the flat drawRect path (unchanged); non-empty -> a perspective
-' drawFloorStrip per visible interval, tinted by the sampled light.
-function drawSurfaceInto(hh, dNear, dFar, kind, lite, texName)
-    dim ya
-    dim yb
-    dim yTop
-    dim yBot
-    dim useLite
-    dim dMid
-    dim k
-    dim n
-    dim cTop
-    dim cBot
-    dim ynScr
-    dim yfScr
-    dim cdNear
-    dim cdFar
-    dim wnx
-    dim wny
-    dim wfx
-    dim wfy
-    dim ft
-    dim eyeZ
-    useLite = lite
-    if self.boundLights <> 0 then
-        dMid = (dNear + dFar) / 2
-        useLite = self.boundLights.sampleAt(self.camX + self.fRayX * dMid, self.camY + self.fRayY * dMid)
-    endif
-    ya = self.projectY(hh, dNear)
-    yb = self.projectY(hh, dFar)
-    if ya <= yb then
-        yTop = ya
-        yBot = yb
-    else
-        yTop = yb
-        yBot = ya
-    endif
-    if string.len(texName) = 0 then
-        if self.wld.hasSurfaceColor() = 0 then
-            self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
-        else
-            ' A level uses fcol:/ccol: -- march the cells this band crosses and
-            ' draw a sub-band per contiguous colour run (default grey elsewhere).
-            self.drawSurfaceColorRun(hh, dNear, dFar, kind, useLite)
-        endif
-    else
-        ' Textured: blit one perspective-correct strip per visible interval, with
-        ' the world near/far re-derived from the CLIPPED screen span so the
-        ' texture stays pinned when an interval cuts the band.
-        eyeZ = self.camZ + RcConfig.RC_EYE_Z
-        ft = self.packTint(255 * useLite, 255 * useLite, 255 * useLite)
-        n = array.arrLength(self.intvTop)
-        for k = 0 to n - 1
-            cTop = yTop
-            cBot = yBot
-            if cTop < self.intvTop(k) then
-                cTop = self.intvTop(k)
-            endif
-            if cBot > self.intvBot(k) then
-                cBot = self.intvBot(k)
-            endif
-            if cBot > cTop then
-                ' Near edge: for a floor (below eye) it is the LOWER edge on
-                ' screen (bigger Y); for a ceiling (above eye) the upper edge.
-                if hh < eyeZ then
-                    ynScr = cBot
-                    yfScr = cTop
-                else
-                    ynScr = cTop
-                    yfScr = cBot
-                endif
-                cdNear = self.distAtScreenY(hh, ynScr)
-                cdFar = self.distAtScreenY(hh, yfScr)
-                wnx = self.camX + self.fRayX * cdNear
-                wny = self.camY + self.fRayY * cdNear
-                wfx = self.camX + self.fRayX * cdFar
-                wfy = self.camY + self.fRayY * cdFar
-                drawing.drawFloorStrip(texName, self.iDestX, ynScr, yfScr, wnx, wny, wfx, wfy, RcConfig.RC_STRIP_W, ft)
-                self.surfCountLast = self.surfCountLast + 1
-            endif
-        next k
-    endif
-    self.occlude(yTop, yBot)
-endfunction
-
-' Per-tile flat colour: walk the grid cells this column's ray crosses between
-' dNear and dFar, and for each cell draw the surface sub-band in that cell's
-' fcol:/ccol: colour (or the default `kind` shade where the cell has none).
-' hh < eye -> floor cells; otherwise ceiling cells.
-function drawSurfaceColorRun(hh, dNear, dFar, kind, useLite)
-    dim eyeZ
-    dim isFloor
-    dim segA
-    dim segB
-    dim mx
-    dim my
-    dim cc
-    dim ya
-    dim yb
-    dim yTop
-    dim yBot
-    dim guard
-    eyeZ = self.camZ + RcConfig.RC_EYE_Z
-    isFloor = 0
-    if hh < eyeZ then
-        isFloor = 1
-    endif
-    segA = dNear
-    guard = 0
-    while segA < dFar - 0.0001 and guard < 128
-        guard = guard + 1
-        segB = self.surfaceRunEnd(segA, dFar)
-        mx = self.camX + self.fRayX * ((segA + segB) / 2)
-        my = self.camY + self.fRayY * ((segA + segB) / 2)
-        if isFloor = 1 then
-            cc = self.wld.floorColAt(math.floor(mx), math.floor(my))
-        else
-            cc = self.wld.ceilColAt(math.floor(mx), math.floor(my))
-        endif
-        ya = self.projectY(hh, segA)
-        yb = self.projectY(hh, segB)
-        if ya <= yb then
-            yTop = ya
-            yBot = yb
-        else
-            yTop = yb
-            yBot = ya
-        endif
-        if cc < 0 then
-            self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
-        else
-            self.surfCountLast = self.surfCountLast + self.drawColorInto(yTop, yBot, cc, useLite)
-        endif
-        segA = segB
-    endwhile
-endfunction
-
-' The perpendicular distance at which this column's ray leaves the grid cell it
-' is in at tStart, clamped to tMax. Mirrors one DDA step (nearest x/y crossing).
-function surfaceRunEnd(tStart, tMax)
-    dim rx
-    dim ry
+' The perpendicular distance at which this column's ray (rayX, rayY) leaves the
+' grid cell it occupies at tStart, clamped to tMax. One DDA step (nearest x/y
+' crossing). Used only for the per-tile colour march.
+function surfaceRunEnd(tStart, tMax, rayX, rayY)
     dim px
     dim py
     dim cx
@@ -524,25 +347,23 @@ function surfaceRunEnd(tStart, tMax)
     dim tx
     dim ty
     dim t
-    rx = self.fRayX
-    ry = self.fRayY
-    px = self.camX + rx * (tStart + 0.0001)
-    py = self.camY + ry * (tStart + 0.0001)
+    px = self.camX + rayX * (tStart + 0.0001)
+    py = self.camY + rayY * (tStart + 0.0001)
     cx = math.floor(px)
     cy = math.floor(py)
     tx = tMax
     ty = tMax
-    if rx > 0.00001 then
-        tx = (cx + 1 - self.camX) / rx
+    if rayX > 0.00001 then
+        tx = (cx + 1 - self.camX) / rayX
     endif
-    if rx < 0 - 0.00001 then
-        tx = (cx - self.camX) / rx
+    if rayX < 0 - 0.00001 then
+        tx = (cx - self.camX) / rayX
     endif
-    if ry > 0.00001 then
-        ty = (cy + 1 - self.camY) / ry
+    if rayY > 0.00001 then
+        ty = (cy + 1 - self.camY) / rayY
     endif
-    if ry < 0 - 0.00001 then
-        ty = (cy - self.camY) / ry
+    if rayY < 0 - 0.00001 then
+        ty = (cy - self.camY) / rayY
     endif
     t = tx
     if ty < t then
@@ -557,167 +378,161 @@ function surfaceRunEnd(tStart, tMax)
     return t
 endfunction
 
-' Like drawInto but with a fixed packed RGB (r*65536 + g*256 + b), scaled by the
-' sampled light. Clipped into every visible interval.
-function drawColorInto(sTop, sBot, packed, lite)
-    dim k
-    dim n
-    dim total
+' Draw one flat horizontal sub-band at world height hh from dNear to dFar,
+' clipped to [winTop, winBot]. packed < 0 -> the default `kind` grey shade;
+' packed >= 0 -> that RGB (r*65536 + g*256 + b). Lit by sampleAt at the band
+' midpoint when lights are bound, else by `lite`.
+function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite, rayX, rayY)
+    dim ya
+    dim yb
+    dim yTop
+    dim yBot
+    dim useLite
     dim rr
     dim gg
     dim bb
-    dim t
-    dim b
-    rr = math.floor(packed / 65536)
-    gg = math.floor(packed / 256) - rr * 256
-    bb = packed - rr * 65536 - gg * 256
-    rr = math.clamp(rr * lite, 0, 255)
-    gg = math.clamp(gg * lite, 0, 255)
-    bb = math.clamp(bb * lite, 0, 255)
-    total = 0
-    n = array.arrLength(self.intvTop)
-    for k = 0 to n - 1
-        t = sTop
-        b = sBot
-        if t < self.intvTop(k) then
-            t = self.intvTop(k)
-        endif
-        if b > self.intvBot(k) then
-            b = self.intvBot(k)
-        endif
-        if b > t then
-            pen.setLineWidth(0)
-            pen.setFillColor(rr, gg, bb)
-            drawing.drawRect(self.iDestX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t)
-            total = total + 1
-        endif
-    next k
-    return total
-endfunction
-
-' --- Interval-list occlusion primitives (renderer rework) -------------------
-' Not yet wired into renderFrame (that is Task 3). See the design spec §1.
-
-' Reset the column to one full-height visible interval [0, viewH].
-function resetIntervals()
-    array.clear(self.intvTop)
-    array.clear(self.intvBot)
-    array.push(self.intvTop, 0)
-    array.push(self.intvBot, self.viewH)
-endfunction
-
-' Number of visible intervals still open in this column.
-function intervalCount()
-    return array.arrLength(self.intvTop)
-endfunction
-
-' Find the shortest interval and rebuild the list without it. occTop/occBot are
-' reused as scratch here -- safe, occlude() has finished reading them by the time
-' it calls this.
-function dropThinnest()
-    dim k
-    dim n
-    dim minIdx
-    dim minH
-    dim h
-    n = array.arrLength(self.intvTop)
-    if n <= 1 then
+    ya = self.projectY(hh, dNear)
+    yb = self.projectY(hh, dFar)
+    if ya <= yb then
+        yTop = ya
+        yBot = yb
+    else
+        yTop = yb
+        yBot = ya
+    endif
+    if yTop < winTop then
+        yTop = winTop
+    endif
+    if yBot > winBot then
+        yBot = winBot
+    endif
+    if yBot <= yTop then
         return
     endif
-    minIdx = 0
-    minH = self.intvBot(0) - self.intvTop(0)
-    for k = 1 to n - 1
-        h = self.intvBot(k) - self.intvTop(k)
-        if h < minH then
-            minH = h
-            minIdx = k
-        endif
-    next k
-    array.clear(self.occTop)
-    array.clear(self.occBot)
-    for k = 0 to n - 1
-        if k <> minIdx then
-            array.push(self.occTop, self.intvTop(k))
-            array.push(self.occBot, self.intvBot(k))
-        endif
-    next k
-    array.clear(self.intvTop)
-    array.clear(self.intvBot)
-    for k = 0 to array.arrLength(self.occTop) - 1
-        array.push(self.intvTop, self.occTop(k))
-        array.push(self.intvBot, self.occBot(k))
-    next k
+    useLite = lite
+    if self.boundLights <> 0 then
+        useLite = self.boundLights.sampleAt(self.camX + rayX * ((dNear + dFar) / 2), self.camY + rayY * ((dNear + dFar) / 2))
+    endif
+    if packed < 0 then
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yTop, yBot, winTop, winBot, kind, useLite)
+    else
+        rr = math.floor(packed / 65536)
+        gg = math.floor(packed / 256) - rr * 256
+        bb = packed - rr * 65536 - gg * 256
+        pen.setLineWidth(0)
+        pen.setFillColor(math.clamp(rr * useLite, 0, 255), math.clamp(gg * useLite, 0, 255), math.clamp(bb * useLite, 0, 255))
+        drawing.drawRect(destX, (yTop + yBot) / 2, RcConfig.RC_STRIP_W, yBot - yTop)
+        self.surfCountLast = self.surfCountLast + 1
+    endif
 endfunction
 
-' Subtract the opaque screen band [oTop, oBot] from every visible interval,
-' splitting an interval when the band lands in its middle. Then enforce the cap
-' by repeatedly dropping the thinnest interval.
-function occlude(oTop, oBot)
-    dim k
-    dim t
+' Draw a floor/ceiling surface at world height hh from dNear to dFar, clipped to
+' [winTop, winBot]. No fcol:/ccol: anywhere -> one strip. Otherwise march the
+' grid cells the band crosses and emit one sub-band per contiguous run of the
+' same resolved colour (default shade counts as a colour for coalescing).
+function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, rayY)
+    dim eyeZ
+    dim isFloor
+    dim a
     dim b
-    dim cnt
-    if oBot <= oTop then
+    dim runStart
+    dim runCol
+    dim segCol
+    dim mx
+    dim my
+    dim guard
+    if self.wld.hasSurfaceColor() = 0 then
+        self.drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, 0 - 1, lite, rayX, rayY)
         return
     endif
-    array.clear(self.occTop)
-    array.clear(self.occBot)
-    cnt = array.arrLength(self.intvTop)
-    for k = 0 to cnt - 1
-        t = self.intvTop(k)
-        b = self.intvBot(k)
-        if oBot <= t or oTop >= b then
-            array.push(self.occTop, t)
-            array.push(self.occBot, b)
+    eyeZ = self.camZ + RcConfig.RC_EYE_Z
+    isFloor = 0
+    if hh < eyeZ then
+        isFloor = 1
+    endif
+    a = dNear
+    runStart = dNear
+    runCol = 0 - 2
+    guard = 0
+    while a < dFar - 0.0001 and guard < 128
+        guard = guard + 1
+        b = self.surfaceRunEnd(a, dFar, rayX, rayY)
+        mx = self.camX + rayX * ((a + b) / 2)
+        my = self.camY + rayY * ((a + b) / 2)
+        if isFloor = 1 then
+            segCol = self.wld.floorColAt(math.floor(mx), math.floor(my))
         else
-            if oTop > t then
-                array.push(self.occTop, t)
-                array.push(self.occBot, oTop)
-            endif
-            if oBot < b then
-                array.push(self.occTop, oBot)
-                array.push(self.occBot, b)
-            endif
+            segCol = self.wld.ceilColAt(math.floor(mx), math.floor(my))
         endif
-    next k
-    array.clear(self.intvTop)
-    array.clear(self.intvBot)
-    cnt = array.arrLength(self.occTop)
-    for k = 0 to cnt - 1
-        array.push(self.intvTop, self.occTop(k))
-        array.push(self.intvBot, self.occBot(k))
-    next k
-    while array.arrLength(self.intvTop) > RcConfig.RC_MAX_INTERVALS
-        self.dropThinnest()
+        if runCol = 0 - 2 then
+            runCol = segCol
+        endif
+        if segCol <> runCol then
+            self.drawFlatSeg(destX, hh, runStart, a, winTop, winBot, kind, runCol, lite, rayX, rayY)
+            runStart = a
+            runCol = segCol
+        endif
+        a = b
     endwhile
+    if runCol = 0 - 2 then
+        runCol = 0 - 1
+    endif
+    self.drawFlatSeg(destX, hh, runStart, dFar, winTop, winBot, kind, runCol, lite, rayX, rayY)
 endfunction
 
-' Draw the surface strip [sTop, sBot] clipped into each visible interval. Returns
-' the total number of strips actually painted.
-function drawInto(sTop, sBot, shadeKind, lite)
-    dim k
-    dim total
-    dim n
-    total = 0
-    n = array.arrLength(self.intvTop)
-    for k = 0 to n - 1
-        total = total + self.drawStrip(self.iDestX, sTop, sBot, self.intvTop(k), self.intvBot(k), shadeKind, lite)
-    next k
-    return total
+' Textured wall face: blit source column srcX of `tex` into [winTop, winBot],
+' with the source-V window clipped to the visible span so a wall behind a
+' floor-step shows the right vertical slice. sideKind: 0 x-face / 1 y-face /
+' RC_SPAN_SIDE_DIAG diagonal. Returns 1 if a strip was drawn, else 0.
+function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind)
+    dim cTop
+    dim cBot
+    dim svTop
+    dim svBot
+    dim srcX
+    dim chan
+    dim sideDim
+    dim tint
+    sideDim = 1.0
+    if sideKind = 1 then
+        sideDim = 0.8
+    endif
+    if sideKind = RcConfig.RC_SPAN_SIDE_DIAG then
+        sideDim = 0.9
+    endif
+    if wBot <= wTop then
+        return 0
+    endif
+    cTop = wTop
+    cBot = wBot
+    if cTop < winTop then
+        cTop = winTop
+    endif
+    if cBot > winBot then
+        cBot = winBot
+    endif
+    if cBot <= cTop then
+        return 0
+    endif
+    srcX = math.floor(u * RcConfig.RC_TEX_SIZE)
+    if srcX < 0 then
+        srcX = 0
+    endif
+    if srcX >= RcConfig.RC_TEX_SIZE then
+        srcX = RcConfig.RC_TEX_SIZE - 1
+    endif
+    chan = 255 * lite * sideDim
+    tint = self.packTint(chan, chan, chan + 25)
+    svTop = (cTop - wTop) / (wBot - wTop)
+    svBot = (cBot - wTop) / (wBot - wTop)
+    drawing.drawImageStrip(tex, srcX, destX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
+    return 1
 endfunction
 
 ' --- Textures ------------------------------------------------------------------
 
 function setWallTexture(name)
     self.defWallTex = name
-endfunction
-
-function setFloorTexture(name)
-    self.defFloorTex = name
-endfunction
-
-function setCeilTexture(name)
-    self.defCeilTex = name
 endfunction
 
 ' Resolve the texture for a wall cell: its own tex: marker if set, else the
@@ -731,81 +546,6 @@ function wallTexFor(col, row)
     return self.defWallTex
 endfunction
 
-function floorTexFor(col, row)
-    dim t
-    t = self.wld.floorTexAt(col, row)
-    if string.len(t) > 0 then
-        return t
-    endif
-    return self.defFloorTex
-endfunction
-
-function ceilTexFor(col, row)
-    dim t
-    t = self.wld.ceilTexAt(col, row)
-    if string.len(t) > 0 then
-        return t
-    endif
-    return self.defCeilTex
-endfunction
-
-' Textured mirror of drawInto for a wall face: blit source column srcX of `tex`
-' into each visible interval, clipping the source-V window to the clipped screen
-' span so a wall behind a floor-step shows the right vertical slice (not
-' stretched). sideKind: 0 x-face / 1 y-face / RC_SPAN_SIDE_DIAG diagonal.
-' Returns the number of strips drawn.
-function drawWallInto(wTop, wBot, tex, u, lite, sideKind)
-    dim k
-    dim n
-    dim total
-    dim cTop
-    dim cBot
-    dim svTop
-    dim svBot
-    dim srcX
-    dim dim2
-    dim sideDim
-    dim tint
-    total = 0
-    sideDim = 1.0
-    if sideKind = 1 then
-        sideDim = 0.8
-    endif
-    if sideKind = RcConfig.RC_SPAN_SIDE_DIAG then
-        sideDim = 0.9
-    endif
-    srcX = math.floor(u * RcConfig.RC_TEX_SIZE)
-    if srcX < 0 then
-        srcX = 0
-    endif
-    if srcX >= RcConfig.RC_TEX_SIZE then
-        srcX = RcConfig.RC_TEX_SIZE - 1
-    endif
-    dim2 = 255 * lite * sideDim
-    tint = self.packTint(dim2, dim2, dim2 + 25)
-    if wBot <= wTop then
-        return 0
-    endif
-    n = array.arrLength(self.intvTop)
-    for k = 0 to n - 1
-        cTop = wTop
-        cBot = wBot
-        if cTop < self.intvTop(k) then
-            cTop = self.intvTop(k)
-        endif
-        if cBot > self.intvBot(k) then
-            cBot = self.intvBot(k)
-        endif
-        if cBot > cTop then
-            svTop = (cTop - wTop) / (wBot - wTop)
-            svBot = (cBot - wTop) / (wBot - wTop)
-            drawing.drawImageStrip(tex, srcX, self.iDestX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
-            total = total + 1
-        endif
-    next k
-    return total
-endfunction
-
 function renderFrame()
     dim dirX
     dim dirY
@@ -817,6 +557,8 @@ function renderFrame()
     dim rayY
     dim i
     dim n
+    dim winTop
+    dim winBot
     dim runFloorH
     dim runCeilH
     dim kind
@@ -825,12 +567,14 @@ function renderFrame()
     dim sBot
     dim destX
     dim newH
+    dim newY
     dim camCol
     dim camRow
     dim horizon
     dim fh
     dim lite
     dim bgLite
+    dim hitWall
     dim sfH
     dim sfD
     dim sfKind
@@ -840,10 +584,7 @@ function renderFrame()
     dim scKind
     dim scLite
     dim wshade
-    dim camRegion
     dim wtex
-    dim sfTex
-    dim scTex
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -887,20 +628,6 @@ function renderFrame()
     camCol = math.floor(self.camX)
     camRow = math.floor(self.camY)
 
-    ' Camera region: the bound mover carries it authoritatively; with no mover
-    ' bound, derive it from the camera height against this cell's upper floor.
-    camRegion = 0
-    if self.boundMover <> 0 then
-        camRegion = self.boundMover.regionId()
-    else
-        if self.wld.upperKindAt(camCol, camRow) > 0 then
-            if self.camZ >= self.wld.upperFloorAt(camCol, camRow) then
-                camRegion = 1
-            endif
-        endif
-    endif
-    self.rc.setRegion(camRegion)
-
     for col = 0 to self.cols - 1
         cameraX = (2.0 * col / self.cols) - 1.0
         rayX = dirX + planeX * cameraX
@@ -908,22 +635,14 @@ function renderFrame()
 
         self.rc.cast(self.wld, self.camX, self.camY, rayX, rayY)
 
+        winTop = 0
+        winBot = self.viewH
+        runFloorH = self.wld.floorHeightAt(camCol, camRow)
+        runCeilH = self.wld.ceilHeightAt(camCol, camRow)
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
-        self.iDestX = destX
-        self.fRayX = rayX
-        self.fRayY = rayY
-        self.resetIntervals()
         self.depthArr(col) = RcConfig.RC_MAX_DIST
 
-        if camRegion = 1 then
-            runFloorH = self.wld.upperFloorAt(camCol, camRow)
-            runCeilH = self.wld.upperCeilAt(camCol, camRow)
-        else
-            runFloorH = self.wld.floorHeightAt(camCol, camRow)
-            runCeilH = self.wld.ceilHeightAt(camCol, camRow)
-        endif
-
-        ' pending floor/ceiling surface: world-height, near-depth, shade kind, light
+        hitWall = 0
         sfH = runFloorH
         sfD = 0
         sfKind = RcConfig.RC_SHADE_FLOOR_TOP
@@ -936,140 +655,99 @@ function renderFrame()
             sfLite = self.boundLights.sampleAt(self.camX, self.camY)
             scLite = sfLite
         endif
-        ' Surface textures for this column's run: the camera cell's marker or the
-        ' scene default. A per-cell floor tex that varies mid-run is a v2 nicety.
-        sfTex = self.floorTexFor(camCol, camRow)
-        scTex = self.ceilTexFor(camCol, camRow)
 
         n = self.rc.spanCount()
         i = 0
         while i < n
-            if self.intervalCount() = 0 then
+            kind = self.rc.spanKind(i)
+            d = self.rc.spanDist(i)
+            sTop = self.projectY(self.rc.spanHi(i), d)
+            sBot = self.projectY(self.rc.spanLo(i), d)
+
+            lite = 1.0
+            if self.boundLights <> 0 then
+                if kind = RcConfig.RC_SPAN_WALL then
+                    if self.rc.spanSide(i) = RcConfig.RC_SPAN_SIDE_DIAG then
+                        lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
+                    else
+                        if self.rc.spanSide(i) = 0 then
+                            lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
+                        else
+                            lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
+                        endif
+                    endif
+                else
+                    lite = self.boundLights.sampleAt(self.camX + rayX * d, self.camY + rayY * d)
+                endif
+            endif
+
+            if kind = RcConfig.RC_SPAN_WALL then
+                self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
+                self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                hitWall = 1
+                wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
+                if string.len(wtex) > 0 then
+                    self.surfCountLast = self.surfCountLast + self.drawWallStrip(destX, sTop, sBot, winTop, winBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
+                else
+                    wshade = self.rc.spanSide(i)
+                    if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
+                        wshade = 1
+                    endif
+                    self.drawStrip(destX, sTop, sBot, winTop, winBot, wshade, lite)
+                endif
+                self.depthArr(col) = d
                 i = n
             else
-                kind = self.rc.spanKind(i)
-                d = self.rc.spanDist(i)
-                sTop = self.projectY(self.rc.spanHi(i), d)
-                sBot = self.projectY(self.rc.spanLo(i), d)
-
-                lite = 1.0
-                if self.boundLights <> 0 then
-                    if kind = RcConfig.RC_SPAN_WALL then
-                        if self.rc.spanSide(i) = RcConfig.RC_SPAN_SIDE_DIAG then
-                            lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i))
-                        else
-                            if self.rc.spanSide(i) = 0 then
-                                lite = self.boundLights.sampleCell(self.rc.spanCol(i) - math.sign(rayX), self.rc.spanRow(i))
-                            else
-                                lite = self.boundLights.sampleCell(self.rc.spanCol(i), self.rc.spanRow(i) - math.sign(rayY))
-                            endif
+                if kind = RcConfig.RC_SPAN_FLOORSTEP then
+                    newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
+                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
+                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
+                    if newH > runFloorH then
+                        newY = self.projectY(newH, d)
+                        if newY < winBot then
+                            winBot = newY
                         endif
-                    else
-                        lite = self.boundLights.sampleAt(self.camX + rayX * d, self.camY + rayY * d)
                     endif
-                endif
-
-                ' Span-kind ladder (softBASIC has no elseif -- nested if is deliberate).
-                if kind = RcConfig.RC_SPAN_PORTAL_WALL then
-                    ' Opaque mid-air band (the OTHER region's wall through a hole).
-                    wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
-                    if string.len(wtex) > 0 then
-                        self.surfCountLast = self.surfCountLast + self.drawWallInto(sTop, sBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
+                    sfD = d
+                    if newH < runFloorH then
+                        sfKind = RcConfig.RC_SHADE_PIT_FLOOR
                     else
-                        self.drawInto(sTop, sBot, 1, lite)
+                        sfKind = RcConfig.RC_SHADE_FLOOR_TOP
                     endif
-                    self.occlude(sTop, sBot)
-                    i = i + 1
+                    sfH = newH
+                    sfLite = lite
+                    runFloorH = newH
                 else
-                    if kind = RcConfig.RC_SPAN_PORTAL_CEIL then
-                        ' Upper ceiling seen up through a hole -- flat fill above the plane.
-                        self.drawInto(0, sBot, 3, lite)
-                        self.occlude(0, sBot)
-                        i = i + 1
-                    else
-                        if kind = RcConfig.RC_SPAN_PORTAL_FLOOR then
-                            if camRegion = 0 then
-                                ' plank underside overhead -> fill above the plane
-                                self.drawInto(0, sBot, RcConfig.RC_SHADE_UPPER_FLOOR, lite)
-                                self.occlude(0, sBot)
-                            else
-                                ' lower room floor down through a hole -> fill below the plane
-                                self.drawInto(sTop, self.viewH, RcConfig.RC_SHADE_UPPER_FLOOR, lite)
-                                self.occlude(sTop, self.viewH)
-                            endif
-                            i = i + 1
-                        else
-                            if kind = RcConfig.RC_SPAN_WALL then
-                                ' Full opaque blocker: flush both pending surfaces, draw
-                                ' the face, clear the interval list, end the column.
-                                self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite, sfTex)
-                                self.drawSurfaceInto(scH, scD, d, scKind, scLite, scTex)
-                                wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
-                                if string.len(wtex) > 0 then
-                                    self.surfCountLast = self.surfCountLast + self.drawWallInto(sTop, sBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
-                                else
-                                    wshade = self.rc.spanSide(i)
-                                    if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
-                                        wshade = 1
-                                    endif
-                                    self.drawInto(sTop, sBot, wshade, lite)
-                                endif
-                                self.depthArr(col) = d
-                                array.clear(self.intvTop)
-                                array.clear(self.intvBot)
-                                i = n
-                            else
-                                ' FLOORSTEP / CEILSTEP -- riser occludes only its own band.
-                                if kind = RcConfig.RC_SPAN_FLOORSTEP then
-                                    if self.rc.spanLo(i) = runFloorH then
-                                        newH = self.rc.spanHi(i)
-                                    else
-                                        newH = self.rc.spanLo(i)
-                                    endif
-                                    self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite, sfTex)
-                                    self.drawInto(sTop, sBot, 2, lite)
-                                    self.occlude(sTop, sBot)
-                                    sfD = d
-                                    if newH < runFloorH then
-                                        sfKind = RcConfig.RC_SHADE_PIT_FLOOR
-                                    else
-                                        sfKind = RcConfig.RC_SHADE_FLOOR_TOP
-                                    endif
-                                    sfH = newH
-                                    ' RcCast records the cell just ENTERED (its floor = newH),
-                                    ' so `lite` here is that segment's own light -- correct.
-                                    sfLite = lite
-                                    runFloorH = newH
-                                else
-                                    if self.rc.spanLo(i) = runCeilH then
-                                        newH = self.rc.spanHi(i)
-                                    else
-                                        newH = self.rc.spanLo(i)
-                                    endif
-                                    self.drawSurfaceInto(scH, scD, d, scKind, scLite, scTex)
-                                    self.drawInto(sTop, sBot, 3, lite)
-                                    self.occlude(sTop, sBot)
-                                    scD = d
-                                    if newH < runCeilH then
-                                        scKind = RcConfig.RC_SHADE_SOFFIT
-                                    else
-                                        scKind = RcConfig.RC_SHADE_CEIL_UNDER
-                                    endif
-                                    scH = newH
-                                    scLite = lite
-                                    runCeilH = newH
-                                endif
-                                i = i + 1
-                            endif
+                    newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
+                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
+                    if newH < runCeilH then
+                        newY = self.projectY(newH, d)
+                        if newY > winTop then
+                            winTop = newY
                         endif
                     endif
+                    scD = d
+                    if newH < runCeilH then
+                        scKind = RcConfig.RC_SHADE_SOFFIT
+                    else
+                        scKind = RcConfig.RC_SHADE_CEIL_UNDER
+                    endif
+                    scH = newH
+                    scLite = lite
+                    runCeilH = newH
                 endif
+                i = i + 1
+            endif
+
+            if winTop >= winBot then
+                i = n
             endif
         endwhile
 
-        if self.intervalCount() > 0 then
-            self.drawSurfaceInto(sfH, sfD, RcConfig.RC_MAX_DIST, sfKind, sfLite, sfTex)
-            self.drawSurfaceInto(scH, scD, RcConfig.RC_MAX_DIST, scKind, scLite, scTex)
+        if hitWall = 0 then
+            self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
+            self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
         endif
     next col
 

@@ -11,12 +11,6 @@ Class
 '
 ' A `light` tag (bare, or `light:<anything>`) sets lightArr(idx) to a 0/1 flag;
 ' RcLights.bakeStatic reads it as a static light source at RC_STATIC_INTENSITY.
-'
-' Upper regions (Phase 8): an optional second stacked space per cell, read from a
-' `.stm` tile layer named "upper" (id 1 = solid upper floor, 2 = upper wall,
-' 3 = hole). upKindArr(i) holds 0..3. The upper floor sits at the cell's own
-' ceilH; the upper ceiling defaults to ceilH + RC_STD_CEIL, overridable per cell
-' by a `uceil:N` marker. No upper region unless the .stm has an "upper" layer.
 
 dim cols
 dim rows
@@ -30,9 +24,6 @@ dim ceilTexArr(0)
 dim lightArr(0)
 dim flagsArr(0)
 dim diagArr(0)
-
-dim upKindArr(0)
-dim upCeilHArr(0)
 
 ' Per-cell flat floor/ceiling colour overrides, from `fcol:RRGGBB` / `ccol:RRGGBB`
 ' tags (6 hex digits). -1 = no override (use the renderer's default shade).
@@ -53,7 +44,6 @@ function build(tm as tilemapset, wallsLayerName)
     th = tm.tileHeight()
 
     dim wallsLayer as tilemaplayer
-    dim upLayer as tilemaplayer
     wallsLayer = tm.layer(wallsLayerName)
     self.cols = math.floor(wallsLayer.widthPx() / tw)
     self.rows = math.floor(wallsLayer.heightPx() / th)
@@ -69,8 +59,6 @@ function build(tm as tilemapset, wallsLayerName)
         array.push(self.wallTexArr, "")
         array.push(self.floorTexArr, "")
         array.push(self.ceilTexArr, "")
-        array.push(self.upKindArr, 0)
-        array.push(self.upCeilHArr, 0 - 1)
         array.push(self.floorColArr, 0 - 1)
         array.push(self.ceilColArr, 0 - 1)
         array.push(self.lightArr, 0)
@@ -89,18 +77,6 @@ function build(tm as tilemapset, wallsLayerName)
             endif
         next col
     next row
-
-    if tm.hasLayer("upper") then
-        upLayer = tm.layer("upper")
-        for row = 0 to self.rows - 1
-            for col = 0 to self.cols - 1
-                id = upLayer.tileAt(col * tw + tw / 2, row * th + th / 2)
-                if id > 0 then
-                    self.upKindArr(row * self.cols + col) = id
-                endif
-            next col
-        next row
-    endif
 
     dim markers
     markers = tm.allMarkers()
@@ -203,9 +179,6 @@ function applyKv(idx, key, v)
             self.diagArr(idx) = 4
         endif
     endif
-    if key = "uceil" then
-        self.upCeilHArr(idx) = math.val(v)
-    endif
     if key = "fcol" then
         self.floorColArr(idx) = self.parseHex(v)
         self.surfColSeen = 1
@@ -292,36 +265,6 @@ function diagAt(col, row)
         return 0
     endif
     return self.diagArr(row * self.cols + col)
-endfunction
-
-function upperKindAt(col, row)
-    if self.inBounds(col, row) = 0 then
-        return 0
-    endif
-    return self.upKindArr(row * self.cols + col)
-endfunction
-
-function hasUpperAt(col, row)
-    if self.upperKindAt(col, row) > 0 then
-        return 1
-    endif
-    return 0
-endfunction
-
-function upperFloorAt(col, row)
-    return self.ceilHeightAt(col, row)
-endfunction
-
-function upperCeilAt(col, row)
-    dim raw
-    if self.inBounds(col, row) = 0 then
-        return RcConfig.RC_STD_CEIL + RcConfig.RC_STD_CEIL
-    endif
-    raw = self.upCeilHArr(row * self.cols + col)
-    if raw < 0 then
-        return self.ceilHeightAt(col, row) + RcConfig.RC_STD_CEIL
-    endif
-    return raw
 endfunction
 
 function wallTexAt(col, row)
