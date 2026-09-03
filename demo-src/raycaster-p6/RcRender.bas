@@ -62,6 +62,11 @@ dim occBot(0)
 dim iDestX
 dim fRayX
 dim fRayY
+' Scene-level texture defaults (Phase texturing). "" = untextured (flat grey
+' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
+dim defWallTex
+dim defFloorTex
+dim defCeilTex
 
 Constructor(w as RcWorld)
     dim di
@@ -84,6 +89,9 @@ Constructor(w as RcWorld)
     self.iDestX = 0
     self.fRayX = 0
     self.fRayY = 0
+    self.defWallTex = ""
+    self.defFloorTex = ""
+    self.defCeilTex = ""
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -488,6 +496,106 @@ function drawInto(sTop, sBot, shadeKind, lite)
     return total
 endfunction
 
+' --- Textures ------------------------------------------------------------------
+
+function setWallTexture(name)
+    self.defWallTex = name
+endfunction
+
+function setFloorTexture(name)
+    self.defFloorTex = name
+endfunction
+
+function setCeilTexture(name)
+    self.defCeilTex = name
+endfunction
+
+' Resolve the texture for a wall cell: its own tex: marker if set, else the
+' scene default (which may itself be "" = untextured).
+function wallTexFor(col, row)
+    dim t
+    t = self.wld.wallTexAt(col, row)
+    if string.len(t) > 0 then
+        return t
+    endif
+    return self.defWallTex
+endfunction
+
+function floorTexFor(col, row)
+    dim t
+    t = self.wld.floorTexAt(col, row)
+    if string.len(t) > 0 then
+        return t
+    endif
+    return self.defFloorTex
+endfunction
+
+function ceilTexFor(col, row)
+    dim t
+    t = self.wld.ceilTexAt(col, row)
+    if string.len(t) > 0 then
+        return t
+    endif
+    return self.defCeilTex
+endfunction
+
+' Textured mirror of drawInto for a wall face: blit source column srcX of `tex`
+' into each visible interval, clipping the source-V window to the clipped screen
+' span so a wall behind a floor-step shows the right vertical slice (not
+' stretched). sideKind: 0 x-face / 1 y-face / RC_SPAN_SIDE_DIAG diagonal.
+' Returns the number of strips drawn.
+function drawWallInto(wTop, wBot, tex, u, lite, sideKind)
+    dim k
+    dim n
+    dim total
+    dim cTop
+    dim cBot
+    dim svTop
+    dim svBot
+    dim srcX
+    dim dim2
+    dim sideDim
+    dim tint
+    total = 0
+    sideDim = 1.0
+    if sideKind = 1 then
+        sideDim = 0.8
+    endif
+    if sideKind = RcConfig.RC_SPAN_SIDE_DIAG then
+        sideDim = 0.9
+    endif
+    srcX = math.floor(u * RcConfig.RC_TEX_SIZE)
+    if srcX < 0 then
+        srcX = 0
+    endif
+    if srcX >= RcConfig.RC_TEX_SIZE then
+        srcX = RcConfig.RC_TEX_SIZE - 1
+    endif
+    dim2 = 255 * lite * sideDim
+    tint = self.packTint(dim2, dim2, dim2 + 25)
+    if wBot <= wTop then
+        return 0
+    endif
+    n = array.arrLength(self.intvTop)
+    for k = 0 to n - 1
+        cTop = wTop
+        cBot = wBot
+        if cTop < self.intvTop(k) then
+            cTop = self.intvTop(k)
+        endif
+        if cBot > self.intvBot(k) then
+            cBot = self.intvBot(k)
+        endif
+        if cBot > cTop then
+            svTop = (cTop - wTop) / (wBot - wTop)
+            svBot = (cBot - wTop) / (wBot - wTop)
+            drawing.drawImageStrip(tex, srcX, self.iDestX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
+            total = total + 1
+        endif
+    next k
+    return total
+endfunction
+
 function renderFrame()
     dim dirX
     dim dirY
@@ -523,6 +631,7 @@ function renderFrame()
     dim scLite
     dim wshade
     dim camRegion
+    dim wtex
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -647,7 +756,12 @@ function renderFrame()
                 ' Span-kind ladder (softBASIC has no elseif -- nested if is deliberate).
                 if kind = RcConfig.RC_SPAN_PORTAL_WALL then
                     ' Opaque mid-air band (the OTHER region's wall through a hole).
-                    self.drawInto(sTop, sBot, 1, lite)
+                    wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
+                    if string.len(wtex) > 0 then
+                        self.surfCountLast = self.surfCountLast + self.drawWallInto(sTop, sBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
+                    else
+                        self.drawInto(sTop, sBot, 1, lite)
+                    endif
                     self.occlude(sTop, sBot)
                     i = i + 1
                 else
@@ -674,11 +788,16 @@ function renderFrame()
                                 ' the face, clear the interval list, end the column.
                                 self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite)
                                 self.drawSurfaceInto(scH, scD, d, scKind, scLite)
-                                wshade = self.rc.spanSide(i)
-                                if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
-                                    wshade = 1
+                                wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
+                                if string.len(wtex) > 0 then
+                                    self.surfCountLast = self.surfCountLast + self.drawWallInto(sTop, sBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
+                                else
+                                    wshade = self.rc.spanSide(i)
+                                    if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
+                                        wshade = 1
+                                    endif
+                                    self.drawInto(sTop, sBot, wshade, lite)
                                 endif
-                                self.drawInto(sTop, sBot, wshade, lite)
                                 self.depthArr(col) = d
                                 array.clear(self.intvTop)
                                 array.clear(self.intvBot)

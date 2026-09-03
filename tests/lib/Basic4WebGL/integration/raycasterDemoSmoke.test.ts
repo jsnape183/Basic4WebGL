@@ -890,4 +890,53 @@ describe('raycaster phase demos smoke-execute', () => {
     // per-column re-sampling -> a spread of intermediate brightnesses.
     expect(new Set(floorBrights.map((g) => Math.round(g))).size).toBeGreaterThan(2);
   });
+
+  // Task 5: a wall cell with a texture set blits its column via
+  // drawing.drawImageStrip (srcX = along-wall U * RC_TEX_SIZE, a light/side tint)
+  // instead of the flat drawRect path. An untextured control still uses drawRect
+  // and never touches drawImageStrip.
+  test.each(phaseDirs)('%s: renderFrame blits textured wall columns via drawImageStrip', (dirName) => {
+    const runWith = (wallTex: string) => {
+      const strips: unknown[][] = [];
+      const rects: unknown[][] = [];
+      const overrides = {
+        getStageWidth: () => 320,
+        getStageHeight: () => 200,
+        drawImageStrip: (...a: unknown[]) => {
+          strips.push(a);
+          return undefined;
+        },
+        drawRect: (...a: unknown[]) => {
+          rects.push(a);
+          return undefined;
+        },
+      };
+      const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+      if (!mod.RcRender) return null;
+      const world = { ...stubWorld, walltexat: () => wallTex };
+      const r = new mod.RcRender(world);
+      r.bindlights(checkerLights as unknown); // plain RcRender method — present all phases
+      r.setcamera(2, 2, 0, 0); // corridor, looking +x straight at the col-6 wall
+      r.renderframe();
+      return { strips, rects };
+    };
+
+    const textured = runWith('brick.png');
+    if (!textured) return;
+
+    // At least one textured wall column: a real srcX band + a non-white tint.
+    const wallBlits = textured.strips.filter((a) => {
+      const srcX = a[1] as number;
+      const tint = a[6] as number;
+      return typeof srcX === 'number' && srcX >= 0 && srcX < 64 && tint !== 0xffffff;
+    });
+    expect(wallBlits.length).toBeGreaterThan(0);
+
+    // Untextured control: flat drawRect wall strips, zero drawImageStrip calls
+    // (no actors bound → no billboards).
+    const flat = runWith('');
+    expect(flat).not.toBeNull();
+    expect(flat!.strips.length).toBe(0);
+    expect(flat!.rects.filter((a) => a[2] === 4).length).toBeGreaterThan(0);
+  });
 });
