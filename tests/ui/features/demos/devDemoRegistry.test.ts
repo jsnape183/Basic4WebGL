@@ -57,4 +57,10 @@ describe('devDemoRegistry', () => {
     const p8 = devDemoRegistry.find((d) => d.slug === 'raycaster-p8-upper');
     expect(p8?.file).toBe('RaycasterP8Upper');
   });
+
+  test('includes the P8b textures demo', () => {
+    expect(devDemoRegistry.find((d) => d.slug === 'raycaster-p8b-textures')?.file).toBe(
+      'RaycasterP8bTextures'
+    );
+  });
 });

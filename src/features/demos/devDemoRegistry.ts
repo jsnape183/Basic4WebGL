@@ -81,4 +81,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP8Upper',
   },
+  {
+    slug: 'raycaster-p8b-textures',
+    name: 'Raycaster P8b — Textures',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Textured walls, floors and ceilings — a retextured copy of the P3 room. Wall columns blit via drawImageStrip; horizontal surfaces via the perspective-correct drawFloorStrip.',
+    docsSlug: '',
+    file: 'RaycasterP8bTextures',
+  },
 ];
