@@ -250,6 +250,24 @@ Each visible strip is one `drawing.drawImageStrip(texImage, texU, destX, destY,
 stripW, stripH)` call — exactly the primitive the current demo uses. Floor/ceiling
 step surfaces use a flat-shaded `drawing.drawRect`. Sky spans use a gradient rect.
 
+**As built (texturing 2026-09-03).** `drawing.drawImageStrip` gained
+`tint` + `srcVTop` / `srcVBot` (all optional; 6-arg calls behave as before). A
+**textured wall** span → `drawWallInto` blits `drawImageStrip(tex, srcX = u ·
+RC_TEX_SIZE, …, tint, svTop, svBot)` per visible interval — `tint` = distance
+fade · light level · side-dim (x-face 1.0 / y-face 0.8 / diagonal 0.9), packed
+`0xRRGGBB`; `svTop`/`svBot` clip the source column to the part of the wall the
+interval leaves visible. A **textured horizontal surface** → `drawSurfaceInto`
+calls the new `drawing.drawFloorStrip` (a pooled `PIXI.PerspectiveMesh` per
+strip; world-tiled UVs via an oversized texture frame + `repeat` wrap), with the
+world near/far points re-derived from the interval-clipped screen Ys
+(`distAtScreenY`, the inverse of `projectY`) so the texture doesn't slide.
+Untextured cells keep the flat `drawRect` path. Scene sets defaults via
+`RcRender.setWallTexture` / `setFloorTexture` / `setCeilTexture`; per-cell
+`tex:` / `ftex:` / `ctex:` markers override. Textures are full asset names,
+authored at `RC_TEX_SIZE` (64) and must tile. Diagonal walls carry a real
+along-chord `u` now. Still no atlas; upper-region surfaces (`upFloorTex` etc.)
+still flat; sky still a gradient.
+
 **As built (6b, updated by the renderer rework):** the flat-shaded fill also
 covers the *horizontal* surface between risers, per column — a pending
 floor/ceiling surface (world height, near depth, shade kind, light) is stashed
@@ -300,7 +318,9 @@ benchmark actually failing**:
    task + JS unit tests.
 3. **Generic `drawing.js` fix — `tint` parameter on `drawImageStrip`.** Needed for
    per-strip lighting (§6) regardless; also lets lighting avoid a second
-   translucent-rect pass. Generic.
+   translucent-rect pass. Generic. **[DONE 2026-09-03]** — `drawImageStrip` +
+   `tint` / `srcVTop` / `srcVBot`; new `drawFloorStrip` for textured horizontal
+   surfaces. See §5.2.
 4. **Only if still short: a generic batched-strip call in `drawing`** —
    `drawing.drawStrips(texImage, count, uArray, xArray, yArray, wArray, hArray,
    tintArray)` issuing one mesh update for many strips. Still not "raycaster"
@@ -372,10 +392,12 @@ Billboards sample the same arrays at their base cell — one lookup per sprite
 
 ### 6.4 Applying the tint
 
-Requires the generic `drawImageStrip(tint)` parameter (§5.3 rung 3). Until that
-lands, `RcLights` can fall back to a translucent `drawing.drawRect` over each
-strip — correct, but doubles the draw count, so the tint parameter is the real
-target.
+**As built (texturing 2026-09-03).** `drawImageStrip` / `drawFloorStrip` take a
+`tint` (packed `0xRRGGBB`, distance · light · side-dim). Textured wall/floor/
+ceiling strips are tinted directly — no second translucent-rect pass. Flat
+(untextured) strips still bake the shade into `pen.setFillColor`. Billboards
+(`drawActors`) now pass a tint from `RcLights.sampleAt` at the actor's cell —
+closes the "billboard brightness not lit" gap.
 
 ---
 
@@ -620,9 +642,21 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    diagonals in the upper region, and the **lower↔upper camera transition still
    reads slightly jarring** — parked until there's a fully textured level to
    judge it against.
-9. **Optimisation + benchmark pass.** Whatever the accumulated demos show is slow —
-   most likely the final `drawing` batched-strip rung, plus static-light caching in
-   `RcLights`, plus constant tuning.
+
+   **Texturing (2026-09-03) — slotted before Phase 9.** `drawing.drawImageStrip`
+   +`tint`/`srcVTop`/`srcVBot`; new `drawing.drawFloorStrip` (perspective
+   mesh). `RcRender` textures walls (`drawWallInto`, interval-clipped source-V,
+   distance·light·side tint) and floor/ceiling surfaces (`drawFloorStrip` +
+   `distAtScreenY`); scene defaults + per-cell `tex:`/`ftex:`/`ctex:`. `RcCast`
+   real diagonal along-chord `u`. `RC_TEX_SIZE = 64`. Demo `raycaster-p8b-textures`
+   (retextured p3; 6 generated placeholder PNGs). Billboard tint fell out
+   (§6.4). Deferred: perf (Phase 9 now has textured drawing to profile —
+   `PerspectiveMesh`-per-strip + `_texCache` growth), atlas, animated textures,
+   upper-region surface textures.
+9. **Optimisation + benchmark pass.** Now well-motivated — `drawFloorStrip`'s
+   `PerspectiveMesh`-per-strip, the `_texCache` V-window growth, `RcLights`'
+   every-frame recompute, plus the `drawing` batched-strip rung and constant
+   tuning.
    *Demo:* busy stress map + on-screen frame-time readout.
 10. **Docs + roadmap.** A `docs/` guide for the `.bas` library (not an API
     Reference page — it's project-level `.bas`, not an engine module), plus

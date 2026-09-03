@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-02 (raycaster library Phase 8 + renderer rework — per-column interval occlusion replaces the single window; `RcLights.sampleAt` bilinear surface light)
+> Last updated: 2026-09-03 (raycaster library texturing — walls/floors/ceilings textured; `drawing.drawImageStrip` tint + source-V clip, new `drawing.drawFloorStrip` perspective mesh)
 
 ---
 
@@ -439,9 +439,28 @@ brightness bands that read as fake wall shadows. New `RcLights.sampleAt(x,y)`
 bilinear-blends the 4 surrounding cells; `RcRender` uses it for floor/ceiling
 surfaces, `sampleCell` for walls and sprites. Deferred: per-region lighting
 (region-blind — flagged for revisit), light / line-of-sight / hitscan through the
-portal, auto climb-back without stairs, upper-region textures, and the lower↔upper
-camera transition still reads a touch abrupt (parked until a textured level
-exists to judge it against).
+portal, auto climb-back without stairs, and the lower↔upper camera transition
+still reads a touch abrupt.
+
+Texturing shipped (2026-09-03): the renderer draws real textures. Two generic
+`drawing` additions — `drawImageStrip` gained `tint` (packed `0xRRGGBB`) +
+`srcVTop`/`srcVBot` (clip the source column to a sub-range), and a new
+`drawFloorStrip` draws a perspective-correct textured strip via a pooled
+`PIXI.PerspectiveMesh`. `RcRender.drawWallInto` blits a wall texture column per
+visible interval, tinted by distance × light × side (x-face / y-face / diagonal);
+`drawSurfaceInto` textures floors and ceilings via `drawFloorStrip`, re-deriving
+the world near/far from the interval-clipped screen Ys (`distAtScreenY`, the
+inverse of `projectY`) so the texture doesn't slide. Scene defaults via
+`ren.setWallTexture` / `setFloorTexture` / `setCeilTexture`; per-cell `tex:` /
+`ftex:` / `ctex:` markers override; untextured cells keep the flat grey path.
+Textures are full asset names, authored at `RC_TEX_SIZE` (64), and must tile.
+`RcCast` now emits a real along-chord `u` for diagonal walls (was hard-0), and
+`drawActors` passes an `RcLights.sampleAt` tint (billboard lighting, deferred
+since Phase 6). Dev demo `raycaster-p8b-textures` (retextured p3 room; 6
+procedurally-generated placeholder PNGs via `scripts/genRaycasterTextures.ts`).
+Deferred: no texture atlas, no animated/scrolling textures, upper-region surface
+textures still flat, sky still a gradient — and performance is unprofiled
+(`PerspectiveMesh`-per-strip + `_texCache` growth is Phase 9's to measure).
 
 Phases 9–10 (optimisation, docs)
 remain, tracked in
@@ -453,20 +472,24 @@ remain, tracked in
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-5.md`. Phase 6 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-6.md`. Phase 7 plan:
 `docs/superpowers/plans/2026-09-02-raycaster-phase-7-diagonal-tiles.md`. Phase 8 plan:
-`docs/superpowers/plans/2026-09-02-raycaster-phase-8-upper-regions.md`. Guide:
+`docs/superpowers/plans/2026-09-02-raycaster-phase-8-upper-regions.md`. Renderer rework
++ texturing: `docs/superpowers/plans/2026-09-02-raycaster-renderer-rework.md`,
+`docs/superpowers/plans/2026-09-03-raycaster-texturing.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Floor/ceiling
 surface light is bilinear-interpolated between cells; walls and sprites are lit per-cell.
-`RcCast` stops at the first wall (no see-through windows yet). Upper regions (Phase 8)
-render one level per cell but are region-blind for lighting (an upper strip samples the
-room below it), don't pass light / line-of-sight / hitscan through the portal, are
-flat-shaded (no `uFloorTex`/etc.), and have no diagonals; a body can't climb back up a
-hole without authored stairs, and the lower↔upper camera transition still reads a touch
-abrupt. Diagonal-wall tiles
-are supported (Phase 7) but flat-shaded (no wall texture / wall-U) and cannot
-combine with a floor/ceiling step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
+`RcCast` stops at the first wall (no see-through windows yet). Walls, floors and ceilings
+are textured (2026-09-03) when a default or `tex:`/`ftex:`/`ctex:` is set — untextured
+cells fall back to flat grey; no atlas, no animated textures, performance unprofiled.
+Upper regions (Phase 8) render one level per cell but are region-blind for lighting (an
+upper strip samples the room below it), don't pass light / line-of-sight / hitscan
+through the portal, keep flat-shaded surfaces (no `uFloorTex`/etc.), and have no
+diagonals; a body can't climb back up a hole without authored stairs, and the
+lower↔upper camera transition still reads a touch abrupt. Diagonal-wall tiles carry a
+real along-chord wall-U (texture the 45° face) but cannot combine with a floor/ceiling
+step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is
 all billboard clipping needs), not per-span. `RcRender` fills floor/ceiling
 horizontal surfaces (step tops, pit floors, ceiling undersides, soffits) as flat

@@ -16,7 +16,7 @@ Draw your level in the Tilemap Editor:
   - `floor:2` raises the cell's floor; `floor:-3` makes a pit
   - `ceil:4` lowers the ceiling; `ceil:8` makes an atrium
   - `uceil:3` sets the upper region's ceiling height (see "Upper regions")
-  - `tex:concrete`, `ftex:grating`, `ctex:pipes` set surface textures
+  - `tex:rc_brick.png`, `ftex:rc_tiles.png`, `ctex:rc_panels.png` set the wall / floor / ceiling texture for that cell (full asset name; see "Textures" below)
   - `door`, `lift`, `water`, `sky` mark special cells
   - `light:` marks a cell as lit (Phase 1 records this as a simple on/off flag; proper light levels come with the lighting phase)
   - `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` makes the cell a 45° diagonal wall — the named corner is solid, the opposite half is open floor. Leave the `walls` tile at `0` for that cell (the diagonal *is* the wall). Line several up along one direction for a canted wall; put one in each corner of a square room for an octagon.
@@ -85,8 +85,9 @@ To cut a square room into an octagon, tag one corner cell each way:
 
 Line several same-direction tags up along a diagonal for a continuous canted
 wall. `RcCast` and `RcMover` both understand the 45° face — rays and line-of-sight
-stop at it, and a mover slides along it. Diagonal faces are flat-shaded (no
-texture yet), and a diagonal cell can't also carry a `floor:` / `ceil:` step.
+stop at it, and a mover slides along it. A diagonal face takes the wall texture
+(a real slice of it, along the 45° chord). A diagonal cell can't also carry a
+`floor:` / `ceil:` step.
 
 ### Upper regions
 
@@ -217,23 +218,44 @@ endfunction
 | `ren.renderFrame()` | draw one frame — call every `onupdate` |
 | `ren.projectY(height, distance)` | screen Y for a world height at a distance (mostly internal) |
 | `ren.columnCount()` | how many vertical strips wide the view is |
+| `ren.setWallTexture(name)` / `ren.setFloorTexture(name)` / `ren.setCeilTexture(name)` | default texture for walls / floors / ceilings (see Textures below) |
 
 `RcRender` also fills the flat, horizontal surfaces you see wherever a floor or
 ceiling changes height — the top of a step, the floor of a pit, the underside of
-a raised ceiling, and the soffit under a dropped ceiling. Each is drawn as a
-flat-shaded strip, one per screen column, shaded a little differently so a step
-still reads as a step. Floor and ceiling *textures* aren't sampled yet — these
-surfaces are plain shaded fills for now.
+a raised ceiling, and the soffit under a dropped ceiling.
+
+### Textures
+
+Give the renderer a default texture per surface type, and the whole level is
+textured:
+
+```bas
+function onenter()
+  self.ren = new RcRender(self.wld)
+  self.ren.setWallTexture("rc_brick.png")
+  self.ren.setFloorTexture("rc_tiles.png")
+  self.ren.setCeilTexture("rc_panels.png")
+endfunction
+```
+
+Override per cell with a marker tag — `tex:` for the wall, `ftex:` for the floor,
+`ctex:` for the ceiling (`{ "row": 2, "col": 5, "tag": "tex:rc_metal.png" }`).
+Texture names are the full asset filename, the same as everywhere else. Author
+them at **64×64** and make sure they tile (the pattern wraps at the edges) —
+they repeat once per world cell. Walls are lit per column; floors and ceilings
+are drawn with a perspective-correct textured strip so the pattern doesn't warp
+with distance. A cell with no texture (no default, no tag) falls back to the
+flat grey shading.
 
 ### Phase 3 limits
 
-Everything is flat-shaded — no wall, floor, or ceiling textures yet. You can see
-across a pit to the wall beyond, and the pit floor and step surfaces are filled
-in, but only as plain shaded strips. Diagonal-wall tiles are drawn (with the
-darker of the two wall shades) but not textured. Upper regions are drawn too, and
-you can see the room below *and* the ceiling above through a hole at the same
-time. Floor and ceiling light is smoothly blended between cells; walls and
-sprites are lit per-cell. An upper strip is still lit by the room below it.
+You can see across a pit to the wall beyond; the pit floor and step surfaces are
+filled in. Diagonal-wall tiles are textured with a real slice of the wall
+texture. Upper regions are drawn too, and you see the room below *and* the
+ceiling above through a hole at once. Floor and ceiling light is smoothly blended
+between cells; walls and sprites are lit per-cell. An upper strip is still lit by
+the room below it. No texture atlas, no animated/scrolling textures, upper-region
+surfaces are still flat-shaded, and the sky is still a plain gradient.
 
 ## RcMover — walking around
 
