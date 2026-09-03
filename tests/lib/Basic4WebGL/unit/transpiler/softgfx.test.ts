@@ -403,16 +403,26 @@ describe('pen — setLineWidth', () => {
 // ─── drawing — drawImageStrip ─────────────────────────────────────────────────
 
 describe('drawing — drawImageStrip', () => {
+  // tint + srcVTop/srcVBot added by the raycaster texturing pass — all nine args.
+  const call =
+    'function test()\n  drawing.drawImageStrip("wall.png", 10, 100, 120, 1, 200, 16777215, 0, 1)\nendfunction';
   test('compiles without error', () => {
-    const result = transpileWithDrawing(
-      'function test()\n  drawing.drawImageStrip("wall.png", 10, 100, 120, 1, 200)\nendfunction'
-    );
-    expect(result.diagnostics).toHaveLength(0);
+    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
   });
   test('emits _sb.drawImageStrip(', () => {
-    const result = transpileWithDrawing(
-      'function test()\n  drawing.drawImageStrip("wall.png", 10, 100, 120, 1, 200)\nendfunction'
-    );
-    expect(result.code).toContain('_sb.drawImageStrip(');
+    expect(transpileWithDrawing(call).code).toContain('_sb.drawImageStrip(');
+  });
+});
+
+// ─── drawing — drawFloorStrip ────────────────────────────────────────────────
+
+describe('drawing — drawFloorStrip', () => {
+  const call =
+    'function test()\n  drawing.drawFloorStrip("floor.png", 100, 180, 90, 2.5, 3.1, 5.0, 8.2, 4, 12632256)\nendfunction';
+  test('compiles without error', () => {
+    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.drawFloorStrip(', () => {
+    expect(transpileWithDrawing(call).code).toContain('_sb.drawFloorStrip(');
   });
 });
