@@ -21,7 +21,7 @@ const DEMO_SRC = 'demo-src';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
 const phaseDirs = readdirSync(DEMO_SRC, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && /^raycaster-p\d+$/.test(entry.name))
+  .filter((entry) => entry.isDirectory() && /^raycaster-p\d+[a-z]?$/.test(entry.name))
   .map((entry) => entry.name)
   .sort();
 
