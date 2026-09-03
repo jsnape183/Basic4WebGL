@@ -34,6 +34,13 @@ dim diagArr(0)
 dim upKindArr(0)
 dim upCeilHArr(0)
 
+' Per-cell flat floor/ceiling colour overrides, from `fcol:RRGGBB` / `ccol:RRGGBB`
+' tags (6 hex digits). -1 = no override (use the renderer's default shade).
+' surfColSeen is a fast-path flag: 0 = no cell carries a colour, skip the march.
+dim floorColArr(0)
+dim ceilColArr(0)
+dim surfColSeen
+
 Constructor(tm as tilemapset, wallsLayerName)
     self.build(tm, wallsLayerName)
 EndConstructor
@@ -41,6 +48,7 @@ EndConstructor
 function build(tm as tilemapset, wallsLayerName)
     dim tw
     dim th
+    self.surfColSeen = 0
     tw = tm.tileWidth()
     th = tm.tileHeight()
 
@@ -63,6 +71,8 @@ function build(tm as tilemapset, wallsLayerName)
         array.push(self.ceilTexArr, "")
         array.push(self.upKindArr, 0)
         array.push(self.upCeilHArr, 0 - 1)
+        array.push(self.floorColArr, 0 - 1)
+        array.push(self.ceilColArr, 0 - 1)
         array.push(self.lightArr, 0)
         array.push(self.flagsArr, 0)
         array.push(self.diagArr, 0)
@@ -196,6 +206,35 @@ function applyKv(idx, key, v)
     if key = "uceil" then
         self.upCeilHArr(idx) = math.val(v)
     endif
+    if key = "fcol" then
+        self.floorColArr(idx) = self.parseHex(v)
+        self.surfColSeen = 1
+    endif
+    if key = "ccol" then
+        self.ceilColArr(idx) = self.parseHex(v)
+        self.surfColSeen = 1
+    endif
+endfunction
+
+' Parse a 6-hex-digit RRGGBB string to a packed integer r*65536 + g*256 + b.
+' softBASIC has no hex literal support, so digits are looked up by position.
+function parseHex(s)
+    dim digits
+    dim r
+    dim i
+    dim c
+    dim d
+    digits = "0123456789abcdef"
+    r = 0
+    for i = 0 to string.len(s) - 1
+        c = string.lcase(string.substr(s, i, i + 1))
+        d = string.indexof(digits, c)
+        if d < 0 then
+            d = 0
+        endif
+        r = r * 16 + d
+    next i
+    return r
 endfunction
 
 ' -- read accessors (col, row are integer cell coords) --
@@ -311,6 +350,26 @@ function ceilTexAt(col, row)
         return ""
     endif
     return self.ceilTexArr(row * self.cols + col)
+endfunction
+
+' 1 if any cell carries an fcol:/ccol: override -- lets the renderer skip the
+' per-cell surface march entirely when no level uses the feature.
+function hasSurfaceColor()
+    return self.surfColSeen
+endfunction
+
+function floorColAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0 - 1
+    endif
+    return self.floorColArr(row * self.cols + col)
+endfunction
+
+function ceilColAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return 0 - 1
+    endif
+    return self.ceilColArr(row * self.cols + col)
 endfunction
 
 function widthCells()

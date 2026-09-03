@@ -31,8 +31,7 @@ function onenter()
   self.ren.bindCamera(self.me)
 
   self.ren.setWallTexture("rc_tex_concrete.png")
-  self.ren.setFloorTexture("rc_tex_floor.png")
-  self.ren.setCeilTexture("rc_tex_ceil.png")
+  ' Floor/ceiling stay flat-shaded -- coloured per tile by fcol:/ccol: .stm tags.
 
   self.titleText = new Text("Raycaster P8b - textured room", 12, 10)
   self.titleText.setStyle(16, 255, 220, 120)
@@ -93,12 +92,18 @@ function runProbes()
   endif
   self.probe("wallTexFor resolves tag and default", ok4, 112)
 
-  ' 5 - floorTexFor resolves an untagged cell to the scene floor default
+  ' 5 - fcol:/ccol: tags parse to per-cell flat colours; untagged cells read -1
   ok5 = 0
-  if self.ren.floorTexFor(2, 4) = "rc_tex_floor.png" then
-    ok5 = 1
+  if self.wld.hasSurfaceColor() = 1 then
+    if self.wld.floorColAt(2, 1) > 0 then
+      if self.wld.ceilColAt(6, 1) > 0 then
+        if self.wld.floorColAt(5, 4) = 0 - 1 then
+          ok5 = 1
+        endif
+      endif
+    endif
   endif
-  self.probe("floorTexFor resolves the scene default", ok5, 132)
+  self.probe("fcol/ccol tags parse to per-tile colours", ok5, 132)
 endfunction
 
 function probe(label, passed, y)

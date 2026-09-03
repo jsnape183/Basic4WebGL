@@ -413,7 +413,13 @@ function drawSurfaceInto(hh, dNear, dFar, kind, lite, texName)
         yBot = ya
     endif
     if string.len(texName) = 0 then
-        self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
+        if self.wld.hasSurfaceColor() = 0 then
+            self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
+        else
+            ' A level uses fcol:/ccol: -- march the cells this band crosses and
+            ' draw a sub-band per contiguous colour run (default grey elsewhere).
+            self.drawSurfaceColorRun(hh, dNear, dFar, kind, useLite)
+        endif
     else
         ' Textured: blit one perspective-correct strip per visible interval, with
         ' the world near/far re-derived from the CLIPPED screen span so the
@@ -452,6 +458,141 @@ function drawSurfaceInto(hh, dNear, dFar, kind, lite, texName)
         next k
     endif
     self.occlude(yTop, yBot)
+endfunction
+
+' Per-tile flat colour: walk the grid cells this column's ray crosses between
+' dNear and dFar, and for each cell draw the surface sub-band in that cell's
+' fcol:/ccol: colour (or the default `kind` shade where the cell has none).
+' hh < eye -> floor cells; otherwise ceiling cells.
+function drawSurfaceColorRun(hh, dNear, dFar, kind, useLite)
+    dim eyeZ
+    dim isFloor
+    dim segA
+    dim segB
+    dim mx
+    dim my
+    dim cc
+    dim ya
+    dim yb
+    dim yTop
+    dim yBot
+    dim guard
+    eyeZ = self.camZ + RcConfig.RC_EYE_Z
+    isFloor = 0
+    if hh < eyeZ then
+        isFloor = 1
+    endif
+    segA = dNear
+    guard = 0
+    while segA < dFar - 0.0001 and guard < 128
+        guard = guard + 1
+        segB = self.surfaceRunEnd(segA, dFar)
+        mx = self.camX + self.fRayX * ((segA + segB) / 2)
+        my = self.camY + self.fRayY * ((segA + segB) / 2)
+        if isFloor = 1 then
+            cc = self.wld.floorColAt(math.floor(mx), math.floor(my))
+        else
+            cc = self.wld.ceilColAt(math.floor(mx), math.floor(my))
+        endif
+        ya = self.projectY(hh, segA)
+        yb = self.projectY(hh, segB)
+        if ya <= yb then
+            yTop = ya
+            yBot = yb
+        else
+            yTop = yb
+            yBot = ya
+        endif
+        if cc < 0 then
+            self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
+        else
+            self.surfCountLast = self.surfCountLast + self.drawColorInto(yTop, yBot, cc, useLite)
+        endif
+        segA = segB
+    endwhile
+endfunction
+
+' The perpendicular distance at which this column's ray leaves the grid cell it
+' is in at tStart, clamped to tMax. Mirrors one DDA step (nearest x/y crossing).
+function surfaceRunEnd(tStart, tMax)
+    dim rx
+    dim ry
+    dim px
+    dim py
+    dim cx
+    dim cy
+    dim tx
+    dim ty
+    dim t
+    rx = self.fRayX
+    ry = self.fRayY
+    px = self.camX + rx * (tStart + 0.0001)
+    py = self.camY + ry * (tStart + 0.0001)
+    cx = math.floor(px)
+    cy = math.floor(py)
+    tx = tMax
+    ty = tMax
+    if rx > 0.00001 then
+        tx = (cx + 1 - self.camX) / rx
+    endif
+    if rx < 0 - 0.00001 then
+        tx = (cx - self.camX) / rx
+    endif
+    if ry > 0.00001 then
+        ty = (cy + 1 - self.camY) / ry
+    endif
+    if ry < 0 - 0.00001 then
+        ty = (cy - self.camY) / ry
+    endif
+    t = tx
+    if ty < t then
+        t = ty
+    endif
+    if t > tMax then
+        t = tMax
+    endif
+    if t <= tStart then
+        t = tMax
+    endif
+    return t
+endfunction
+
+' Like drawInto but with a fixed packed RGB (r*65536 + g*256 + b), scaled by the
+' sampled light. Clipped into every visible interval.
+function drawColorInto(sTop, sBot, packed, lite)
+    dim k
+    dim n
+    dim total
+    dim rr
+    dim gg
+    dim bb
+    dim t
+    dim b
+    rr = math.floor(packed / 65536)
+    gg = math.floor(packed / 256) - rr * 256
+    bb = packed - rr * 65536 - gg * 256
+    rr = math.clamp(rr * lite, 0, 255)
+    gg = math.clamp(gg * lite, 0, 255)
+    bb = math.clamp(bb * lite, 0, 255)
+    total = 0
+    n = array.arrLength(self.intvTop)
+    for k = 0 to n - 1
+        t = sTop
+        b = sBot
+        if t < self.intvTop(k) then
+            t = self.intvTop(k)
+        endif
+        if b > self.intvBot(k) then
+            b = self.intvBot(k)
+        endif
+        if b > t then
+            pen.setLineWidth(0)
+            pen.setFillColor(rr, gg, bb)
+            drawing.drawRect(self.iDestX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t)
+            total = total + 1
+        endif
+    next k
+    return total
 endfunction
 
 ' --- Interval-list occlusion primitives (renderer rework) -------------------

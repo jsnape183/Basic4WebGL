@@ -16,7 +16,8 @@ Draw your level in the Tilemap Editor:
   - `floor:2` raises the cell's floor; `floor:-3` makes a pit
   - `ceil:4` lowers the ceiling; `ceil:8` makes an atrium
   - `uceil:3` sets the upper region's ceiling height (see "Upper regions")
-  - `tex:rc_brick.png`, `ftex:rc_tiles.png`, `ctex:rc_panels.png` set the wall / floor / ceiling texture for that cell (full asset name; see "Textures" below)
+  - `tex:rc_brick.png` sets the wall texture for that cell (full asset name; see "Wall textures" below)
+  - `fcol:7a4f2a` / `ccol:2a3550` set that cell's flat floor / ceiling colour (six hex digits; see "Floor and ceiling colour")
   - `door`, `lift`, `water`, `sky` mark special cells
   - `light:` marks a cell as lit (Phase 1 records this as a simple on/off flag; proper light levels come with the lighting phase)
   - `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` makes the cell a 45° diagonal wall — the named corner is solid, the opposite half is open floor. Leave the `walls` tile at `0` for that cell (the diagonal *is* the wall). Line several up along one direction for a canted wall; put one in each corner of a square room for an octagon.
@@ -57,6 +58,7 @@ Every accessor takes a cell column and row as whole numbers, starting at `0`.
 | `wld.upperFloorAt(col, row)` | the upper region's floor height (= this cell's `ceilHeightAt`) |
 | `wld.upperCeilAt(col, row)` | the upper region's ceiling height (`uceil:` marker, else one unit above its floor) |
 | `wld.wallTexAt(col, row)` | the cell's `tex:` texture name, or `""` |
+| `wld.floorColAt(col, row)` / `wld.ceilColAt(col, row)` | the cell's `fcol:` / `ccol:` colour as a packed `r*65536 + g*256 + b`, or `-1` if unset (out of bounds = `-1`) |
 | `wld.diagAt(col, row)` | `0` not diagonal, or `RcConfig.RC_DIAG_NW` / `_NE` / `_SE` / `_SW` (`1`–`4`) — the solid corner of a 45° diagonal cell (out of bounds = `0`) |
 
 Any cell outside the map counts as a solid wall, so `wallAt` returns `1` there.
@@ -224,28 +226,39 @@ endfunction
 ceiling changes height — the top of a step, the floor of a pit, the underside of
 a raised ceiling, and the soffit under a dropped ceiling.
 
-### Textures
+### Wall textures
 
-Give the renderer a default texture per surface type, and the whole level is
-textured:
+Give the renderer a default wall texture and the whole level is textured:
 
 ```bas
 function onenter()
   self.ren = new RcRender(self.wld)
   self.ren.setWallTexture("rc_brick.png")
-  self.ren.setFloorTexture("rc_tiles.png")
-  self.ren.setCeilTexture("rc_panels.png")
 endfunction
 ```
 
-Override per cell with a marker tag — `tex:` for the wall, `ftex:` for the floor,
-`ctex:` for the ceiling (`{ "row": 2, "col": 5, "tag": "tex:rc_metal.png" }`).
-Texture names are the full asset filename, the same as everywhere else. Author
-them at **64×64** and make sure they tile (the pattern wraps at the edges) —
-they repeat once per world cell. Walls are lit per column; floors and ceilings
-are drawn with a perspective-correct textured strip so the pattern doesn't warp
-with distance. A cell with no texture (no default, no tag) falls back to the
-flat grey shading.
+Override per cell with a `tex:` marker tag
+(`{ "row": 2, "col": 5, "tag": "tex:rc_metal.png" }`). Texture names are the full
+asset filename. Author them at **64×64** and make sure they tile (the pattern
+wraps at the edges) — they repeat once per world unit. Walls are lit per column;
+diagonal-wall tiles get a real slice of the wall texture. A wall with no texture
+(no default, no tag) falls back to the flat grey shading.
+
+### Floor and ceiling colour
+
+Floors and ceilings are flat-shaded. Colour an individual tile with an
+`fcol:RRGGBB` (floor) or `ccol:RRGGBB` (ceiling) marker tag — six hex digits,
+like a web colour:
+
+```json
+{ "row": 3, "col": 4, "tag": "fcol:7a4f2a ccol:2a3550" }
+```
+
+The colour is scaled by the tile's light level, the same as the default grey.
+A tile with no `fcol:`/`ccol:` keeps the default shading. Textured floors and
+ceilings (`setFloorTexture` / `ftex:` and the ceiling equivalents) are wired up
+but the perspective mapping still warps toward the horizon — they're parked
+until the Phase 9 renderer pass; use `fcol:`/`ccol:` for now.
 
 ### Phase 3 limits
 
