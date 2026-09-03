@@ -159,22 +159,4 @@ describe('raycaster phase demo probes execute', () => {
       probeCount: 6,
     });
   });
-
-  test('P8 PortalScene.onenter runs runProbes and every probe passes', () => {
-    runPhaseProbes({
-      dir: 'demo-src/raycaster-p8',
-      stm: 'p8room.stm',
-      sceneGlobal: '_sb_portalscene',
-      probeCount: 6,
-    });
-  });
-
-  test('P8b TextureScene.onenter runs runProbes and every probe passes', () => {
-    runPhaseProbes({
-      dir: 'demo-src/raycaster-p8b',
-      stm: 'p8broom.stm',
-      sceneGlobal: '_sb_texturescene',
-      probeCount: 5,
-    });
-  });
 });

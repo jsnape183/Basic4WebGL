@@ -72,22 +72,4 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP7Diagonals',
   },
-  {
-    slug: 'raycaster-p8-upper',
-    name: 'Raycaster P8 — Upper Regions',
-    tags: ['Raycaster', 'Engine Phase'],
-    description:
-      'Phase 8 probe: one optional upper region per cell — a walkway you see under, climb onto, and drop through a hole. Authored as a second `upper` .stm tile layer.',
-    docsSlug: '',
-    file: 'RaycasterP8Upper',
-  },
-  {
-    slug: 'raycaster-p8b-textures',
-    name: 'Raycaster P8b — Textures',
-    tags: ['Raycaster', 'Engine Phase'],
-    description:
-      'Textured walls, floors and ceilings — a retextured copy of the P3 room. Wall columns blit via drawImageStrip; horizontal surfaces via the perspective-correct drawFloorStrip.',
-    docsSlug: '',
-    file: 'RaycasterP8bTextures',
-  },
 ];
