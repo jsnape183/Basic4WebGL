@@ -9,7 +9,7 @@ import { packageModules } from '../../../../src/constants/packageModules';
 // (`fcol:RRGGBB` / `ccol:RRGGBB`). Same inline-tilemap harness as
 // raycasterUpperWorld; drives parseHex / floorColAt / ceilColAt /
 // hasSurfaceColor directly. The renderer's per-cell march that consumes these
-// is exercised by raycasterDemoSmoke's execute pass over raycaster-p8b.
+// is exercised by raycasterDemoSmoke's execute pass over the phase demos.
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 const CANON = 'demo-src/raycaster/lib';

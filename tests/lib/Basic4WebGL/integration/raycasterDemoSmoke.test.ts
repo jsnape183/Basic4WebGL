@@ -556,7 +556,7 @@ describe('raycaster phase demos smoke-execute', () => {
     const maxPitY = Math.max(...pitFloors.map((s) => s.midY));
     expect(minFloorTopY).toBeLessThan(maxPitY);
     // (3) the rising ceiling still draws a CEIL_UNDER strip above the horizon —
-    //     regression guard for the drawSurfaceInto y-ordering (inverted strip).
+    //     regression guard for the drawSurface y-ordering (inverted strip).
     expect(surf.some((s) => s.grey === 80 && s.midY < 100)).toBe(true);
   });
 

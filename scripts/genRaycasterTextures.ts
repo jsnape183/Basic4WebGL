@@ -1,9 +1,9 @@
 /**
- * One-off generator for the raycaster-p8b-textures demo's placeholder textures.
+ * One-off generator for the raycaster-p8-tiers demo's placeholder textures.
  *
  *   npx vite-node scripts/genRaycasterTextures.ts
  *
- * Writes six 64x64 PNGs into demo-src/raycaster-p8b/assets/. Every pattern is
+ * Writes six 64x64 PNGs into demo-src/raycaster-p8-tiers/assets/. Every pattern is
  * built from arithmetic that is periodic over 64px on both axes, so each texture
  * tiles seamlessly when the engine wraps its U/V at the tile edge.
  *
