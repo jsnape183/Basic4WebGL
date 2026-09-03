@@ -430,6 +430,7 @@ endfunction
 ' [winTop, winBot]. No fcol:/ccol: anywhere -> one strip. Otherwise march the
 ' grid cells the band crosses and emit one sub-band per contiguous run of the
 ' same resolved colour (default shade counts as a colour for coalescing).
+' `lite` is only used when no lights are bound; drawFlatSeg re-samples otherwise.
 function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, rayY)
     dim eyeZ
     dim isFloor
@@ -441,6 +442,9 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
     dim mx
     dim my
     dim guard
+    if winBot <= winTop then
+        return
+    endif
     if self.wld.hasSurfaceColor() = 0 then
         self.drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, 0 - 1, lite, rayX, rayY)
         return
