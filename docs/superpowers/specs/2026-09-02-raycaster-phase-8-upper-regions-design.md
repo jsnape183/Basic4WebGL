@@ -1,5 +1,7 @@
 # Raycaster Phase 8 — Upper Regions (Single Portal Hop) — Design Spec
 
+> **Superseded** by `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md` — upper regions were removed and the interval renderer reverted to a single window. Kept for history.
+
 **Status:** approved (brainstorm 2026-09-02) — ready for implementation plan.
 
 **Amends:** `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md` §3.2 (upper-region storage becomes layer-based, not marker-name-based), §4 step 2 / §4.2-adjacent (the portal hop), §5 (render), §7 (mover region transitions), §11 (marks Phase 8 done).

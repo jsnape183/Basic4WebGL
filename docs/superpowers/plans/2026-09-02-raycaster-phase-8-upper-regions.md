@@ -1,5 +1,7 @@
 # Raycaster Phase 8 — Upper Regions Implementation Plan
 
+> **Superseded** by `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md` — upper regions were removed and the interval renderer reverted to a single window. Kept for history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give the softBASIC raycaster library one optional "upper region" per cell — a stacked space entered through a hole, authored as a second `.stm` tile layer — with `RcCast` / `RcRender` / `RcMover` support and a `raycaster-p8` demo.

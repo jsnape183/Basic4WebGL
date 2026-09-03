@@ -1,5 +1,7 @@
 # Raycaster Renderer Rework — Interval Occlusion + Bilinear Light — Implementation Plan
 
+> **Superseded** by `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md` — upper regions were removed and the interval renderer reverted to a single window. Kept for history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace `RcRender`'s single per-column occlusion window with a per-column list of visible screen-Y intervals (so a mid-column opaque band — a walkway plank underside, a railing seen from below — splits the visible band instead of flattening it), and add bilinear light sampling for floor/ceiling surfaces. Fixes the `raycaster-p8` walkway/hole garbage and the "shadows of walls that aren't there" floor lighting.

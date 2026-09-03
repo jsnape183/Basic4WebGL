@@ -11,11 +11,9 @@ floor/ceiling heights.
 Draw your level in the Tilemap Editor:
 
 - A **`walls` tile layer** — paint any non-zero tile where a wall should be.
-- An optional **`upper` tile layer** — paint the upper region here (see "Upper regions" below).
 - A **marker layer** — drop markers and give each a text tag to add detail:
   - `floor:2` raises the cell's floor; `floor:-3` makes a pit
   - `ceil:4` lowers the ceiling; `ceil:8` makes an atrium
-  - `uceil:3` sets the upper region's ceiling height (see "Upper regions")
   - `tex:rc_brick.png` sets the wall texture for that cell (full asset name; see "Wall textures" below)
   - `fcol:7a4f2a` / `ccol:2a3550` set that cell's flat floor / ceiling colour (six hex digits; see "Floor and ceiling colour")
   - `door`, `lift`, `water`, `sky` mark special cells
@@ -53,10 +51,6 @@ Every accessor takes a cell column and row as whole numbers, starting at `0`.
 | `wld.floorHeightAt(col, row)` | floor height (`0` standard, negative = pit; out of bounds = `0`) |
 | `wld.ceilHeightAt(col, row)` | ceiling height (`1` standard; out of bounds = `1`) |
 | `wld.flagsAt(col, row)` | bitset: `1` door, `2` lift, `4` water, `8` sky (out of bounds = `0`) |
-| `wld.hasUpperAt(col, row)` | `1` if the cell has a space above it, otherwise `0` |
-| `wld.upperKindAt(col, row)` | `0` none, `1` solid upper floor, `2` upper wall, `3` hole (out of bounds = `0`) |
-| `wld.upperFloorAt(col, row)` | the upper region's floor height (= this cell's `ceilHeightAt`) |
-| `wld.upperCeilAt(col, row)` | the upper region's ceiling height (`uceil:` marker, else one unit above its floor) |
 | `wld.wallTexAt(col, row)` | the cell's `tex:` texture name, or `""` |
 | `wld.floorColAt(col, row)` / `wld.ceilColAt(col, row)` | the cell's `fcol:` / `ccol:` colour as a packed `r*65536 + g*256 + b`, or `-1` if unset (out of bounds = `-1`) |
 | `wld.diagAt(col, row)` | `0` not diagonal, or `RcConfig.RC_DIAG_NW` / `_NE` / `_SE` / `_SW` (`1`–`4`) — the solid corner of a 45° diagonal cell (out of bounds = `0`) |
@@ -68,8 +62,8 @@ cells, but you would normally check `wallAt` first.
 ### Phase 1 limits
 
 `light:` currently just marks a cell (a proper light *level* comes with the
-lighting phase). Keep related tags — `ceil:` and `uceil:`, say — on the same
-marker for one cell.
+lighting phase). Keep related tags for one cell — `ceil:` and `fcol:`, say — on
+the same marker.
 
 ### Diagonal walls
 
@@ -91,47 +85,14 @@ stop at it, and a mover slides along it. A diagonal face takes the wall texture
 (a real slice of it, along the 45° chord). A diagonal cell can't also carry a
 `floor:` / `ceil:` step.
 
-### Upper regions
+### Multi-tier levels
 
-A cell can have a second space stacked on top of it — a walkway you glimpse
-under, a balcony, a room above a lobby. You draw it as its own tile layer named
-`upper`, top-down, exactly like `walls`. Three tile ids:
-
-| id | meaning |
-|----|---------|
-| 1  | solid upper floor (a plank you can stand on) |
-| 2  | upper wall (a railing or partition up there) |
-| 3  | hole — the upper region is here but its floor is open: you see up through it and can fall through it |
-| empty | no upper region over this cell |
-
-The upper floor sits at the host cell's ceiling height, so raise `ceil:` on the
-cells under the walkway to set how high it is. The upper ceiling defaults to one
-unit above the upper floor; override it per cell with `uceil:3` (put it on the
-same marker as the `ceil:`). Load the map as normal — `RcWorld` picks up an
-`upper` layer automatically if the `.stm` has one.
-
-```bas
-' RcWorld reads the "upper" layer with no extra call:
-self.wld = new RcWorld(self.tm, "walls")
-
-' query it:
-if self.wld.upperKindAt(6, 2) = 3 then
-  print "there's a hole at 6,2"
-endif
-print "walkway floor height: " + string.str(self.wld.upperFloorAt(6, 2))
-```
-
-`RcMover` tracks which region you're in (`me.regionId()` → 0 lower, 1 upper). You
-switch regions automatically: walk onto a walkway whose floor is level with where
-you're standing, or climb a staircase (`floor:` steps) up to it, and you step
-onto it; walk off the edge or into a hole and you fall back down. To spawn a body
-already up top, call `me.enterRegion(1)` after creating it.
-
-**Limits (for now):** lighting is shared between the two levels (a mezzanine
-isn't lit separately, and a room light doesn't stop at the plank overhead); light
-and shots don't travel through the hole; once you've dropped through a hole you
-need authored stairs to get back up; and the moment your camera crosses between
-levels can still look a touch abrupt.
+Stairs, raised platforms, sunken arenas and raised walkways are all built from
+`floor:` / `ceil:` height variation on ordinary cells — no special layer. Chain
+`floor:` steps no taller than `RcConfig.RC_STEP_UP` apart and `RcMover` climbs
+them; raise `ceil:` over a platform so the walker keeps headroom. The dev demo
+`raycaster-p8-tiers` is a worked example. Genuine room-over-room (a walkable
+surface with open walkable space beneath the *same* cell) is not supported.
 
 ## RcCast — casting rays
 
@@ -184,11 +145,9 @@ enemy see the player" checks. It does not disturb the spans from the last `cast`
 
 ### Phase 2 limits
 
-The ray stops at the first wall (no "see-through" windows yet). Upper regions
-*are* handled (see "Upper regions"): when the camera's region is set with
-`rc.setRegion(0 or 1)`, a ray crossing a hole also emits the other region's
-geometry as `RC_SPAN_PORTAL_*` spans. Diagonal-wall tiles *are* handled (see below): the ray
-tests the 45° chord, and `los` stops at it too. A wall span from a diagonal has
+The ray stops at the first wall (no "see-through" windows yet). Diagonal-wall
+tiles *are* handled (see below): the ray tests the 45° chord, and `los` stops at
+it too. A wall span from a diagonal has
 `spanSide(i)` equal to `RcConfig.RC_SPAN_SIDE_DIAG` and `spanU(i)` of `0`
 (diagonal faces aren't textured yet). The direction `(dx, dy)` doesn't need to be
 a unit vector — distances come out in world units regardless.
@@ -220,7 +179,7 @@ endfunction
 | `ren.renderFrame()` | draw one frame — call every `onupdate` |
 | `ren.projectY(height, distance)` | screen Y for a world height at a distance (mostly internal) |
 | `ren.columnCount()` | how many vertical strips wide the view is |
-| `ren.setWallTexture(name)` / `ren.setFloorTexture(name)` / `ren.setCeilTexture(name)` | default texture for walls / floors / ceilings (see Textures below) |
+| `ren.setWallTexture(name)` | default wall texture for the whole level (see Wall textures below) |
 
 `RcRender` also fills the flat, horizontal surfaces you see wherever a floor or
 ceiling changes height — the top of a step, the floor of a pit, the underside of
@@ -255,20 +214,22 @@ like a web colour:
 ```
 
 The colour is scaled by the tile's light level, the same as the default grey.
-A tile with no `fcol:`/`ccol:` keeps the default shading. Textured floors and
-ceilings (`setFloorTexture` / `ftex:` and the ceiling equivalents) are wired up
-but the perspective mapping still warps toward the horizon — they're parked
-until the Phase 9 renderer pass; use `fcol:`/`ccol:` for now.
+A tile with no `fcol:`/`ccol:` keeps the default shading. Floor and ceiling
+**textures are not implemented** in the library — `drawFloorStrip` exists in the
+`drawing` engine module but `RcRender` does not call it, and perspective-correct
+floor/ceiling texturing is deferred to a later phase. Use `fcol:`/`ccol:` for
+flat colour; only walls are textured.
 
 ### Phase 3 limits
 
 You can see across a pit to the wall beyond; the pit floor and step surfaces are
 filled in. Diagonal-wall tiles are textured with a real slice of the wall
-texture. Upper regions are drawn too, and you see the room below *and* the
-ceiling above through a hole at once. Floor and ceiling light is smoothly blended
-between cells; walls and sprites are lit per-cell. An upper strip is still lit by
-the room below it. No texture atlas, no animated/scrolling textures, upper-region
-surfaces are still flat-shaded, and the sky is still a plain gradient.
+texture. Occlusion is a single per-column window — a raised floor clamps it from
+below, a dropped ceiling from above, and farther geometry shows through a pit or
+a raised ceiling. Floor and ceiling light is smoothly blended between cells;
+walls and sprites are lit per-cell. No texture atlas, no animated/scrolling
+textures, floors and ceilings are flat-shaded, and the sky is still a plain
+gradient.
 
 ## RcMover — walking around
 
@@ -305,14 +266,12 @@ endfunction
 | `me.step(delta)` | resolve one frame of movement + gravity — call every `onupdate` |
 | `me.x()` / `me.y()` / `me.z()` | current position (`z` is feet height) |
 | `me.angle()` / `me.pitch()` / `me.onGround()` | facing, tilt, whether standing on solid ground |
-| `me.regionId()` | `0` if the body is in the lower region, `1` if in an upper region (see "Upper regions") |
-| `me.enterRegion(r)` | force the body into region `r` and snap its feet to that region's floor (for spawning up top) |
 
 ### Phase 4 limits
 
-Movers don't collide with each other yet and lifts don't move. Upper regions
-(see above) are handled with one caveat: you can't climb back up through a hole
-without authored stairs. A mover slides smoothly along a 45° diagonal wall,
+Movers don't collide with each other yet and lifts don't move. A mover climbs
+`floor:` steps up to `RC_STEP_UP` tall and falls into pits under gravity. A mover
+slides smoothly along a 45° diagonal wall,
 but at very high speeds (well past `RC_MOVE_SPEED`) it can clip through the thin
 tip of the solid wedge. Tune movement with `RcConfig.RC_MOVE_SPEED`,
 `RC_STEP_UP`, `RC_GRAVITY`, `RC_JUMP_VEL`.

@@ -96,6 +96,8 @@ endfunction
 
 Draws one column of a floor or ceiling texture, corrected for perspective so it does not warp with distance. Like `drawImageStrip`, this is a building block for column-based renderers: call it once per screen column for each horizontal surface band you want to paint. The strip covers the screen from `yNear` (the edge closest to the camera) to `yFar` (the edge nearest the horizon), and the image tiles once per world unit along the ground between the near world point and the far world point.
 
+> **Note:** This primitive is not yet used by the raycaster library — perspective-correct floor/ceiling texturing is reserved for a future pass. `drawImageStrip` (walls) is the supported textured-surface call today.
+
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
 | imageName | string | Name of a pre-loaded image asset. Should be a texture that tiles seamlessly. |

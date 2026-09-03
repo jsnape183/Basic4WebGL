@@ -2,6 +2,23 @@
 
 **Date:** 2026-08-31
 **Status:** design approved, ready for implementation planning
+**Last updated:** 2026-09-03
+
+> **Amended 2026-09-03 — upper regions descoped.** Upper regions (§3.2) were built
+> (2026-09-02) and then removed. The lower↔upper camera transition read as
+> jarring, and supporting a hole meant the renderer's per-column occlusion had to
+> become a list of up to six visible screen-Y intervals — the raycaster's largest
+> per-frame cost — where nothing else needed more than a single window. Genuine
+> room-over-room is out of scope for "DOOM plus a bit". The renderer reverted to
+> the single-window occlusion model described in §5.1, and **Phase 8 is redefined
+> as "Multi-tier level design & surface colour"** (`floor:` / `ceil:` tiering,
+> per-tile `fcol:` / `ccol:` flat colour, wall texturing, camera look — no
+> library change beyond removing the region code). `drawing.drawFloorStrip`
+> remains an engine primitive but `RcRender` no longer calls it — floor/ceiling
+> texturing is deferred. See
+> `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md`.
+> The "As built" notes below that describe the interval renderer or the portal
+> hop are superseded accordingly.
 **Scope:** the foundational rendering / movement / collision layer for a
 first-person raycaster, built **as a softBASIC library**. No gameplay, no
 front-line simulation, no publicly-listed demo. Gameplay (see
@@ -68,7 +85,7 @@ loops — each phase is small and independently verified, not a one-shot engine.
 | A | Wolfenstein 3D (1992) | one full-height wall hit per ray | current demo — being replaced |
 | B | Rise of the Triad (1994) | one hit per ray + per-cell floor/ceiling height | subsumed by C |
 | **C** | **DOOM (1993)** | **ray returns a sorted list of surface spans; renderer clips near-over-far per column** | **yes — the core** |
-| C+ | — | C + fixed diagonal-wall tiles + one upper region per cell | **yes — "plus a bit"** |
+| C+ | — | C + fixed diagonal-wall tiles ~~+ one upper region per cell~~ (upper regions removed 2026-09-03) | **yes — "plus a bit"** |
 | D | Duke Nukem 3D (1996) | arbitrary sectors, slopes, room-over-room | **no — ruled out** |
 
 ### 2.1 Feature disposition relative to full D
@@ -78,7 +95,7 @@ loops — each phase is small and independently verified, not a one-shot engine.
 | 1 | Arbitrary-angle walls (line segments) | **cut** | fixed diagonal-wall tiles: a cell whose wall is a 45° chord, 4 rotations |
 | 2 | Sloped floors & ceilings | **cut** | fine stairs (6–10 shallow steps) |
 | 3 | Per-cell floor + ceiling height | **keep** | — (this is rung C) |
-| 4 | Room-over-room (N-deep sector stacking) | **limit** | exactly one optional "upper region" per cell, single portal hop |
+| 4 | Room-over-room (N-deep sector stacking) | **out** | ~~one optional "upper region" per cell~~ — built 2026-09-02, removed 2026-09-03; room-over-room is now fully out of scope. Multi-tier levels use `floor:` / `ceil:` steps. |
 | 5 | Moving / rotating sectors (crushers, sliding walls, trains) | **cut** | axis-aligned doors + vertical lifts only (cell whose `floorH` animates) |
 | 6 | Parallax skyboxes, mirrors, camera screens, sloped sprites | **cut** | flat gradient sky on cells flagged `sky` |
 | 7 | Billboard sprites with depth clipping | **keep (upgrade)** | clip against the per-column span list, not a single depth |
@@ -105,45 +122,44 @@ is the spatial index for DDA traversal, mover collision, and `.stm` authoring.
 | `diag(i)` | *(Phase 7)* 0 = not diagonal; `RC_DIAG_NW..SW` (1–4) = a corner-solid 45° tile, the code naming the corner the solid triangle fills. `wall(i)` stays 0. Populated from a `diag:` marker; read via `RcWorld.diagAt(col,row)`. |
 | `floorH(i)`, `ceilH(i)` | floor / ceiling height of this cell's **main region**, world units. `0` / standard reproduce today's flat behaviour. |
 | `floorTex(i)`, `ceilTex(i)` | surface texture ids (image names; resolution to a drawable is `RcRender`'s job) |
-| `upper(i)` | index into the upper-region arrays, or `-1` |
+| ~~`upper(i)`~~ | ~~index into the upper-region arrays, or `-1`~~ — removed 2026-09-03 |
 | `light(i)` | baked static light level (author hint; dynamic lights add on top) |
 | `flags(i)` | integer bitset: `1` door, `2` lift, `4` water, `8` sky |
 
 (Parallel arrays rather than an array-of-objects because softBASIC array-of-class
 access is slower and the cast loop touches these on every step.)
 
-### 3.2 Upper-region arrays (the single portal hop)
+### 3.2 Upper-region arrays (the single portal hop) — ~~built then removed 2026-09-03~~
 
-Describes the space **above** a cell's `ceilH`, entered through a hole in that
+> **Removed.** `upKindArr` / `upCeilHArr`, the `upper` tile layer read, the
+> `uceil:` marker and `upperKindAt` / `upperFloorAt` / `upperCeilAt` / `hasUpperAt`
+> were all deleted from `RcWorld`. The section is kept struck-through for history;
+> see the 2026-09-03 amendment note at the head.
+
+~~Describes the space **above** a cell's `ceilH`, entered through a hole in that
 ceiling. Exactly one level. Enough for: walkway over a room, vent above a
 corridor, sniper balcony, basement under a lobby. Not a multi-storey tower —
 acceptable, the concept's areas are compact (32–48 grid).
 
-**As built (Phase 8):** not marker-name-indexed arrays — a second `.stm` **tile
+~~**As built (Phase 8):** not marker-name-indexed arrays — a second `.stm` **tile
 layer** named `upper`, read into a per-cell `upKindArr(i)` ∈ {0 none, 1 solid
 upper floor, 2 upper wall, 3 hole}. `RcWorld.upperKindAt(col,row)`,
 `upperFloorAt` (= that cell's own `ceilHeightAt` — the upper floor sits on the
 room ceiling line), `upperCeilAt` (default `ceilH + RC_STD_CEIL`, per-cell
-override via a `uceil:N` marker). "Above" and "below" are one mechanism: a
-"basement under a lobby" authors the lobby as the upper layer, the basement as
-the main. Deferred: `upFloorTex` / `upCeilTex` / `upWallTex` (flat-shaded);
-per-region lighting (region-blind — flagged for revisit); `los()` / hitscan /
-light through the portal; auto climb-back without authored stairs.
+override via a `uceil:N` marker).~~ **(All removed 2026-09-03.)**
 
 ### 3.3 Authoring — semantic, not pictorial
 
 The `.stm` tilemap is a **top-down floorplan**, not a picture of the game:
 
 - Tile palette is tiny: one "wall" placeholder tile, one "floor/open" placeholder.
-  No per-texture tilemap art. *As built (Phase 8):* an optional second tile layer
-  `upper` uses three placeholder tiles (id 1 solid upper floor / 2 upper wall /
-  3 hole) to draw the upper region as its own top-down plan.
-- Everything else rides on **marker tags**: `tex:concrete`, `floor:2 ftex:grating`,
-  `ceil:6 ctex:pipes`, `light:spot`, `door`, `water`, `sky`, `uceil:3` (Phase 8 —
-  upper-region ceiling height). *As built (Phase 7):* diagonals too —
-  `diag:nw` / `diag:ne` / `diag:se` / `diag:sw` on an open (walls-layer 0) cell,
-  naming the corner the solid triangle fills. *(The old `upper:<name>` marker is
-  gone — Phase 8's `upper` tile layer replaces it.)*
+  No per-texture tilemap art. (An `upper` tile layer was added for Phase 8 and
+  removed 2026-09-03 with upper regions.)
+- Everything else rides on **marker tags**: `tex:concrete`, `floor:2`,
+  `ceil:6`, `fcol:RRGGBB` / `ccol:RRGGBB`, `light:spot`, `door`, `water`, `sky`.
+  *As built (Phase 7):* diagonals too — `diag:nw` / `diag:ne` / `diag:se` /
+  `diag:sw` on an open (walls-layer 0) cell, naming the corner the solid triangle
+  fills. (The `uceil:` marker was removed 2026-09-03.)
 - `.stm` markers carry a single free-text `tag` string (`{ row, col, tag }`), not
   structured properties. `RcWorld` parses space-separated `key:value` / bare-flag
   tokens from that string and merges multiple markers on one cell. No `.stm`
@@ -177,22 +193,14 @@ call — no per-frame allocation in softBASIC either).
    - a **floor-step span** where `floorH` rises relative to the running floor level
    - a **ceiling-step span** where `ceilH` drops relative to the running ceiling
      level
-   - if the cell has an `upper` region and the ray is beneath an open ceiling hole,
-     also emit the upper region's floor/ceiling spans (the one portal hop)
 3. Terminate on: opaque full-height wall hit, OR `RC_MAX_DIST`, OR the occlusion
    window has closed (§5.1).
 
-**As built (Phase 8 — the portal hop).** `RcCast.setRegion(r)` (0 lower / 1 upper,
-set once per frame by `RcRender`; `cast()` keeps its 5-arg signature). Primary
-spans read the camera's region (region 1 → `upperFloorAt` / `upperCeilAt` /
-`upperKindAt = 2` walls). A `seeOther` latch turns on when a ray enters a hole
-cell (`upperKindAt = 3`); from there `cast()` also emits the **other** region's
-geometry as `RC_SPAN_PORTAL_WALL` / `_CEIL` / `_FLOOR` — a solid plank beyond the
-hole (or a lower wall, for a downward look) caps it and `return`s. `RcRender`
-knows which way each portal span occludes from `camRegion` alone (camera lower →
-portal is above → eat the window from the top; camera upper → below → eat from
-the bottom), so portal spans carry no side flag. `los()` is region-blind — light
-and hitscan do not cross the portal (deferred).
+**As built (post-descope 2026-09-03).** `cast()` is 5-arg and region-free. The
+portal machinery (`setRegion` / `regionOf`, the `seeOther` latch, the
+`RC_SPAN_PORTAL_WALL` / `_CEIL` / `_FLOOR` emission, DDA continuing past a plank)
+was built for Phase 8 and removed with upper regions. `RcCast` kept the Phase 7
+along-chord diagonal texture-`u`.
 4. Each span carries: `distance`, `screenTop`, `screenBottom`, `kind`, `texId`,
    `texU`, `worldMidY` (the point lighting samples, §6). Held in parallel arrays
    `spanDist()`, `spanTop()`, … capped at `RC_MAX_SPANS` (default 12) per column.
@@ -228,21 +236,18 @@ weapon/enemy-fire (§8). One code path.
 Walk the column's spans **near → far**, clipping each to whatever's still visible
 and removing what it occludes.
 
-**As built (renderer rework 2026-09-02):** the "one shrinking `[top, bottom]`
-window" model could not represent an opaque band in the *middle* of a column (a
-walkway plank underside, a railing seen from below — the Phase-8 demo made this
-unmissable), so it was replaced by a **per-column list of visible screen-Y
-intervals** (`RcRender.intvTop` / `intvBot`, capped at `RC_MAX_INTERVALS` = 6,
-thinnest dropped on overflow). Two primitives drive the walk:
-`drawInto(sTop, sBot, shade, lite)` draws a strip clipped into every visible
-interval; `occlude(oTop, oBot)` subtracts a screen band from every interval,
-**splitting one in two** when the band lands in its middle and dropping any that
-vanish. Each span occludes exactly its own projected band: a full wall clears the
-list entirely and ends the column; a floor/ceiling-step riser occludes its own
-riser band; a horizontal surface (`drawSurfaceInto`) draws *and* occludes its
-band; a portal wall occludes its band without ending the walk. The walk stops
-when `intervalCount()` reaches 0. This retired the "render-fidelity A / no
-mid-band split" approximation the Phase-8 spec accepted.
+**As built (post-descope 2026-09-03 — single window restored).** Occlusion is a
+single per-column window `[winTop, winBot]` (two scalars). A **floor rise**
+(FLOORSTEP up) clamps `winBot` up from the ground — you can't see under a raised
+floor; a **ceiling drop** (CEILSTEP down) clamps `winTop` down. A **floor drop**
+or **ceiling rise** leaves the window open, so farther geometry shows through a
+pit or under a raised ceiling (a documented "header gap"). A full wall draws
+clipped to `[winTop, winBot]`, records `depthArr(col)` and ends the column; the
+column also ends when `winTop >= winBot`. The interval list
+(`intvTop` / `intvBot`, `RC_MAX_INTERVALS`, `occlude` / `drawInto` /
+`dropThinnest`) was built for the renderer rework to see a plank underside
+through a hole and was removed with upper regions — every wall/surface draw is
+now one scalar-pair clip, not a 1–6 interval loop.
 
 ### 5.2 Drawing a strip
 
@@ -250,23 +255,23 @@ Each visible strip is one `drawing.drawImageStrip(texImage, texU, destX, destY,
 stripW, stripH)` call — exactly the primitive the current demo uses. Floor/ceiling
 step surfaces use a flat-shaded `drawing.drawRect`. Sky spans use a gradient rect.
 
-**As built (texturing 2026-09-03).** `drawing.drawImageStrip` gained
-`tint` + `srcVTop` / `srcVBot` (all optional; 6-arg calls behave as before). A
-**textured wall** span → `drawWallInto` blits `drawImageStrip(tex, srcX = u ·
-RC_TEX_SIZE, …, tint, svTop, svBot)` per visible interval — `tint` = distance
-fade · light level · side-dim (x-face 1.0 / y-face 0.8 / diagonal 0.9), packed
-`0xRRGGBB`; `svTop`/`svBot` clip the source column to the part of the wall the
-interval leaves visible. A **textured horizontal surface** → `drawSurfaceInto`
-calls the new `drawing.drawFloorStrip` (a pooled `PIXI.PerspectiveMesh` per
-strip; world-tiled UVs via an oversized texture frame + `repeat` wrap), with the
-world near/far points re-derived from the interval-clipped screen Ys
-(`distAtScreenY`, the inverse of `projectY`) so the texture doesn't slide.
-Untextured cells keep the flat `drawRect` path. Scene sets defaults via
-`RcRender.setWallTexture` / `setFloorTexture` / `setCeilTexture`; per-cell
-`tex:` / `ftex:` / `ctex:` markers override. Textures are full asset names,
-authored at `RC_TEX_SIZE` (64) and must tile. Diagonal walls carry a real
-along-chord `u` now. Still no atlas; upper-region surfaces (`upFloorTex` etc.)
-still flat; sky still a gradient.
+**As built (texturing, updated post-descope 2026-09-03).** `drawing.drawImageStrip`
+gained `tint` + `srcVTop` / `srcVBot` (all optional; 6-arg calls behave as
+before). A **textured wall** span → `drawWallStrip(destX, wTop, wBot, winTop,
+winBot, tex, u, lite, sideKind)` does a single clip against the window and blits
+`drawImageStrip(tex, srcX = u · RC_TEX_SIZE, …, tint, svTop, svBot)` — `tint` =
+light level · side-dim (x-face 1.0 / y-face 0.8 / diagonal 0.9), packed
+`0xRRGGBB`; `svTop` / `svBot` clip the source column to the visible span.
+Untextured cells fall through to the flat `drawStrip` path. **Floor and ceiling
+surfaces are flat-shaded only** — coloured per tile by `fcol:` / `ccol:` and lit
+by `RcLights.sampleAt` (bilinear); no texture is sampled. `drawing.drawFloorStrip`
+remains an engine primitive with its own tests but `RcRender` no longer calls it
+(`setFloorTexture` / `setCeilTexture` / `floorTexFor` / `ceilTexFor` were removed)
+— perspective-correct floor/ceiling texturing is deferred to a future pass. Scene
+sets the default wall texture via `RcRender.setWallTexture`; per-cell `tex:`
+markers override. Textures are full asset names, authored at `RC_TEX_SIZE` (64)
+and must tile. Diagonal walls carry a real along-chord `u`. No atlas; sky still a
+gradient.
 
 **As built (6b, updated by the renderer rework):** the flat-shaded fill also
 covers the *horizontal* surface between risers, per column — a pending
@@ -274,28 +279,30 @@ floor/ceiling surface (world height, near depth, shade kind, light) is stashed
 and flushed one span-loop iteration later once the far depth is known (post-loop
 tail flushes the last pair). Four shade kinds — `RC_SHADE_FLOOR_TOP` /
 `RC_SHADE_PIT_FLOOR` / `RC_SHADE_CEIL_UNDER` / `RC_SHADE_SOFFIT` — distinguish
-step tops, pit floors, ceiling undersides, soffits. The flush is now
-`drawSurfaceInto(hh, dNear, dFar, kind, lite)`: it draws the surface into every
-visible interval (§5.1) *and* `occlude`s its own projected band. Floor/ceiling
-textures still not sampled.
+step tops, pit floors, ceiling undersides, soffits. The flush is
+`drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, rayY)`: one
+`drawStrip` clipped to the window when no `fcol:` / `ccol:` is present anywhere,
+otherwise a per-cell DDA march that coalesces consecutive cells of the same
+resolved colour (default shade included) into one strip. Floor/ceiling textures
+are not sampled.
 
 **As built (Phase 7):** a diagonal-tile wall span arrives with `side =
 RC_SPAN_SIDE_DIAG`; `renderFrame` remaps that to the y-face wall shade before
 `drawStrip` (a dedicated diagonal shade is deferred) and samples the half-open
 diagonal cell's own light-grid entry rather than a step-back cell.
 
-**As built (Phase 8, updated by the renderer rework):** `renderFrame` reads
+**As built (post-descope 2026-09-03):** the `camRegion` / `setRegion` seeding, the
+`RC_SPAN_PORTAL_*` branches in the span ladder and `RC_SHADE_UPPER_FLOOR` were all
+removed with upper regions. `renderFrame` walks each column's near→far spans under
+the single `winTop` / `winBot` window (§5.1).
+
+~~**As built (Phase 8, updated by the renderer rework):** `renderFrame` reads
 `camRegion` from the bound mover's `regionId()` (height fallback otherwise),
 seeds each column from that region's heights, and calls
-`self.rc.setRegion(camRegion)`. `RC_SPAN_PORTAL_*` spans now `drawInto` a fill
-and `occlude` their band on the interval list (§5.1) — a portal ceiling/floor
-plane occludes from itself up (camera lower) or down (camera upper); a portal
-wall occludes just its band. The single-window "eat from top/bottom" model and
-its no-mid-band-split limitation are gone. `RC_SHADE_UPPER_FLOOR` (grey 70) for a
-plank underside seen from below. Portal-span lighting is region-blind — sampled
+`self.rc.setRegion(camRegion)`. Portal-span lighting is region-blind — sampled
 from the lower
 region's light grid regardless of which region the strip belongs to (documented
-v1 limit, flagged for revisit).
+v1 limit, flagged for revisit).~~
 
 There is **no texture atlas** — each wall texture is its own preloaded image;
 `drawImageStrip` samples the column. Multiple textures = multiple images, which is
@@ -319,8 +326,9 @@ benchmark actually failing**:
 3. **Generic `drawing.js` fix — `tint` parameter on `drawImageStrip`.** Needed for
    per-strip lighting (§6) regardless; also lets lighting avoid a second
    translucent-rect pass. Generic. **[DONE 2026-09-03]** — `drawImageStrip` +
-   `tint` / `srcVTop` / `srcVBot`; new `drawFloorStrip` for textured horizontal
-   surfaces. See §5.2.
+   `tint` / `srcVTop` / `srcVBot` for walls. `drawFloorStrip` was added as a
+   primitive but `RcRender` does not use it (floor/ceiling texturing deferred).
+   See §5.2.
 4. **Only if still short: a generic batched-strip call in `drawing`** —
    `drawing.drawStrips(texImage, count, uArray, xArray, yArray, wArray, hArray,
    tintArray)` issuing one mesh update for many strips. Still not "raycaster"
@@ -392,10 +400,10 @@ Billboards sample the same arrays at their base cell — one lookup per sprite
 
 ### 6.4 Applying the tint
 
-**As built (texturing 2026-09-03).** `drawImageStrip` / `drawFloorStrip` take a
-`tint` (packed `0xRRGGBB`, distance · light · side-dim). Textured wall/floor/
-ceiling strips are tinted directly — no second translucent-rect pass. Flat
-(untextured) strips still bake the shade into `pen.setFillColor`. Billboards
+**As built (texturing 2026-09-03).** `drawImageStrip` takes a `tint` (packed
+`0xRRGGBB`, light · side-dim). Textured wall strips are tinted directly — no
+second translucent-rect pass. Flat (untextured) strips and all floor/ceiling
+surfaces bake the shade into `pen.setFillColor`. Billboards
 (`drawActors`) now pass a tint from `RcLights.sampleAt` at the actor's cell —
 closes the "billboard brightness not lit" gap.
 
@@ -414,13 +422,10 @@ from step-up and head-clearance.
   - horizontal: circle (`radius`) vs cell edges and diagonal segments,
     slide-along-wall
   - **step-up** onto floors within `RC_STEP_UP` (default 0.35); blocked by higher
-  - **head clearance** against `ceilH` (and the upper region's `floorH` beneath a
-    hole)
+  - **head clearance** against `ceilH`
   - gravity + landing; falling into pits
   - riding a `lift` cell whose `floorH` animates
-  - which region (main vs `upper`) the actor is in, by height
-- Read-back: `actor.x()`, `y()`, `z()`, `angle()`, `pitch()`, `onGround()`,
-  `regionId()`.
+- Read-back: `actor.x()`, `y()`, `z()`, `angle()`, `pitch()`, `onGround()`.
 
 **As built (Phase 7):** the diagonal case is one push-out pass per frame *after*
 the per-axis slides — if the centre lands inside a diag cell's solid wedge it is
@@ -429,16 +434,13 @@ slide. `blocked()` is untouched (a diag cell reads as open through it). Same spe
 ceiling as the single-cell slide invariant: a body fast enough to cross the thin
 tip of the wedge in one frame is not caught.
 
-**As built (Phase 8):** one `region` field (0/1), never "half in both rooms".
-`blocked()` and the vertical resolver read the active region's floor/ceiling
-(region 1 → `upperKindAt = 2` walls, `upperFloorAt` / `upperCeilAt`). One
-boundary-crossing swap rule in `step()`: walk onto a level solid upper floor
-(`upperKindAt = 1` within `RC_STEP_UP` of your `z`) → region 1 + snap; step off
-the upper floor onto anything that isn't a plank (`upperKindAt <> 1`) → region 0
-immediately, and lower-region gravity finishes the fall. `enterRegion(r)` snaps a
-body into a region for a lobby spawn. The diagonal push-out is now guarded to
-region 0. No authored `lift`/stairs auto-transition beyond the one rule; climbing
-back up needs authored stairs.
+**As built (post-descope 2026-09-03):** `RcMover` reverted to its pre-Phase-8
+form. The `region` field, `enterRegion` / `regionId`, and every region-conditional
+branch in `blocked()` and the vertical resolver were removed with upper regions;
+`blocked()` and the resolver read a single floor/ceiling per cell. Step-up
+climbing, gravity, pits, `lift` riding and the Phase 7 diagonal slide are
+unchanged. Multi-tier level design is served entirely by chained `floor:` /
+`ceil:` steps.
 - `RcRender.bindCamera(actor)` — the view follows this actor. Player and enemies
   use the **same mover**; an enemy is an actor with no camera bound.
 
@@ -580,7 +582,7 @@ Each phase lands with its scratch transpile check green, any generic engine chan
 green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
 
 1. **`RcWorld` + map loader** + the generic `markersByTag` enumeration (§9.1).
-   *Demo:* loads a tagged `.stm`, `print`s cell heights / flags / upper-region
+   *Demo:* loads a tagged `.stm`, `print`s cell heights / flags / surface-colour
    data with assertions. No renderer.
 2. **`RcCast` span builder.**
    *Demo:* cast a fan of rays from a fixed point, draw the span lists as a
@@ -619,44 +621,40 @@ green in Vitest, **and** its unlisted demo running `ERR`-free in Cypress.
    chord normal to `rad` clearance = a smooth 45° slide (same speed limit as the
    single-cell slide invariant). Deferred: diagonal wall texturing, a dedicated
    diagonal shade, `diag:` + floor/ceiling-step in one cell (diag cells are flat).
-8. **One upper region per cell** (single portal hop). **[DONE 2026-09-02]**
-   *Demo:* `raycaster-p8-upper` (`PortalScene.bas`) — a room with a railed
-   walkway you see under, climb a staircase onto, walk, and drop through a hole
-   back down; 6 probes on the `upper` layer read, heights, portal-span casting,
-   and both mover region transitions.
-   **As built:** authored as a second `.stm` tile layer `upper` (id 1 solid
-   floor / 2 wall / 3 hole), read by `RcWorld` into `upKindArr` +
-   `upperKindAt` / `upperFloorAt` (= `ceilHeightAt`) / `upperCeilAt` (`uceil:N`
-   marker or `ceilH + RC_STD_CEIL`). `RcCast.setRegion(r)` + `RC_SPAN_PORTAL_*`
-   spans through a hole (`cast()` stays 5-arg; `los()` region-blind).
-   `RcRender` seeds columns per `camRegion`; `RC_SPAN_PORTAL_*` spans draw + occlude
-   on the interval list (§5.1); `RC_SHADE_UPPER_FLOOR`. `RcMover` one `region`
-   field + one boundary-crossing swap rule + `enterRegion(r)` / `regionId()`.
-   Generic engine add: `tilemapset.hasLayer(name)`. `raycaster-p1`'s `upper:vent`
-   probe migrated to the layer.
-   **Renderer rework (2026-09-02):** the single-window occlusion → a per-column
-   interval list (§5.1); bilinear floor/ceiling light (§6.1). Fixed the p8
-   walkway-underside / ceiling-hole garbage and the floor-lighting bands.
-   Deferred: per-region lighting (region-blind — flagged for revisit),
-   `los`/hitscan/light through the portal, auto climb-back, `upFloorTex`/etc.,
-   diagonals in the upper region, and the **lower↔upper camera transition still
-   reads slightly jarring** — parked until there's a fully textured level to
-   judge it against.
+8. **Multi-tier level design & surface colour.** **[DONE 2026-09-03]**
+   *Demo:* `raycaster-p8-tiers` (`TiersScene.bas`) — a sunken central arena, a
+   west staircase, a raised north walkway with wall-stub railings, and a higher
+   NE nook, all from `floor:` / `ceil:` height variation; textured walls,
+   `fcol:` / `ccol:` accent tiles, WASD + Q/E turn + R/F camera look. 4–6 probes
+   on staircase heights, window clamping, `wallTexFor` and `floorColAt`.
+   **As built:** no library change beyond the descope — multi-tier is chained
+   `floor:` / `ceil:` steps (Phases 3–6), per-tile `fcol:` / `ccol:` flat colour,
+   wall texturing (`setWallTexture` / `tex:` / `drawImageStrip` tint + vertical
+   clip), and pure scene wiring for camera look (`RcMover.turn` / `look`).
+   `tilemapset.hasLayer(name)` stays as a generic engine method.
 
-   **Texturing (2026-09-03) — slotted before Phase 9.** `drawing.drawImageStrip`
-   +`tint`/`srcVTop`/`srcVBot`; new `drawing.drawFloorStrip` (perspective
-   mesh). `RcRender` textures walls (`drawWallInto`, interval-clipped source-V,
-   distance·light·side tint) and floor/ceiling surfaces (`drawFloorStrip` +
-   `distAtScreenY`); scene defaults + per-cell `tex:`/`ftex:`/`ctex:`. `RcCast`
-   real diagonal along-chord `u`. `RC_TEX_SIZE = 64`. Demo `raycaster-p8b-textures`
-   (retextured p3; 6 generated placeholder PNGs). Billboard tint fell out
-   (§6.4). Deferred: perf (Phase 9 now has textured drawing to profile —
-   `PerspectiveMesh`-per-strip + `_texCache` growth), atlas, animated textures,
-   upper-region surface textures.
-9. **Optimisation + benchmark pass.** Now well-motivated — `drawFloorStrip`'s
-   `PerspectiveMesh`-per-strip, the `_texCache` V-window growth, `RcLights`'
-   every-frame recompute, plus the `drawing` batched-strip rung and constant
-   tuning.
+   ~~**Upper regions (built 2026-09-02, removed 2026-09-03).**~~ One optional
+   walkable region per cell, authored as an `upper` tile layer, was built and then
+   removed. The lower↔upper camera transition read as jarring, and a hole forced
+   the renderer's per-column occlusion to become a list of up to six screen-Y
+   intervals — the raycaster's largest per-frame cost — where nothing else needed
+   more than a single window. Room-over-room is out of scope for "DOOM plus a
+   bit". `RcWorld` lost `upKindArr` / `upCeilHArr` / `uceil:` / the accessors;
+   `RcCast` / `RcMover` reverted to their pre-Phase-8 form; `RcRender` reverted to
+   the single `winTop` / `winBot` window, keeping bilinear surface light, wall
+   texturing and `fcol:` / `ccol:` colour. See
+   `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md`.
+
+   **Texturing (2026-09-03).** `drawing.drawImageStrip` +`tint`/`srcVTop`/`srcVBot`
+   for walls; `drawing.drawFloorStrip` added as an engine primitive but
+   **not called by `RcRender`** (floor/ceiling texturing deferred). `RcRender`
+   textures walls (`drawWallStrip`, window-clipped source-V, light·side tint);
+   scene default + per-cell `tex:`. `RcCast` real diagonal along-chord `u`.
+   `RC_TEX_SIZE = 64`.
+9. **Optimisation + benchmark pass.** Now well-motivated — the per-frame
+   draw-primitive count, class-method dispatch and bounds-checked array access per
+   span, `RcLights`' every-frame recompute, plus the `drawing` batched-strip rung
+   and constant tuning.
    *Demo:* busy stress map + on-screen frame-time readout.
 10. **Docs + roadmap.** A `docs/` guide for the `.bas` library (not an API
     Reference page — it's project-level `.bas`, not an engine module), plus

@@ -21,7 +21,7 @@ Class
 ' "rccast is not defined" at runtime, with NO compile diagnostic). Keep it `wld`.
 '
 ' Phase 2 scope: no screen projection (Phase 3), no occlusion-window early-out
-' (Phase 3), no upper regions (Phase 8), diagonal tiles: Phase 7 (diagHit).
+' (Phase 3), no upper regions, diagonal tiles: Phase 7 (diagHit).
 
 dim kindArr(0)
 dim distArr(0)

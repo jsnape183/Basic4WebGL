@@ -1,5 +1,7 @@
 # Raycaster Renderer Rework — Per-Column Interval Occlusion + Bilinear Light — Design Spec
 
+> **Superseded** by `docs/superpowers/specs/2026-09-03-raycaster-descope-upper-regions-design.md` — upper regions were removed and the interval renderer reverted to a single window. Kept for history.
+
 **Status:** approved (brainstorm 2026-09-02) — ready for implementation plan.
 
 **Why:** the `raycaster-p8` upper-regions demo surfaced two rendering defects that are *the model*, not patchable bugs:

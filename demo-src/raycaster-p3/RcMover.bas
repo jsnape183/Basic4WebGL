@@ -10,13 +10,11 @@ Class
 ' The RcWorld field is `wld`, NEVER `world` (builtin module -> silent
 ' mis-transpile -> runtime ReferenceError).
 '
-' Deferred (spec): actor-vs-actor collision (§7.1), animated lifts, region
-' resolution main-vs-upper (Phase 8).
+' Deferred (spec): actor-vs-actor collision (§7.1), animated lifts.
 '   - vertical ceiling collision: pz is only clamped at the floor, so a jump can
 '     pass the head through a low ceiling. Safe only while the jump apex clears
 '     the lowest ceiling over any reachable floor (RC_JUMP_VEL^2 / (2*RC_GRAVITY)
-'     above the highest standable floor). Real head-bonk collision comes with
-'     upper regions (Phase 8).
+'     above the highest standable floor).
 '   - single-cell slide invariant: step() checks exactly one destination edge
 '     cell per axis, so it only stays tunnel-proof while
 '     max_speed * RC_MAX_STEP_DT < rad. A faster body (Phase 6 enemies,
