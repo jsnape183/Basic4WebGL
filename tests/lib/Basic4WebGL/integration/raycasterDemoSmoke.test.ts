@@ -162,6 +162,7 @@ interface RcCastLike {
   spanside(i: number): number;
   spandist(i: number): number;
   spankind(i: number): number;
+  spanu(i: number): number;
   setregion(r: number): void;
 }
 
@@ -504,6 +505,7 @@ describe('raycaster phase demos smoke-execute', () => {
     const rc = new mod.RcCast() as RcCastLike & {
       spanside(i: number): number;
       spandist(i: number): number;
+      spanu(i: number): number;
     };
 
     // Ray SE from (1.5,1.5) straight at the SE-solid chord of cell (3,3):
@@ -513,6 +515,20 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(n).toBeGreaterThan(0);
     expect(rc.spanside(n - 1)).toBe(2); // RC_SPAN_SIDE_DIAG
     expect(rc.spandist(n - 1)).toBeCloseTo(2.0, 1);
+
+    // The diagonal span carries a real along-chord wall-U (was hard-zero):
+    // hit (3.5,3.5), chord start corner NE (4,3), du = √0.5/√2 = 0.5.
+    const u1 = rc.spanu(n - 1);
+    expect(u1).toBeGreaterThan(0);
+    expect(u1).toBeLessThan(1);
+
+    // A second ray crossing the same chord at a clearly different point gives a
+    // different U. Ray (1.7,2.3) dir (1,1) meets the chord at (3.2,3.8) → du=0.8.
+    rc.cast(stubWorldDiag, 1.7, 2.3, 1, 1);
+    const k = rc.spancount();
+    expect(rc.spanside(k - 1)).toBe(2);
+    const u2 = rc.spanu(k - 1);
+    expect(Math.abs(u2 - u1)).toBeGreaterThan(0.1);
 
     // los agrees with cast on the diagonal (spec: light/bullets match the eye).
     expect(rc.los(stubWorldDiag, 1.5, 1.5, 1, 1)).toBeCloseTo(2.0, 1);

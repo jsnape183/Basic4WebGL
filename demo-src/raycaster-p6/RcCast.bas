@@ -8,6 +8,10 @@ Class
 ' vertical extent), col/row (source cell), side (0 x-hit / 1 y-hit), u (wall
 ' texture coord 0..1; 0 for steps), tex (texture id string).
 '
+' Diagonal walls (side = RC_SPAN_SIDE_DIAG) carry a real along-chord u: the
+' distance of the hit point from the chord's start corner (NE for nw/se, NW for
+' ne/sw) over the chord length (√2). They are no longer flat-shaded at u = 0.
+'
 ' Direction (dx,dy) need not be normalized; spanDist and los() are in world
 ' units regardless because deltaDist = |1/dir|.
 '
@@ -151,6 +155,11 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
     dim exitD
     dim dh
     dim seeOther
+    dim hx
+    dim hy
+    dim dStartX
+    dim dStartY
+    dim du
 
     self.reset()
     self.beginMarch(ox, oy, dx, dy)
@@ -201,7 +210,18 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
                 endif
                 dh = self.diagHit(dg, ox, oy, dx, dy, self.mMapX, self.mMapY, self.mEntryDist, exitD)
                 if dh >= 0 then
-                    self.addSpan(RcConfig.RC_SPAN_WALL, dh, runFloor, runCeil, self.mMapX, self.mMapY, RcConfig.RC_SPAN_SIDE_DIAG, 0, wld.wallTexAt(self.mMapX, self.mMapY))
+                    hx = ox + dx * dh
+                    hy = oy + dy * dh
+                    if dg = RcConfig.RC_DIAG_NW or dg = RcConfig.RC_DIAG_SE then
+                        dStartX = self.mMapX + 1.0
+                        dStartY = self.mMapY
+                    else
+                        dStartX = self.mMapX
+                        dStartY = self.mMapY
+                    endif
+                    du = math.sqrt((hx - dStartX) * (hx - dStartX) + (hy - dStartY) * (hy - dStartY)) / 1.41421356
+                    du = math.clamp(du, 0, 1)
+                    self.addSpan(RcConfig.RC_SPAN_WALL, dh, runFloor, runCeil, self.mMapX, self.mMapY, RcConfig.RC_SPAN_SIDE_DIAG, du, wld.wallTexAt(self.mMapX, self.mMapY))
                     return
                 endif
             endif
