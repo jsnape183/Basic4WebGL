@@ -939,4 +939,80 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(flat!.strips.length).toBe(0);
     expect(flat!.rects.filter((a) => a[2] === 4).length).toBeGreaterThan(0);
   });
+
+  // Task 6: a floor cell with a texture set blits horizontal-surface strips via
+  // drawing.drawFloorStrip (perspective mesh) instead of the flat drawRect path.
+  // Locks the near/far orientation: for a floor the near edge is LOWER on screen
+  // (bigger Y) and its world point is CLOSER to the camera than the far edge.
+  test.each(phaseDirs)('%s: renderFrame blits textured floor surfaces via drawFloorStrip', (dirName) => {
+    const floorLights = {
+      samplecell: () => 0.6,
+      sampleat: () => 0.6,
+    };
+    const runWith = (floorTex: string) => {
+      const floors: unknown[][] = [];
+      const rects: unknown[][] = [];
+      const overrides = {
+        getStageWidth: () => 320,
+        getStageHeight: () => 200,
+        drawFloorStrip: (...a: unknown[]) => {
+          floors.push(a);
+          return undefined;
+        },
+        drawRect: (...a: unknown[]) => {
+          rects.push(a);
+          return undefined;
+        },
+      };
+      const mod = evalDemo(transpileDemo(`${DEMO_SRC}/${dirName}`), overrides);
+      if (!mod.RcRender) return null;
+      const world = { ...stubWorld, floortexat: () => floorTex };
+      const r = new mod.RcRender(world);
+      r.bindlights(floorLights as unknown); // plain RcRender method — present all phases
+      r.setcamera(2, 2, 0, 0);
+      r.renderframe();
+      return { floors, rects };
+    };
+
+    const textured = runWith('floor.png');
+    if (!textured) return;
+
+    expect(textured.floors.length).toBeGreaterThan(0);
+
+    for (const a of textured.floors as number[][]) {
+      const [name, destX, yNear, yFar, , , , , stripW, tint] = a as unknown as [
+        string,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+        number,
+      ];
+      expect(name).toBe('floor.png');
+      expect((destX - 2) % 4).toBe(0); // strip centre = col*4 + RC_STRIP_W/2
+      expect(stripW).toBe(4);
+      expect(yNear).toBeGreaterThan(yFar); // floor: near edge lower on screen
+      expect(typeof tint).toBe('number');
+      expect(tint).toBeGreaterThan(0);
+      expect(tint).toBeLessThan(0xffffff); // light 0.6 < 1 → tinted, not white
+    }
+
+    // The near world point must be spatially closer to the camera than the far.
+    const s = (textured.floors as number[][])[0];
+    const wNearX = s[4];
+    const wNearY = s[5];
+    const wFarX = s[6];
+    const wFarY = s[7];
+    expect(Math.hypot(wNearX - 2, wNearY - 2)).toBeLessThan(Math.hypot(wFarX - 2, wFarY - 2));
+
+    // Untextured control: flat drawRect surface strips, zero drawFloorStrip calls.
+    const flat = runWith('');
+    expect(flat).not.toBeNull();
+    expect(flat!.floors.length).toBe(0);
+    expect(flat!.rects.filter((a) => (a as unknown[])[2] === 4).length).toBeGreaterThan(0);
+  });
 });

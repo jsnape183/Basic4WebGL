@@ -302,6 +302,21 @@ function projectY(h, d)
     return self.scy + (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
 endfunction
 
+' Inverse of projectY: the perpendicular distance at which a horizontal surface
+' at world height hh projects to screen Y `y`. Guards the horizon singularity
+' (returns RC_MAX_DIST). For a ceiling (hh above eye) the numerator is negative,
+' so the sign of `denom` flips too -- the identity holds for both.
+function distAtScreenY(hh, y)
+    dim denom
+    dim horizon
+    horizon = self.scy + self.camPitch
+    denom = y - horizon
+    if math.abs(denom) < 0.0001 then
+        return RcConfig.RC_MAX_DIST
+    endif
+    return (self.camZ + RcConfig.RC_EYE_Z - hh) * self.viewH / denom
+endfunction
+
 ' Draws a vertical strip [sTop..sBot] clipped to [winTop..winBot], flat-shaded.
 ' shadeKind: 0 wall x-side, 1 wall y-side, 2 floor-step, 3 ceil-step.
 function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
@@ -360,13 +375,29 @@ endfunction
 ' clipped into every visible interval, then occlude its own projected band.
 ' Orders the two projected Ys so the band always has top <= bottom (a floor below
 ' eye and a ceiling above it project inverted). Bumps surfCountLast per strip.
-function drawSurfaceInto(hh, dNear, dFar, kind, lite)
+' texName "" -> the flat drawRect path (unchanged); non-empty -> a perspective
+' drawFloorStrip per visible interval, tinted by the sampled light.
+function drawSurfaceInto(hh, dNear, dFar, kind, lite, texName)
     dim ya
     dim yb
     dim yTop
     dim yBot
     dim useLite
     dim dMid
+    dim k
+    dim n
+    dim cTop
+    dim cBot
+    dim ynScr
+    dim yfScr
+    dim cdNear
+    dim cdFar
+    dim wnx
+    dim wny
+    dim wfx
+    dim wfy
+    dim ft
+    dim eyeZ
     useLite = lite
     if self.boundLights <> 0 then
         dMid = (dNear + dFar) / 2
@@ -381,7 +412,45 @@ function drawSurfaceInto(hh, dNear, dFar, kind, lite)
         yTop = yb
         yBot = ya
     endif
-    self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
+    if string.len(texName) = 0 then
+        self.surfCountLast = self.surfCountLast + self.drawInto(yTop, yBot, kind, useLite)
+    else
+        ' Textured: blit one perspective-correct strip per visible interval, with
+        ' the world near/far re-derived from the CLIPPED screen span so the
+        ' texture stays pinned when an interval cuts the band.
+        eyeZ = self.camZ + RcConfig.RC_EYE_Z
+        ft = self.packTint(255 * useLite, 255 * useLite, 255 * useLite)
+        n = array.arrLength(self.intvTop)
+        for k = 0 to n - 1
+            cTop = yTop
+            cBot = yBot
+            if cTop < self.intvTop(k) then
+                cTop = self.intvTop(k)
+            endif
+            if cBot > self.intvBot(k) then
+                cBot = self.intvBot(k)
+            endif
+            if cBot > cTop then
+                ' Near edge: for a floor (below eye) it is the LOWER edge on
+                ' screen (bigger Y); for a ceiling (above eye) the upper edge.
+                if hh < eyeZ then
+                    ynScr = cBot
+                    yfScr = cTop
+                else
+                    ynScr = cTop
+                    yfScr = cBot
+                endif
+                cdNear = self.distAtScreenY(hh, ynScr)
+                cdFar = self.distAtScreenY(hh, yfScr)
+                wnx = self.camX + self.fRayX * cdNear
+                wny = self.camY + self.fRayY * cdNear
+                wfx = self.camX + self.fRayX * cdFar
+                wfy = self.camY + self.fRayY * cdFar
+                drawing.drawFloorStrip(texName, self.iDestX, ynScr, yfScr, wnx, wny, wfx, wfy, RcConfig.RC_STRIP_W, ft)
+                self.surfCountLast = self.surfCountLast + 1
+            endif
+        next k
+    endif
     self.occlude(yTop, yBot)
 endfunction
 
@@ -632,6 +701,8 @@ function renderFrame()
     dim wshade
     dim camRegion
     dim wtex
+    dim sfTex
+    dim scTex
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -724,6 +795,10 @@ function renderFrame()
             sfLite = self.boundLights.sampleAt(self.camX, self.camY)
             scLite = sfLite
         endif
+        ' Surface textures for this column's run: the camera cell's marker or the
+        ' scene default. A per-cell floor tex that varies mid-run is a v2 nicety.
+        sfTex = self.floorTexFor(camCol, camRow)
+        scTex = self.ceilTexFor(camCol, camRow)
 
         n = self.rc.spanCount()
         i = 0
@@ -786,8 +861,8 @@ function renderFrame()
                             if kind = RcConfig.RC_SPAN_WALL then
                                 ' Full opaque blocker: flush both pending surfaces, draw
                                 ' the face, clear the interval list, end the column.
-                                self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite)
-                                self.drawSurfaceInto(scH, scD, d, scKind, scLite)
+                                self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite, sfTex)
+                                self.drawSurfaceInto(scH, scD, d, scKind, scLite, scTex)
                                 wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
                                 if string.len(wtex) > 0 then
                                     self.surfCountLast = self.surfCountLast + self.drawWallInto(sTop, sBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
@@ -810,7 +885,7 @@ function renderFrame()
                                     else
                                         newH = self.rc.spanLo(i)
                                     endif
-                                    self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite)
+                                    self.drawSurfaceInto(sfH, sfD, d, sfKind, sfLite, sfTex)
                                     self.drawInto(sTop, sBot, 2, lite)
                                     self.occlude(sTop, sBot)
                                     sfD = d
@@ -830,7 +905,7 @@ function renderFrame()
                                     else
                                         newH = self.rc.spanLo(i)
                                     endif
-                                    self.drawSurfaceInto(scH, scD, d, scKind, scLite)
+                                    self.drawSurfaceInto(scH, scD, d, scKind, scLite, scTex)
                                     self.drawInto(sTop, sBot, 3, lite)
                                     self.occlude(sTop, sBot)
                                     scD = d
@@ -852,8 +927,8 @@ function renderFrame()
         endwhile
 
         if self.intervalCount() > 0 then
-            self.drawSurfaceInto(sfH, sfD, RcConfig.RC_MAX_DIST, sfKind, sfLite)
-            self.drawSurfaceInto(scH, scD, RcConfig.RC_MAX_DIST, scKind, scLite)
+            self.drawSurfaceInto(sfH, sfD, RcConfig.RC_MAX_DIST, sfKind, sfLite, sfTex)
+            self.drawSurfaceInto(scH, scD, RcConfig.RC_MAX_DIST, scKind, scLite, scTex)
         endif
     next col
 
