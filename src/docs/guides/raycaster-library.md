@@ -147,10 +147,10 @@ enemy see the player" checks. It does not disturb the spans from the last `cast`
 
 The ray stops at the first wall (no "see-through" windows yet). Diagonal-wall
 tiles *are* handled (see below): the ray tests the 45° chord, and `los` stops at
-it too. A wall span from a diagonal has
-`spanSide(i)` equal to `RcConfig.RC_SPAN_SIDE_DIAG` and `spanU(i)` of `0`
-(diagonal faces aren't textured yet). The direction `(dx, dy)` doesn't need to be
-a unit vector — distances come out in world units regardless.
+it too. A wall span from a diagonal has `spanSide(i)` equal to
+`RcConfig.RC_SPAN_SIDE_DIAG` and a real `spanU(i)` measured along the 45° chord.
+The direction `(dx, dy)` doesn't need to be a unit vector — distances come out in
+world units regardless.
 
 ## RcRender — drawing the view
 
