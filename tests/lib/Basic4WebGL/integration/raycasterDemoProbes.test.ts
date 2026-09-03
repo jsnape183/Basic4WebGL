@@ -159,4 +159,13 @@ describe('raycaster phase demo probes execute', () => {
       probeCount: 6,
     });
   });
+
+  test('P8-tiers TiersScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p8-tiers',
+      stm: 'tiersroom.stm',
+      sceneGlobal: '_sb_tiersscene',
+      probeCount: 5,
+    });
+  });
 });

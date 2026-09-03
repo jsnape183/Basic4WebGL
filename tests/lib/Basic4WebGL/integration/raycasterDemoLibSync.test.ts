@@ -18,7 +18,7 @@ const canonNames = new Set(
 );
 
 const phaseDirs = readdirSync(DEMO_SRC, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && /^raycaster-p\d+[a-z]?$/.test(entry.name))
+  .filter((entry) => entry.isDirectory() && /^raycaster-p\d+(-[a-z]+)?$/.test(entry.name))
   .map((entry) => entry.name)
   .sort();
 

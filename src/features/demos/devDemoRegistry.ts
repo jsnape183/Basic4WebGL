@@ -72,4 +72,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP7Diagonals',
   },
+  {
+    slug: 'raycaster-p8-tiers',
+    name: 'Raycaster P8 — Multi-Tier Level',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 8 probe: multi-tier level design with pure floor:/ceil: height variation — a sunken arena, a west staircase up to a raised north walkway and a higher NE nook. Wall textures, per-tile fcol:/ccol: colour, WASD + RF camera look.',
+    docsSlug: '',
+    file: 'RaycasterP8Tiers',
+  },
 ];

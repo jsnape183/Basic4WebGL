@@ -52,4 +52,10 @@ describe('devDemoRegistry', () => {
     const p7 = devDemoRegistry.find((d) => d.slug === 'raycaster-p7-diagonals');
     expect(p7?.file).toBe('RaycasterP7Diagonals');
   });
+
+  test('includes the Phase 8 multi-tier demo', () => {
+    const p8 = devDemoRegistry.find((d) => d.slug === 'raycaster-p8-tiers');
+    expect(p8).toBeDefined();
+    expect(p8?.file).toBe('RaycasterP8Tiers');
+  });
 });

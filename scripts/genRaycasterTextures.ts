@@ -16,7 +16,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SIZE = 64;
-const OUT_DIR = 'demo-src/raycaster-p8b/assets';
+const OUT_DIR = 'demo-src/raycaster-p8-tiers/assets';
 
 // --- tiny PNG encoder --------------------------------------------------------
 
