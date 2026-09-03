@@ -499,7 +499,7 @@ function castRays()
         self.zbuffer(col) = perpWallDist
 
         destX = col * self.STRIP + self.STRIP / 2
-        drawing.drawImageStrip("wall.png", texX, destX, self.SCY, self.STRIP, lineHeight)
+        drawing.drawImageStrip("wall.png", texX, destX, self.SCY, self.STRIP, lineHeight, 16777215, 0, 1)
     next col
 endfunction
 
@@ -622,9 +622,9 @@ function drawEnemy(e as Enemy)
         destX = sc * self.STRIP + self.STRIP / 2
 
         if e.isDead() then
-          drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+          drawing.drawImageStrip("enemy_dead.png", texCol, destX, self.SCY, self.STRIP, spriteH, 16777215, 0, 1)
         elseif e.isFlashing() then
-          drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+          drawing.drawImageStrip("enemy_hit.png", texCol, destX, self.SCY, self.STRIP, spriteH, 16777215, 0, 1)
         elseif e.isAttacking() then
           ' enemy_attack.png is a single still frame, not a multi-frame
           ' animation strip -- shown for the same brief 0.15s window as
@@ -633,9 +633,9 @@ function drawEnemy(e as Enemy)
           ' priority over the plain idle sprite but not over isDead()/
           ' isFlashing() -- a dying or just-hit enemy shows that instead,
           ' even if it also happened to land a hit the same frame.
-          drawing.drawImageStrip("enemy_attack.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+          drawing.drawImageStrip("enemy_attack.png", texCol, destX, self.SCY, self.STRIP, spriteH, 16777215, 0, 1)
         else
-          drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH)
+          drawing.drawImageStrip("enemy.png", texCol, destX, self.SCY, self.STRIP, spriteH, 16777215, 0, 1)
         endif
       endif
     endif
