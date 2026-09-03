@@ -4,12 +4,19 @@ Extends scene
 dim tm as tilemapset
 dim wld as RcWorld
 dim ren as RcRender
+dim me as RcMover
 dim titleText as Text
 dim fpsText as Text
 dim frames
 dim accum
 
 Constructor()
+  input.bind("fwd", "key", keyboard.W)
+  input.bind("back", "key", keyboard.S)
+  input.bind("sl", "key", keyboard.Q)
+  input.bind("sr", "key", keyboard.E)
+  input.bind("tl", "key", keyboard.A)
+  input.bind("tr", "key", keyboard.D)
 EndConstructor
 
 function onenter()
@@ -20,7 +27,8 @@ function onenter()
   self.tm = new tilemapset("p8broom.stm")
   self.wld = new RcWorld(self.tm, "walls")
   self.ren = new RcRender(self.wld)
-  self.ren.setCamera(2.0, 4.0, 0, 0)
+  self.me = new RcMover(self.wld, 2.0, 4.0, 0.3, 0.6)
+  self.ren.bindCamera(self.me)
 
   self.ren.setWallTexture("rc_tex_concrete.png")
   self.ren.setFloorTexture("rc_tex_floor.png")
@@ -30,7 +38,7 @@ function onenter()
   self.titleText.setStyle(16, 255, 220, 120)
   hud.add(self.titleText)
 
-  self.fpsText = new Text("...", 12, 30)
+  self.fpsText = new Text("WASD move/turn  QE strafe", 12, 30)
   self.fpsText.setStyle(14, 180, 255, 180)
   hud.add(self.fpsText)
 
@@ -113,6 +121,20 @@ function probe(label, passed, y)
 endfunction
 
 function onupdate(delta)
+  dim fwd
+  dim strafe
+  dim turnAxis
+
+  fwd = input.axis("back", "fwd")
+  strafe = input.axis("sl", "sr")
+  turnAxis = input.axis("tl", "tr")
+
+  self.me.move(fwd * RcConfig.RC_MOVE_SPEED, strafe * RcConfig.RC_MOVE_SPEED)
+  if turnAxis <> 0 then
+    self.me.turn(turnAxis * RcConfig.RC_TURN_SPEED * (delta / 1000.0))
+  endif
+  self.me.step(delta)
+
   self.ren.renderFrame()
   self.frames = self.frames + 1
   self.accum = self.accum + delta
