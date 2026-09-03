@@ -91,3 +91,33 @@ function onupdate(delta)
   next col
 endfunction
 ```
+
+## drawFloorStrip(imageName, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW, tint)
+
+Draws one column of a floor or ceiling texture, corrected for perspective so it does not warp with distance. Like `drawImageStrip`, this is a building block for column-based renderers: call it once per screen column for each horizontal surface band you want to paint. The strip covers the screen from `yNear` (the edge closest to the camera) to `yFar` (the edge nearest the horizon), and the image tiles once per world unit along the ground between the near world point and the far world point.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| imageName | string | Name of a pre-loaded image asset. Should be a texture that tiles seamlessly. |
+| destX     | number | Horizontal centre of the strip on screen |
+| yNear     | number | Screen Y of the strip edge closest to the camera |
+| yFar      | number | Screen Y of the strip edge nearest the horizon |
+| wNearX    | number | World X of the point under the near edge |
+| wNearY    | number | World Y of the point under the near edge |
+| wFarX     | number | World X of the point under the far edge |
+| wFarY     | number | World Y of the point under the far edge |
+| stripW    | number | Width of the strip on screen in pixels |
+| tint      | number | Optional. Colour to multiply the strip by, as a packed `red * 65536 + green * 256 + blue` number (0–255 per channel). Defaults to white (no tint). Use it to shade the surface by distance or light level. |
+
+**Returns:** nothing.
+
+```bas
+function onupdate(delta)
+  drawing.clear()
+  dim col
+  for col = 0 to 199
+    ' near edge of the floor band is lower on screen than the far edge
+    drawing.drawFloorStrip("floor.png", col, 380, 240, 2, 1, 8, 1, 2, 0xffffff)
+  next col
+endfunction
+```

@@ -4,6 +4,8 @@ import { describe, test, expect } from 'vitest';
 let gfxCreated = 0;
 let spriteCreated = 0;
 let textureCreated = 0;
+let meshCreated = 0;
+let meshDestroyed = 0;
 let destroyed = 0;
 let lastTexOpts: any = null;
 
@@ -27,6 +29,13 @@ class FakeTexture {
   destroy() { destroyed++; }
 }
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
+class FakePerspectiveMesh {
+  visible = true; tint = 0xffffff; position = { set() {} };
+  texture: unknown; opts: any; corners: number[] | null = null;
+  constructor(opts?: any) { meshCreated++; this.opts = opts; this.texture = opts?.texture; }
+  setCorners(...c: number[]) { this.corners = c; }
+  destroy() { destroyed++; meshDestroyed++; }
+}
 class FakeContainer {
   children: unknown[] = [];
   addChild(c: unknown) { if (!this.children.includes(c)) this.children.push(c); } // dedupe like real PIXI
@@ -35,12 +44,15 @@ class FakeContainer {
 }
 
 function loadDrawing() {
-  gfxCreated = spriteCreated = textureCreated = destroyed = 0;
+  gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
   lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
-  const PIXI = { Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture, Rectangle: FakeRectangle };
+  const PIXI = {
+    Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture,
+    Rectangle: FakeRectangle, PerspectiveMesh: FakePerspectiveMesh,
+  };
   const worldContainer = new FakeContainer();
-  const _sbAssets = { get: () => ({ source: {}, width: 64, height: 64 }) };
+  const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
   const factory = new Function(
     'PIXI', 'worldContainer', '_sbAssets',
     `${src}\n; return _sbDrawing;`,
@@ -146,5 +158,38 @@ describe('drawing — drawImageStrip tint + vertical source clip', () => {
     d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0, 1);
     d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 1);
     expect(textureCreated).toBe(2);
+  });
+});
+
+describe('drawing — drawFloorStrip (perspective mesh)', () => {
+  test('drawFloorStrip creates a mesh with the four screen corners', () => {
+    const { d } = loadDrawing();
+    const m = d.drawFloorStrip('f.png', 100, 50, 30, 2, 3, 5, 8, 4, 0xc0c0c0);
+    expect(meshCreated).toBe(1);
+    // corners: TL/TR at yFar=30, BR/BL at yNear=50, x = destX ± stripW/2 (100 ± 2)
+    expect(m.corners).toEqual([98, 30, 102, 30, 102, 50, 98, 50]);
+    expect(m.tint).toBe(0xc0c0c0);
+  });
+
+  test('drawFloorStrip pools the mesh across clearDrawing', () => {
+    const { d } = loadDrawing();
+    d.drawFloorStrip('f.png', 100, 50, 30, 2, 3, 5, 8, 4, 0xc0c0c0);
+    d.clearDrawing();
+    d.drawFloorStrip('f.png', 100, 50, 30, 2, 3, 5, 8, 4, 0xc0c0c0);
+    expect(meshCreated).toBe(1);
+  });
+
+  test('drawFloorStrip defaults tint to white when omitted', () => {
+    const { d } = loadDrawing();
+    const m = d.drawFloorStrip('f.png', 100, 50, 30, 2, 3, 5, 8, 4);
+    expect(m.tint).toBe(0xffffff);
+  });
+
+  test('_drawingReset destroys pooled meshes', () => {
+    const { d } = loadDrawing();
+    d.drawFloorStrip('f.png', 100, 50, 30, 2, 3, 5, 8, 4, 0xc0c0c0);
+    d.clearDrawing();
+    d._drawingReset();
+    expect(meshDestroyed).toBe(1);
   });
 });
