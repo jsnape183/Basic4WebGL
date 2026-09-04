@@ -7,6 +7,7 @@ let textureCreated = 0;
 let meshCreated = 0;
 let meshDestroyed = 0;
 let destroyed = 0;
+let wallMeshCreated = 0;
 let lastTexOpts: any = null;
 
 class FakeGraphics {
@@ -39,6 +40,31 @@ class FakePerspectiveMesh {
   setCorners(...c: number[]) { this.corners = c; }
   destroy() { destroyed++; meshDestroyed++; }
 }
+class FakeBuffer {
+  data: unknown; updated = 0;
+  constructor(o: any) { this.data = o?.data ?? o; }
+  update() { this.updated++; }
+}
+class FakeGeometry {
+  attributes: any; indexBuffer: any; _posArr: any; _uvArr: any; _colArr: any; destroyedCount = 0;
+  constructor(o: any) { this.attributes = o?.attributes ?? {}; this.indexBuffer = o?.indexBuffer; }
+  getBuffer(name: string) { return this.attributes?.[name]?.buffer ?? { update() {} }; }
+  destroy() { this.destroyedCount++; destroyed++; }
+}
+class FakeShader {
+  resources: any;
+  static from(o: any) { return new FakeShader(o); }
+  constructor(o?: any) { this.resources = o?.resources ?? {}; }
+}
+class FakeMesh {
+  geometry: any; shader: any; texture: any; tint = 0xffffff; visible = true; zIndex = 0;
+  parent: unknown = undefined; position = { set() {} };
+  constructor(o: any) { wallMeshCreated++; this.geometry = o?.geometry; this.shader = o?.shader; this.texture = o?.texture; }
+  destroy() { destroyed++; }
+}
+(globalThis as any).FakeMesh = FakeMesh;
+(FakeTexture as any).WHITE = { source: {} };
+
 class FakeContainer {
   children: any[] = [];
   addChild(c: any) { c.parent = this; if (!this.children.includes(c)) this.children.push(c); } // dedupe like real PIXI; track parent
@@ -48,11 +74,14 @@ class FakeContainer {
 
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
+  wallMeshCreated = 0;
   lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
   const PIXI = {
     Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture,
     Rectangle: FakeRectangle, PerspectiveMesh: FakePerspectiveMesh,
+    Mesh: FakeMesh, Geometry: FakeGeometry, Shader: FakeShader, Buffer: FakeBuffer,
+    BufferUsage: { VERTEX: 1, INDEX: 2, COPY_DST: 4 },
   };
   const worldContainer = new FakeContainer();
   const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
@@ -221,5 +250,60 @@ describe('drawing — drawFloorStrip (perspective mesh)', () => {
     d.clearDrawing();
     d._drawingReset();
     expect(meshDestroyed).toBe(1);
+  });
+});
+
+describe('drawing — wallColumn / wallFlush (batched wall mesh)', () => {
+  test('wallFlush emits one mesh per distinct image with 6 indices per column', () => {
+    const { d, worldContainer } = loadDrawing();
+    d.wallColumn('brick.png', 10, 20, 180, 0.25, 0, 1, 0xff8080);
+    d.wallColumn('brick.png', 14, 30, 170, 0.30, 0, 1, 0xff8080);
+    d.wallColumn('panel.png', 200, 40, 160, 0.50, 0.1, 0.9, 0xffffff);
+    expect(d.wallFlush()).toBe(2);
+    const meshes = worldContainer.children.filter((c: any) => c instanceof (globalThis as any).FakeMesh || c.geometry);
+    expect(meshes.length).toBe(2);                         // brick + panel
+    const brick = meshes.find((m: any) => m.geometry._colArr.some((v: number) => v !== 1 && v !== 0));
+    // 2 columns -> 8 verts -> positions length 16, colors length 32; indexBuffer holds >= 12 used entries
+    expect(brick.geometry._posArr.length).toBeGreaterThanOrEqual(16);
+    expect(brick.geometry._uvArr.length).toBeGreaterThanOrEqual(16);
+    expect(brick.geometry.indexBuffer.length).toBeGreaterThanOrEqual(12);
+    expect(Array.from(brick.geometry.indexBuffer.slice(0, 6))).toEqual([0, 1, 2, 1, 3, 2]);
+    expect(brick.zIndex).toBeGreaterThanOrEqual(1_000_000);
+  });
+
+  test('a second wallFlush with no wallColumn calls draws an empty (zero-area) mesh', () => {
+    const { d, worldContainer } = loadDrawing();
+    d.wallColumn('brick.png', 10, 20, 180, 0.25, 0, 1, 0xffffff);
+    d.wallFlush();
+    expect(d.wallFlush()).toBe(0);  // buffers cleared -> nothing to draw
+    // no throw; the mesh's used column count is 0 -> it is hidden
+    const m = worldContainer.children.find((c: any) => c.geometry);
+    expect(m.visible).toBe(false);
+  });
+
+  test('wallColumn packs the passed quad: positions span [x±2, top..bot], uv.x == srcU', () => {
+    const { d, worldContainer } = loadDrawing();
+    d.wallColumn('brick.png', 100, 50, 150, 0.5, 0, 1, 0xffffff);
+    d.wallFlush();
+    const m = worldContainer.children.find((c: any) => c.geometry);
+    const pos = m.geometry._posArr;
+    // first quad: 4 verts (x-2,top)(x+2,top)(x-2,bot)(x+2,bot)
+    expect([pos[0], pos[2], pos[4], pos[6]].sort((a: number, b: number) => a - b)).toEqual([98, 98, 102, 102]);
+    expect([pos[1], pos[3], pos[5], pos[7]].sort((a: number, b: number) => a - b)).toEqual([50, 50, 150, 150]);
+    const uv = m.geometry._uvArr;
+    expect(uv[0]).toBeCloseTo(0.5);
+    // unused capacity slots are zero-area, not stale
+    expect(pos[8]).toBe(0); expect(pos[9]).toBe(0);
+  });
+
+  test('_drawingReset destroys the wall mesh pool', () => {
+    const { d } = loadDrawing();
+    d.wallColumn('brick.png', 10, 20, 180, 0.25, 0, 1, 0xffffff);
+    d.wallFlush();
+    const before = wallMeshCreated;
+    d._drawingReset();
+    d.wallColumn('brick.png', 10, 20, 180, 0.25, 0, 1, 0xffffff);
+    d.wallFlush();
+    expect(wallMeshCreated).toBe(before + 1);  // pool was cleared, mesh re-created
   });
 });
