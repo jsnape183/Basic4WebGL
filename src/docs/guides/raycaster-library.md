@@ -94,6 +94,11 @@ them; raise `ceil:` over a platform so the walker keeps headroom. The dev demo
 `raycaster-p8-tiers` is a worked example. Genuine room-over-room (a walkable
 surface with open walkable space beneath the *same* cell) is not supported.
 
+For a level that climbs into a *large* separate area — a staircase up to a whole
+second floor, say — switch scenes at the top of the stairs rather than modelling
+both floors in one `.stm`. Each scene stays a single flat space the renderer
+handles cheaply, and the transition is a normal `scenemanager.switch`.
+
 ## RcCast — casting rays
 
 `RcCast` walks a straight line across the map from a point and collects every
