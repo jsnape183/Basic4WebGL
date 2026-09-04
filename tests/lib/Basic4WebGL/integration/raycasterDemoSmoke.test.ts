@@ -700,11 +700,17 @@ describe('raycaster phase demos smoke-execute', () => {
     if (!mod.RcRender) return;
     if (!mod.RcLights) return;
 
-    const r = new mod.RcRender(stubWorld);
+    // Rung 1 (RcConfig.RC_FLAT_FILL): a flat, fill-covered floor deliberately no
+    // longer emits per-column surface strips -- two full-width background fills
+    // cover it at one camera-cell light level. The per-column bilinear sampleAt
+    // this test guards lives on the stepped-column fallback, so drop a pit in
+    // mid-view to put every far column back on that path.
+    const pitWorld = { ...stubWorld, floorheightat: (c: number) => (c >= 3 ? -0.3 : 0) };
+    const r = new mod.RcRender(pitWorld);
     r.bindlights(checkerLights as unknown);
     // Angled so the column fan spreads across cells in BOTH x and y (a
     // straight-down-the-corridor camera has constant rayX -> constant sample x).
-    r.setcamera(2, 2, 0.4, 0); // flat floor, looking across the open corridor
+    r.setcamera(2, 2, 0.4, 0); // looking across the open corridor into the pit
     r.renderframe();
 
     // Floor-surface strips: w === 4 (RC_STRIP_W), below the horizon (midY > 105),

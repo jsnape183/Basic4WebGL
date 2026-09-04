@@ -14,9 +14,17 @@ import { packageModules } from '../../../../src/constants/packageModules';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 const DIR = 'demo-src/raycaster-p3';
 
-function transpileP3(): string {
+function transpileP3(flatFill = true): string {
   const names = readdirSync(DIR).filter((n) => n.endsWith('.bas')).sort();
-  const raw = names.map((name) => ({ name, source: readFileSync(`${DIR}/${name}`, 'utf-8') }));
+  const raw = names.map((name) => {
+    let source = readFileSync(`${DIR}/${name}`, 'utf-8');
+    if (!flatFill && name === 'RcConfig.bas') {
+      const patched = source.replace('RC_FLAT_FILL = 1', 'RC_FLAT_FILL = 0');
+      expect(patched).not.toBe(source); // guard against a silent rename
+      source = patched;
+    }
+    return { name, source };
+  });
   const { files, error } = sortByDependencies(raw);
   expect(error).toBeUndefined();
   const result = compiler.transpile({ lib, files });
@@ -34,8 +42,9 @@ function makeRender(
   world: Record<string, unknown>,
   rects: unknown[][],
   wallStrips: unknown[][] = [],
+  flatFill = true,
 ): RcRenderLike {
-  const code = transpileP3();
+  const code = transpileP3(flatFill);
   const stub: Record<string, unknown> = {};
   const handler: ProxyHandler<Record<string, unknown>> = {
     get(t, p: string) {
@@ -84,6 +93,16 @@ function makeRender(
   const { RcRender } = factory(_sb, _createArray, ...Object.values(helpers), { log() {} });
   deferred.forEach((cb) => cb());
   return new RcRender(world) as RcRenderLike;
+}
+
+// Same, but with RcConfig.RC_FLAT_FILL forced to 0 -- the one-constant revert of
+// rung 1, used to prove the per-column path is byte-for-byte still there.
+function makeRenderFlatFillOff(
+  world: Record<string, unknown>,
+  rects: unknown[][],
+  wallStrips: unknown[][] = [],
+): RcRenderLike {
+  return makeRender(world, rects, wallStrips, false);
 }
 
 const openWorld = {
@@ -179,5 +198,59 @@ describe('RcRender single-window occlusion', () => {
     const rendered = rects.length + strips.length;
     // primitiveCount excludes the 2 background split rects drawn before the loop
     expect((r as unknown as { primitivecount(): number }).primitivecount()).toBe(rendered - 2);
+  });
+
+  // --- rung 1: painter's background floor/ceiling fill -------------------
+  // These worlds give every wall a texture so wall strips leave through
+  // drawImageStrip; that makes every remaining RC_STRIP_W-wide drawRect
+  // unambiguously a per-column floor/ceiling surface strip.
+  const texWorld = { ...openWorld, walltexat: () => 'wall.png' };
+  const perColumnRects = (rects: unknown[][]) => rects.filter((a) => (a as number[])[2] === 4).length;
+
+  test('rung 1: a flat room draws a constant surface-rect count, not ~2 per column', () => {
+    const rects: unknown[][] = [];
+    const strips: unknown[][] = [];
+    const r = makeRender({ ...texWorld }, rects, strips);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    expect(strips.length).toBeGreaterThan(0); // the walls really did paint
+    // 2 sky/ground + 2 background fills; NO per-column surface rects
+    expect(perColumnRects(rects)).toBe(0);
+    expect(rects.length).toBeLessThan(8); // a handful of full-width rects, not 100s
+  });
+
+  test('rung 1: a mid-view floor step still draws that column per-column', () => {
+    const rects: unknown[][] = [];
+    const stepWorld = { ...texWorld, floorheightat: (c: number) => (c >= 4 ? 0.4 : 0) };
+    const r = makeRender(stepWorld, rects, []);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    // the stepped columns produce their own 4px riser + pit/soffit rects
+    expect(perColumnRects(rects)).toBeGreaterThan(0);
+  });
+
+  test('rung 1: RC_FLAT_FILL=0 restores the pre-rung-1 per-column count', () => {
+    const rects: unknown[][] = [];
+    const r = makeRenderFlatFillOff({ ...texWorld }, rects, []);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    expect(perColumnRects(rects)).toBeGreaterThan(openWorld.widthcells() * 1);
+    // exactly the old behaviour: one floor + one ceiling strip for every column
+    expect(perColumnRects(rects)).toBe(r.columncount() * 2);
+    expect(rects.length).toBe(2 + r.columncount() * 2); // no background fills
+  });
+
+  test('rung 1: an fcol: column still paints over the background fill', () => {
+    const rects: unknown[][] = [];
+    const colWorld = {
+      ...texWorld,
+      hassurfacecolor: () => 1,
+      floorcolat: (c: number) => (c >= 4 && c <= 6 ? 0x804020 : -1),
+      ceilcolat: () => -1,
+    };
+    const r = makeRender(colWorld, rects, []);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    expect(perColumnRects(rects)).toBeGreaterThan(0);
   });
 });

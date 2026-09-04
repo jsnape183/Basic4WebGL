@@ -19,7 +19,8 @@ const ASSETS = `${LIBDIR}/assets`;
 // Per-frame primitive-count ceilings. Set from the Task 3 baseline run, then
 // LOWERED in Task 5 after rung 1. Keep generous headroom (x1.15) over observed.
 // Baseline (pre-optimisation) observed prim.max: 16=1620, 32=2030, 48=2159.
-const PRIM_CEIL: Record<number, number> = { 16: 1863, 32: 2335, 48: 2483 };
+// Post-rung-1 observed prim.max:                 16=1478, 32=1888, 48=1974.
+const PRIM_CEIL: Record<number, number> = { 16: 1700, 32: 2172, 48: 2271 };
 
 interface World {
   floorheightat(c: number, r: number): number;

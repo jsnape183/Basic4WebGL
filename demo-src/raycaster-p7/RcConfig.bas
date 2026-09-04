@@ -41,4 +41,5 @@ const
     RC_SPAN_SIDE_DIAG = 2
     RC_STD_CEIL = 1.0
     RC_TEX_SIZE = 64
+    RC_FLAT_FILL = 1
 endconst

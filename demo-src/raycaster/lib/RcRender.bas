@@ -347,6 +347,76 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     return 1
 endfunction
 
+' Full-viewport-width flat fill for the painter's background floor/ceiling
+' (rung 1). shadeKind 4 = floor top, 6 = ceiling under -- the only two the
+' background ever uses.
+function drawFill(yTop, yBot, shadeKind, lite)
+    dim g
+    dim rr
+    dim gg
+    dim bb
+    if yBot <= yTop then
+        return
+    endif
+    g = 105
+    if shadeKind = 6 then
+        g = 80
+    endif
+    rr = math.clamp(g * lite, 0, 255)
+    gg = math.clamp(g * lite, 0, 255)
+    bb = math.clamp((g + 25) * lite, 0, 255)
+    pen.setLineWidth(0)
+    pen.setFillColor(rr, gg, bb)
+    drawing.drawRect(self.viewW / 2, (yTop + yBot) / 2, self.viewW, yBot - yTop)
+    self.primCount = self.primCount + 1
+endfunction
+
+' 1 if no cell this column's floor band crosses between dNear and dFar carries an
+' fcol: override -- lets the background fill cover the column. Only called when
+' wld.hasSurfaceColor() = 1.
+function floorBandClean(dNear, dFar, rayX, rayY)
+    dim a
+    dim b
+    dim mx
+    dim my
+    dim guard
+    a = dNear
+    guard = 0
+    while a < dFar - 0.0001 and guard < 128
+        guard = guard + 1
+        b = self.surfaceRunEnd(a, dFar, rayX, rayY)
+        mx = self.camX + rayX * ((a + b) / 2)
+        my = self.camY + rayY * ((a + b) / 2)
+        if self.wld.floorColAt(math.floor(mx), math.floor(my)) >= 0 then
+            return 0
+        endif
+        a = b
+    endwhile
+    return 1
+endfunction
+
+' Ceiling mirror of floorBandClean (ccol: overrides).
+function ceilBandClean(dNear, dFar, rayX, rayY)
+    dim a
+    dim b
+    dim mx
+    dim my
+    dim guard
+    a = dNear
+    guard = 0
+    while a < dFar - 0.0001 and guard < 128
+        guard = guard + 1
+        b = self.surfaceRunEnd(a, dFar, rayX, rayY)
+        mx = self.camX + rayX * ((a + b) / 2)
+        my = self.camY + rayY * ((a + b) / 2)
+        if self.wld.ceilColAt(math.floor(mx), math.floor(my)) >= 0 then
+            return 0
+        endif
+        a = b
+    endwhile
+    return 1
+endfunction
+
 ' The perpendicular distance at which this column's ray (rayX, rayY) leaves the
 ' grid cell it occupies at tStart, clamped to tMax. One DDA step (nearest x/y
 ' crossing). Used only for the per-tile colour march.
@@ -602,6 +672,8 @@ function renderFrame()
     dim scLite
     dim wshade
     dim wtex
+    dim fillOn
+    dim fillLite
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -645,6 +717,27 @@ function renderFrame()
 
     camCol = math.floor(self.camX)
     camRow = math.floor(self.camY)
+
+    ' Rung 1: paint the standard floor and ceiling once, full-width, and let the
+    ' opaque wall strips paint over the over-draw. Only valid when the camera is
+    ' grounded on a standard-height cell -- otherwise the fill's single-height
+    ' assumption breaks and every column takes the per-column path.
+    fillLite = 1.0
+    if self.boundLights <> 0 then
+        fillLite = self.boundLights.sampleCell(camCol, camRow)
+    endif
+    fillOn = 0
+    if RcConfig.RC_FLAT_FILL = 1 then
+        if self.wld.floorHeightAt(camCol, camRow) = 0 then
+            if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
+                fillOn = 1
+            endif
+        endif
+    endif
+    if fillOn = 1 then
+        self.drawFill(horizon, self.viewH, RcConfig.RC_SHADE_FLOOR_TOP, fillLite)
+        self.drawFill(0, horizon, RcConfig.RC_SHADE_CEIL_UNDER, fillLite)
+    endif
 
     for col = 0 to self.cols - 1
         cameraX = (2.0 * col / self.cols) - 1.0
@@ -700,8 +793,19 @@ function renderFrame()
             endif
 
             if kind = RcConfig.RC_SPAN_WALL then
-                self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
-                self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                ' Rung 1 skip guard (used verbatim at all three flush points):
+                ' draw the pending surface UNLESS it is the pristine standard
+                ' floor/ceiling running from the camera (sfD = 0 and sfH = 0 /
+                ' scD = 0 and scH = RC_STD_CEIL) and colour-clean -- exactly what
+                ' the background fill already painted. One FLOORSTEP makes
+                ' sfD > 0 (and/or sfH <> 0), so a stepped column resumes the full
+                ' per-column path from that point on.
+                if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
+                endif
+                if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                endif
                 hitWall = 1
                 wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
                 if string.len(wtex) > 0 then
@@ -718,7 +822,11 @@ function renderFrame()
             else
                 if kind = RcConfig.RC_SPAN_FLOORSTEP then
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
+                    ' Skip only the pristine standard floor from the camera --
+                    ' exactly what the background fill already covers.
+                    if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                        self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
+                    endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
                     if newH > runFloorH then
                         newY = self.projectY(newH, d)
@@ -737,7 +845,9 @@ function renderFrame()
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                    if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                        self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
+                    endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
                     if newH < runCeilH then
                         newY = self.projectY(newH, d)
@@ -764,8 +874,12 @@ function renderFrame()
         endwhile
 
         if hitWall = 0 then
-            self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
-            self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
+            if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+                self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
+            endif
+            if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+                self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
+            endif
         endif
     next col
 
