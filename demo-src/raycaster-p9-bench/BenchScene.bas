@@ -101,7 +101,6 @@ function onupdate(delta)
   dim t0
   dim wpi
   dim meshLbl
-  dim gpuLbl
 
   if input.pressed("s1") then
     self.loadSize(16)
@@ -162,11 +161,7 @@ function onupdate(delta)
     if self.meshOn = 1 then
       meshLbl = "on"
     endif
-    gpuLbl = "n/a"
-    if world.gpuFrameMs() >= 0 then
-      gpuLbl = string.str(math.floor(world.gpuFrameMs() * 100) / 100) + "ms"
-    endif
-    self.hudA.setText("MESH " + meshLbl + "   " + string.str(world.drawCalls()) + " draws   GPU " + gpuLbl + "   " + string.str(math.floor(world.fps())) + " fps   |   " + string.str(self.ren.primitiveCount()) + " prim   renderJS " + string.str(math.floor(self.accum / self.frames * 100) / 100) + "ms   flush " + string.str(math.floor(self.ren.wallMeshMs() * 1000) / 1000) + "ms   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
+    self.hudA.setText("avg " + string.str(math.floor(self.accum / self.frames)) + "ms   " + string.str(math.floor(world.fps())) + " fps   |   MESH " + meshLbl + "   " + string.str(self.ren.primitiveCount()) + " prim   flush " + string.str(math.floor(self.ren.wallMeshMs() * 1000) / 1000) + "ms   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
     self.frames = 0
     self.accum = 0
     self.minMs = 9999
