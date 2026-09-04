@@ -4,20 +4,24 @@ Extends scene
 ' Raycaster finale -- a capstone showcase for the softBASIC raycaster library
 ' (demo-src/raycaster/lib/): a 32x32 grid of six rooms joined by corridors,
 ' single wall texture, a 3-step staircase up to a raised dais in the Torch
-' Hall (east room), low ambient light with a player-carried torch, and full
-' keyboard + controller input (right-stick look on both axes, A/Space to jump).
-' No new engine features -- everything here already ships in the library.
+' Hall (east room), and full keyboard + controller input (right-stick look on
+' both axes, A/Space to jump). No new engine features -- everything here
+' already ships in the library.
+'
+' Lighting: the player carries no light source. Instead, a static `light`
+' marker sits in each room + the hub junction (finale.stm) -- baked once at
+' load (RcLights.bakeStatic), not recomputed every frame like a moving torch
+' was. Walking between rooms means walking through genuinely dark corridors
+' into fixed pools of light, rather than a light that follows you and
+' re-shades the whole view every frame as you move.
 
 dim tm as tilemapset
 dim wld as RcWorld
 dim ren as RcRender
 dim me as RcMover
 dim lights as RcLights
-dim torch
-dim lightMode
 dim titleText as Text
 dim helpText as Text
-dim lightText as Text
 
 Constructor()
   ' Move -- WASD (keyboard), left stick (controller).
@@ -43,9 +47,6 @@ Constructor()
   ' Jump -- Space (keyboard), A button (controller).
   input.bind("jump", "key", keyboard.SPACE)
   input.bind("jump", "button", controller.A)
-
-  ' L -- toggle the torch's falloff curve, to compare the two side by side.
-  input.bind("lightmode", "key", keyboard.L)
 EndConstructor
 
 function onenter()
@@ -60,51 +61,22 @@ function onenter()
   self.ren.bindCamera(self.me)
   self.ren.setWallTexture("rc_tex_concrete.png")
   ' Rung 1's painter's background fill assumes floor/ceiling brightness is
-  ' roughly uniform across the visible plane -- badly wrong for a short-radius
-  ' torch in a dark room, where it produces a false bright/dark seam right at
-  ' any fcol:/ccol: boundary. Force the accurate per-pixel path everywhere.
+  ' roughly uniform across the visible plane -- badly wrong with several
+  ' short-radius static lights and genuinely dark corridors between them,
+  ' where it produces a false bright/dark seam right at any fcol:/ccol:
+  ' boundary. Force the accurate per-pixel path everywhere.
   self.ren.setFlatFill(0)
 
-  ' Falloff curve is per-light, not global (RcLights.setLightFalloff) -- default
-  ' here is QUADRATIC at a tight 4-cell radius: a small bright pool that dies
-  ' off quickly, closer to how a real torch reads. L toggles back to LINEAR at
-  ' the old 6-cell radius to compare against directly.
-  self.torch = self.lights.addPoint(self.me.x(), self.me.y(), 0.5, 0.95, 4)
-  self.lightMode = 1
-  self.applyLightMode()
-  self.lights.update()
+  ' No dynamic lights at all -- every `light` marker in finale.stm was already
+  ' baked into staticArr by the RcLights Constructor above. Nothing to update
+  ' per frame.
 
   self.titleText = new Text("Raycaster Finale", 12, 10)
   self.titleText.setStyle(16, 255, 220, 120)
   hud.add(self.titleText)
-  self.helpText = new Text("WASD/stick move   arrows/right-stick look   Space/A jump   L torch mode", 12, 30)
+  self.helpText = new Text("WASD/stick move   arrows/right-stick look   Space/A jump", 12, 30)
   self.helpText.setStyle(13, 180, 255, 180)
   hud.add(self.helpText)
-  self.lightText = new Text("...", 12, 48)
-  self.lightText.setStyle(13, 255, 200, 140)
-  hud.add(self.lightText)
-  self.updateLightText()
-endfunction
-
-' lightMode 1 = quadratic falloff, tight 4-cell radius (default).
-' lightMode 0 = linear falloff, the original 6-cell radius, for comparison.
-function applyLightMode()
-  if self.lightMode = 1 then
-    self.lights.setLightFalloff(self.torch, RcConfig.RC_FALLOFF_QUADRATIC)
-    self.lights.setLightRadius(self.torch, 4)
-  else
-    self.lights.setLightFalloff(self.torch, RcConfig.RC_FALLOFF_LINEAR)
-    self.lights.setLightRadius(self.torch, RcConfig.RC_LIGHT_RANGE)
-  endif
-endfunction
-
-function updateLightText()
-  dim label
-  label = "quadratic, radius 4"
-  if self.lightMode = 0 then
-    label = "linear, radius " + string.str(RcConfig.RC_LIGHT_RANGE)
-  endif
-  self.lightText.setText("L: torch falloff = " + label)
 endfunction
 
 function onupdate(delta)
@@ -128,15 +100,7 @@ function onupdate(delta)
   if input.pressed("jump") then
     self.me.jump()
   endif
-  if input.pressed("lightmode") then
-    self.lightMode = 1 - self.lightMode
-    self.applyLightMode()
-    self.updateLightText()
-  endif
   self.me.step(delta)
-
-  self.lights.moveLight(self.torch, self.me.x(), self.me.y())
-  self.lights.update()
 
   self.ren.renderFrame()
 endfunction

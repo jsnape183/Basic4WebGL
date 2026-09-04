@@ -1765,6 +1765,41 @@
      "row": 18,
      "col": 29,
      "tag": "floor:0.6 fcol:9a6a3a"
+    },
+    {
+     "row": 5,
+     "col": 15,
+     "tag": "light"
+    },
+    {
+     "row": 25,
+     "col": 15,
+     "tag": "light"
+    },
+    {
+     "row": 15,
+     "col": 5,
+     "tag": "light"
+    },
+    {
+     "row": 15,
+     "col": 23,
+     "tag": "light"
+    },
+    {
+     "row": 15,
+     "col": 28,
+     "tag": "light"
+    },
+    {
+     "row": 5,
+     "col": 25,
+     "tag": "light"
+    },
+    {
+     "row": 15,
+     "col": 15,
+     "tag": "light"
     }
    ]
   }
