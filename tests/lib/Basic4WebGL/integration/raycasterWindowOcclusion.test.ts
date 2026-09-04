@@ -36,6 +36,7 @@ interface RcRenderLike {
   setcamera(x: number, y: number, angle: number, pitch: number): void;
   renderframe(): void;
   columncount(): number;
+  setflatfill(v: number): void;
 }
 
 function makeRender(
@@ -238,6 +239,29 @@ describe('RcRender single-window occlusion', () => {
     // exactly the old behaviour: one floor + one ceiling strip for every column
     expect(perColumnRects(rects)).toBe(r.columncount() * 2);
     expect(rects.length).toBe(2 + r.columncount() * 2); // no background fills
+  });
+
+  test('setFlatFill(0) forces the same per-column count as the RC_FLAT_FILL=0 config override', () => {
+    // A scene needing accurate per-pixel floor/ceiling light (e.g. a
+    // short-radius torch) can call ren.setFlatFill(0) instead of touching the
+    // shared RcConfig constant every other demo relies on for speed.
+    const viaSetter = (() => {
+      const rects: unknown[][] = [];
+      const r = makeRender({ ...openWorld }, rects, []);
+      r.setflatfill(0);
+      r.setcamera(2, 2, 0, 0);
+      r.renderframe();
+      return { count: perColumnRects(rects), total: rects.length };
+    })();
+    const viaConfig = (() => {
+      const rects: unknown[][] = [];
+      const r = makeRenderFlatFillOff({ ...openWorld }, rects, []);
+      r.setcamera(2, 2, 0, 0);
+      r.renderframe();
+      return { count: perColumnRects(rects), total: rects.length };
+    })();
+    expect(viaSetter).toEqual(viaConfig);
+    expect(viaSetter.total).toBe(2 + viaSetter.count); // no background fills
   });
 
   test('rung 1: an fcol: column still paints over the background fill', () => {

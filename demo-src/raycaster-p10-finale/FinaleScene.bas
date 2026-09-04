@@ -54,6 +54,11 @@ function onenter()
   self.ren.bindLights(self.lights)
   self.ren.bindCamera(self.me)
   self.ren.setWallTexture("rc_tex_concrete.png")
+  ' Rung 1's painter's background fill assumes floor/ceiling brightness is
+  ' roughly uniform across the visible plane -- badly wrong for a short-radius
+  ' torch in a dark room, where it produces a false bright/dark seam right at
+  ' any fcol:/ccol: boundary. Force the accurate per-pixel path everywhere.
+  self.ren.setFlatFill(0)
 
   self.torch = self.lights.addPoint(self.me.x(), self.me.y(), 0.5, 0.95, RcConfig.RC_LIGHT_RANGE)
   self.lights.update()

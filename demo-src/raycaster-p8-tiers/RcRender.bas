@@ -57,6 +57,20 @@ dim primCount
 ' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
 dim defWallTex
 
+' Per-instance override for RcConfig.RC_FLAT_FILL (rung 1's painter's
+' background fill). Defaults to the global constant; setFlatFill(0) forces
+' every column through the accurate per-pixel floor/ceiling path instead.
+' Needed by any scene where floor/ceiling brightness varies sharply across
+' the visible plane (e.g. a short-radius torch): the flat fill paints the
+' WHOLE floor/ceiling at one brightness sampled from the camera's own cell,
+' skipped per-column only when that column's sightline crosses a fcol:/ccol:
+' tile boundary (hasSurfaceColor()'s per-column "clean" check) -- so a
+' colour-tagged column renders correctly dimmed by distance while its
+' plain neighbour still shows the flat, too-bright fill, producing a hard
+' seam exactly at the colour boundary. Harmless (and worth keeping on) when
+' floor/ceiling light is roughly uniform across what's on screen.
+dim flatFillOn
+
 Constructor(w as RcWorld)
     dim di
     self.wld = w
@@ -77,6 +91,7 @@ Constructor(w as RcWorld)
     self.surfCountLast = 0
     self.primCount = 0
     self.defWallTex = ""
+    self.flatFillOn = RcConfig.RC_FLAT_FILL
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -88,6 +103,13 @@ EndConstructor
 
 function bindCamera(mover)
     self.boundMover = mover
+endfunction
+
+' Override rung 1's painter's background fill for this instance -- 0 forces
+' every column through the accurate per-pixel floor/ceiling path (see the
+' flatFillOn field comment above); 1 restores the default (RcConfig.RC_FLAT_FILL).
+function setFlatFill(v)
+    self.flatFillOn = v
 endfunction
 
 function bindActors(actors)
@@ -727,7 +749,7 @@ function renderFrame()
         fillLite = self.boundLights.sampleCell(camCol, camRow)
     endif
     fillOn = 0
-    if RcConfig.RC_FLAT_FILL = 1 then
+    if self.flatFillOn = 1 then
         if self.wld.floorHeightAt(camCol, camRow) = 0 then
             if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
                 fillOn = 1
