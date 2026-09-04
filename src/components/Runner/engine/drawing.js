@@ -24,14 +24,11 @@ const _sbDrawing = (() => {
   const _wallPool = new Map();      // imageName -> { mesh, geom, shader, cap } (cap = column capacity)
   const _wallTexCache = new Map();  // imageName -> PIXI.Texture over the full source
 
-  // GL-only shader pair. The `#version 300 es` directive MUST be the literal
-  // first characters (PIXI v8's Shader.from does not prepend it, and the GL
-  // compiler rejects `in`/`out` without it). uProjectionMatrix /
-  // uWorldTransformMatrix / uTransformMatrix are the uniforms PIXI's mesh
-  // pipeline supplies to a custom mesh shader; aColor is our addition, carrying
-  // the per-column light tint.
-  const _WALL_VERT = `#version 300 es
-precision highp float;
+  // GL-only shader pair: the bootstrapper's app.init() sets no `preference`, so
+  // PIXI v8 uses its WebGL default. uProjectionMatrix / uWorldTransformMatrix /
+  // uTransformMatrix are the uniforms PIXI's mesh pipeline supplies to a custom
+  // mesh shader; aColor is our addition, carrying the per-column light tint.
+  const _WALL_VERT = `
 in vec2 aPosition;
 in vec2 aUV;
 in vec4 aColor;
@@ -50,8 +47,7 @@ void main() {
     vColor = aColor;
 }`;
 
-  const _WALL_FRAG = `#version 300 es
-precision highp float;
+  const _WALL_FRAG = `
 in vec2 vUV;
 in vec4 vColor;
 
