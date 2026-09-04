@@ -203,69 +203,59 @@ issues one `drawing.drawRect` — a pooled `PIXI.Graphics` — **per column**. F
 360-column view of a flat room that is ~360 floor + ~360 ceiling Graphics per
 frame, versus Wolfenstein's 2.
 
-### 6.2 Change (RcRender only)
+### 6.2 Change (RcRender only) — painter's background fill
 
-Replace the per-column surface calls in `renderFrame` with a **pending
-screen-space rectangle** per surface (floor, ceiling), accumulated across
-columns and flushed as a single `drawing.drawRect`.
+The per-column floor/ceiling trapezoid can't cleanly coalesce into one rect
+(each column's far edge sits at that column's wall distance, so the projected
+top edge differs column to column). The fix is the Wolfenstein approach: draw
+the floor and ceiling **once, full-screen, before the column loop**, and let the
+opaque wall strips paint over them. A grounded camera's view of any flat surface
+it stands on asymptotes to the horizon, so a single rect from the horizon to the
+screen edge always covers the visible flat floor (and mirror for the ceiling) —
+the over-drawn part between the horizon and each wall base is painted over by
+that column's wall strip.
 
-Maintain, per surface, a pending run: `{ active, xStart, xEnd, yTop, yBot,
-runHeight, litLevel }`. For each column, after the span walk resolves that
-column's floor band (`sfH`, near depth `sfD`, far depth, `winTop`/`winBot`):
+At the top of `renderFrame`, after the sky/ground split, when
+`RcConfig.RC_FLAT_FILL = 1` **and** the camera is grounded on a standard-height
+context (`wld.floorHeightAt(camCol, camRow) == 0` and
+`wld.ceilHeightAt(camCol, camRow) == RcConfig.RC_STD_CEIL`):
 
-- **Fill-eligible column** — the band has no step at this column; the band
-  crosses no `fcol:`/`ccol:` cell (see "Colour coexistence"); and the projected
-  `yTop`/`yBot` and quantised light match the pending run:
-  → extend the pending run's `xEnd` to this column. Draw nothing.
-- **Break** — height, projected Y, or quantised light differs, the column has a
-  step or a colour cell, or end of screen:
-  → flush the pending run as one `drawRect(xMid, yMid, xEnd-xStart+RC_STRIP_W,
-  yBot-yTop)` at the run's `litLevel` shade; then either start a new run
-  (fill-eligible column) or call the existing per-column `drawSurface(...)`
-  (stepped / coloured column — it self-coalesces colour internally) and leave the
-  pending run inactive.
+- **floor fill:** `drawing.drawRect(viewW/2, (horizon + viewH)/2, viewW,
+  viewH - horizon)` at the `RC_SHADE_FLOOR_TOP` shade × the camera cell's light.
+- **ceiling fill:** `drawing.drawRect(viewW/2, horizon/2, viewW, horizon)` at the
+  `RC_SHADE_CEIL_UNDER` shade × the camera cell's light.
 
-Same logic mirrored for the ceiling. Both pending runs flushed at end of the
-column loop.
+Then, in the column loop, **skip the pending-surface `drawSurface` call for a
+column whose span list contains no FLOORSTEP before the terminal WALL** (a
+"simple" column — the background floor fill already covers it). A column that
+*does* have a FLOORSTEP/CEILSTEP still runs the full per-column
+`drawSurface` + riser + occlusion path unchanged (its pit floors / risers /
+soffits paint over the background). The `hitWall = 0` final flush likewise only
+runs `drawSurface` when the column had a step or the fill is disabled.
 
-**Colour coexistence.** The fill path must not be globally disabled by
-`wld.hasSurfaceColor()` — real levels use `fcol:`/`ccol:` as sparse accents, and
-falling back for the whole screen would make rung 1 near-worthless on any level
-that uses colour at all (including the stress scene). Instead:
-
-- `hasSurfaceColor()` is `0` (the common case — p3–p7, most levels): no colour
-  check at all; the fill path runs pure.
-- `hasSurfaceColor()` is `1`: each column's floor/ceiling band is walked cell by
-  cell with `surfaceRunEnd` (the same cheap DDA `drawSurface` already uses — no
-  draw calls) to test whether any crossed cell carries a colour. Clean → the
-  column stays fill-eligible. Dirty → flush the pending run, hand that one column
-  to `drawSurface` (which draws its coloured sub-bands correctly), resume the
-  fill on the next clean column. The march cost is paid only on levels that use
-  colour, and it is strictly cheaper than the current unconditional per-column
-  `drawSurface` on those levels.
-
-Same logic mirrored for the ceiling run. Both pending runs flushed at end of the
-column loop.
+**Colour coexistence.** `fcol:`/`ccol:` tiles must still paint. When
+`wld.hasSurfaceColor()` is `1`, a simple column additionally walks its
+floor/ceiling band cell by cell with `surfaceRunEnd` (the cheap DDA `drawSurface`
+already uses — no draw calls) and, if any crossed cell carries a colour,
+falls back to the full per-column `drawSurface` for that column (drawn over the
+background fill). `hasSurfaceColor()` is `0` (p3–p7, most levels) → no scan, the
+column is skipped outright. The scan cost is paid only on levels that use colour
+and is strictly cheaper than today's unconditional per-column `drawSurface`.
 
 ### 6.3 The light trade-off
 
-Per-column bilinear `sampleAt` would break the run at every column. For the
-fast-fill path only:
-
-- sample light **once per world cell** the run passes through (at the cell
-  centre), via `sampleCell` (not bilinear `sampleAt`),
-- **quantise** to `RC_FILL_LIGHT_STEPS` levels (default 16),
-- a run breaks only when the quantised level changes.
-
-Result: flat floor/ceiling lighting is banded per cell at 16 levels instead of
-smoothly per-column. Stepped and `fcol:`/`ccol:` columns keep the current
-full-fidelity per-column path (`drawSurface` unchanged). Wolfenstein is
-flat-lit and reads fine; 16 levels over a cell is finer than that.
+The background fills take **one light value** — `sampleCell(camCol, camRow)` (or
+`sampleAt(camX, camY)`), the camera cell — for the whole flat floor and whole
+flat ceiling. Real per-column bilinear `sampleAt` gives a subtle brightness
+gradient across a flat floor; the fill flattens that to the camera-cell level.
+Stepped columns and `fcol:`/`ccol:` columns keep the full per-column
+`drawSurface` path (per-segment bilinear light) unchanged. Wolfenstein is
+flat-lit and reads fine.
 
 **Escape hatch:** `RcConfig.RC_FLAT_FILL = 1` (on by default). Set `0` and
-`renderFrame` uses the old per-column `drawSurface` for every column — the
-fallback path is not deleted, so this is a one-constant revert if the banding
-looks wrong in the demo.
+`renderFrame` draws no background fills and runs the per-column `drawSurface` for
+every column exactly as today — a one-constant revert if the flat lighting looks
+wrong in the demo.
 
 ### 6.4 What stays
 
@@ -280,10 +270,12 @@ unchanged; they are the stepped/coloured fallback and the wall path.
 ### 6.5 Tests
 
 - `tests/lib/Basic4WebGL/integration/raycasterWindowOcclusion.test.ts` — extend:
-  a flat uncoloured room draws **≤ a small constant** floor/ceiling `drawRect`s
-  (was ~2 per column); a room with a mid-view step still shows the step riser +
-  the two flanking fills; a `fcol:` column still produces its own coloured strip
-  (fallback path intact).
+  a flat uncoloured room draws a **small constant** number of surface
+  `drawRect`s regardless of column count (2 background fills, not ~2 per column);
+  a room with a mid-view floor step still draws that column's riser + pit-floor
+  surface (fallback path); a `fcol:` column still produces its coloured strip
+  (colour-coexistence scan works); `RC_FLAT_FILL = 0` restores the old
+  ~2-per-column count exactly.
 - `raycasterDemoSmoke` — the existing `renderFrame draws floor/pit surfaces` and
   `floor-rise occludes geometry` blocks must still pass across all phase dirs
   (the fallback path is what they exercise for stepped columns; add a flat-room
