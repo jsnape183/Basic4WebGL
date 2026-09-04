@@ -12,10 +12,11 @@ let lastTexOpts: any = null;
 class FakeGraphics {
   visible = true; position = { set() {} }; pivot = { set() {} };
   parent: unknown = undefined; zIndex = 0;
+  lastFill: unknown = undefined;
   constructor() { gfxCreated++; }
   clear() { return this; }
   rect() { return this; } circle() { return this; } moveTo() { return this; } lineTo() { return this; }
-  fill() { return this; } stroke() { return this; }
+  fill(style?: unknown) { this.lastFill = style; return this; } stroke() { return this; }
   destroy() { destroyed++; }
 }
 class FakeSprite {
@@ -45,6 +46,10 @@ class FakeContainer {
   removeChild(c: any) { c.parent = undefined; this.children = this.children.filter((x) => x !== c); }
   removeChildren() { this.children.forEach((c) => { c.parent = undefined; }); this.children = []; }
 }
+class FakeFillGradient {
+  opts: any;
+  constructor(opts?: unknown) { this.opts = opts; }
+}
 
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
@@ -53,6 +58,7 @@ function loadDrawing() {
   const PIXI = {
     Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture,
     Rectangle: FakeRectangle, PerspectiveMesh: FakePerspectiveMesh,
+    FillGradient: FakeFillGradient,
   };
   const worldContainer = new FakeContainer();
   const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
@@ -221,5 +227,31 @@ describe('drawing — drawFloorStrip (perspective mesh)', () => {
     d.clearDrawing();
     d._drawingReset();
     expect(meshDestroyed).toBe(1);
+  });
+});
+
+describe('drawing — vertical gradient fill', () => {
+  test('drawVGradientRect fills with a linear top-to-bottom gradient using the given colours', () => {
+    const { d } = loadDrawing();
+    const o = d.drawVGradientRect(10, 20, 4, 30, 255, 0, 0, 0, 0, 255) as FakeGraphics;
+    const style = o.lastFill as { opts: { type: string; start: { x: number; y: number }; end: { x: number; y: number }; colorStops: Array<{ offset: number; color: number }> } };
+    expect(style.opts.type).toBe('linear');
+    expect(style.opts.start).toEqual({ x: 0, y: 0 });
+    expect(style.opts.end).toEqual({ x: 0, y: 1 });
+    expect(style.opts.colorStops).toEqual([
+      { offset: 0, color: 0xff0000 },
+      { offset: 1, color: 0x0000ff },
+    ]);
+  });
+
+  test('drawVGradientRect is pooled exactly like drawRect', () => {
+    const { d } = loadDrawing();
+    d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
+    d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
+    expect(gfxCreated).toBe(2);
+    d.clearDrawing();
+    d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
+    d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
+    expect(gfxCreated).toBe(2); // reused from the pool
   });
 });

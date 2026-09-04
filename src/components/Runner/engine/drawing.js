@@ -143,6 +143,29 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
+    // A rect filled with a true top-to-bottom colour gradient (PIXI.FillGradient,
+    // local coordinate space so start/end are 0..1 within the shape regardless of
+    // its actual width/height) -- used by RcRender's floor/ceiling shading so one
+    // shape covers a whole colour run's light gradient exactly, with no
+    // intermediate sampling lattice. x/y is the shape's centre, matching drawRect.
+    drawVGradientRect(x, y, width, height, topR, topG, topB, botR, botG, botB) {
+      const o = _acquireG();
+      const topHex = parseInt(_componentToHex(topR) + _componentToHex(topG) + _componentToHex(topB), 16);
+      const botHex = parseInt(_componentToHex(botR) + _componentToHex(botG) + _componentToHex(botB), 16);
+      const gradient = new PIXI.FillGradient({
+        type: 'linear',
+        start: { x: 0, y: 0 },
+        end: { x: 0, y: 1 },
+        colorStops: [
+          { offset: 0, color: topHex },
+          { offset: 1, color: botHex },
+        ],
+      });
+      o.rect(0, 0, width, height).fill(gradient);
+      o.pivot.set(width / 2, height / 2);
+      o.position.set(x, y);
+      return o;
+    },
     drawCircle(x, y, radius) {
       const o = _acquireG();
       o.circle(0, 0, radius).fill(_styles.fillColor);
