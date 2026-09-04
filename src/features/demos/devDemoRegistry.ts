@@ -81,4 +81,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP8Tiers',
   },
+  {
+    slug: 'raycaster-p9-bench',
+    name: 'Raycaster P9 — Frame-Cost Bench',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Phase 9 benchmark: a generated stress scene (all Phase 8 features + idle billboard enemies, 16/32/48 cells) with an on-screen frame-time + primitive-count readout and a fixed-path autopilot.',
+    docsSlug: '',
+    file: 'RaycasterP9Bench',
+  },
 ];

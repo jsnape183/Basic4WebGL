@@ -68,6 +68,15 @@ function look(dPitch)
     self.pit = math.clamp(self.pit + dPitch, 0 - RcConfig.RC_MAX_PITCH, RcConfig.RC_MAX_PITCH)
 endfunction
 
+' Snap the body to (x, y) facing `angle`, clearing vertical velocity. Used by the
+' Phase 9 bench autopilot to replay a fixed camera path; also handy for spawns.
+function warpTo(x, y, angle)
+    self.px = x
+    self.py = y
+    self.ang = angle
+    self.vz = 0
+endfunction
+
 function jump()
     self.wantJump = 1
 endfunction

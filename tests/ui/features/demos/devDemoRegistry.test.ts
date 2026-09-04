@@ -58,4 +58,10 @@ describe('devDemoRegistry', () => {
     expect(p8).toBeDefined();
     expect(p8?.file).toBe('RaycasterP8Tiers');
   });
+
+  test('includes the Phase 9 frame-cost bench demo', () => {
+    const p9 = devDemoRegistry.find((d) => d.slug === 'raycaster-p9-bench');
+    expect(p9).toBeDefined();
+    expect(p9?.file).toBe('RaycasterP9Bench');
+  });
 });

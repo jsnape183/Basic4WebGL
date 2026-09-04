@@ -168,4 +168,13 @@ describe('raycaster phase demo probes execute', () => {
       probeCount: 5,
     });
   });
+
+  test('P9-bench BenchScene.onenter runs runProbes and every probe passes', () => {
+    runPhaseProbes({
+      dir: 'demo-src/raycaster-p9-bench',
+      stm: 'stress32.stm',
+      sceneGlobal: '_sb_benchscene',
+      probeCount: 5,
+    });
+  });
 });

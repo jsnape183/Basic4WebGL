@@ -151,6 +151,7 @@ interface RcMoverLike {
   turn(dAngle: number): void;
   look(dPitch: number): void;
   jump(): void;
+  warpto(x: number, y: number, angle: number): void;
 }
 
 interface RcCastLike {
@@ -256,6 +257,10 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(() => m.step(16)).not.toThrow();
     expect(typeof m.x()).toBe('number');
     expect(typeof m.onground()).toBe('number');
+    m.warpto(4, 5, 1);
+    expect(m.x()).toBe(4);
+    expect(m.y()).toBe(5);
+    expect(m.angle()).toBe(1);
   });
 
   test.each(phaseDirs)('%s: RcLights (if present) update/sample run', (dirName) => {
