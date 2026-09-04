@@ -95,6 +95,7 @@ function onupdate(delta)
   dim turnAxis
   dim lookAxis
   dim ms
+  dim t0
   dim wpi
 
   if input.pressed("s1") then
@@ -132,7 +133,12 @@ function onupdate(delta)
   self.lights.moveLight(self.torch, self.me.x(), self.me.y())
   self.lights.update()
 
-  ms = delta
+  ' Real render cost: onupdate(delta) is the FIXED sim step (always ~16.7ms), so
+  ' time it directly with the wall clock instead.
+  t0 = time.now()
+  self.ren.renderFrame()
+  ms = time.now() - t0
+
   if ms < self.minMs then
     self.minMs = ms
   endif
@@ -140,12 +146,10 @@ function onupdate(delta)
     self.maxMs = ms
   endif
 
-  self.ren.renderFrame()
-
   self.frames = self.frames + 1
-  self.accum = self.accum + delta
+  self.accum = self.accum + ms
   if self.frames >= 30 then
-    self.hudA.setText("avg " + string.str(math.floor(self.accum / self.frames)) + "ms   min " + string.str(math.floor(self.minMs)) + "   max " + string.str(math.floor(self.maxMs)) + "   |   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.ren.primitiveCount()) + " prim   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
+    self.hudA.setText("avg " + string.str(math.floor(self.accum / self.frames)) + "ms   " + string.str(math.floor(world.fps())) + " fps   |   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.ren.primitiveCount()) + " prim   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
     self.frames = 0
     self.accum = 0
     self.minMs = 9999

@@ -261,6 +261,10 @@ describe('raycaster phase demos smoke-execute', () => {
     expect(m.x()).toBe(4);
     expect(m.y()).toBe(5);
     expect(m.angle()).toBe(1);
+    // warpTo must also re-ground the body (matching the Constructor), not just
+    // move it — otherwise a warped body free-falls on its next step().
+    expect(m.z()).toBe(stubWorld.floorheightat());
+    expect(m.onground()).toBe(1);
   });
 
   test.each(phaseDirs)('%s: RcLights (if present) update/sample run', (dirName) => {

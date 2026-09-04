@@ -75,6 +75,8 @@ function warpTo(x, y, angle)
     self.py = y
     self.ang = angle
     self.vz = 0
+    self.pz = self.wld.floorHeightAt(math.floor(x), math.floor(y))
+    self.grounded = 1
 endfunction
 
 function jump()
