@@ -78,6 +78,14 @@ dim flatFillOn
 ' drawFlatSeg. 1 = no subdivision (a uniformly lit scene pays nothing).
 dim surfSegN
 
+' Per-instance opt-in for gradient floor/ceiling shading (0 = default, the
+' existing band-lattice path below; 1 = one drawVGradientRect per colour run,
+' gradient-filled from the light at that run's own real near/far edge -- see
+' setGradientShading() and the branch near the top of drawFlatSeg()). Defaults
+' off so every raycaster demo except the one that explicitly opts in is
+' byte-identical in behaviour to before this field existed.
+dim gradientShadeOn
+
 Constructor(w as RcWorld)
     dim di
     self.wld = w
@@ -100,6 +108,7 @@ Constructor(w as RcWorld)
     self.defWallTex = ""
     self.flatFillOn = RcConfig.RC_FLAT_FILL
     self.surfSegN = 1
+    self.gradientShadeOn = 0
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -118,6 +127,15 @@ endfunction
 ' flatFillOn field comment above); 1 restores the default (RcConfig.RC_FLAT_FILL).
 function setFlatFill(v)
     self.flatFillOn = v
+endfunction
+
+' 0 (default) = the existing screen-Y light-band lattice. 1 = one
+' drawVGradientRect per floor/ceiling colour run, gradient-filled from the
+' light at that run's own real near/far edge -- no intermediate sampling
+' point, so it cannot sample behind a wall or in the wrong room. See
+' docs/superpowers/specs/2026-09-04-raycaster-floor-ceiling-gradient-shading-design.md.
+function setGradientShading(v)
+    self.gradientShadeOn = v
 endfunction
 
 function bindActors(actors)
@@ -537,6 +555,70 @@ function emitFlatBand(destX, yTop, yBot, kind, packed, lite)
     endif
 endfunction
 
+' Same colour math as emitFlatBand's packed>=0 branch and drawStrip's default
+' shadeKind table, but returns a packed colour (self.packTint) instead of
+' drawing -- used by the gradient shading path to compute a colour at two
+' different light levels (near/far edge) without two copies of this table.
+function shadeToPacked(kind, packed, lite)
+    dim g
+    dim rr
+    dim gg
+    dim bb
+    if packed >= 0 then
+        rr = math.floor(packed / 65536)
+        gg = math.floor(packed / 256) - rr * 256
+        bb = packed - rr * 65536 - gg * 256
+        return self.packTint(rr * lite, gg * lite, bb * lite)
+    endif
+    g = 150
+    if kind = 1 then
+        g = 115
+    endif
+    if kind = 2 then
+        g = 90
+    endif
+    if kind = 3 then
+        g = 65
+    endif
+    if kind = 4 then
+        g = 105
+    endif
+    if kind = 5 then
+        g = 60
+    endif
+    if kind = 6 then
+        g = 80
+    endif
+    if kind = 7 then
+        g = 50
+    endif
+    return self.packTint(g * lite, g * lite, (g + 25) * lite)
+endfunction
+
+' One drawVGradientRect call, gradient-filled from topPacked to botPacked
+' (both self.packTint()-packed colours). Mirrors emitFlatBand's bookkeeping
+' (surfCountLast/primCount) so callers can't tell which shading path ran.
+function drawGradientBand(destX, yTop, yBot, topPacked, botPacked)
+    dim tr
+    dim tg
+    dim tb
+    dim br
+    dim bg
+    dim bb
+    if yBot <= yTop then
+        return
+    endif
+    tr = math.floor(topPacked / 65536)
+    tg = math.floor(topPacked / 256) - tr * 256
+    tb = topPacked - tr * 65536 - tg * 256
+    br = math.floor(botPacked / 65536)
+    bg = math.floor(botPacked / 256) - br * 256
+    bb = botPacked - br * 65536 - bg * 256
+    drawing.drawVGradientRect(destX, (yTop + yBot) / 2, RcConfig.RC_STRIP_W, yBot - yTop, tr, tg, tb, br, bg, bb)
+    self.surfCountLast = self.surfCountLast + 1
+    self.primCount = self.primCount + 1
+endfunction
+
 ' Draw one flat horizontal sub-band at world height hh from dNear to dFar,
 ' clipped to [winTop, winBot]. packed < 0 -> the default `kind` grey shade;
 ' packed >= 0 -> that RGB (r*65536 + g*256 + b).
@@ -614,6 +696,10 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
     dim segLite
     dim done
     dim guard
+    dim nearLite
+    dim farLite
+    dim topPacked
+    dim botPacked
     ya = self.projectY(hh, dNear)
     yb = self.projectY(hh, dFar)
     if ya <= yb then
@@ -634,6 +720,19 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
     endif
     if self.boundLights = 0 then
         self.emitFlatBand(destX, yTop, yBot, kind, packed, lite)
+        return
+    endif
+    if self.gradientShadeOn = 1 then
+        nearLite = self.boundLights.sampleAt(self.camX + rayX * dNear, self.camY + rayY * dNear)
+        farLite = self.boundLights.sampleAt(self.camX + rayX * dFar, self.camY + rayY * dFar)
+        if ya <= yb then
+            topPacked = self.shadeToPacked(kind, packed, nearLite)
+            botPacked = self.shadeToPacked(kind, packed, farLite)
+        else
+            topPacked = self.shadeToPacked(kind, packed, farLite)
+            botPacked = self.shadeToPacked(kind, packed, nearLite)
+        endif
+        self.drawGradientBand(destX, yTop, yBot, topPacked, botPacked)
         return
     endif
     ' Screen extent of the WHOLE surface this column sees, not just this colour
@@ -961,13 +1060,18 @@ function renderFrame()
     ' Rung 1: paint the standard floor and ceiling once, full-width, and let the
     ' opaque wall strips paint over the over-draw. Only valid when the camera is
     ' grounded on a standard-height cell -- otherwise the fill's single-height
-    ' assumption breaks and every column takes the per-column path.
+    ' assumption breaks and every column takes the per-column path. Also never
+    ' valid when gradient shading is on: this fill is a single flat colour at
+    ' one sampled light level (the camera's own cell), which is exactly the
+    ' "one light value stands in for a whole surface" shortcut gradient shading
+    ' exists to replace -- so gradient shading always takes the full per-column
+    ' path instead, regardless of flatFillOn.
     fillLite = 1.0
     if self.boundLights <> 0 then
         fillLite = self.boundLights.sampleCell(camCol, camRow)
     endif
     fillOn = 0
-    if self.flatFillOn = 1 then
+    if self.flatFillOn = 1 and self.gradientShadeOn = 0 then
         if self.wld.floorHeightAt(camCol, camRow) = 0 then
             if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
                 fillOn = 1
