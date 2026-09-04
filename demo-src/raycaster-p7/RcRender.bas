@@ -573,11 +573,33 @@ endfunction
 ' strip, so flat-lit stretches -- the whole far field, once everything has
 ' clamped to ambient -- still cost exactly one draw call, and surfSegN is 1 for
 ' a scene whose lights have no dynamic range at all.
-function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite, rayX, rayY)
+'
+' dOutNear/dOutFar are the FULL depth range of the surface this column can see
+' (drawSurface's own dNear/dFar, before it was cut into fcol:/ccol: colour runs),
+' and the lattice cell's sample point is clamped into that range. The horizon-most
+' lattice cell covers everything from a few cells out to infinity, so its
+' midpoint sits at a fixed perpendicular distance (12 units for a 200px view) --
+' and whenever the visible surface stops short of that (a wall across the
+' corridor, a floor step, a ceiling drop), the unclamped midpoint sampled a world
+' point BEHIND whatever ended the band. A lit room past a wall then painted the
+' near side of that wall bright, and a dark space past a wall painted a lit
+' sliver black; both jumped discontinuously as the camera walked, because the
+' sample point is pinned to the camera (always 12 units ahead) while the geometry
+' that ends the band is pinned to the world. Clamping to dOutNear/dOutFar rather
+' than to this call's own dNear/dFar is what keeps a colour boundary seamless:
+' every colour run of the same surface in the same column shares one outer range,
+' so they all resolve the same sample for the same lattice cell.
+function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite, rayX, rayY, dOutNear, dOutFar)
     dim ya
     dim yb
     dim yTop
     dim yBot
+    dim oa
+    dim ob
+    dim yOutTop
+    dim yOutBot
+    dim cellA
+    dim cellB
     dim horizon
     dim latA
     dim latB
@@ -613,6 +635,29 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
     if self.boundLights = 0 then
         self.emitFlatBand(destX, yTop, yBot, kind, packed, lite)
         return
+    endif
+    ' Screen extent of the WHOLE surface this column sees, not just this colour
+    ' run -- the clamp range for every lattice sample below.
+    oa = self.projectY(hh, dOutNear)
+    ob = self.projectY(hh, dOutFar)
+    if oa <= ob then
+        yOutTop = oa
+        yOutBot = ob
+    else
+        yOutTop = ob
+        yOutBot = oa
+    endif
+    if yOutTop < winTop then
+        yOutTop = winTop
+    endif
+    if yOutBot > winBot then
+        yOutBot = winBot
+    endif
+    if yOutTop > yTop then
+        yOutTop = yTop
+    endif
+    if yOutBot < yBot then
+        yOutBot = yBot
     endif
     ' A horizontal surface projects entirely to one side of the horizon (below
     ' if it is under the eye, above if over it), so one of the two half-screen
@@ -652,7 +697,23 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
         guard = guard + 1
         cellTop = latA + k * step
         cellBot = cellTop + step
-        smid = self.depthAtScreenY(hh, (cellTop + cellBot) / 2)
+        ' Sample the part of this lattice cell the surface actually occupies.
+        ' Whole cells inside the surface are unaffected (cellA/cellB = the cell),
+        ' so the frame-global lattice still gives identical shading to every
+        ' column and colour run that crosses it.
+        cellA = cellTop
+        cellB = cellBot
+        if cellA < yOutTop then
+            cellA = yOutTop
+        endif
+        if cellB > yOutBot then
+            cellB = yOutBot
+        endif
+        if cellB <= cellA then
+            cellA = cellTop
+            cellB = cellBot
+        endif
+        smid = self.depthAtScreenY(hh, (cellA + cellB) / 2)
         useLite = self.boundLights.sampleAt(self.camX + rayX * smid, self.camY + rayY * smid)
         if segLite < 0 then
             segLite = useLite
@@ -690,7 +751,7 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
         return
     endif
     if self.wld.hasSurfaceColor() = 0 then
-        self.drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, 0 - 1, lite, rayX, rayY)
+        self.drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, 0 - 1, lite, rayX, rayY, dNear, dFar)
         return
     endif
     eyeZ = self.camZ + RcConfig.RC_EYE_Z
@@ -716,7 +777,7 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
             runCol = segCol
         endif
         if segCol <> runCol then
-            self.drawFlatSeg(destX, hh, runStart, a, winTop, winBot, kind, runCol, lite, rayX, rayY)
+            self.drawFlatSeg(destX, hh, runStart, a, winTop, winBot, kind, runCol, lite, rayX, rayY, dNear, dFar)
             runStart = a
             runCol = segCol
         endif
@@ -725,7 +786,7 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
     if runCol = 0 - 2 then
         runCol = 0 - 1
     endif
-    self.drawFlatSeg(destX, hh, runStart, dFar, winTop, winBot, kind, runCol, lite, rayX, rayY)
+    self.drawFlatSeg(destX, hh, runStart, dFar, winTop, winBot, kind, runCol, lite, rayX, rayY, dNear, dFar)
 endfunction
 
 ' Textured wall face: blit source column srcX of `tex` into [winTop, winBot],
