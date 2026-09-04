@@ -99,6 +99,10 @@ second floor, say — switch scenes at the top of the stairs rather than modelli
 both floors in one `.stm`. Each scene stays a single flat space the renderer
 handles cheaply, and the transition is a normal `scenemanager.switch`.
 
+How large can one area get before you must split it? See
+[the Phase 9 benchmark report](../../../docs/raycaster-benchmark-report.md) for
+the measured area-size limits.
+
 ## RcCast — casting rays
 
 `RcCast` walks a straight line across the map from a point and collects every

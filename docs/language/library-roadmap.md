@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-03 (raycaster: upper regions descoped, interval renderer reverted to a single window; Phase 8 redefined as multi-tier level design & surface colour)
+> Last updated: 2026-09-04 (raycaster Phase 9: benchmark harness + `raycaster-p9-bench` demo + rung 1 painter's fill shipped; rungs 2–5 open pending browser fps)
 
 ---
 
@@ -450,8 +450,21 @@ floor/ceiling texturing is reserved for a future pass. Also deferred: no texture
 atlas, no animated/scrolling textures, sky still a gradient, performance
 unprofiled.
 
-Phases 9–10 (optimisation, docs)
-remain, tracked in
+Phase 9 (optimisation) in progress (2026-09-04): a headless benchmark harness
+(`tests/lib/Basic4WebGL/integration/raycasterBench.test.ts` — 160-column
+viewport, fixed camera path over generated stress16 / 32 / 48 scenes),
+the `raycaster-p9-bench` dev demo (in-browser autopilot fps read-out), a new
+`RcRender.primitiveCount()` accessor, and **rung 1** — painter's-order
+background floor/ceiling fill gated by `RcConfig.RC_FLAT_FILL` — are shipped.
+Rung 1 cuts mean per-frame primitive count by 10–16% on the (deliberately
+feature-dense) stress scenes and to zero surface rects on a flat room. Full
+numbers, size budget, and the rung 2–5 decision table:
+`docs/raycaster-benchmark-report.md`. Rungs 2–5 (batched wall-strip mesh,
+light-grid dirty-cell caching, `RC_STRIP_W` tuning, span-array hoisting) remain
+open — unspecced pending the browser fps measurement and the user's
+continue-or-close call.
+
+Phase 10 (docs) remains, tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:
