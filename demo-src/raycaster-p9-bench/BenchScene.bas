@@ -23,6 +23,7 @@ dim minMs
 dim maxMs
 dim curSize
 dim auto
+dim meshOn
 dim autoIdx
 dim enemyN
 
@@ -39,6 +40,7 @@ Constructor()
   input.bind("s2", "key", keyboard.DIGIT_2)
   input.bind("s3", "key", keyboard.DIGIT_3)
   input.bind("autop", "key", keyboard.P)
+  input.bind("meshtoggle", "key", keyboard.M)
 EndConstructor
 
 function onenter()
@@ -47,6 +49,7 @@ function onenter()
   self.minMs = 9999
   self.maxMs = 0
   self.auto = 0
+  self.meshOn = 0
   self.autoIdx = 0
   self.sd = new StressData()
   self.loadSize(32)
@@ -97,6 +100,7 @@ function onupdate(delta)
   dim ms
   dim t0
   dim wpi
+  dim meshLbl
 
   if input.pressed("s1") then
     self.loadSize(16)
@@ -109,6 +113,10 @@ function onupdate(delta)
   endif
   if input.pressed("autop") then
     self.auto = 1 - self.auto
+  endif
+  if input.pressed("meshtoggle") then
+    self.meshOn = 1 - self.meshOn
+    self.ren.setWallMesh(self.meshOn)
   endif
 
   if self.auto = 1 then
@@ -149,7 +157,11 @@ function onupdate(delta)
   self.frames = self.frames + 1
   self.accum = self.accum + ms
   if self.frames >= 30 then
-    self.hudA.setText("avg " + string.str(math.floor(self.accum / self.frames)) + "ms   " + string.str(math.floor(world.fps())) + " fps   |   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.ren.primitiveCount()) + " prim   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
+    meshLbl = "off"
+    if self.meshOn = 1 then
+      meshLbl = "on"
+    endif
+    self.hudA.setText("avg " + string.str(math.floor(self.accum / self.frames)) + "ms   " + string.str(math.floor(world.fps())) + " fps   |   MESH " + meshLbl + "   " + string.str(self.ren.primitiveCount()) + " prim   flush " + string.str(math.floor(self.ren.wallMeshMs() * 1000) / 1000) + "ms   " + string.str(self.ren.columnCount()) + " cols   " + string.str(self.enemyN) + " foes   stress" + string.str(self.curSize))
     self.frames = 0
     self.accum = 0
     self.minMs = 9999
