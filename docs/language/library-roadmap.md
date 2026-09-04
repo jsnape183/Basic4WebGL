@@ -1,7 +1,7 @@
 # softBASIC Library Roadmap
 
 > Living document. Updated as features are designed and built.
-> Last updated: 2026-09-04 (raycaster Phase 9: benchmark harness + `raycaster-p9-bench` demo + rung 1 painter's fill shipped; rungs 2–5 open pending browser fps)
+> Last updated: 2026-09-04 (raycaster Phase 9 done: benchmark harness + `raycaster-p9-bench` demo + rung 1 painter's fill + draw-pool O(n²) fix shipped, wall-mesh rung 2 spike reverted; Phase 10 docs in progress)
 
 ---
 
@@ -460,21 +460,30 @@ floor/ceiling texturing is reserved for a future pass. Also deferred: no texture
 atlas, no animated/scrolling textures, sky still a gradient, performance
 unprofiled.
 
-Phase 9 (optimisation) in progress (2026-09-04): a headless benchmark harness
+Phase 9 (optimisation) **[DONE 2026-09-04]**: a headless benchmark harness
 (`tests/lib/Basic4WebGL/integration/raycasterBench.test.ts` — 160-column
 viewport, fixed camera path over generated stress16 / 32 / 48 scenes),
 the `raycaster-p9-bench` dev demo (in-browser autopilot fps read-out), a new
-`RcRender.primitiveCount()` accessor, and **rung 1** — painter's-order
-background floor/ceiling fill gated by `RcConfig.RC_FLAT_FILL` — are shipped.
+`RcRender.primitiveCount()` accessor, **rung 1** — painter's-order background
+floor/ceiling fill gated by `RcConfig.RC_FLAT_FILL` — and a generic
+`drawing`-engine fix for an O(n²) display-list re-ordering cost (every pooled
+draw object got a stable `zIndex` instead of being re-appended every frame;
+benefits every game that draws in a loop, not just the raycaster) all shipped.
 Rung 1 cuts mean per-frame primitive count by 10–16% on the (deliberately
-feature-dense) stress scenes and to zero surface rects on a flat room. Full
-numbers, size budget, and the rung 2–5 decision table:
-`docs/raycaster-benchmark-report.md`. Rungs 2–5 (batched wall-strip mesh,
-light-grid dirty-cell caching, `RC_STRIP_W` tuning, span-array hoisting) remain
-open — unspecced pending the browser fps measurement and the user's
-continue-or-close call.
+feature-dense) stress scenes and to zero surface rects on a flat room; the
+draw-pool fix moved the primitive-count cliff from ~3600 to ≥4800 with no
+other change. Full numbers and size budget: `docs/raycaster-benchmark-report.md`.
 
-Phase 10 (docs) remains, tracked in
+A walls-only batched-mesh renderer (rung 2) was prototyped as a spike behind
+an in-demo toggle, found to add no wall-geometry or lighting benefit over the
+existing per-column sprite renderer (same DDA-derived flat quad per column,
+same one-tint-per-column shading — it only reduced GL draw-call count), and
+was **reverted** rather than promoted: `docs/raycaster-mesh-spike-findings.md`.
+Rungs 2–5 (light-grid dirty-cell caching, `RC_STRIP_W` tuning, span-array
+hoisting) remain open on the original renderer, unspecced, for if further
+headroom is needed later.
+
+Phase 10 (docs) in progress (2026-09-04), tracked in
 `docs/superpowers/specs/2026-08-31-raycaster-engine-design.md`. Phase 1 plan:
 `docs/superpowers/plans/2026-08-31-raycaster-engine-phase-1.md`. Phase 2 plan:
 `docs/superpowers/plans/2026-09-01-raycaster-engine-phase-2.md`. Phase 3 plan:

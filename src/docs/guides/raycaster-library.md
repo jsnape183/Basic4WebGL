@@ -406,7 +406,7 @@ An `RcActor` is plain data — you never `new` one, `actors.add` hands them out.
 | `actor.setPosition(x, y)` | move the billboard on the floor plane |
 | `actor.setHeight(z)` | set its feet height (raise it onto a ledge) |
 | `actor.setFrame(i)` | pick frame `i` of the source strip |
-| `actor.setTint(r, g, b)` | set an RGB tint (`0`–`255` each) — stored, not drawn yet (see limits) |
+| `actor.setTint(r, g, b)` | set a per-actor RGB tint (`0`–`255` each) — reserved for future use, not drawn (billboards are already tinted automatically by the light grid; see limits) |
 | `actor.setVisible(v)` | `1` to show, `0` to hide |
 | `actor.image()` | its image name |
 | `actor.frameW()` / `actor.frameH()` | its source frame size in pixels |
@@ -427,9 +427,47 @@ marker over the thing you're aiming at:
 
 ### Phase 6 limits
 
-Tint is stored on the actor but not drawn yet — that waits on a `tint` parameter
-for `drawImageStrip` (spec §5.3 rung 3). A billboard is a single horizontal frame
-strip — no vertical frames, and no 8-direction sprites that change with your
-viewing angle. Actors don't collide with each other. The `hitscan` actor test is
-a fixed 0.4-cell corridor either side of the ray, not a check against each
+Every billboard is tinted automatically from the light grid at its cell —
+there's no separate call to make that happen. `actor.setTint()` is a reserved
+per-actor override that isn't drawn yet. A billboard is a single horizontal
+frame strip — no vertical frames, and no 8-direction sprites that change with
+your viewing angle. Actors don't collide with each other. The `hitscan` actor
+test is a fixed 0.4-cell corridor either side of the ray, not a check against each
 billboard's projected width.
+
+## Performance — how big can one area be?
+
+Room **size** is free — a bigger map costs nothing extra to store or query.
+What costs frame time is how much geometry is **on screen at once**: wall
+columns, floor/ceiling strips, and visible billboards. Two rooms of the same
+footprint cost differently depending on how much of that footprint can be seen
+from a single spot, so an open hall is more expensive than a maze of tight
+corridors even at the same cell count.
+
+`RcRender.primitiveCount()` returns how many drawable primitives the last
+`renderFrame()` call produced — use it while building a level to see where the
+cost is coming from. There's a hard cliff, not a gradual slope: frame cost
+stays flat up to a few thousand primitives, then collapses abruptly past it
+(the underlying cause was a display-list re-ordering cost in the generic
+`drawing` engine module, fixed once for every game, not just the raycaster —
+see `docs/raycaster-benchmark-report.md` for the numbers). Stay comfortably
+under that ceiling rather than designing right up against it.
+
+If a level needs a genuinely large continuous space — a second floor, an open
+arena bigger than a single sightline should reasonably show — prefer **scene
+switching** (a loading trigger at the top of a staircase, through a door) over
+one enormous `RcWorld`. See "Multi-tier levels" above for the same guidance
+applied to vertical space specifically.
+
+### Phase 9 limits
+
+Floor and ceiling **textures** are not implemented — surfaces are flat-shaded
+colour only (`fcol:` / `ccol:`), even though walls are texture-mapped. The
+per-column occlusion window, light-grid recompute, and span walk all run in
+plain softBASIC — none of it is engine-side, so there's headroom left in
+principle, but no further optimisation rung has shipped past the Phase 9
+painter's-fill pass. A wall-batching approach (rendering all wall columns as
+one mesh instead of one draw call per column) was prototyped and rejected —
+see `docs/raycaster-mesh-spike-findings.md` — it only ever covered walls, not
+floors/ceilings/actors, and traded no geometry or lighting benefit for a
+hand-maintained shader.

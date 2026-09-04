@@ -14,9 +14,10 @@ Class
 '                                 hitKind()/hitDist()/hitX()/hitY() give detail.
 '   near(x, y, r)             -> the nearest visible actor within r, or 0
 '
-' Tint is stored on RcActor but NOT applied -- drawImageStrip has no tint param
-' (spec §5.3 rung 3, deferred). Actors are gated on depth only for now; the light
-' grid still shades the surrounding walls. Revisit with textured walls.
+' Each billboard is tinted by its cell's sampled light (RcRender.drawActors passes
+' the light through drawImageStrip's tint parameter, shipped alongside wall
+' texturing in Phase 8). Actors are gated on depth only, column by column -- no
+' per-actor collision, no vertical framing.
 '
 ' The RcWorld field is `wld`, NEVER `world`.
 dim wld as RcWorld

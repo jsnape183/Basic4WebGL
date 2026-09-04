@@ -2,9 +2,10 @@ Class
 ' RcActor -- one billboard in a raycast scene (spec §8). Pure data: an image
 ' name, its source frame size in pixels (frameW x frameH -- one horizontal frame
 ' of the sprite strip), a world position (x, y) + feet height z, a frame index,
-' an RGB tint (stored but NOT yet applied -- drawImageStrip has no tint
-' parameter; see RcActors.bas header), and a visible flag. RcActors owns a fixed
-' pool of these; the game never `new`s one directly.
+' a reserved per-actor RGB tint (stored but NOT applied -- RcRender.drawActors
+' tints every billboard from the light grid at its cell automatically instead;
+' see RcActors.bas header), and a visible flag. RcActors owns a fixed pool of
+' these; the game never `new`s one directly.
 '
 ' Never name anything here `world` / `math` / etc. (builtin-module shadow -> a
 ' clean transpile that ReferenceErrors at runtime).
