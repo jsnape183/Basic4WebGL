@@ -4,6 +4,14 @@
 ' RC_MAX_MARCH_ITERS: a ray crosses at most ~2*RC_MAX_DIST cell boundaries before
 ' the RC_MAX_DIST cutoff fires, so 512 is a deliberately generous safety cap that
 ' only bites on a degenerate / NaN direction vector.
+'
+' RC_SURF_LIGHT_STEP / RC_SURF_SEG_MAX: a floor/ceiling band is flat-shaded from a
+' single light sample, so a band that spans a big light gradient (a long corridor
+' under a short-radius torch) reads as one hard slab. RcRender.drawFlatSeg splits
+' a band into enough sub-bands that no one of them spans more than
+' RC_SURF_LIGHT_STEP of light, capped at RC_SURF_SEG_MAX sub-bands (and never
+' finer than 2 screen pixels). A band with uniform light still costs exactly one
+' strip, so lit-flat scenes pay nothing.
 const
     RC_MAX_DIST = 32
     RC_MAX_MARCH_ITERS = 512
@@ -42,4 +50,6 @@ const
     RC_STD_CEIL = 1.0
     RC_TEX_SIZE = 64
     RC_FLAT_FILL = 1
+    RC_SURF_LIGHT_STEP = 0.12
+    RC_SURF_SEG_MAX = 6
 endconst

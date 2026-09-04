@@ -22,7 +22,18 @@ const ASSETS = `${LIBDIR}/assets`;
 //   prim.max:  16=1478  32=1888  48=1936
 //   prim.mean: 16=752   32=1099  48=1173
 // CEIL = ceil(max * 1.15); FLOOR = floor(mean * 0.7).
-const PRIM_CEIL: Record<number, number> = { 16: 1700, 32: 2172, 48: 2227 };
+//
+// Re-baselined again when RcRender.drawFlatSeg gained light-gradient subdivision
+// (RC_SURF_LIGHT_STEP / RC_SURF_SEG_MAX). Shading a whole floor/ceiling band from
+// one light sample was the "black hallway" bug -- a band spanning a big gradient
+// has to be split, and splitting costs primitives. Deliberate trade, measured at
+// RC_SURF_LIGHT_STEP = 0.12 / RC_SURF_SEG_MAX = 6:
+//   prim.max:  16=2093  32=2655  48=2638   (1.4x the single-sample renderer)
+//   prim.mean: 16=1074  32=1563  48=1621
+//   ms.mean:   16=0.51  32=0.66  48=0.94   (was 0.44 / 0.57 / 0.82)
+// Same CEIL = ceil(max * 1.15) rule; FLOOR left at the old values (still a valid
+// "the surface pass actually ran" floor, and subdivision only ever adds).
+const PRIM_CEIL: Record<number, number> = { 16: 2407, 32: 3054, 48: 3034 };
 const PRIM_FLOOR: Record<number, number> = { 16: 526, 32: 769, 48: 821 };
 
 interface World {

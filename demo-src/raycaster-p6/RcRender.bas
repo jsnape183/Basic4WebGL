@@ -481,19 +481,84 @@ function surfaceRunEnd(tStart, tMax, rayX, rayY)
     return t
 endfunction
 
+' Perpendicular distance of the horizontal surface at world height hh that
+' projects to screen row y -- the inverse of projectY(). Used to slice a
+' surface band into sub-bands by SCREEN position (which is uniform in 1/d, so
+' the slices are naturally fine near the camera and coarse toward the horizon).
+' Rows at/behind the horizon return RC_MAX_DIST.
+function depthAtScreenY(hh, y)
+    dim k
+    dim dy
+    dim d
+    k = (self.camZ + RcConfig.RC_EYE_Z - hh) * self.viewH
+    dy = y - (self.scy + self.camPitch)
+    if dy < 0.0001 and dy > 0 - 0.0001 then
+        return RcConfig.RC_MAX_DIST
+    endif
+    d = k / dy
+    if d < 0.05 then
+        d = 0.05
+    endif
+    if d > RcConfig.RC_MAX_DIST then
+        d = RcConfig.RC_MAX_DIST
+    endif
+    return d
+endfunction
+
+' Paint one already-clipped flat band [yTop..yBot] at light level `lite`.
+' packed < 0 -> the default `kind` grey shade; packed >= 0 -> that RGB
+' (r*65536 + g*256 + b).
+function emitFlatBand(destX, yTop, yBot, kind, packed, lite)
+    dim rr
+    dim gg
+    dim bb
+    if yBot <= yTop then
+        return
+    endif
+    if packed < 0 then
+        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yTop, yBot, yTop, yBot, kind, lite)
+    else
+        rr = math.floor(packed / 65536)
+        gg = math.floor(packed / 256) - rr * 256
+        bb = packed - rr * 65536 - gg * 256
+        pen.setLineWidth(0)
+        pen.setFillColor(math.clamp(rr * lite, 0, 255), math.clamp(gg * lite, 0, 255), math.clamp(bb * lite, 0, 255))
+        drawing.drawRect(destX, (yTop + yBot) / 2, RcConfig.RC_STRIP_W, yBot - yTop)
+        self.surfCountLast = self.surfCountLast + 1
+        self.primCount = self.primCount + 1
+    endif
+endfunction
+
 ' Draw one flat horizontal sub-band at world height hh from dNear to dFar,
 ' clipped to [winTop, winBot]. packed < 0 -> the default `kind` grey shade;
-' packed >= 0 -> that RGB (r*65536 + g*256 + b). Lit by sampleAt at the band
-' midpoint when lights are bound, else by `lite`.
+' packed >= 0 -> that RGB (r*65536 + g*256 + b).
+'
+' A band can span a LOT of depth -- drawSurface coalesces every contiguous cell
+' of the same fcol:/ccol: colour into one band, and with no colours at all the
+' whole run from the camera to the far wall is a single band. Shading all of
+' that from one light sample is what produced the "black hallway" bug: down a
+' 24-cell corridor lit only by a 6-cell carried torch, the one sample landed
+' outside the torch radius and the entire visible floor and ceiling were painted
+' at plain ambient, with a hard vertical seam against any neighbouring column
+' whose run happened to be shorter. So: split the band into enough sub-bands
+' that none spans more than RC_SURF_LIGHT_STEP of light, and sample each one
+' separately. Uniform light -> exactly one strip, as before.
 function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite, rayX, rayY)
     dim ya
     dim yb
     dim yTop
     dim yBot
+    dim dTop
+    dim dBot
+    dim lTop
+    dim lBot
+    dim nSeg
+    dim maxSeg
+    dim si
+    dim sy0
+    dim sy1
+    dim smid
     dim useLite
-    dim rr
-    dim gg
-    dim bb
     ya = self.projectY(hh, dNear)
     yb = self.projectY(hh, dFar)
     if ya <= yb then
@@ -512,22 +577,37 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
     if yBot <= yTop then
         return
     endif
-    useLite = lite
-    if self.boundLights <> 0 then
-        useLite = self.boundLights.sampleAt(self.camX + rayX * ((dNear + dFar) / 2), self.camY + rayY * ((dNear + dFar) / 2))
+    if self.boundLights = 0 then
+        self.emitFlatBand(destX, yTop, yBot, kind, packed, lite)
+        return
     endif
-    if packed < 0 then
-        self.surfCountLast = self.surfCountLast + self.drawStrip(destX, yTop, yBot, winTop, winBot, kind, useLite)
-    else
-        rr = math.floor(packed / 65536)
-        gg = math.floor(packed / 256) - rr * 256
-        bb = packed - rr * 65536 - gg * 256
-        pen.setLineWidth(0)
-        pen.setFillColor(math.clamp(rr * useLite, 0, 255), math.clamp(gg * useLite, 0, 255), math.clamp(bb * useLite, 0, 255))
-        drawing.drawRect(destX, (yTop + yBot) / 2, RcConfig.RC_STRIP_W, yBot - yTop)
-        self.surfCountLast = self.surfCountLast + 1
-        self.primCount = self.primCount + 1
+    dTop = self.depthAtScreenY(hh, yTop)
+    dBot = self.depthAtScreenY(hh, yBot)
+    lTop = self.boundLights.sampleAt(self.camX + rayX * dTop, self.camY + rayY * dTop)
+    lBot = self.boundLights.sampleAt(self.camX + rayX * dBot, self.camY + rayY * dBot)
+    nSeg = math.ceil(math.abs(lTop - lBot) / RcConfig.RC_SURF_LIGHT_STEP)
+    if nSeg < 1 then
+        nSeg = 1
     endif
+    if nSeg > RcConfig.RC_SURF_SEG_MAX then
+        nSeg = RcConfig.RC_SURF_SEG_MAX
+    endif
+    ' never slice finer than 2 screen pixels -- sub-pixel bands cost a draw call
+    ' each and show nothing
+    maxSeg = math.floor((yBot - yTop) / 2)
+    if maxSeg < 1 then
+        maxSeg = 1
+    endif
+    if nSeg > maxSeg then
+        nSeg = maxSeg
+    endif
+    for si = 0 to nSeg - 1
+        sy0 = yTop + (yBot - yTop) * si / nSeg
+        sy1 = yTop + (yBot - yTop) * (si + 1) / nSeg
+        smid = self.depthAtScreenY(hh, (sy0 + sy1) / 2)
+        useLite = self.boundLights.sampleAt(self.camX + rayX * smid, self.camY + rayY * smid)
+        self.emitFlatBand(destX, sy0, sy1, kind, packed, useLite)
+    next si
 endfunction
 
 ' Draw a floor/ceiling surface at world height hh from dNear to dFar, clipped to
