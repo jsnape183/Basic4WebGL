@@ -136,4 +136,24 @@ describe('RcLights.sampleAt bilinear light', () => {
     const ambient = L.samplecell(-1, -1); // sampleCell returns ambient for OOB
     expect(L.sampleat(-5, -5)).toBeCloseTo(ambient, 6);
   });
+
+  test('a wall cell does not drag down sampleAt on the open floor beside it', () => {
+    // A well-lit open cell (1,1) sits in the room's NW corner, against the
+    // west wall (col 0) and north wall (row 0). Before the fix, sampleCell on
+    // a wall cell returned near-ambient, so bilinear sampleAt right at the
+    // (1,1) cell's own NW corner -- exactly the corner shared with 3 wall
+    // cells -- blended 75% of that near-zero value in, reading far darker
+    // than the lit open cell it's sitting on. The fix makes a wall cell
+    // borrow its brightest open neighbour, so that corner should read close
+    // to sampleCell(1,1) instead of collapsing toward ambient.
+    const L = buildLights(walls, markers);
+    const openLit = L.samplecell(1, 1);
+    const ambient = L.samplecell(-1, -1);
+    expect(openLit).toBeGreaterThan(ambient + 0.05); // genuinely lit, not just ambient
+
+    // (1.0, 1.0) is cell (1,1)'s own NW corner: bilinear corners are
+    // (0,0)/(1,0)/(0,1) [walls] and (1,1) [the lit open cell], each 25%.
+    const corner = L.sampleat(1.0, 1.0);
+    expect(corner).toBeGreaterThan(openLit - 0.15);
+  });
 });

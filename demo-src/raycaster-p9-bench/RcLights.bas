@@ -11,9 +11,12 @@ Class
 ' per-(cell,light) static caching (§6.4).
 ' - the dynamic-light cap is global first-RC_LIGHT_CAP by slot order, NOT spec
 '   §6.1's per-cell nearest-N (fine at demo scale).
-' - wall cells receive no splat (self-occluded) so sampleCell on a wall cell
-'   returns only ambient -- RcRender samples the open cell in front of the wall
-'   instead (Task 6).
+' - wall cells receive no splat (self-occluded); sampleCell on a wall cell
+'   borrows its brightest open neighbour instead of reading back near-ambient
+'   (see sampleCell / brightestOpenNeighbor) -- keeps sampleAt's bilinear
+'   blend from bleeding a false dark wedge onto open floor next to a wall.
+'   RcRender additionally samples the open cell in front of a wall FACE
+'   directly, rather than the wall cell itself (Task 6).
 ' - addPoint's `z` is stored (lzArr) but not yet read -- reserved for vertical
 '   falloff / spot cones.
 dim wld as RcWorld
@@ -176,14 +179,102 @@ function update()
     next i
 endfunction
 
-' Total light at a cell, clamped 0..1.
+' Total light at a cell, clamped 0..1. A wall cell is never splatted (its own
+' centre is self-occluded -- see header), so it borrows the brightest OPEN
+' neighbour instead of reading back near-zero. Without this, sampleAt's
+' bilinear blend below would pull a wall corner's near-ambient value into any
+' nearby floor/ceiling sample, showing up as a false dark wedge on open floor
+' right next to a wall -- most visible exactly where floor/ceiling height
+' changes (a step, a raised area), since that's the geometry most often
+' authored right against a wall.
 function sampleCell(col, row)
     dim idx
     if col < 0 or row < 0 or col >= self.cols or row >= self.rows then
         return self.ambient
     endif
+    if self.wld.wallAt(col, row) > 0 then
+        return self.brightestOpenNeighbor(col, row)
+    endif
     idx = row * self.cols + col
     return math.clamp(self.ambient + self.staticArr(idx) + self.dynArr(idx), 0, 1)
+endfunction
+
+' The brightest of a wall cell's eight neighbours (orthogonal + diagonal) that
+' is itself open (never recurses into another wall cell), or plain ambient if
+' every neighbour is out of bounds or a wall too (a wall thicker than one
+' cell, or a solid corner). Diagonals matter here, not just orthogonals: a
+' corner wall cell (e.g. the outer corner of a room) can have two wall
+' orthogonal neighbours and no open one, while its diagonal neighbour is the
+' actual open floor cell sampleAt's bilinear blend is trying to reach.
+function brightestOpenNeighbor(col, row)
+    dim best
+    dim v
+    best = self.ambient
+    if col - 1 >= 0 then
+        if self.wld.wallAt(col - 1, row) = 0 then
+            v = self.sampleCell(col - 1, row)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if col + 1 < self.cols then
+        if self.wld.wallAt(col + 1, row) = 0 then
+            v = self.sampleCell(col + 1, row)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if row - 1 >= 0 then
+        if self.wld.wallAt(col, row - 1) = 0 then
+            v = self.sampleCell(col, row - 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if row + 1 < self.rows then
+        if self.wld.wallAt(col, row + 1) = 0 then
+            v = self.sampleCell(col, row + 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if col - 1 >= 0 and row - 1 >= 0 then
+        if self.wld.wallAt(col - 1, row - 1) = 0 then
+            v = self.sampleCell(col - 1, row - 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if col + 1 < self.cols and row - 1 >= 0 then
+        if self.wld.wallAt(col + 1, row - 1) = 0 then
+            v = self.sampleCell(col + 1, row - 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if col - 1 >= 0 and row + 1 < self.rows then
+        if self.wld.wallAt(col - 1, row + 1) = 0 then
+            v = self.sampleCell(col - 1, row + 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    if col + 1 < self.cols and row + 1 < self.rows then
+        if self.wld.wallAt(col + 1, row + 1) = 0 then
+            v = self.sampleCell(col + 1, row + 1)
+            if v > best then
+                best = v
+            endif
+        endif
+    endif
+    return best
 endfunction
 
 ' Bilinear light at a world point (cell centres are at integer + 0.5).
