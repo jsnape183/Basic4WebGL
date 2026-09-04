@@ -16,11 +16,14 @@ const lib = Object.entries(packageModules).map(([name, source]) => ({ name, sour
 const LIBDIR = 'demo-src/raycaster-p9-bench';
 const ASSETS = `${LIBDIR}/assets`;
 
-// Per-frame primitive-count ceilings. Set from the Task 3 baseline run, then
-// LOWERED in Task 5 after rung 1. Keep generous headroom (x1.15) over observed.
-// Baseline (pre-optimisation) observed prim.max: 16=1620, 32=2030, 48=2159.
-// Post-rung-1 observed prim.max:                 16=1478, 32=1888, 48=1974.
-const PRIM_CEIL: Record<number, number> = { 16: 1700, 32: 2172, 48: 2271 };
+// Per-frame primitive-count guards. Re-baselined after the measurement-bug fixes
+// (all enemies now spawn on open floor; harness no longer double-draws actors).
+// Post-rung-1 observed (RC_FLAT_FILL = 1): see docs/raycaster-benchmark-report.md.
+//   prim.max:  16=1478  32=1888  48=1936
+//   prim.mean: 16=752   32=1099  48=1173
+// CEIL = ceil(max * 1.15); FLOOR = floor(mean * 0.7).
+const PRIM_CEIL: Record<number, number> = { 16: 1700, 32: 2172, 48: 2227 };
+const PRIM_FLOOR: Record<number, number> = { 16: 526, 32: 769, 48: 821 };
 
 interface World {
   floorheightat(c: number, r: number): number;
@@ -123,19 +126,30 @@ function runSize(n: number) {
   const path = JSON.parse(readFileSync(`${ASSETS}/stressPath.json`, 'utf-8')) as Array<{ x: number; y: number; angle: number }>;
   const scale = n / 32;
 
-  const counters = { drawRect: 0, drawImageStrip: 0 };
+  const counters = { drawRect: 0, drawImageStrip: 0, sampleCell: 0, sampleAt: 0 };
   const mod = makeModule(stm, counters);
   const world = new mod.RcWorld(new mod.TileMapSet(`stress${n}.stm`), 'walls');
   const ren = new mod.RcRender(world);
   const acts = new mod.RcActors(world);
   const lights = new mod.RcLights(world);
+  // Count RcLights sample calls per frame (decision inputs for backlog rung 3).
+  const _sc = (lights.samplecell as (...a: unknown[]) => unknown).bind(lights);
+  lights.samplecell = (...a: unknown[]) => {
+    counters.sampleCell++;
+    return _sc(...a);
+  };
+  const _sa = (lights.sampleat as (...a: unknown[]) => unknown).bind(lights);
+  lights.sampleat = (...a: unknown[]) => {
+    counters.sampleAt++;
+    return _sa(...a);
+  };
   ren.bindlights(lights);
   ren.bindactors(acts);
   for (const e of enemies) acts.add('rc_enemy.png', e.x * scale, e.y * scale, 0, 64, 64);
   const torch = lights.addpoint(2 * scale, 2 * scale, 0.5, 0.9, 6);
   lights.update();
 
-  const frames: Array<{ ms: number; prim: number }> = [];
+  const frames: Array<{ ms: number; prim: number; sampleCell: number; sampleAt: number }> = [];
   const PASSES = 20;
   for (let pass = 0; pass < PASSES; pass++) {
     for (const w of path) {
@@ -146,11 +160,20 @@ function runSize(n: number) {
       ren.setcamera(x, y, w.angle, 0);
       counters.drawRect = 0;
       counters.drawImageStrip = 0;
+      counters.sampleCell = 0;
+      counters.sampleAt = 0;
       const t0 = performance.now();
+      // renderFrame() ends with self.drawActors() (bound at construction) — no
+      // explicit drawactors() call here, that would double-count billboards.
       ren.renderframe();
-      ren.drawactors();
       const ms = performance.now() - t0;
-      if (pass > 0) frames.push({ ms, prim: counters.drawRect + counters.drawImageStrip });
+      if (pass > 0)
+        frames.push({
+          ms,
+          prim: counters.drawRect + counters.drawImageStrip,
+          sampleCell: counters.sampleCell,
+          sampleAt: counters.sampleAt,
+        });
     }
   }
 
@@ -161,7 +184,9 @@ function runSize(n: number) {
   const worst = frames[frames.length - 1].ms;
   const primMean = frames.reduce((s, f) => s + f.prim, 0) / frames.length;
   const primMax = Math.max(...frames.map((f) => f.prim));
-  return { n, frames: frames.length, msMean, p50, p95, worst, primMean, primMax };
+  const sampleCellMean = frames.reduce((s, f) => s + f.sampleCell, 0) / frames.length;
+  const sampleAtMean = frames.reduce((s, f) => s + f.sampleAt, 0) / frames.length;
+  return { n, frames: frames.length, msMean, p50, p95, worst, primMean, primMax, sampleCellMean, sampleAtMean };
 }
 
 describe('raycaster Phase 9 benchmark', () => {
@@ -178,11 +203,17 @@ describe('raycaster Phase 9 benchmark', () => {
         'ms.worst': +r.worst.toFixed(3),
         'prim.mean': Math.round(r.primMean),
         'prim.max': r.primMax,
+        'sampleCell/f': Math.round(r.sampleCellMean),
+        'sampleAt/f': Math.round(r.sampleAtMean),
       })),
     );
     for (const r of rows) {
       expect(r.primMax, `stress${r.n} per-frame primitive max`).toBeLessThan(PRIM_CEIL[r.n]);
+      expect(r.primMean, `stress${r.n} per-frame primitive mean floor`).toBeGreaterThan(PRIM_FLOOR[r.n]);
       expect(r.frames).toBeGreaterThan(0);
     }
+    // Primitive count must scale monotonically with scene size (16 < 32 < 48).
+    expect(rows[1].primMean, 'stress32 prim.mean > stress16').toBeGreaterThan(rows[0].primMean);
+    expect(rows[2].primMean, 'stress48 prim.mean > stress32').toBeGreaterThan(rows[1].primMean);
   });
 });

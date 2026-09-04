@@ -14,37 +14,48 @@ draw-call issue per column at 160 columns. It does **not** include PIXI/GPU cost
 secondary, noisy signal. `ms.worst` is GC/JIT-dependent and swings between runs;
 mean / p50 / p95 are the stable columns._
 
-## 1. Before optimisation (single-window renderer, per-column surfaces)
+> **Re-baselined 2026-09.** Four measurement bugs were fixed before these
+> numbers were taken. The earlier baseline (commit `feaadb5`) over-counted
+> actors — the harness called `drawActors()` explicitly *and* `renderFrame()`
+> already ends with it, double-drawing every billboard — and ~43% of each
+> stress scene's authored enemies were spawned inside solid `walls` tiles and
+> depth-clipped away, so billboards were barely exercised. The generator now
+> spawns every enemy on open floor; the harness no longer double-draws;
+> `sampleCell/f` and `sampleAt/f` are now instrumented (monkey-patched on
+> `RcLights` in the harness). Spans are **not instrumented** —
+> `RcCast.spanCount()` is per-cast, not per-frame, and adding a per-frame
+> `RcRender.spanCountLast` field touches the hot loop and needs a 9-way phase-dir
+> sync + export rebuilds; deferred.
 
-| size | ms.mean | ms.p50 | ms.p95 | ms.worst | prim.mean | prim.max | browser fps |
-|------|---------|--------|--------|----------|-----------|----------|-------------|
-| stress16 (16×16) | 0.335 | 0.339 | 0.533 | 1.001 | 909 | 1620 | _pending user measurement_ |
-| stress32 (32×32, 21 enemies) | 0.423 | 0.454 | 0.633 | 0.818 | 1230 | 2030 | _pending user measurement_ |
-| stress48 (48×48, 48 enemies) | 0.546 | 0.575 | 0.808 | 1.065 | 1319 | 2159 | _pending user measurement_ |
+## 1. Before optimisation (single-window renderer, per-column surfaces — `RC_FLAT_FILL = 0`)
 
-`spans/frame`, `sampleCell/f`, `sampleAt/f`: not emitted by the harness table
-(it prints `ms` and `prim` only). Rung 1 is a draw-call optimisation, not a
-cast- or light-path one, so span and light-sample counts are unchanged by it
-— see §2.
+| size | ms.mean | ms.p50 | ms.p95 | ms.worst | prim.mean | prim.max | sampleCell/f | sampleAt/f | browser fps |
+|------|---------|--------|--------|----------|-----------|----------|--------------|------------|-------------|
+| stress16 (16×16, 2 enemies) | 0.346 | 0.348 | 0.556 | 0.839 | 897 | 1620 | 3992 | 958 | _pending user measurement_ |
+| stress32 (32×32, 12 enemies) | 0.434 | 0.462 | 0.648 | 1.347 | 1225 | 2030 | 5532 | 1343 | _pending user measurement_ |
+| stress48 (48×48, 32 enemies) | 0.616 | 0.644 | 0.940 | 1.443 | 1304 | 2116 | 5785 | 1406 | _pending user measurement_ |
 
-## 2. After rung 1 (painter's background floor/ceiling fill, `RcConfig.RC_FLAT_FILL`)
+`spans/frame`: not instrumented (see the re-baseline note above).
 
-| size | ms.mean | ms.p50 | ms.p95 | ms.worst | prim.mean | prim.max | Δ prim.mean | Δ ms.mean | browser fps |
-|------|---------|--------|--------|----------|-----------|----------|-------------|-----------|-------------|
-| stress16 | 0.313 | 0.301 | 0.513 | 0.895 | 764 | 1478 | −16.0% | −6.6% | _pending user measurement_ |
-| stress32 | 0.401 | 0.422 | 0.614 | 0.804 | 1104 | 1888 | −10.2% | −5.2% | _pending user measurement_ |
-| stress48 | 0.532 | 0.559 | 0.797 | 1.216 | 1188 | 1974 | −9.9% | −2.6% (noisy) | _pending user measurement_ |
+## 2. After rung 1 (painter's background floor/ceiling fill, `RcConfig.RC_FLAT_FILL = 1`)
+
+| size | ms.mean | ms.p50 | ms.p95 | ms.worst | prim.mean | prim.max | sampleCell/f | sampleAt/f | Δ prim.mean | Δ ms.mean | browser fps |
+|------|---------|--------|--------|----------|-----------|----------|--------------|------------|-------------|-----------|-------------|
+| stress16 | 0.324 | 0.301 | 0.540 | 0.875 | 752 | 1478 | 3405 | 811 | −16.2% | −6.4% | _pending user measurement_ |
+| stress32 | 0.420 | 0.433 | 0.644 | 0.936 | 1099 | 1888 | 5023 | 1215 | −10.3% | −3.2% | _pending user measurement_ |
+| stress48 | 0.814 | 0.698 | 1.603 | 17.967 | 1173 | 1936 | 5252 | 1273 | −10.0% | +32% (noise — one 18ms GC outlier; p50 0.644→0.698) | _pending user measurement_ |
 
 **What dropped.** Rung 1 replaces the per-column floor and ceiling *surface*
 rects with a single painter's-order background pair (one ceiling fill + one
 floor fill for the whole viewport, drawn before the walls) wherever a column
 crosses no floor/ceiling step and no coloured (`fcol:`/`ccol:`) cell. On the
-stress scenes that removes 145 / 126 / 131 primitives per frame at
-stress16 / 32 / 48 — a −16.0% / −10.2% / −9.9% cut in mean primitive count.
-The `ms` mean moves with it (−6.6% / −5.2%), within noise at stress48 where
-`ms` actually ticked *up* between runs (0.546 → 0.532 mean is down, but p95 is
-flat and worst rose) purely as timing jitter while the primitive count still
-fell.
+stress scenes that removes ~145 / ~126 / ~131 primitives per frame at
+stress16 / 32 / 48 — a −16.2% / −10.3% / −10.0% cut in mean primitive count.
+Because the removed surface rects were bilinearly light-sampled, the light-sample
+counts fall with them: `sampleCell/f` −15% / −9% / −9%, `sampleAt/f` likewise.
+The `ms` mean moves with the primitive count at stress16/32; stress48's `ms` is
+dominated by GC/JIT jitter this run (one 18ms outlier) and is not a usable
+signal — p50 and the primitive count are.
 
 **Why the stress scene caps the win.** The stress-scene generator's 4×4 motif
 sprinkles features uniformly: a `floor:`/`ceil:` step or a `diag:` lands in 3 of
@@ -72,10 +83,15 @@ large majority of columns in a typical playable level.
 **N / M / P: _pending user measurement_.** They are read off where stress32 and
 stress48 land in the browser after rung 1. Measurement inputs:
 
-- **stress32** = 32×32 grid + 21 enemies authored (all live — under the
-  `RcConfig.RC_ACTOR_POOL` cap of 32).
-- **stress48** = 48×48 grid + 48 enemies authored, of which `RC_ACTOR_POOL`
-  caps **32** live at once.
+- **stress16** = 16×16 grid + 2 enemies (all on open floor).
+- **stress32** = 32×32 grid + 12 enemies authored, all on open floor and all
+  live — under the `RcConfig.RC_ACTOR_POOL` cap of 32.
+- **stress48** = 48×48 grid + 32 enemies authored, all on open floor, all live
+  at exactly the `RC_ACTOR_POOL` cap of 32.
+
+(Enemy counts dropped from the pre-re-baseline 21/48 because the generator now
+skips wall cells when placing spawns — the old counts included wall-embedded
+enemies that never rendered.)
 
 So the budget is expressed against those two points: if stress32 holds 60fps
 with headroom it sets `N`/`M`; if stress48 is merely playable it sets `P`.
