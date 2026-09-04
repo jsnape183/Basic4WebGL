@@ -28,6 +28,7 @@ import scene from '../lib/Basic4WebGL/defs/Scene.bas?raw';
 import scenemanager from '../lib/Basic4WebGL/defs/SceneManager.bas?raw';
 import camera from '../lib/Basic4WebGL/defs/camera.bas?raw';
 import world from '../lib/Basic4WebGL/defs/world.bas?raw';
+import time from '../lib/Basic4WebGL/defs/time.bas?raw';
 import hud from '../lib/Basic4WebGL/defs/hud.bas?raw';
 import Keyframe from '../lib/Basic4WebGL/defs/Keyframe.bas?raw';
 import tween from '../lib/Basic4WebGL/defs/tween.bas?raw';
@@ -64,6 +65,7 @@ export const packageModules: Record<string, string> = {
   scenemanager,
   camera,
   world,
+  time,
   hud,
   Keyframe,
   tween,

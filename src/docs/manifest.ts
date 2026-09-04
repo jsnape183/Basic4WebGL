@@ -100,6 +100,7 @@ export const docsManifest: DocSection[] = [
           { slug: 'dict',   title: 'dict',   file: 'api-reference/dict.md' },
           { slug: 'file',   title: 'file',   file: 'api-reference/file.md' },
           { slug: 'save',   title: 'save',   file: 'api-reference/save.md' },
+          { slug: 'time',   title: 'time',   file: 'api-reference/time.md' },
         ],
       },
     ],

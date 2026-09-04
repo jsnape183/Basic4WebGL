@@ -73,6 +73,9 @@ const _sbStage = {
   getStageHeight() {
     return app.renderer.height;
   },
+  getWorldFps() {
+    return app.ticker.FPS;
+  },
   setBackground(r, g, b) {
     app.renderer.background.color = (r << 16) | (g << 8) | b;
   },

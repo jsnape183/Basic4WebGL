@@ -74,6 +74,20 @@ centreY = world.height() / 2
 
 ---
 
+## world.fps()
+
+Returns the game's current frame rate, as a smoothed rolling average of how many frames were actually drawn per second. On a healthy game this sits at 60. It drops when frames take too long to draw — useful as a live performance readout while you tune a busy scene.
+
+**Returns:** number
+
+```bas
+function onupdate(delta)
+  self.fpsLabel.setText(string.str(math.floor(world.fps())) + " fps")
+endfunction
+```
+
+---
+
 ## world.setBackground(r, g, b)
 
 Sets the background colour of the canvas using red, green, and blue values (0–255 each).

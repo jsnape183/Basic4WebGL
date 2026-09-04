@@ -17,6 +17,7 @@ const _sb = {
   ..._sbTween,
   ..._sbAttach,
   ..._sbParticles,
+  ..._sbTime,
   // Last on purpose. _sbFrameLoop supplies `_update`, the single per-frame
   // entry point, and it must win over the same-named members _sbLifecycle and
   // _sbScene still carry (both are now called explicitly rather than through

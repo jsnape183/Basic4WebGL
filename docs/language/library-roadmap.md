@@ -519,6 +519,7 @@ Re-audited 2026-07-31 — several items below were previously listed as not-yet-
 - **Touch input** — see P5 note above.
 - ~~Two-pass compilation~~ **[DONE]** — resolved by `sortByDependencies.ts` (topological sort of project files by `new`/`as`/`extends`/method references, wired into `useProjectForBuild.ts`), shipped 2026-06-17/18, before v0.3.0. No file-ordering constraint remains for class references.
 - **Spritesheet editor** — visual frame slicer in the asset panel (see P7 note above).
+- ~~Real-time clock / FPS readout~~ **[DONE]** — `time.now()` (softCore, wall-clock ms via `performance.now()`) and `world.fps()` (softGfx, PIXI ticker's smoothed FPS) shipped 2026-09-04 as generic engine primitives during raycaster Phase 9. `onupdate(delta)` is the fixed sim step (always ~16.7ms), so neither profiling a code section nor showing a live frame rate was possible before. Def: `src/lib/Basic4WebGL/defs/time.bas`; engine: `src/components/Runner/engine/time.js`, `getWorldFps` in `engine/stage.js`. Tests: `tests/components/Runner/time.test.ts`, `tests/components/Runner/stage.test.ts`. Docs: `src/docs/api-reference/time.md`, `src/docs/api-reference/world.md`.
 
 ---
 

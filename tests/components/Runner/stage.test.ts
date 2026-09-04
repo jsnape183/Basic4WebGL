@@ -29,6 +29,7 @@ const ENGINE_MODULES = [
   'particles',
   'scene',
   'camera',
+  'time',
   'frameloop',
 ];
 
@@ -64,6 +65,7 @@ function loadEngine(throwError: (e: Error) => void = () => {}) {
   const app = {
     stage: new FakeContainer(),
     renderer: { width: 640, height: 360, background: { color: 0 } },
+    ticker: { FPS: 58.5 },
   };
 
   const factory = new Function(
@@ -347,7 +349,7 @@ describe('clear() resets pathfinding state alongside the camera', () => {
   function loadStageOnly() {
     const src = readFileSync('src/components/Runner/engine/stage.js', 'utf-8');
     const PIXI = { Container: FakeContainer };
-    const app = { stage: new FakeContainer(), renderer: { width: 640, height: 360, background: { color: 0 } } };
+    const app = { stage: new FakeContainer(), renderer: { width: 640, height: 360, background: { color: 0 } }, ticker: { FPS: 58.5 } };
     const factory = new Function('PIXI', 'app', `${src}\n return _sbStage;`);
     const stage = factory(PIXI, app);
     stage._sbInstances = [];
@@ -399,5 +401,13 @@ describe('clear() resets pathfinding state alongside the camera', () => {
     stage.clear();
 
     expect(stage._frameLoopReset).toHaveBeenCalledTimes(1);
+  });
+
+  // world.fps() routes through _sbStage.getWorldFps -> app.ticker.FPS (PIXI's
+  // smoothed real render rate). onupdate(delta) is the fixed sim step, so this
+  // is the only way a game can read its actual frame rate.
+  test('getWorldFps() returns the PIXI ticker FPS', () => {
+    const stage = loadStageOnly();
+    expect(stage.getWorldFps()).toBe(58.5);
   });
 });
