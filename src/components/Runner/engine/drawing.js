@@ -15,119 +15,6 @@ const _sbDrawing = (() => {
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
-  // --- batched wall mesh (wallColumn / wallFlush) -------------------------
-  // One PIXI.Mesh per wall image per frame: 2 triangles per column, a thin
-  // vertical UV slice at srcU, and a per-vertex colour carrying the column's
-  // light tint. Accumulate with wallColumn(), emit with wallFlush().
-  const _WALL_HALF_W = 2;           // half of the raycaster's RC_STRIP_W (4)
-  const _wallBuffers = new Map();   // imageName -> { x, top, bot, u, vt, vb, tint } (parallel arrays, this frame)
-  const _wallPool = new Map();      // imageName -> { mesh, geom, shader, cap } (cap = column capacity)
-  const _wallTexCache = new Map();  // imageName -> PIXI.Texture over the full source
-
-  // GL-only shader pair: the bootstrapper's app.init() sets no `preference`, so
-  // PIXI v8 uses its WebGL default. uProjectionMatrix / uWorldTransformMatrix /
-  // uTransformMatrix are the uniforms PIXI's mesh pipeline supplies to a custom
-  // mesh shader; aColor is our addition, carrying the per-column light tint.
-  const _WALL_VERT = `
-in vec2 aPosition;
-in vec2 aUV;
-in vec4 aColor;
-
-uniform mat3 uProjectionMatrix;
-uniform mat3 uWorldTransformMatrix;
-uniform mat3 uTransformMatrix;
-
-out vec2 vUV;
-out vec4 vColor;
-
-void main() {
-    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
-    gl_Position = vec4((mvp * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
-    vUV = aUV;
-    vColor = aColor;
-}`;
-
-  const _WALL_FRAG = `
-in vec2 vUV;
-in vec4 vColor;
-
-uniform sampler2D uTexture;
-
-out vec4 fragColor;
-
-void main() {
-    fragColor = texture(uTexture, vUV) * vColor;
-}`;
-
-  // A texture over the whole source image — the mesh's UVs do the slicing, so
-  // (unlike _texFor's 1px sprite frame) the frame must be the full image.
-  function _fullTexFor(imageName) {
-    let t = _wallTexCache.get(imageName);
-    if (!t) {
-      const base = _sbAssets.get(imageName);
-      t = new PIXI.Texture({
-        source: base.source,
-        frame: new PIXI.Rectangle(0, 0, base.width, base.height),
-      });
-      _wallTexCache.set(imageName, t);
-    }
-    return t;
-  }
-
-  // One shader per pooled mesh: the texture is bound as a shader resource, so a
-  // shared instance would leave every mesh sampling the last image bound.
-  function _wallShaderFor(imageName) {
-    const base = _sbAssets.get(imageName);
-    return PIXI.Shader.from({
-      gl: { vertex: _WALL_VERT, fragment: _WALL_FRAG },
-      resources: { uTexture: base.source },
-    });
-  }
-
-  // Pooled mesh + geometry per image, capacity rounded up to the next 64 columns
-  // and held at the high-water mark (same model as _poolS / _poolM).
-  function _acquireWallMesh(imageName, colCount) {
-    let entry = _wallPool.get(imageName);
-    const need = Math.max(64, Math.ceil(colCount / 64) * 64);
-    if (!entry || entry.cap < need) {
-      if (entry) {
-        if (entry.mesh.parent) entry.mesh.parent.removeChild(entry.mesh);
-        entry.mesh.destroy();
-        entry.geom.destroy();
-      }
-      const verts = need * 4;
-      const pos = new Float32Array(verts * 2);
-      const uv = new Float32Array(verts * 2);
-      const col = new Float32Array(verts * 4);
-      const idx = new Uint32Array(need * 6);
-      for (let c = 0; c < need; c++) {
-        const b = c * 4;
-        idx.set([b, b + 1, b + 2, b + 1, b + 3, b + 2], c * 6);
-      }
-      const vertexUsage = PIXI.BufferUsage.VERTEX | PIXI.BufferUsage.COPY_DST;
-      const posBuf = new PIXI.Buffer({ data: pos, usage: vertexUsage });
-      const uvBuf = new PIXI.Buffer({ data: uv, usage: vertexUsage });
-      const colBuf = new PIXI.Buffer({ data: col, usage: vertexUsage });
-      const geom = new PIXI.Geometry({
-        attributes: {
-          aPosition: { buffer: posBuf },
-          aUV: { buffer: uvBuf },
-          aColor: { buffer: colBuf },
-        },
-        indexBuffer: idx,
-      });
-      // JS-side refs so wallFlush can mutate the arrays and re-upload in place
-      geom._posArr = pos; geom._uvArr = uv; geom._colArr = col;
-      geom._posBuf = posBuf; geom._uvBuf = uvBuf; geom._colBuf = colBuf;
-      const shader = _wallShaderFor(imageName);
-      const mesh = new PIXI.Mesh({ geometry: geom, shader });
-      mesh.texture = _fullTexFor(imageName);
-      entry = { mesh, geom, shader, cap: need };
-      _wallPool.set(imageName, entry);
-    }
-    return entry;
-  }
-
   function _componentToHex(c) {
     const hex = Math.floor(c).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
@@ -311,68 +198,6 @@ void main() {
       return m;
     },
 
-    // Queues one textured wall column for the batched wall mesh. Draws nothing:
-    // no PIXI object, no display-list touch. topY/botY are already clipped to the
-    // occlusion window; srcU is the horizontal texture coord (0..1) along the wall
-    // face and srcVTop/srcVBot the vertical source clip (0..1).
-    wallColumn(imageName, destX, topY, botY, srcU, srcVTop, srcVBot, tint) {
-      let b = _wallBuffers.get(imageName);
-      if (!b) { b = { x: [], top: [], bot: [], u: [], vt: [], vb: [], tint: [] }; _wallBuffers.set(imageName, b); }
-      b.x.push(destX); b.top.push(topY); b.bot.push(botY);
-      b.u.push(srcU); b.vt.push(srcVTop); b.vb.push(srcVBot);
-      b.tint.push(tint === undefined ? 0xffffff : tint);
-    },
-
-    // Emits one mesh per buffered image (2 triangles per column, one buffer
-    // upload per texture) and clears the buffers. Returns the number of meshes
-    // drawn so the caller can account for primitive counts.
-    wallFlush() {
-      let meshCount = 0;
-      for (const [imageName, b] of _wallBuffers) {
-        const n = b.x.length;
-        if (n === 0) continue;
-        const entry = _acquireWallMesh(imageName, n);
-        const mesh = entry.mesh;
-        const geom = entry.geom;
-        const cap = entry.cap;
-        const pos = geom._posArr, uv = geom._uvArr, col = geom._colArr;
-        for (let c = 0; c < cap; c++) {
-          const vb = c * 8, cb = c * 16;
-          if (c < n) {
-            const x0 = b.x[c] - _WALL_HALF_W, x1 = b.x[c] + _WALL_HALF_W;
-            const yt = b.top[c], yd = b.bot[c];
-            pos[vb] = x0; pos[vb + 1] = yt; pos[vb + 2] = x1; pos[vb + 3] = yt;
-            pos[vb + 4] = x0; pos[vb + 5] = yd; pos[vb + 6] = x1; pos[vb + 7] = yd;
-            const u = b.u[c], vt = b.vt[c], vd = b.vb[c];
-            uv[vb] = u; uv[vb + 1] = vt; uv[vb + 2] = u; uv[vb + 3] = vt;
-            uv[vb + 4] = u; uv[vb + 5] = vd; uv[vb + 6] = u; uv[vb + 7] = vd;
-            const t = b.tint[c];
-            const r = ((t >> 16) & 255) / 255, g = ((t >> 8) & 255) / 255, bl = (t & 255) / 255;
-            for (let v = 0; v < 4; v++) {
-              col[cb + v * 4] = r; col[cb + v * 4 + 1] = g; col[cb + v * 4 + 2] = bl; col[cb + v * 4 + 3] = 1;
-            }
-          } else {
-            // unused capacity -> collapse to a zero-area quad rather than leave stale verts
-            for (let k = 0; k < 8; k++) pos[vb + k] = 0;
-          }
-        }
-        if (geom._posBuf && geom._posBuf.update) geom._posBuf.update();
-        if (geom._uvBuf && geom._uvBuf.update) geom._uvBuf.update();
-        if (geom._colBuf && geom._colBuf.update) geom._colBuf.update();
-        mesh.zIndex = _DRAW_Z_BASE + _drawSeq++;
-        // (re)attach only when detached; draw order via zIndex (see _acquireG).
-        if (mesh.parent !== worldContainer) worldContainer.addChild(mesh);
-        mesh.visible = true;
-        meshCount++;
-      }
-      // hide pooled meshes for images that had no columns this frame
-      for (const [imageName, entry] of _wallPool) {
-        if (!_wallBuffers.has(imageName)) entry.mesh.visible = false;
-      }
-      _wallBuffers.clear();
-      return meshCount;
-    },
-
     clearDrawing() {
       _drawSeq = 0;   // reset per-frame draw-order counter so zIndex stays in a stable band and never drifts past Number range
       for (const o of _liveG) { o.visible = false; _poolG.push(o); }
@@ -400,14 +225,6 @@ void main() {
       _poolG.length = 0;
       _poolS.length = 0;
       _poolM.length = 0;
-      for (const e of _wallPool.values()) {
-        if (e.mesh) { if (e.mesh.parent) e.mesh.parent.removeChild(e.mesh); if (e.mesh.destroy) e.mesh.destroy(); }
-        if (e.geom && e.geom.destroy) e.geom.destroy();
-      }
-      _wallPool.clear();
-      _wallBuffers.clear();
-      for (const t of _wallTexCache.values()) { if (t.destroy) t.destroy(); }
-      _wallTexCache.clear();
       for (const t of _texCache.values()) { if (t.destroy) t.destroy(); }
       _texCache.clear();
       for (const t of _meshTexCache.values()) { if (t.destroy) t.destroy(); }
