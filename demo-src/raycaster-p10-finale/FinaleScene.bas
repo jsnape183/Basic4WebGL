@@ -14,8 +14,10 @@ dim ren as RcRender
 dim me as RcMover
 dim lights as RcLights
 dim torch
+dim lightMode
 dim titleText as Text
 dim helpText as Text
+dim lightText as Text
 
 Constructor()
   ' Move -- WASD (keyboard), left stick (controller).
@@ -41,6 +43,9 @@ Constructor()
   ' Jump -- Space (keyboard), A button (controller).
   input.bind("jump", "key", keyboard.SPACE)
   input.bind("jump", "button", controller.A)
+
+  ' L -- toggle the torch's falloff curve, to compare the two side by side.
+  input.bind("lightmode", "key", keyboard.L)
 EndConstructor
 
 function onenter()
@@ -60,15 +65,46 @@ function onenter()
   ' any fcol:/ccol: boundary. Force the accurate per-pixel path everywhere.
   self.ren.setFlatFill(0)
 
-  self.torch = self.lights.addPoint(self.me.x(), self.me.y(), 0.5, 0.95, RcConfig.RC_LIGHT_RANGE)
+  ' Falloff curve is per-light, not global (RcLights.setLightFalloff) -- default
+  ' here is QUADRATIC at a tight 4-cell radius: a small bright pool that dies
+  ' off quickly, closer to how a real torch reads. L toggles back to LINEAR at
+  ' the old 6-cell radius to compare against directly.
+  self.torch = self.lights.addPoint(self.me.x(), self.me.y(), 0.5, 0.95, 4)
+  self.lightMode = 1
+  self.applyLightMode()
   self.lights.update()
 
   self.titleText = new Text("Raycaster Finale", 12, 10)
   self.titleText.setStyle(16, 255, 220, 120)
   hud.add(self.titleText)
-  self.helpText = new Text("WASD/stick move   arrows/right-stick look   Space/A jump", 12, 30)
+  self.helpText = new Text("WASD/stick move   arrows/right-stick look   Space/A jump   L torch mode", 12, 30)
   self.helpText.setStyle(13, 180, 255, 180)
   hud.add(self.helpText)
+  self.lightText = new Text("...", 12, 48)
+  self.lightText.setStyle(13, 255, 200, 140)
+  hud.add(self.lightText)
+  self.updateLightText()
+endfunction
+
+' lightMode 1 = quadratic falloff, tight 4-cell radius (default).
+' lightMode 0 = linear falloff, the original 6-cell radius, for comparison.
+function applyLightMode()
+  if self.lightMode = 1 then
+    self.lights.setLightFalloff(self.torch, RcConfig.RC_FALLOFF_QUADRATIC)
+    self.lights.setLightRadius(self.torch, 4)
+  else
+    self.lights.setLightFalloff(self.torch, RcConfig.RC_FALLOFF_LINEAR)
+    self.lights.setLightRadius(self.torch, RcConfig.RC_LIGHT_RANGE)
+  endif
+endfunction
+
+function updateLightText()
+  dim label
+  label = "quadratic, radius 4"
+  if self.lightMode = 0 then
+    label = "linear, radius " + string.str(RcConfig.RC_LIGHT_RANGE)
+  endif
+  self.lightText.setText("L: torch falloff = " + label)
 endfunction
 
 function onupdate(delta)
@@ -91,6 +127,11 @@ function onupdate(delta)
   endif
   if input.pressed("jump") then
     self.me.jump()
+  endif
+  if input.pressed("lightmode") then
+    self.lightMode = 1 - self.lightMode
+    self.applyLightMode()
+    self.updateLightText()
   endif
   self.me.step(delta)
 

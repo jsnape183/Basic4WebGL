@@ -23,6 +23,10 @@ const files = ['RcConfig.bas', 'RcWorld.bas', 'RcCast.bas', 'RcLights.bas'].map(
 interface RcLightsLike {
   samplecell(col: number, row: number): number;
   sampleat(x: number, y: number): number;
+  addpoint(x: number, y: number, z: number, intensity: number, radiusCells: number): number;
+  setlightfalloff(handle: number, kind: number): void;
+  setlightradius(handle: number, radiusCells: number): void;
+  update(): void;
 }
 
 function buildLights(
@@ -155,5 +159,61 @@ describe('RcLights.sampleAt bilinear light', () => {
     // (0,0)/(1,0)/(0,1) [walls] and (1,1) [the lit open cell], each 25%.
     const corner = L.sampleat(1.0, 1.0);
     expect(corner).toBeGreaterThan(openLit - 0.15);
+  });
+});
+
+describe('RcLights point-light falloff curve', () => {
+  // A big open 12x12 bordered room, no light: markers -- isolates a single
+  // dynamic point light's own falloff from ambient/static contributions.
+  const openRoomWalls = Array.from({ length: 12 }, (_, r) =>
+    Array.from({ length: 12 }, (_, c) => (r === 0 || r === 11 || c === 0 || c === 11 ? 1 : 0)),
+  );
+  const RC_FALLOFF_QUADRATIC = 1; // matches RcConfig.RC_FALLOFF_QUADRATIC
+
+  test('addPoint defaults to linear -- unchanged behaviour for every existing demo', () => {
+    const L = buildLights(openRoomWalls, []);
+    L.setambient(0);
+    const h = L.addpoint(6.5, 6.5, 0.5, 1.0, 6);
+    L.update();
+    // linear: intensity * (1 - dist/radius). At dist=3 of radius=6 -> 0.5.
+    const v = L.samplecell(9, 6); // 3 cells east of the light's own cell
+    expect(v).toBeCloseTo(0.5, 1);
+  });
+
+  test('quadratic falls off faster than linear at the same distance and radius', () => {
+    const linear = buildLights(openRoomWalls, []);
+    linear.setambient(0);
+    linear.addpoint(6.5, 6.5, 0.5, 1.0, 6);
+    linear.update();
+
+    const quad = buildLights(openRoomWalls, []);
+    quad.setambient(0);
+    const hq = quad.addpoint(6.5, 6.5, 0.5, 1.0, 6);
+    quad.setlightfalloff(hq, RC_FALLOFF_QUADRATIC);
+    quad.update();
+
+    for (const cell of [
+      [8, 6],
+      [9, 6],
+      [10, 6],
+    ] as const) {
+      const lv = linear.samplecell(...cell);
+      const qv = quad.samplecell(...cell);
+      expect(qv).toBeLessThan(lv); // quadratic reads dimmer at every mid-range distance
+    }
+    // both still reach full intensity at the source and (near) zero at the edge.
+    expect(quad.samplecell(6, 6)).toBeCloseTo(linear.samplecell(6, 6), 2);
+  });
+
+  test('setLightRadius narrows the pool without touching intensity or falloff kind', () => {
+    const L = buildLights(openRoomWalls, []);
+    L.setambient(0);
+    const h = L.addpoint(6.5, 6.5, 0.5, 1.0, 6);
+    L.update();
+    const before = L.samplecell(9, 6); // 3 cells out, radius 6 -> still lit
+    L.setlightradius(h, 3);
+    L.update();
+    const after = L.samplecell(9, 6); // 3 cells out, radius 3 -> right at/past the edge
+    expect(after).toBeLessThan(before);
   });
 });

@@ -314,8 +314,9 @@ once when the world loads.
 |---|---|
 | `new RcLights(world)` | a light grid for a loaded `RcWorld` (bakes the `light` cells) |
 | `lights.setAmbient(level)` | base light everywhere, `0`–`1` |
-| `lights.addPoint(x, y, z, brightness, reachCells)` | add a movable light; returns a handle |
-| `lights.moveLight(handle, x, y)` / `setLightIntensity(handle, b)` / `removeLight(handle)` | change a light |
+| `lights.addPoint(x, y, z, brightness, reachCells)` | add a movable light; returns a handle. Falls off **linearly** by default (even ramp over the whole reach) |
+| `lights.setLightFalloff(handle, kind)` | `RcConfig.RC_FALLOFF_LINEAR` (default) or `RC_FALLOFF_QUADRATIC` — quadratic concentrates brightness near the light and drops away faster, a small bright pool rather than a wide gradual gradient (closer to a real torch/lamp) |
+| `lights.moveLight(handle, x, y)` / `setLightIntensity(handle, b)` / `setLightRadius(handle, reachCells)` / `removeLight(handle)` | change a light |
 | `lights.update()` | recompute the moving lights — call every `onupdate`, before `renderFrame` |
 | `lights.sampleCell(col, row)` | the total light at a cell, `0`–`1` |
 | `RcRender.bindLights(lights)` | shade the view by this grid |

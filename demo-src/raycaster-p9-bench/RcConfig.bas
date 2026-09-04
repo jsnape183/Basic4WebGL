@@ -12,6 +12,13 @@
 ' RC_SURF_LIGHT_STEP of light, capped at RC_SURF_SEG_MAX sub-bands (and never
 ' finer than 2 screen pixels). A band with uniform light still costs exactly one
 ' strip, so lit-flat scenes pay nothing.
+'
+' RC_FALLOFF_LINEAR / RC_FALLOFF_QUADRATIC: per-light falloff curve, set via
+' RcLights.setLightFalloff(handle, kind) -- see RcLights.bas. LINEAR (the default
+' for every light, unchanged from before this existed) ramps intensity down evenly
+' across the whole radius. QUADRATIC concentrates brightness near the source and
+' falls away faster, closer to how a real torch/lamp reads: a small bright pool
+' that dies off quickly rather than a wide, gradual gradient.
 const
     RC_MAX_DIST = 32
     RC_MAX_MARCH_ITERS = 512
@@ -52,4 +59,6 @@ const
     RC_FLAT_FILL = 1
     RC_SURF_LIGHT_STEP = 0.12
     RC_SURF_SEG_MAX = 6
+    RC_FALLOFF_LINEAR = 0
+    RC_FALLOFF_QUADRATIC = 1
 endconst

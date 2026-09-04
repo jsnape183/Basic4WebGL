@@ -32,6 +32,7 @@ dim lzArr(0)
 dim liArr(0)
 dim lrArr(0)
 dim lActive(0)
+dim lFalloffArr(0)
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -64,7 +65,7 @@ function bakeStatic()
     for lr = 0 to self.rows - 1
         for lc = 0 to self.cols - 1
             if self.wld.lightAt(lc, lr) > 0 then
-                self.splat(lc + 0.5, lr + 0.5, RcConfig.RC_STATIC_INTENSITY, RcConfig.RC_LIGHT_RANGE)
+                self.splat(lc + 0.5, lr + 0.5, RcConfig.RC_STATIC_INTENSITY, RcConfig.RC_LIGHT_RANGE, RcConfig.RC_FALLOFF_LINEAR)
             endif
         next lc
     next lr
@@ -75,6 +76,8 @@ function bakeStatic()
     next i
 endfunction
 
+' Falloff defaults to RcConfig.RC_FALLOFF_LINEAR (unchanged behaviour) --
+' call setLightFalloff() after adding the light to switch it.
 function addPoint(x, y, z, intensity, radiusCells)
     array.push(self.lxArr, x)
     array.push(self.lyArr, y)
@@ -82,6 +85,7 @@ function addPoint(x, y, z, intensity, radiusCells)
     array.push(self.liArr, intensity)
     array.push(self.lrArr, radiusCells)
     array.push(self.lActive, 1)
+    array.push(self.lFalloffArr, RcConfig.RC_FALLOFF_LINEAR)
     return array.arrLength(self.lActive) - 1
 endfunction
 
@@ -94,13 +98,24 @@ function setLightIntensity(handle, intensity)
     self.liArr(handle) = intensity
 endfunction
 
+function setLightRadius(handle, radiusCells)
+    self.lrArr(handle) = radiusCells
+endfunction
+
+' kind is RcConfig.RC_FALLOFF_LINEAR or RC_FALLOFF_QUADRATIC -- see RcConfig.bas
+' header for what each curve looks like.
+function setLightFalloff(handle, kind)
+    self.lFalloffArr(handle) = kind
+endfunction
+
 function removeLight(handle)
     self.lActive(handle) = 0
 endfunction
 
 ' Splat one light's contribution into dynArr, LOS-occluded by walls. Always
 ' writes dynArr -- bakeStatic copies the result into staticArr afterwards.
-function splat(wx, wy, intensity, radiusCells)
+' falloff is RcConfig.RC_FALLOFF_LINEAR or RC_FALLOFF_QUADRATIC.
+function splat(wx, wy, intensity, radiusCells, falloff)
     dim col
     dim row
     dim c0
@@ -114,7 +129,7 @@ function splat(wx, wy, intensity, radiusCells)
     for row = r0 to r1
         for col = c0 to c1
             if col >= 0 and row >= 0 and col < self.cols and row < self.rows then
-                self.splatCell(wx, wy, intensity, radiusCells, col, row)
+                self.splatCell(wx, wy, intensity, radiusCells, col, row, falloff)
             endif
         next col
     next row
@@ -125,13 +140,18 @@ endfunction
 ' intensity -- it must be the brightest cell, not dark: a wall face whose
 ' RcRender lighting sample steps back onto the light cell would otherwise read
 ' only ambient (this is exactly the "dark wall right next to the lamp" bug).
-function splatCell(wx, wy, intensity, radiusCells, col, row)
+' LINEAR ramps intensity down evenly across the whole radius (the falloff every
+' light used before RC_FALLOFF existed). QUADRATIC squares the (1 - dist/radius)
+' term, concentrating brightness near the source and dropping away faster --
+' a small bright pool that dies off quickly rather than a wide, gradual gradient.
+function splatCell(wx, wy, intensity, radiusCells, col, row, falloff)
     dim cx
     dim cy
     dim dx
     dim dy
     dim dist
     dim losD
+    dim t
     dim add
     cx = col + 0.5
     cy = row + 0.5
@@ -149,7 +169,12 @@ function splatCell(wx, wy, intensity, radiusCells, col, row)
     if losD >= 0 and losD < dist - 0.05 then
         return
     endif
-    add = intensity * (1.0 - dist / radiusCells)
+    t = 1.0 - dist / radiusCells
+    if falloff = RcConfig.RC_FALLOFF_QUADRATIC then
+        add = intensity * t * t
+    else
+        add = intensity * t
+    endif
     self.addGrid(col, row, add)
 endfunction
 
@@ -172,7 +197,7 @@ function update()
     for i = 0 to array.arrLength(self.lActive) - 1
         if self.lActive(i) = 1 then
             if count < RcConfig.RC_LIGHT_CAP then
-                self.splat(self.lxArr(i), self.lyArr(i), self.liArr(i), self.lrArr(i))
+                self.splat(self.lxArr(i), self.lyArr(i), self.liArr(i), self.lrArr(i), self.lFalloffArr(i))
                 count = count + 1
             endif
         endif
