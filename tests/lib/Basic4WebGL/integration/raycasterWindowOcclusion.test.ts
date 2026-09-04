@@ -169,4 +169,15 @@ describe('RcRender single-window occlusion', () => {
     expect(coalesced).toBeGreaterThan(0);
     expect(coalesced).toBeLessThan(strips(perCellRects));
   });
+
+  test('primitiveCount reports every drawRect + drawImageStrip of the last frame', () => {
+    const rects: unknown[][] = [];
+    const strips: unknown[][] = [];
+    const r = makeRender({ ...openWorld, walltexat: () => 'w.png' }, rects, strips);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    const rendered = rects.length + strips.length;
+    // primitiveCount excludes the 2 background split rects drawn before the loop
+    expect((r as unknown as { primitivecount(): number }).primitivecount()).toBe(rendered - 2);
+  });
 });

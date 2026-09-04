@@ -52,6 +52,7 @@ dim depthArr(0)
 dim actorOrderIdx(0)
 dim actorOrderDepth(0)
 dim surfCountLast
+dim primCount
 ' Scene-level texture defaults (Phase texturing). "" = untextured (flat grey
 ' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
 dim defWallTex
@@ -74,6 +75,7 @@ Constructor(w as RcWorld)
     self.boundLights = 0
     self.boundActors = 0
     self.surfCountLast = 0
+    self.primCount = 0
     self.defWallTex = ""
     self.fDirX = 1
     self.fDirY = 0
@@ -236,6 +238,7 @@ function drawActors()
                     aCh = 255 * aLite
                     aTint = self.packTint(aCh, aCh, aCh)
                     drawing.drawImageStrip(a.image(), srcX, centerPx, (feetY + headY) / 2, RcConfig.RC_STRIP_W, hPx, aTint, 0, 1)
+                    self.primCount = self.primCount + 1
                 endif
             endif
         next c
@@ -266,6 +269,13 @@ endfunction
 ' small over-count from window-clipped strips is fine.
 function surfaceCount()
     return self.surfCountLast
+endfunction
+
+' Total draw primitives (drawRect + drawImageStrip) issued during the last
+' renderFrame(), excluding the 2 sky/ground background rects. Read by the Phase 9
+' benchmark harness and the p9-bench HUD.
+function primitiveCount()
+    return self.primCount
 endfunction
 
 ' Pack three 0..255 colour channels into a single tint number (no bitwise ops in
@@ -333,6 +343,7 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     pen.setLineWidth(0)
     pen.setFillColor(rr, gg, bb)
     drawing.drawRect(destX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t)
+    self.primCount = self.primCount + 1
     return 1
 endfunction
 
@@ -423,6 +434,7 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
         pen.setFillColor(math.clamp(rr * useLite, 0, 255), math.clamp(gg * useLite, 0, 255), math.clamp(bb * useLite, 0, 255))
         drawing.drawRect(destX, (yTop + yBot) / 2, RcConfig.RC_STRIP_W, yBot - yTop)
         self.surfCountLast = self.surfCountLast + 1
+        self.primCount = self.primCount + 1
     endif
 endfunction
 
@@ -530,6 +542,7 @@ function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind
     svTop = (cTop - wTop) / (wBot - wTop)
     svBot = (cBot - wTop) / (wBot - wTop)
     drawing.drawImageStrip(tex, srcX, destX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
+    self.primCount = self.primCount + 1
     return 1
 endfunction
 
@@ -600,6 +613,7 @@ function renderFrame()
 
     bgLite = 1.0
     self.surfCountLast = 0
+    self.primCount = 0
     if self.boundLights <> 0 then
         bgLite = self.boundLights.sampleCell(math.floor(self.camX), math.floor(self.camY))
     endif
