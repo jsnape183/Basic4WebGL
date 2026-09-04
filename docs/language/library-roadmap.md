@@ -352,6 +352,16 @@ was marginal at the Phase 3 throughput checkpoint (16ms / 127 columns) and criti
 once lighting and textures add per-strip cost. Post-pooling frame-time: **TBD** — measure
 `raycaster-p3-roomview` HUD (Phase 3 baseline was 16 ms / 127 cols).
 
+**Follow-up (2026-09-04):** the `drawing` pool no longer re-orders the display list
+per frame. `_acquireG/S/M` previously called `worldContainer.addChild` unconditionally
+for every pooled object every frame; in PIXI v8 that re-splices an existing child to the
+end of the parent's `children` array (O(n)), making an N-primitive frame O(n²) — a hard
+framerate cliff past ~3.6k primitives/frame (60fps → ~10fps by 3800). Now each acquire
+does an O(1) parent check (re-adds only if detached by a `world.clear()`) and sets an
+explicit per-frame `zIndex` (`_DRAW_Z_BASE + _drawSeq++`, reset each frame), so painter's
+order comes from PIXI's existing `sortableChildren` sort (O(n log n)) instead of array
+position. Micro-benchmark (`scripts/benchDrawingPool.ts`), ms/frame at N=8000: ~24 → ~0.3.
+
 Phase 6 shipped: `RcActors` — a fixed pool of `RcActor` billboards (pure-data:
 image name, source frame size, world `(x, y)` + feet height `z`, frame index,
 tint, visible flag; `add` / `remove` flip the visible flag, never allocate).

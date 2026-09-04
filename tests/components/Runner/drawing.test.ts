@@ -11,6 +11,7 @@ let lastTexOpts: any = null;
 
 class FakeGraphics {
   visible = true; position = { set() {} }; pivot = { set() {} };
+  parent: unknown = undefined; zIndex = 0;
   constructor() { gfxCreated++; }
   clear() { return this; }
   rect() { return this; } circle() { return this; } moveTo() { return this; } lineTo() { return this; }
@@ -19,6 +20,7 @@ class FakeGraphics {
 }
 class FakeSprite {
   visible = true; width = 0; height = 0; tint = 0xffffff; anchor = { set() {} }; position = { set() {} };
+  parent: unknown = undefined; zIndex = 0;
   texture: unknown;
   constructor(t?: unknown) { spriteCreated++; this.texture = t; }
   destroy() { destroyed++; }
@@ -31,16 +33,17 @@ class FakeTexture {
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
 class FakePerspectiveMesh {
   visible = true; tint = 0xffffff; position = { set() {} };
+  parent: unknown = undefined; zIndex = 0;
   texture: unknown; opts: any; corners: number[] | null = null;
   constructor(opts?: any) { meshCreated++; this.opts = opts; this.texture = opts?.texture; }
   setCorners(...c: number[]) { this.corners = c; }
   destroy() { destroyed++; meshDestroyed++; }
 }
 class FakeContainer {
-  children: unknown[] = [];
-  addChild(c: unknown) { if (!this.children.includes(c)) this.children.push(c); } // dedupe like real PIXI
-  removeChild(c: unknown) { this.children = this.children.filter((x) => x !== c); }
-  removeChildren() { this.children = []; }
+  children: any[] = [];
+  addChild(c: any) { c.parent = this; if (!this.children.includes(c)) this.children.push(c); } // dedupe like real PIXI; track parent
+  removeChild(c: any) { c.parent = undefined; this.children = this.children.filter((x) => x !== c); }
+  removeChildren() { this.children.forEach((c) => { c.parent = undefined; }); this.children = []; }
 }
 
 function loadDrawing() {
@@ -124,11 +127,38 @@ describe('drawing — object pooling', () => {
   test('drawRect re-attaches a pooled object after worldContainer.removeChildren()', () => {
     const { d, worldContainer } = loadDrawing();
     d.drawRect(0, 0, 10, 10);
-    d.clearDrawing();                 // -> pool, still a (hidden) child
+    d.drawRect(0, 0, 10, 10);
+    d.clearDrawing();                 // -> pool, still (hidden) children
     worldContainer.removeChildren();  // scene switch / world.clearWorld()
-    d.drawRect(0, 0, 10, 10);         // pops the detached pooled object
-    expect(worldContainer.children.length).toBe(1);        // re-attached
-    expect((worldContainer.children[0] as any).visible).toBe(true);
+    d.drawRect(0, 0, 10, 10);         // pops the detached pooled objects
+    d.drawRect(0, 0, 10, 10);
+    expect(worldContainer.children.length).toBe(2);        // both re-attached
+    expect(worldContainer.children.every((c: any) => c.visible)).toBe(true);
+  });
+
+  test('drawRect does not re-addChild a pooled object across frames', () => {
+    const { d, worldContainer } = loadDrawing();
+    let addCalls = 0;
+    const realAdd = worldContainer.addChild.bind(worldContainer);
+    worldContainer.addChild = (c: any) => { addCalls++; realAdd(c); };
+    d.drawRect(0, 0, 10, 10); d.drawRect(0, 0, 10, 10); d.drawRect(0, 0, 10, 10);
+    d.clearDrawing();
+    d.drawRect(0, 0, 10, 10); d.drawRect(0, 0, 10, 10); d.drawRect(0, 0, 10, 10);
+    expect(addCalls).toBe(3);                       // not 6 -- reused objects are not re-added
+    expect(worldContainer.children.length).toBe(3);
+  });
+
+  test('assigns increasing zIndex in draw order, resetting each frame', () => {
+    const { d } = loadDrawing();
+    const a = d.drawRect(0, 0, 10, 10);
+    const b = d.drawImageStrip('wall.png', 3, 0, 0, 4, 40);
+    const c = d.drawRect(0, 0, 10, 10);
+    expect(a.zIndex).toBeGreaterThanOrEqual(1_000_000);
+    expect(a.zIndex).toBeLessThan(b.zIndex);
+    expect(b.zIndex).toBeLessThan(c.zIndex);
+    d.clearDrawing();
+    const dd = d.drawRect(0, 0, 10, 10);
+    expect(dd.zIndex).toBe(1_000_000);             // counter reset each frame
   });
 });
 

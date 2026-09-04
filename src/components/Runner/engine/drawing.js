@@ -10,6 +10,8 @@ const _sbDrawing = (() => {
   const _poolG = [];                // free Graphics; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
   const _poolS = [];                // free Sprites; pools grow to the frame's high-water mark and hold it until _drawingReset() (scene switch) -- deliberate, bounded by the max objects drawn in one frame
   const _poolM = [];                // free PerspectiveMeshes; same high-water-mark growth model as _poolS
+  const _DRAW_Z_BASE = 1_000_000;   // drawing objects render above ordinary world sprites
+  let _drawSeq = 0;                  // per-frame draw-order counter -> zIndex
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
@@ -26,8 +28,10 @@ const _sbDrawing = (() => {
     } else {
       g = new PIXI.Graphics();
     }
-    // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
-    worldContainer.addChild(g);
+    // (re)attach only when detached -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld()).
+    // Draw order is expressed via zIndex (worldContainer.sortableChildren is true), not child-array position -- avoids a per-frame O(n) re-splice.
+    if (g.parent !== worldContainer) worldContainer.addChild(g);
+    g.zIndex = _DRAW_Z_BASE + _drawSeq++;
     _liveG.push(g);
     return g;
   }
@@ -38,8 +42,9 @@ const _sbDrawing = (() => {
     } else {
       s = new PIXI.Sprite();
     }
-    // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren() (scene switch / world.clearWorld())
-    worldContainer.addChild(s);
+    // (re)attach only when detached; draw order via zIndex, not child-array position (see _acquireG).
+    if (s.parent !== worldContainer) worldContainer.addChild(s);
+    s.zIndex = _DRAW_Z_BASE + _drawSeq++;
     _liveS.push(s);
     return s;
   }
@@ -79,8 +84,9 @@ const _sbDrawing = (() => {
       // world-tiled V perspective-correct toward the horizon.
       m = new PIXI.PerspectiveMesh({ texture, verticesX: 2, verticesY: 12 });
     }
-    // always (re)attach -- pooled objects may have been detached by a worldContainer.removeChildren()
-    worldContainer.addChild(m);
+    // (re)attach only when detached; draw order via zIndex, not child-array position (see _acquireG).
+    if (m.parent !== worldContainer) worldContainer.addChild(m);
+    m.zIndex = _DRAW_Z_BASE + _drawSeq++;
     _liveM.push(m);
     return m;
   }
@@ -193,6 +199,7 @@ const _sbDrawing = (() => {
     },
 
     clearDrawing() {
+      _drawSeq = 0;   // reset per-frame draw-order counter so zIndex stays in a stable band and never drifts past Number range
       for (const o of _liveG) { o.visible = false; _poolG.push(o); }
       for (const o of _liveS) { o.visible = false; _poolS.push(o); }
       for (const o of _liveM) { o.visible = false; _poolM.push(o); }
@@ -205,6 +212,7 @@ const _sbDrawing = (() => {
     // stage.clear() on scene switch (also fixes the old cross-scene leak where
     // _drawObjs kept references after worldContainer.removeChildren()).
     _drawingReset() {
+      _drawSeq = 0;
       for (const o of _liveG) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
       for (const o of _liveS) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
       for (const o of _liveM) { if (o.parent) o.parent.removeChild(o); o.destroy(); }
