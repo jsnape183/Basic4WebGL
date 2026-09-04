@@ -123,3 +123,26 @@ function onupdate(delta)
   next col
 endfunction
 ```
+
+## wallColumn(imageName, destX, topY, botY, srcU, srcVTop, srcVBot, tint)
+
+*Experimental — used by the raycaster wall-mesh spike; renders all textured wall columns of one image as a single mesh.* Records one textured wall column (its screen span `topY`–`botY`, the texture U coordinate `srcU`, the vertical texture window `srcVTop`–`srcVBot`, and a packed `tint`) into a buffer keyed by `imageName`. Nothing is drawn until `wallFlush` is called.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| imageName | string | Name of a pre-loaded image asset |
+| destX     | number | Horizontal centre of the column on screen |
+| topY      | number | Screen Y of the top of the visible column |
+| botY      | number | Screen Y of the bottom of the visible column |
+| srcU      | number | Texture X coordinate for this column, 0–1 |
+| srcVTop   | number | Texture Y at the top of the column, 0–1 |
+| srcVBot   | number | Texture Y at the bottom of the column, 0–1 |
+| tint      | number | Packed `red * 65536 + green * 256 + blue` colour to multiply the column by |
+
+**Returns:** nothing.
+
+## wallFlush()
+
+*Experimental — used by the raycaster wall-mesh spike; renders all textured wall columns of one image as a single mesh.* Emits one mesh per distinct `imageName` accumulated by `wallColumn` since the last flush, then clears the buffers.
+
+**Returns:** the number of meshes emitted.

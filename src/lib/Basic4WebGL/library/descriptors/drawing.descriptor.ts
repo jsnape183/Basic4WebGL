@@ -35,5 +35,16 @@ export const drawingDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.drawFloorStrip(${p.imageName}, ${p.destX}, ${p.yNear}, ${p.yFar}, ${p.wNearX}, ${p.wNearY}, ${p.wFarX}, ${p.wFarY}, ${p.stripW}, ${p.tint})`,
     },
+    {
+      name: 'wallColumn',
+      params: ['imageName', 'destX', 'topY', 'botY', 'srcU', 'srcVTop', 'srcVBot', 'tint'],
+      body: (p, _self) =>
+        `_sb.wallColumn(${p.imageName}, ${p.destX}, ${p.topY}, ${p.botY}, ${p.srcU}, ${p.srcVTop}, ${p.srcVBot}, ${p.tint})`,
+    },
+    {
+      name: 'wallFlush',
+      params: [],
+      body: (_p, _self) => `_sb.wallFlush()`,
+    },
   ],
 };

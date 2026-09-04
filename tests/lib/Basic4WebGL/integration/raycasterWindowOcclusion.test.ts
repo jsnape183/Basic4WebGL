@@ -42,6 +42,7 @@ function makeRender(
   world: Record<string, unknown>,
   rects: unknown[][],
   wallStrips: unknown[][] = [],
+  wallCols: unknown[][] = [],
   flatFill = true,
 ): RcRenderLike {
   const code = transpileP3(flatFill);
@@ -70,6 +71,22 @@ function makeRender(
     wallStrips.push(a);
     return undefined;
   };
+  const wallColumnStub = (...a: unknown[]) => {
+    wallCols.push(a);
+    return undefined;
+  };
+  // Count distinct wall images accumulated since the last flush, but keep the
+  // captured columns in `wallCols` so tests can inspect them after renderFrame.
+  let wallFlushMark = 0;
+  const wallFlushStub = () => {
+    const n = new Set(wallCols.slice(wallFlushMark).map((a) => a[0])).size;
+    wallFlushMark = wallCols.length;
+    return n;
+  };
+  _sb.wallColumn = wallColumnStub;
+  _sb.wallcolumn = wallColumnStub;
+  _sb.wallFlush = wallFlushStub;
+  _sb.wallflush = wallFlushStub;
   const deferred: Array<() => void> = [];
   _sb._deferModuleBody = (cb: () => void) => deferred.push(cb);
   const _createArray = (init: unknown[]) =>
@@ -102,7 +119,7 @@ function makeRenderFlatFillOff(
   rects: unknown[][],
   wallStrips: unknown[][] = [],
 ): RcRenderLike {
-  return makeRender(world, rects, wallStrips, false);
+  return makeRender(world, rects, wallStrips, [], false);
 }
 
 const openWorld = {
@@ -238,6 +255,24 @@ describe('RcRender single-window occlusion', () => {
     // exactly the old behaviour: one floor + one ceiling strip for every column
     expect(perColumnRects(rects)).toBe(r.columncount() * 2);
     expect(rects.length).toBe(2 + r.columncount() * 2); // no background fills
+  });
+
+  test('wall-mesh path: same columns hit, collapses to drawImageStrip-free', () => {
+    const strips: unknown[][] = [];
+    const wallCols: unknown[][] = [];
+    const r = makeRender({ ...openWorld, walltexat: () => 'w.png' }, [], strips, wallCols);
+    (r as unknown as { setwallmesh(v: number): void }).setwallmesh(1);
+    r.setcamera(2, 2, 0, 0);
+    r.renderframe();
+    expect(strips.length).toBe(0); // no per-column sprites
+    expect(wallCols.length).toBeGreaterThan(0); // columns went to the mesh buffer
+    // toggle back off -> sprites return
+    (r as unknown as { setwallmesh(v: number): void }).setwallmesh(0);
+    strips.length = 0;
+    wallCols.length = 0;
+    r.renderframe();
+    expect(strips.length).toBeGreaterThan(0);
+    expect(wallCols.length).toBe(0);
   });
 
   test('rung 1: an fcol: column still paints over the background fill', () => {

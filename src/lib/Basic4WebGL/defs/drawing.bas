@@ -21,3 +21,11 @@ endfunction
 function drawFloorStrip(imageName, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW, tint)
     call("_sb.drawFloorStrip(drawfloorstrip_imageName, drawfloorstrip_destX, drawfloorstrip_yNear, drawfloorstrip_yFar, drawfloorstrip_wNearX, drawfloorstrip_wNearY, drawfloorstrip_wFarX, drawfloorstrip_wFarY, drawfloorstrip_stripW, drawfloorstrip_tint)")
 endfunction
+
+function wallColumn(imageName, destX, topY, botY, srcU, srcVTop, srcVBot, tint)
+    call("_sb.wallColumn(wallcolumn_imageName, wallcolumn_destX, wallcolumn_topY, wallcolumn_botY, wallcolumn_srcU, wallcolumn_srcVTop, wallcolumn_srcVBot, wallcolumn_tint)")
+endfunction
+
+function wallFlush()
+    call("_sb.wallFlush()")
+endfunction
