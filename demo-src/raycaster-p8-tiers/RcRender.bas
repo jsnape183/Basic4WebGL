@@ -56,14 +56,6 @@ dim primCount
 ' Scene-level texture defaults (Phase texturing). "" = untextured (flat grey
 ' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
 dim defWallTex
-dim wCTop
-dim wCBot
-dim wSrcU
-dim wSvTop
-dim wSvBot
-dim wTint
-dim useWallMesh
-dim wallMeshMsLast
 
 Constructor(w as RcWorld)
     dim di
@@ -84,8 +76,6 @@ Constructor(w as RcWorld)
     self.boundActors = 0
     self.surfCountLast = 0
     self.primCount = 0
-    self.useWallMesh = 0
-    self.wallMeshMsLast = 0
     self.defWallTex = ""
     self.fDirX = 1
     self.fDirY = 0
@@ -272,14 +262,6 @@ endfunction
 
 function columnCount()
     return self.cols
-endfunction
-
-function setWallMesh(v)
-    self.useWallMesh = v
-endfunction
-
-function wallMeshMs()
-    return self.wallMeshMsLast
 endfunction
 
 ' Debug/probe hook: number of horizontal-surface strips drawn during the last
@@ -588,14 +570,15 @@ endfunction
 ' with the source-V window clipped to the visible span so a wall behind a
 ' floor-step shows the right vertical slice. sideKind: 0 x-face / 1 y-face /
 ' RC_SPAN_SIDE_DIAG diagonal. Returns 1 if a strip was drawn, else 0.
-' Compute the clipped screen span, source-V window, texture U and light tint for
-' a wall column into self.wC*/wSrcU/wSv*/wTint. Returns 1 if the column is
-' visible (something to draw), 0 if fully clipped. Both the sprite path
-' (drawWallStrip) and the mesh path (renderFrame) call this so the A/B is exact.
-function wallColSetup(wTop, wBot, winTop, winBot, u, lite, sideKind)
-    dim sideDim
+function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind)
+    dim cTop
+    dim cBot
+    dim svTop
+    dim svBot
     dim srcX
     dim chan
+    dim sideDim
+    dim tint
     sideDim = 1.0
     if sideKind = 1 then
         sideDim = 0.8
@@ -606,15 +589,15 @@ function wallColSetup(wTop, wBot, winTop, winBot, u, lite, sideKind)
     if wBot <= wTop then
         return 0
     endif
-    self.wCTop = wTop
-    self.wCBot = wBot
-    if self.wCTop < winTop then
-        self.wCTop = winTop
+    cTop = wTop
+    cBot = wBot
+    if cTop < winTop then
+        cTop = winTop
     endif
-    if self.wCBot > winBot then
-        self.wCBot = winBot
+    if cBot > winBot then
+        cBot = winBot
     endif
-    if self.wCBot <= self.wCTop then
+    if cBot <= cTop then
         return 0
     endif
     srcX = math.floor(u * RcConfig.RC_TEX_SIZE)
@@ -624,21 +607,11 @@ function wallColSetup(wTop, wBot, winTop, winBot, u, lite, sideKind)
     if srcX >= RcConfig.RC_TEX_SIZE then
         srcX = RcConfig.RC_TEX_SIZE - 1
     endif
-    self.wSrcU = (srcX + 0.5) / RcConfig.RC_TEX_SIZE
     chan = 255 * lite * sideDim
-    self.wTint = self.packTint(chan, chan, chan + 25)
-    self.wSvTop = (self.wCTop - wTop) / (wBot - wTop)
-    self.wSvBot = (self.wCBot - wTop) / (wBot - wTop)
-    return 1
-endfunction
-
-function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind)
-    dim srcX
-    if self.wallColSetup(wTop, wBot, winTop, winBot, u, lite, sideKind) = 0 then
-        return 0
-    endif
-    srcX = math.floor(self.wSrcU * RcConfig.RC_TEX_SIZE)
-    drawing.drawImageStrip(tex, srcX, destX, (self.wCTop + self.wCBot) / 2, RcConfig.RC_STRIP_W, self.wCBot - self.wCTop, self.wTint, self.wSvTop, self.wSvBot)
+    tint = self.packTint(chan, chan, chan + 25)
+    svTop = (cTop - wTop) / (wBot - wTop)
+    svBot = (cBot - wTop) / (wBot - wTop)
+    drawing.drawImageStrip(tex, srcX, destX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
     self.primCount = self.primCount + 1
     return 1
 endfunction
@@ -701,8 +674,6 @@ function renderFrame()
     dim wtex
     dim fillOn
     dim fillLite
-    dim wmT0
-    dim wmCount
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -838,13 +809,7 @@ function renderFrame()
                 hitWall = 1
                 wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
                 if string.len(wtex) > 0 then
-                    if self.useWallMesh = 1 then
-                        if self.wallColSetup(sTop, sBot, winTop, winBot, self.rc.spanU(i), lite, self.rc.spanSide(i)) = 1 then
-                            drawing.wallColumn(wtex, destX, self.wCTop, self.wCBot, self.wSrcU, self.wSvTop, self.wSvBot, self.wTint)
-                        endif
-                    else
-                        self.surfCountLast = self.surfCountLast + self.drawWallStrip(destX, sTop, sBot, winTop, winBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
-                    endif
+                    self.surfCountLast = self.surfCountLast + self.drawWallStrip(destX, sTop, sBot, winTop, winBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
                 else
                     wshade = self.rc.spanSide(i)
                     if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
@@ -917,13 +882,6 @@ function renderFrame()
             endif
         endif
     next col
-
-    if self.useWallMesh = 1 then
-        wmT0 = time.now()
-        wmCount = drawing.wallFlush()
-        self.wallMeshMsLast = time.now() - wmT0
-        self.primCount = self.primCount + wmCount
-    endif
 
     if self.boundActors <> 0 then
         self.drawActors()
