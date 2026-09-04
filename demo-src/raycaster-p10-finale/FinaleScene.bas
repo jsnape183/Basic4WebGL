@@ -67,6 +67,12 @@ function onenter()
   ' boundary. Force the accurate per-pixel path everywhere.
   self.ren.setFlatFill(0)
 
+  ' Gradient floor/ceiling shading (POC) -- one shape per colour run,
+  ' gradient-filled from the light at that run's own real near/far edge,
+  ' instead of the shared library's default screen-Y light-band lattice. See
+  ' docs/superpowers/specs/2026-09-04-raycaster-floor-ceiling-gradient-shading-design.md.
+  self.ren.setGradientShading(1)
+
   ' No dynamic lights at all -- every `light` marker in finale.stm was already
   ' baked into staticArr by the RcLights Constructor above. Nothing to update
   ' per frame.
