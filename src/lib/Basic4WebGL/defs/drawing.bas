@@ -21,3 +21,7 @@ endfunction
 function drawFloorStrip(imageName, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW, tint)
     call("_sb.drawFloorStrip(drawfloorstrip_imageName, drawfloorstrip_destX, drawfloorstrip_yNear, drawfloorstrip_yFar, drawfloorstrip_wNearX, drawfloorstrip_wNearY, drawfloorstrip_wFarX, drawfloorstrip_wFarY, drawfloorstrip_stripW, drawfloorstrip_tint)")
 endfunction
+
+function drawVGradientRect(x, y, width, height, topR, topG, topB, botR, botG, botB)
+    call("_sb.drawVGradientRect(drawvgradientrect_x, drawvgradientrect_y, drawvgradientrect_width, drawvgradientrect_height, drawvgradientrect_topR, drawvgradientrect_topG, drawvgradientrect_topB, drawvgradientrect_botR, drawvgradientrect_botG, drawvgradientrect_botB)")
+endfunction

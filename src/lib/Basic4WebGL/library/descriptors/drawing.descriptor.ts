@@ -35,5 +35,11 @@ export const drawingDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.drawFloorStrip(${p.imageName}, ${p.destX}, ${p.yNear}, ${p.yFar}, ${p.wNearX}, ${p.wNearY}, ${p.wFarX}, ${p.wFarY}, ${p.stripW}, ${p.tint})`,
     },
+    {
+      name: 'drawVGradientRect',
+      params: ['x', 'y', 'width', 'height', 'topR', 'topG', 'topB', 'botR', 'botG', 'botB'],
+      body: (p, _self) =>
+        `_sb.drawVGradientRect(${p.x}, ${p.y}, ${p.width}, ${p.height}, ${p.topR}, ${p.topG}, ${p.topB}, ${p.botR}, ${p.botG}, ${p.botB})`,
+    },
   ],
 };
