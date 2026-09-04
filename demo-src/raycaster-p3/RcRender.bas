@@ -845,12 +845,19 @@ function renderFrame()
         self.camZ = self.boundMover.z()
     endif
 
+    ' The full-screen backdrop below represents the unlit far distance (what
+    ' shows through if an open sightline's floor/ceiling coverage doesn't quite
+    ' reach the vanishing point), NOT wherever the camera happens to be
+    ' standing right now. It must be a genuinely fixed value -- ambientLevel()
+    ' depends only on RcLights.setAmbient(), never on camera position -- or the
+    ' backdrop visibly brightens/dims as the player walks between differently
+    ' lit cells even though nothing "in front of them" has actually changed.
     bgLite = 1.0
     self.surfCountLast = 0
     self.primCount = 0
     self.surfSegN = 1
     if self.boundLights <> 0 then
-        bgLite = self.boundLights.sampleCell(math.floor(self.camX), math.floor(self.camY))
+        bgLite = self.boundLights.ambientLevel()
         ' One number for the whole frame -- drawFlatSeg's light lattice has to be
         ' identical for every column, so this cannot be derived per band.
         self.surfSegN = math.ceil((self.boundLights.peakLevel() - self.boundLights.ambientLevel()) / RcConfig.RC_SURF_LIGHT_STEP)
