@@ -48,6 +48,50 @@ const _sbDrawing = (() => {
     _liveS.push(s);
     return s;
   }
+  const _gradientCache = new Map(); // `${topHex}:${botHex}` -> PIXI.FillGradient
+
+  // A PIXI.FillGradient allocates a real backing GPU texture -- creating a new
+  // one per draw call (a floor/ceiling shading path can issue dozens of these
+  // per column, every frame) exhausts VRAM within seconds and takes the whole
+  // WebGL context down with it (symptom: PIXI's own stock batch shader starts
+  // failing to compile, then CONTEXT_LOST_WEBGL). Quantise each channel to the
+  // nearest 4 (imperceptible) so nearby light levels share one cached gradient.
+  //
+  // Deliberately NOT LRU-capped-and-destroyed like _texFor/_meshTexFor above.
+  // A FillGradient can be referenced by Graphics objects PIXI hasn't finished
+  // processing for the current frame yet (its GPU resources are built lazily,
+  // during batching); destroying one that's still in flight -- which a size
+  // cap here WILL do once real gameplay produces more than a few hundred
+  // distinct quantised colour pairs, which it does -- crashes the renderer
+  // with null-texture errors, not a graceful miss. Unbounded growth for a
+  // scene's lifetime is the safe trade: each gradient's texture is small
+  // (PIXI's own docs: "gradient textures can be relatively small"), and the
+  // quantised key space is finite, not truly unbounded. Only destroyed on
+  // _drawingReset() (scene switch) below, where nothing can still be using them.
+  function _quantizeChannel(c) {
+    return Math.min(255, Math.max(0, Math.round(c / 4) * 4));
+  }
+
+  function _gradientFor(topR, topG, topB, botR, botG, botB) {
+    const topHex = (_quantizeChannel(topR) << 16) | (_quantizeChannel(topG) << 8) | _quantizeChannel(topB);
+    const botHex = (_quantizeChannel(botR) << 16) | (_quantizeChannel(botG) << 8) | _quantizeChannel(botB);
+    const key = topHex + ':' + botHex;
+    let g = _gradientCache.get(key);
+    if (!g) {
+      g = new PIXI.FillGradient({
+        type: 'linear',
+        start: { x: 0, y: 0 },
+        end: { x: 0, y: 1 },
+        colorStops: [
+          { offset: 0, color: topHex },
+          { offset: 1, color: botHex },
+        ],
+      });
+      _gradientCache.set(key, g);
+    }
+    return g;
+  }
+
   function _texFor(imageName, srcX, srcVTop, srcVBot) {
     const vt = srcVTop === undefined ? 0 : srcVTop;
     const vb = srcVBot === undefined ? 1 : srcVBot;
@@ -150,17 +194,7 @@ const _sbDrawing = (() => {
     // intermediate sampling lattice. x/y is the shape's centre, matching drawRect.
     drawVGradientRect(x, y, width, height, topR, topG, topB, botR, botG, botB) {
       const o = _acquireG();
-      const topHex = parseInt(_componentToHex(topR) + _componentToHex(topG) + _componentToHex(topB), 16);
-      const botHex = parseInt(_componentToHex(botR) + _componentToHex(botG) + _componentToHex(botB), 16);
-      const gradient = new PIXI.FillGradient({
-        type: 'linear',
-        start: { x: 0, y: 0 },
-        end: { x: 0, y: 1 },
-        colorStops: [
-          { offset: 0, color: topHex },
-          { offset: 1, color: botHex },
-        ],
-      });
+      const gradient = _gradientFor(topR, topG, topB, botR, botG, botB);
       o.rect(0, 0, width, height).fill(gradient);
       o.pivot.set(width / 2, height / 2);
       o.position.set(x, y);
@@ -252,6 +286,8 @@ const _sbDrawing = (() => {
       _texCache.clear();
       for (const t of _meshTexCache.values()) { if (t.destroy) t.destroy(); }
       _meshTexCache.clear();
+      for (const g of _gradientCache.values()) { if (g.destroy) g.destroy(); }
+      _gradientCache.clear();
     },
   };
 })();

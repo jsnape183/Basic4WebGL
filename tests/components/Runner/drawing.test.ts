@@ -8,6 +8,8 @@ let meshCreated = 0;
 let meshDestroyed = 0;
 let destroyed = 0;
 let lastTexOpts: any = null;
+let gradientCreated = 0;
+let gradientDestroyed = 0;
 
 class FakeGraphics {
   visible = true; position = { set() {} }; pivot = { set() {} };
@@ -48,11 +50,13 @@ class FakeContainer {
 }
 class FakeFillGradient {
   opts: any;
-  constructor(opts?: unknown) { this.opts = opts; }
+  constructor(opts?: unknown) { gradientCreated++; this.opts = opts; }
+  destroy() { gradientDestroyed++; }
 }
 
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
+  gradientCreated = gradientDestroyed = 0;
   lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
   const PIXI = {
@@ -253,5 +257,65 @@ describe('drawing — vertical gradient fill', () => {
     d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
     d.drawVGradientRect(0, 0, 10, 10, 255, 255, 255, 0, 0, 0);
     expect(gfxCreated).toBe(2); // reused from the pool
+  });
+
+  test('reuses a cached PIXI.FillGradient for the same colour pair instead of allocating a new GPU resource every call', () => {
+    // Each PIXI.FillGradient allocates a real backing texture -- a raycaster
+    // floor/ceiling shading path calling this per column, every frame, with no
+    // reuse exhausts VRAM within seconds and takes the whole WebGL context down
+    // with it. This must not scale with call count for a small palette of
+    // distinct light levels.
+    const { d } = loadDrawing();
+    for (let i = 0; i < 50; i++) {
+      d.drawVGradientRect(0, 0, 4, 30, 255, 0, 0, 0, 0, 255);
+    }
+    expect(gradientCreated).toBe(1);
+  });
+
+  test('quantises colour channels so nearly-identical light levels still share a cached gradient', () => {
+    // Quantisation step is 4 (round(c/4)*4); 98..101 and 46..49 both round to
+    // the same bucket (100 and 48 respectively) -- values chosen to stay
+    // inside one bucket, not straddle a rounding boundary.
+    const { d } = loadDrawing();
+    d.drawVGradientRect(0, 0, 4, 30, 99, 100, 101, 47, 48, 49);
+    d.drawVGradientRect(0, 0, 4, 30, 100, 99, 100, 48, 47, 48);
+    expect(gradientCreated).toBe(1);
+  });
+
+  test('clearDrawing() never destroys cached gradients -- only a full scene reset does', () => {
+    const { d } = loadDrawing();
+    d.drawVGradientRect(0, 0, 4, 30, 255, 0, 0, 0, 0, 255);
+    d.clearDrawing();
+    // clearDrawing() clears the Graphics pool, not the gradient cache (it's
+    // keyed by colour, independent of any one frame) -- it should NOT be
+    // destroyed here, only on a full scene reset.
+    expect(gradientDestroyed).toBe(0);
+  });
+
+  test('does not evict or destroy cached gradients no matter how many distinct colour pairs accumulate', () => {
+    // Regression guard: an earlier version LRU-capped this cache at 512 and
+    // destroyed the oldest entry past that -- but a FillGradient can still be
+    // referenced by a Graphics object PIXI hasn't finished batching for the
+    // current frame (its GPU resources are built lazily), so destroying one
+    // still in flight crashed the renderer with null-texture errors, not a
+    // graceful cache miss. Real gameplay (many distinct quantised light
+    // levels across a level) exceeds 512 in normal use, so this must never
+    // destroy anything mid-session.
+    const { d } = loadDrawing();
+    for (let i = 0; i < 1000; i++) {
+      d.drawVGradientRect(0, 0, 4, 30, i % 256, 0, 0, 0, 0, 255);
+    }
+    expect(gradientDestroyed).toBe(0);
+  });
+
+  test('_drawingReset destroys the whole gradient cache (safe -- everything referencing it is torn down together)', () => {
+    const { d } = loadDrawing();
+    d.drawVGradientRect(0, 0, 4, 30, 255, 0, 0, 0, 0, 255);
+    d.drawVGradientRect(0, 0, 4, 30, 0, 255, 0, 0, 0, 255);
+    d._drawingReset();
+    expect(gradientDestroyed).toBe(2);
+    // and a subsequent call must rebuild from scratch, not reuse a destroyed instance
+    d.drawVGradientRect(0, 0, 4, 30, 255, 0, 0, 0, 0, 255);
+    expect(gradientCreated).toBe(3);
   });
 });
