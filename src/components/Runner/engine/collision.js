@@ -247,6 +247,19 @@ const _sbCollision = (() => {
     // it tunnel in a little further every subsequent frame. Small enough to
     // never matter for any real sprite/tile size in this engine, large
     // enough to clear floating-point rounding noise.
+    //
+    // The same epsilon also terminates the CROSS-axis span (bottomRow for an
+    // 'x' move, rightCol for a 'y' move), modelling that span's trailing edge
+    // as exclusive so an AABB ending exactly on a boundary doesn't also scan
+    // the tile beyond it. That pullback used to be a whole pixel (`- 1`),
+    // which is only equivalent for whole-pixel-aligned AABBs. Real sprites
+    // are centre-anchored (sprites.js calls `anchor.set(0.5)`), so their AABB
+    // is offset by half their size and habitually straddles a tile boundary;
+    // for anything smaller than ~2px on that axis the whole-pixel pullback
+    // dragged the trailing edge back ACROSS the boundary, collapsing the span
+    // onto the neighbouring row/column the sprite isn't in. When that
+    // neighbour was out of grid range the scan matched nothing at all and the
+    // sprite passed clean through solid tiles.
     _resolveAxis(grid, bounds, delta, axis) {
       const TILE_EPSILON = 0.01;
       if (delta === 0) return { delta: 0, blocked: false };
@@ -260,7 +273,7 @@ const _sbCollision = (() => {
         const startCol = Math.floor((frontBefore - dir * TILE_EPSILON - offsetX) / tileW);
         const endCol = Math.floor((frontAfter - offsetX) / tileW);
         const topRow = Math.floor((bounds.y - offsetY) / tileH);
-        const bottomRow = Math.floor((bounds.y + bounds.height - 1 - offsetY) / tileH);
+        const bottomRow = Math.floor((bounds.y + bounds.height - TILE_EPSILON - offsetY) / tileH);
         for (let col = startCol + dir; dir > 0 ? col <= endCol : col >= endCol; col += dir) {
           for (let row = topRow; row <= bottomRow; row++) {
             if (this._isSolidCell(grid, row, col)) {
@@ -280,7 +293,7 @@ const _sbCollision = (() => {
       const startRow = Math.floor((frontBefore - dir * TILE_EPSILON - offsetY) / tileH);
       const endRow = Math.floor((frontAfter - offsetY) / tileH);
       const leftCol = Math.floor((bounds.x - offsetX) / tileW);
-      const rightCol = Math.floor((bounds.x + bounds.width - 1 - offsetX) / tileW);
+      const rightCol = Math.floor((bounds.x + bounds.width - TILE_EPSILON - offsetX) / tileW);
       for (let row = startRow + dir; dir > 0 ? row <= endRow : row >= endRow; row += dir) {
         for (let col = leftCol; col <= rightCol; col++) {
           if (this._isSolidCell(grid, row, col)) {

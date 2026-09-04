@@ -137,9 +137,12 @@ describe('setTileSolid / isTileSolid', () => {
   });
 });
 
-// A fake PIXI handle: position is the top-left corner (matches plain
-// `sprite`'s default anchor(0,0) — see sprites.js/createSprite, which never
-// calls anchor.set), and getBounds() recomputes from the *current* position
+// A fake PIXI handle: position is the top-left corner, i.e. anchor (0,0).
+// NOTE: no real sprite has this anchor — sprites.js/createSprite calls
+// `anchor.set(0.5)`. These fixtures are kept because whole-pixel top-left
+// AABBs make the expected clip values easy to read, but see
+// makeCenteredHandle below for the anchoring every real sprite actually has.
+// getBounds() recomputes from the *current* position
 // so it reflects in-progress moves during axis-separated resolution, exactly
 // like a real PIXI display object's getBounds() would.
 function makeHandle(x: number, y: number, w: number, h: number) {
@@ -209,6 +212,25 @@ function makeHandleWithPannedGetBounds(x: number, y: number, w: number, h: numbe
         width: w,
         height: h,
       };
+    },
+  };
+  return handle;
+}
+
+// A CENTRE-anchored fake PIXI handle — anchor (0.5, 0.5), which is what every
+// real sprite actually has: sprites.js/createSprite calls `sprite.anchor.set(0.5)`
+// on construction (animatedSprite.js and drawing.js do the same). makeHandle
+// above uses anchor (0,0), which no sprite in this engine ever has, so the
+// whole-pixel top-left AABBs it produces never exercise the fractional,
+// boundary-straddling AABBs that centre anchoring makes the normal case.
+function makeCenteredHandle(x: number, y: number, w: number, h: number) {
+  const handle: Record<string, unknown> & { position: { x: number; y: number } } = {
+    position: { x, y },
+    width: w,
+    height: h,
+    anchor: { x: 0.5, y: 0.5 },
+    getBounds() {
+      return { x: handle.position.x - w / 2, y: handle.position.y - h / 2, width: w, height: h };
     },
   };
   return handle;
@@ -470,5 +492,75 @@ describe('_applyKinematics', () => {
     // in this file.
     expect(handle.position.x).toBe(12);
     expect(c.isBlockedRight(handle)).toBe(true);
+  });
+
+  // Regression coverage for the cross-axis span scan losing a whole row/column.
+  //
+  // _resolveAxis derives the range of rows (for an 'x' move) or columns (for a
+  // 'y' move) that the AABB's OTHER axis spans. The far end of that range used
+  // a whole-pixel pullback (`bounds.y + bounds.height - 1`) to model an
+  // exclusive trailing edge. That only holds if AABBs are whole-pixel aligned,
+  // which is exactly what makeHandle's anchor-(0,0) fixtures are and what no
+  // real sprite is: every sprite is centre-anchored, so its AABB is offset by
+  // half its size and routinely straddles a tile boundary.
+  //
+  // Concretely, for a centre-anchored sprite sitting at y=0 the AABB spans
+  // y:-h/2..+h/2, overlapping BOTH the row above the origin and row 0. The
+  // whole-pixel pullback shifted the far edge back past the boundary, so for
+  // any sprite shorter than ~2px the computed range collapsed onto the row
+  // ABOVE the one the sprite is really in — an out-of-range row that is never
+  // solid. Collision resolution was then silently skipped entirely and the
+  // sprite sailed straight through solid tiles. Nudging by TILE_EPSILON rather
+  // than a whole pixel keeps the exclusive-edge semantics without ever
+  // crossing back over a boundary.
+  test('a centre-anchored sprite straddling a row boundary still collides (cross-axis span regression)', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30, row 0 = y:0-10
+    // Centre-anchored 1x1 at y=0 -> AABB y:-0.5..0.5, straddling the row-0
+    // boundary. Its lower half genuinely overlaps row 0, where the wall is.
+    const handle = makeCenteredHandle(5, 0, 1, 1); // AABB x:4.5-5.5
+    handle._sbVelocityX = 200; // dx = 20 -> AABB would land x:24.5-25.5, crossing col 2
+
+    c._applyKinematics(handle, 100);
+
+    // Clipped so the right edge sits exactly on col 2's near boundary (x=20),
+    // i.e. AABB x:19-20 -> centre x = 19.5.
+    expect(handle.position.x).toBe(19.5);
+    expect(c.isBlockedRight(handle)).toBe(true);
+  });
+
+  test('a centre-anchored sprite straddling a column boundary still collides downward (cross-axis span regression)', () => {
+    const c = loadCollision();
+    // Single column, solid at row 2 -> y:20-30, col 0 = x:0-10.
+    c._tileCollisionGrid = makeGridFixture(['.', '.', '#']);
+    // Centre-anchored 1x1 at x=0 -> AABB x:-0.5..0.5, straddling the col-0
+    // boundary; its right half genuinely overlaps col 0, where the wall is.
+    const handle = makeCenteredHandle(0, 5, 1, 1); // AABB y:4.5-5.5
+    handle._sbVelocityY = 200; // dy = 20 -> AABB would land y:24.5-25.5, crossing row 2
+
+    c._applyKinematics(handle, 100);
+
+    // Clipped so the bottom edge sits exactly on row 2's near boundary (y=20),
+    // i.e. AABB y:19-20 -> centre y = 19.5.
+    expect(handle.position.y).toBe(19.5);
+    expect(c.isBlockedDown(handle)).toBe(true);
+  });
+
+  test('a centre-anchored sprite stays pinned at the wall over repeated frames with velocity never zeroed', () => {
+    const c = loadCollision();
+    c._tileCollisionGrid = makeGridFixture(['..#.']); // solid at col 2, x:20-30
+    const handle = makeCenteredHandle(5, 0, 1, 1);
+    handle._sbVelocityX = 200;
+
+    c._applyKinematics(handle, 100);
+    expect(handle.position.x).toBe(19.5);
+
+    // Velocity still points into the wall, frame after frame -- the sprite
+    // must stay pinned exactly where it is, never creeping through.
+    for (let i = 0; i < 20; i++) {
+      c._applyKinematics(handle, 100);
+      expect(handle.position.x).toBe(19.5);
+      expect(c.isBlockedRight(handle)).toBe(true);
+    }
   });
 });
