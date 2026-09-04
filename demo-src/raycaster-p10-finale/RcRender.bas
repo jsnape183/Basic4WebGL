@@ -71,6 +71,13 @@ dim defWallTex
 ' floor/ceiling light is roughly uniform across what's on screen.
 dim flatFillOn
 
+' How many flat light steps a floor/ceiling surface is allowed across half the
+' screen, recomputed once per renderFrame() from the bound lights' dynamic range
+' (peakLevel() - ambientLevel()) and capped at RcConfig.RC_SURF_SEG_MAX. It is
+' deliberately a FRAME-global number, not a per-band or per-column one -- see
+' drawFlatSeg. 1 = no subdivision (a uniformly lit scene pays nothing).
+dim surfSegN
+
 Constructor(w as RcWorld)
     dim di
     self.wld = w
@@ -92,6 +99,7 @@ Constructor(w as RcWorld)
     self.primCount = 0
     self.defWallTex = ""
     self.flatFillOn = RcConfig.RC_FLAT_FILL
+    self.surfSegN = 1
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -539,26 +547,51 @@ endfunction
 ' that from one light sample is what produced the "black hallway" bug: down a
 ' 24-cell corridor lit only by a 6-cell carried torch, the one sample landed
 ' outside the torch radius and the entire visible floor and ceiling were painted
-' at plain ambient, with a hard vertical seam against any neighbouring column
-' whose run happened to be shorter. So: split the band into enough sub-bands
-' that none spans more than RC_SURF_LIGHT_STEP of light, and sample each one
-' separately. Uniform light -> exactly one strip, as before.
+' at plain ambient. So a band is split into sub-bands, one light sample each.
+'
+' WHERE those sub-bands start and end is the subtle part. Slicing the band's own
+' screen extent into N equal pieces (what this did first) makes every band edge
+' a light step -- and drawSurface calls this once per fcol:/ccol: colour run, so
+' every colour-tile boundary became a hard light step, up to RC_SURF_LIGHT_STEP
+' darker on the far side. Neighbouring columns split at a different depth (or
+' not at all) and stepped somewhere else, so the step traced the projected tile
+' edge: a hard, diagonal, wall-shadow-like seam sitting exactly on a floor
+' colour boundary, which is nothing to do with walls or occlusion.
+'
+' Instead the sub-band edges live on a FRAME-GLOBAL lattice in screen Y: pitch
+' `step` measured from the horizon (self.scy + camPitch, the same for every
+' column), self.surfSegN cells across half the screen, and each cell's light
+' sampled at the FULL cell's midpoint -- not the midpoint of whatever piece of
+' it this band happens to cover. Two columns, or two colour runs, that cross the
+' same lattice cell therefore get byte-identical shading, so a colour boundary
+' is a pure colour change with no light step. Screen Y is the right axis for the
+' lattice because a horizontal surface's depth goes as 1/(y - horizon), so
+' uniform screen spacing is naturally fine near the camera (where the light
+' gradient is steep) and coarse toward the horizon.
+'
+' Adjacent lattice cells that sample the same light are coalesced into one
+' strip, so flat-lit stretches -- the whole far field, once everything has
+' clamped to ambient -- still cost exactly one draw call, and surfSegN is 1 for
+' a scene whose lights have no dynamic range at all.
 function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite, rayX, rayY)
     dim ya
     dim yb
     dim yTop
     dim yBot
-    dim dTop
-    dim dBot
-    dim lTop
-    dim lBot
-    dim nSeg
-    dim maxSeg
-    dim si
-    dim sy0
-    dim sy1
+    dim horizon
+    dim latA
+    dim latB
+    dim n
+    dim step
+    dim k
+    dim cellTop
+    dim cellBot
     dim smid
     dim useLite
+    dim segStart
+    dim segLite
+    dim done
+    dim guard
     ya = self.projectY(hh, dNear)
     yb = self.projectY(hh, dFar)
     if ya <= yb then
@@ -581,33 +614,60 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
         self.emitFlatBand(destX, yTop, yBot, kind, packed, lite)
         return
     endif
-    dTop = self.depthAtScreenY(hh, yTop)
-    dBot = self.depthAtScreenY(hh, yBot)
-    lTop = self.boundLights.sampleAt(self.camX + rayX * dTop, self.camY + rayY * dTop)
-    lBot = self.boundLights.sampleAt(self.camX + rayX * dBot, self.camY + rayY * dBot)
-    nSeg = math.ceil(math.abs(lTop - lBot) / RcConfig.RC_SURF_LIGHT_STEP)
-    if nSeg < 1 then
-        nSeg = 1
+    ' A horizontal surface projects entirely to one side of the horizon (below
+    ' if it is under the eye, above if over it), so one of the two half-screen
+    ' lattices always contains the whole band.
+    horizon = self.scy + self.camPitch
+    latA = 0
+    latB = horizon
+    if (yTop + yBot) / 2 >= horizon then
+        latA = horizon
+        latB = self.viewH
     endif
-    if nSeg > RcConfig.RC_SURF_SEG_MAX then
-        nSeg = RcConfig.RC_SURF_SEG_MAX
-    endif
+    n = self.surfSegN
     ' never slice finer than 2 screen pixels -- sub-pixel bands cost a draw call
     ' each and show nothing
-    maxSeg = math.floor((yBot - yTop) / 2)
-    if maxSeg < 1 then
-        maxSeg = 1
+    if latB - latA < 2 then
+        n = 1
+    else
+        if n > (latB - latA) / 2 then
+            n = math.floor((latB - latA) / 2)
+        endif
     endif
-    if nSeg > maxSeg then
-        nSeg = maxSeg
+    if n < 1 then
+        n = 1
     endif
-    for si = 0 to nSeg - 1
-        sy0 = yTop + (yBot - yTop) * si / nSeg
-        sy1 = yTop + (yBot - yTop) * (si + 1) / nSeg
-        smid = self.depthAtScreenY(hh, (sy0 + sy1) / 2)
+    if n = 1 then
+        smid = self.depthAtScreenY(hh, (yTop + yBot) / 2)
+        self.emitFlatBand(destX, yTop, yBot, kind, packed, self.boundLights.sampleAt(self.camX + rayX * smid, self.camY + rayY * smid))
+        return
+    endif
+    step = (latB - latA) / n
+    k = math.floor((yTop - latA) / step)
+    segStart = yTop
+    segLite = 0 - 1
+    done = 0
+    guard = 0
+    while done = 0 and guard < 256
+        guard = guard + 1
+        cellTop = latA + k * step
+        cellBot = cellTop + step
+        smid = self.depthAtScreenY(hh, (cellTop + cellBot) / 2)
         useLite = self.boundLights.sampleAt(self.camX + rayX * smid, self.camY + rayY * smid)
-        self.emitFlatBand(destX, sy0, sy1, kind, packed, useLite)
-    next si
+        if segLite < 0 then
+            segLite = useLite
+        endif
+        if useLite <> segLite then
+            self.emitFlatBand(destX, segStart, cellTop, kind, packed, segLite)
+            segStart = cellTop
+            segLite = useLite
+        endif
+        if cellBot >= yBot then
+            done = 1
+        endif
+        k = k + 1
+    endwhile
+    self.emitFlatBand(destX, segStart, yBot, kind, packed, segLite)
 endfunction
 
 ' Draw a floor/ceiling surface at world height hh from dNear to dFar, clipped to
@@ -788,8 +848,18 @@ function renderFrame()
     bgLite = 1.0
     self.surfCountLast = 0
     self.primCount = 0
+    self.surfSegN = 1
     if self.boundLights <> 0 then
         bgLite = self.boundLights.sampleCell(math.floor(self.camX), math.floor(self.camY))
+        ' One number for the whole frame -- drawFlatSeg's light lattice has to be
+        ' identical for every column, so this cannot be derived per band.
+        self.surfSegN = math.ceil((self.boundLights.peakLevel() - self.boundLights.ambientLevel()) / RcConfig.RC_SURF_LIGHT_STEP)
+        if self.surfSegN < 1 then
+            self.surfSegN = 1
+        endif
+        if self.surfSegN > RcConfig.RC_SURF_SEG_MAX then
+            self.surfSegN = RcConfig.RC_SURF_SEG_MAX
+        endif
     endif
 
     horizon = self.scy + self.camPitch

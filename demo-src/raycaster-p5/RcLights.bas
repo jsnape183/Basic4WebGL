@@ -33,6 +33,9 @@ dim liArr(0)
 dim lrArr(0)
 dim lActive(0)
 dim lFalloffArr(0)
+' Largest static+dynamic contribution in the grid, refreshed by bakeStatic() and
+' update(). Stored WITHOUT ambient so setAmbient() stays live -- see peakLevel().
+dim peakAdd
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -40,6 +43,7 @@ Constructor(w as RcWorld)
     self.cols = w.widthCells()
     self.rows = w.heightCells()
     self.ambient = RcConfig.RC_AMBIENT
+    self.peakAdd = 0
     dim n
     dim i
     n = self.cols * self.rows
@@ -52,6 +56,37 @@ EndConstructor
 
 function setAmbient(level)
     self.ambient = level
+endfunction
+
+function ambientLevel()
+    return self.ambient
+endfunction
+
+' The brightest cell level currently in the grid, clamped exactly like
+' sampleCell(). With ambientLevel() this is the frame's light DYNAMIC RANGE:
+' RcRender reads the pair to decide how many flat light steps a floor/ceiling
+' band needs, once per frame for the whole view (RcRender.drawFlatSeg's
+' screen-Y lattice must be identical for every column, so this number cannot be
+' derived per band or per column).
+function peakLevel()
+    return math.clamp(self.ambient + self.peakAdd, 0, 1)
+endfunction
+
+' Refresh peakAdd from the current static + dynamic grids. Called at the end of
+' bakeStatic() and update() -- one pass over the grid, negligible next to the
+' per-column render.
+function refreshPeak()
+    dim i
+    dim n
+    dim v
+    self.peakAdd = 0
+    n = self.cols * self.rows
+    for i = 0 to n - 1
+        v = self.staticArr(i) + self.dynArr(i)
+        if v > self.peakAdd then
+            self.peakAdd = v
+        endif
+    next i
 endfunction
 
 ' Splat every `light:` cell into dynArr (used here as scratch), then copy the
@@ -74,6 +109,7 @@ function bakeStatic()
         self.staticArr(i) = self.dynArr(i)
         self.dynArr(i) = 0
     next i
+    self.refreshPeak()
 endfunction
 
 ' Falloff defaults to RcConfig.RC_FALLOFF_LINEAR (unchanged behaviour) --
@@ -202,6 +238,7 @@ function update()
             endif
         endif
     next i
+    self.refreshPeak()
 endfunction
 
 ' Total light at a cell, clamped 0..1. A wall cell is never splatted (its own

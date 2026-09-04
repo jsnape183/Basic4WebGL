@@ -663,6 +663,11 @@ describe('raycaster phase demos smoke-execute', () => {
   // surface's own depth midpoint, so the floor strips span many brightnesses
   // across the column fan (which sweeps the hit point through a range of rows).
   const checkerLights = {
+    // RcRender reads the frame's light dynamic range once per renderFrame() to
+    // size drawFlatSeg's screen-Y light lattice, so a bound lights object has to
+    // answer these two as well as the samplers.
+    ambientlevel: () => 0.12,
+    peaklevel: () => 1,
     samplecell: (col: number, row: number) =>
       Math.max(0, Math.min(1, 0.12 + 0.13 * col + 0.05 * row)),
     sampleat(worldX: number, worldY: number) {

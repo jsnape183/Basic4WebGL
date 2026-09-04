@@ -33,7 +33,18 @@ const ASSETS = `${LIBDIR}/assets`;
 //   ms.mean:   16=0.51  32=0.66  48=0.94   (was 0.44 / 0.57 / 0.82)
 // Same CEIL = ceil(max * 1.15) rule; FLOOR left at the old values (still a valid
 // "the surface pass actually ran" floor, and subdivision only ever adds).
-const PRIM_CEIL: Record<number, number> = { 16: 2407, 32: 3054, 48: 3034 };
+//
+// Re-baselined once more when those sub-bands moved onto a frame-global screen-Y
+// lattice (see RcRender.drawFlatSeg). Placing them per band made every
+// fcol:/ccol: colour-run edge a light step, which rendered as a hard diagonal
+// "shadow" along a floor colour boundary; a shared lattice removes that, at the
+// cost of a band no longer being able to choose its own (sometimes coarser)
+// subdivision:
+//   prim.max:  16=2717  32=3471  48=3189   (+25% worst frame)
+//   prim.mean: 16=1188  32=1728  48=1701   (+9% mean)
+//   ms.mean:   16=0.47  32=0.62  48=0.80   (no regression -- the extra strips are
+//                                           small and the sample count is flat)
+const PRIM_CEIL: Record<number, number> = { 16: 3125, 32: 3992, 48: 3668 };
 const PRIM_FLOOR: Record<number, number> = { 16: 526, 32: 769, 48: 821 };
 
 interface World {
@@ -223,8 +234,17 @@ describe('raycaster Phase 9 benchmark', () => {
       expect(r.primMean, `stress${r.n} per-frame primitive mean floor`).toBeGreaterThan(PRIM_FLOOR[r.n]);
       expect(r.frames).toBeGreaterThan(0);
     }
-    // Primitive count must scale monotonically with scene size (16 < 32 < 48).
+    // Primitive count still has to grow with scene size out of the smallest map.
+    //
+    // 32 vs 48 is deliberately NOT ordered any more. runSize scales the world and
+    // the camera path by n/32 but leaves the torch at a fixed 6-cell radius, so a
+    // bigger map shows a SMALLER lit fraction of the screen -- and since
+    // drawFlatSeg now coalesces adjacent light-lattice cells that sample the same
+    // level, the flat-ambient far field beyond the torch collapses to one strip.
+    // Surface primitives therefore track lit screen area, not cell count, and
+    // stress48 legitimately lands just under stress32 (1701 vs 1728). prim.max
+    // was already non-monotonic across these two before that change (2655/2638).
     expect(rows[1].primMean, 'stress32 prim.mean > stress16').toBeGreaterThan(rows[0].primMean);
-    expect(rows[2].primMean, 'stress48 prim.mean > stress32').toBeGreaterThan(rows[1].primMean);
+    expect(rows[2].primMean, 'stress48 prim.mean > stress16').toBeGreaterThan(rows[0].primMean);
   });
 });
