@@ -46,6 +46,7 @@ const DEV_DEMOS: Array<{ slug: string; title: string; waitMs: number }> = [
   { slug: 'raycaster-p7-diagonals', title: 'Raycaster P7 — Diagonal Tiles', waitMs: 4000 },
   { slug: 'raycaster-p8-tiers', title: 'Raycaster P8 — Multi-Tier Level', waitMs: 4000 },
   { slug: 'raycaster-p9-bench', title: 'Raycaster P9 — Frame-Cost Bench', waitMs: 4000 },
+  { slug: 'raycaster-p10-finale', title: 'Raycaster Finale — Full Showcase', waitMs: 4000 },
 ];
 
 DEV_DEMOS.forEach(({ slug, title, waitMs }) => {

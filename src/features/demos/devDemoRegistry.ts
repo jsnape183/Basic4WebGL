@@ -90,4 +90,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP9Bench',
   },
+  {
+    slug: 'raycaster-p10-finale',
+    name: 'Raycaster Finale — Full Showcase',
+    tags: ['Raycaster', 'Engine Phase'],
+    description:
+      'Capstone showcase: a 32x32 grid of six rooms joined by corridors, a single wall texture, a staircase up to a raised dais in the Torch Hall, low ambient light with a player-carried torch, and full keyboard + controller input (WASD/left stick move, arrows/right-stick look on both axes, Space/A to jump). No new engine features -- everything already ships in the library.',
+    docsSlug: '',
+    file: 'RaycasterP10Finale',
+  },
 ];
