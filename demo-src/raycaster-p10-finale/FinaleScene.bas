@@ -73,6 +73,12 @@ function onenter()
   ' docs/superpowers/specs/2026-09-04-raycaster-floor-ceiling-gradient-shading-design.md.
   self.ren.setGradientShading(1)
 
+  ' Height-aware lighting (POC) -- floor/ceiling brightness now uses each
+  ' light's real 3D distance instead of a flat 2D grid, so a floor point and
+  ' a ceiling point at the same (x, y) genuinely differ. See
+  ' docs/superpowers/specs/2026-09-04-raycaster-height-aware-lighting-design.md.
+  self.lights.setHeightAware(1)
+
   ' No dynamic lights at all -- every `light` marker in finale.stm was already
   ' baked into staticArr by the RcLights Constructor above. Nothing to update
   ' per frame.

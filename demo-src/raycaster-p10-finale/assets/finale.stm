@@ -1769,37 +1769,37 @@
     {
      "row": 5,
      "col": 15,
-     "tag": "light"
+     "tag": "light:1.6"
     },
     {
      "row": 25,
      "col": 15,
-     "tag": "light"
+     "tag": "light:1.6"
     },
     {
      "row": 15,
      "col": 5,
-     "tag": "light"
+     "tag": "light:1.6"
     },
     {
      "row": 15,
      "col": 23,
-     "tag": "light"
+     "tag": "light:1.9"
     },
     {
      "row": 15,
      "col": 28,
-     "tag": "light"
+     "tag": "light:1.4"
     },
     {
      "row": 5,
      "col": 25,
-     "tag": "light"
+     "tag": "light:1.5"
     },
     {
      "row": 15,
      "col": 15,
-     "tag": "light"
+     "tag": "light:1.7"
     }
    ]
   }
