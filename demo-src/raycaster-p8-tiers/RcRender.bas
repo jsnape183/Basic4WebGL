@@ -723,8 +723,8 @@ function drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, packed, lite,
         return
     endif
     if self.gradientShadeOn = 1 then
-        nearLite = self.boundLights.sampleAt(self.camX + rayX * dNear, self.camY + rayY * dNear)
-        farLite = self.boundLights.sampleAt(self.camX + rayX * dFar, self.camY + rayY * dFar)
+        nearLite = self.boundLights.sampleAtZ(self.camX + rayX * dNear, self.camY + rayY * dNear, hh)
+        farLite = self.boundLights.sampleAtZ(self.camX + rayX * dFar, self.camY + rayY * dFar, hh)
         if ya <= yb then
             topPacked = self.shadeToPacked(kind, packed, nearLite)
             botPacked = self.shadeToPacked(kind, packed, farLite)
