@@ -306,34 +306,47 @@ function drawLightPools()
                     pg = math.clamp(214 * poolLite + 40, 0, 255)
                     pb = math.clamp(170 * poolLite + 40, 0, 255)
 
-                    ' Anchor each pool to its surface plane so it lies flat: the
-                    ' near edge is at perpendicular distance depth-WR, the far
-                    ' edge at depth+WR. Because projection goes as 1/distance the
-                    ' near edge sweeps far more toward the camera than the far
-                    ' edge rises -- that asymmetry is what makes the pool read
-                    ' as painted on the ground, not a floating billboard that
-                    ' tracks the camera.
-                    fNearD = depth - floorWR
-                    if fNearD < 0.12 then
-                        fNearD = 0.12
-                    endif
+                    ' Anchor each pool by its FAR edge (perpendicular distance
+                    ' depth+WR) and extend it toward the camera. The far edge is
+                    ' the stable end -- it barely moves as the player walks --
+                    ' so pinning the ellipse there keeps the pool locked to the
+                    ' ground. The near edge (depth-WR) is clamped so a player
+                    ' standing on top of a light doesn't produce a mile-long
+                    ' ellipse, at the cost of the pool not quite reaching the
+                    ' feet in that extreme -- acceptable for the POC.
                     fFarD = depth + floorWR
-                    fNearY = self.projectY(0, fNearD)
-                    fFarY = self.projectY(0, fFarD)
-                    floorCY = (fNearY + fFarY) / 2
-                    floorRY = math.clamp((fNearY - fFarY) / 2, 1, self.viewH)
-                    floorRX = math.clamp(floorWR * (self.viewH / depth), 1, self.viewW)
-
-                    cNearD = depth - ceilWR
-                    if cNearD < 0.12 then
-                        cNearD = 0.12
+                    fNearD = depth - floorWR
+                    if fNearD < 0.3 then
+                        fNearD = 0.3
                     endif
+                    fFarY = self.projectY(0, fFarD)
+                    fNearY = self.projectY(0, fNearD)
+                    if fNearY > self.scy + self.viewH * 2.0 then
+                        fNearY = self.scy + self.viewH * 2.0
+                    endif
+                    floorRY = (fNearY - fFarY) / 2
+                    if floorRY < 1 then
+                        floorRY = 1
+                    endif
+                    floorCY = fFarY + floorRY
+                    floorRX = math.clamp(floorWR * (self.viewH / depth), 1, self.viewW * 1.5)
+
                     cFarD = depth + ceilWR
-                    cNearY = self.projectY(RcConfig.RC_STD_CEIL, cNearD)
+                    cNearD = depth - ceilWR
+                    if cNearD < 0.3 then
+                        cNearD = 0.3
+                    endif
                     cFarY = self.projectY(RcConfig.RC_STD_CEIL, cFarD)
-                    ceilCY = (cNearY + cFarY) / 2
-                    ceilRY = math.clamp((cFarY - cNearY) / 2, 1, self.viewH)
-                    ceilRX = math.clamp(ceilWR * (self.viewH / depth), 1, self.viewW)
+                    cNearY = self.projectY(RcConfig.RC_STD_CEIL, cNearD)
+                    if cNearY < self.scy - self.viewH * 2.0 then
+                        cNearY = self.scy - self.viewH * 2.0
+                    endif
+                    ceilRY = (cFarY - cNearY) / 2
+                    if ceilRY < 1 then
+                        ceilRY = 1
+                    endif
+                    ceilCY = cFarY - ceilRY
+                    ceilRX = math.clamp(ceilWR * (self.viewH / depth), 1, self.viewW * 1.5)
 
                     drawing.drawRadialGradientEllipse(screenX, floorCY, floorRX, floorRY, pr, pg, pb, alpha)
                     drawing.drawRadialGradientEllipse(screenX, ceilCY, ceilRX, ceilRY, pr, pg, pb, alpha)
