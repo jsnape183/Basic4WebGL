@@ -19,6 +19,11 @@
 ' across the whole radius. QUADRATIC concentrates brightness near the source and
 ' falls away faster, closer to how a real torch/lamp reads: a small bright pool
 ' that dies off quickly rather than a wide, gradual gradient.
+'
+' RC_LIGHT_DEFAULT_Z: default world height for a bare `light` marker (no
+' `:height` suffix) in RcWorld -- just under RC_STD_CEIL (1.0), approximating
+' a ceiling-mounted fixture rather than a light embedded in the ceiling
+' surface itself. See RcWorld.applyFlag/applyKv and RcLights.sampleAtZ.
 const
     RC_MAX_DIST = 32
     RC_MAX_MARCH_ITERS = 512
@@ -39,6 +44,7 @@ const
     RC_LIGHT_CAP = 4
     RC_AMBIENT = 0.12
     RC_STATIC_INTENSITY = 0.9
+    RC_LIGHT_DEFAULT_Z = 0.85
     RC_ACTOR_POOL = 32
     RC_ACTOR_HEIGHT = 1.0
     RC_HITSCAN_RANGE = 24.0
