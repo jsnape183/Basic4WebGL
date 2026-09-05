@@ -47,5 +47,11 @@ export const drawingDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.drawRadialGradientCircle(${p.x}, ${p.y}, ${p.radius}, ${p.r}, ${p.g}, ${p.b}, ${p.alpha})`,
     },
+    {
+      name: 'drawRadialGradientEllipse',
+      params: ['x', 'y', 'radiusX', 'radiusY', 'r', 'g', 'b', 'alpha'],
+      body: (p, _self) =>
+        `_sb.drawRadialGradientEllipse(${p.x}, ${p.y}, ${p.radiusX}, ${p.radiusY}, ${p.r}, ${p.g}, ${p.b}, ${p.alpha})`,
+    },
   ],
 };

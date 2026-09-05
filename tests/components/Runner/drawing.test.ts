@@ -17,7 +17,7 @@ class FakeGraphics {
   lastFill: unknown = undefined;
   constructor() { gfxCreated++; }
   clear() { return this; }
-  rect() { return this; } circle() { return this; } moveTo() { return this; } lineTo() { return this; }
+  rect() { return this; } circle() { return this; } ellipse() { return this; } moveTo() { return this; } lineTo() { return this; }
   fill(style?: unknown) { this.lastFill = style; return this; } stroke() { return this; }
   destroy() { destroyed++; }
 }
@@ -380,5 +380,27 @@ describe('drawing — radial gradient fill (light-pool POC)', () => {
     expect(gradientDestroyed).toBeGreaterThanOrEqual(createdBefore);
     d.drawRadialGradientCircle(0, 0, 10, 255, 220, 160, 0.6);
     expect(gradientCreated).toBe(createdBefore + 1); // rebuilt, not reused from a destroyed instance
+  });
+
+  test('drawRadialGradientEllipse fills an ellipse with the same radial gradient, and shares the circle cache', () => {
+    const { d } = loadDrawing();
+    // same colour+alpha as a circle call -> must reuse the one cached gradient
+    d.drawRadialGradientCircle(0, 0, 10, 255, 220, 160, 0.6);
+    const o = d.drawRadialGradientEllipse(50, 60, 80, 20, 255, 220, 160, 0.6) as FakeGraphics;
+    expect(gradientCreated).toBe(1);
+    const style = o.lastFill as { opts: { type: string; colorStops: Array<{ color: { a: number } }> } };
+    expect(style.opts.type).toBe('radial');
+    expect(style.opts.colorStops[1].color.a).toBe(0);
+  });
+
+  test('drawRadialGradientEllipse is pooled like the other shapes', () => {
+    const { d } = loadDrawing();
+    d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
+    d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
+    expect(gfxCreated).toBe(2);
+    d.clearDrawing();
+    d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
+    d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
+    expect(gfxCreated).toBe(2); // reused from the pool
   });
 });

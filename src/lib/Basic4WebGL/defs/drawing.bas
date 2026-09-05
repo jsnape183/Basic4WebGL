@@ -29,3 +29,7 @@ endfunction
 function drawRadialGradientCircle(x, y, radius, r, g, b, alpha)
     call("_sb.drawRadialGradientCircle(drawradialgradientcircle_x, drawradialgradientcircle_y, drawradialgradientcircle_radius, drawradialgradientcircle_r, drawradialgradientcircle_g, drawradialgradientcircle_b, drawradialgradientcircle_alpha)")
 endfunction
+
+function drawRadialGradientEllipse(x, y, radiusX, radiusY, r, g, b, alpha)
+    call("_sb.drawRadialGradientEllipse(drawradialgradientellipse_x, drawradialgradientellipse_y, drawradialgradientellipse_radiusX, drawradialgradientellipse_radiusY, drawradialgradientellipse_r, drawradialgradientellipse_g, drawradialgradientellipse_b, drawradialgradientellipse_alpha)")
+endfunction

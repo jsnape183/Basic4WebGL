@@ -254,6 +254,17 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
+    // Like drawRadialGradientCircle but with independent horizontal/vertical
+    // radii -- used by the raycaster light-pool POC to draw a floor/ceiling
+    // pool foreshortened (wide, vertically squashed) so it lies flat on the
+    // surface instead of reading as a floating billboard. x/y is the centre.
+    drawRadialGradientEllipse(x, y, radiusX, radiusY, r, g, b, alpha) {
+      const o = _acquireG();
+      const gradient = _radialGradientFor(r, g, b, alpha);
+      o.ellipse(0, 0, radiusX, radiusY).fill(gradient);
+      o.position.set(x, y);
+      return o;
+    },
     drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot) {
       const o = _acquireS();
       o.texture = _texFor(imageName, srcX, srcVTop, srcVBot);

@@ -9,18 +9,17 @@ Class
 ' One unified lighting model: every surface -- wall, floor, ceiling -- is lit
 ' by the same summed 3D-distance falloff from the static lights, in the same
 ' warm colour, over a cool dark ambient base. Walls sample lightAtPoint() per
-' column at their hit point. Floor/ceiling get screen-space radial-gradient
-' "pool" overlays (drawLightPools()) -- the cheap stand-in for per-pixel floor
-' casting -- projected with the same camera-plane transform the shared
-' RcRender.bas uses for actor billboards (relX/relY -> invDet -> depth/tX ->
-' screenX). Ceiling pools are drawn tighter than floor pools because the light
-' sits near the ceiling.
+' column at their hit point. Floor/ceiling get radial-gradient "pool" overlays
+' (drawLightPools()) -- the cheap stand-in for per-pixel floor casting -- drawn
+' as ellipses anchored to their surface plane (near edge at depth-WR, far edge
+' at depth+WR) so they lie flat on the ground instead of tracking the camera
+' like a billboard. Ceiling pools are tighter than floor pools because the
+' light sits near the ceiling.
 '
-' Known POC simplifications (see spec's "Known POC simplifications" section):
-' pools are true screen-space circles, not perspective-correct ellipses;
-' occlusion is a single ray to the light's centre, no penumbra; no per-pixel
-' depth test against walls, so a pool very close to a wall may draw over it;
-' no handling for overlapping lights beyond draw order.
+' Known POC simplifications: occlusion is a single ray to the light's centre,
+' no penumbra; no per-pixel depth test against walls, so a pool very close to
+' a wall may draw over it; no handling for overlapping lights beyond draw
+' order; floor/ceiling have no texture so there is no static ground reference.
 dim wld as RcWorld
 dim rc as RcCast
 dim camX
@@ -250,17 +249,27 @@ function drawLightPools()
     dim screenX
     dim dist2d
     dim losD
-    dim ceilVD
-    dim floorVD
-    dim ceilR
-    dim floorR
+    dim ceilWR
+    dim floorWR
     dim poolLite
     dim alpha
     dim pr
     dim pg
     dim pb
-    dim floorY
-    dim ceilY
+    dim fNearD
+    dim fFarD
+    dim fNearY
+    dim fFarY
+    dim floorCY
+    dim floorRY
+    dim floorRX
+    dim cNearD
+    dim cFarD
+    dim cNearY
+    dim cFarY
+    dim ceilCY
+    dim ceilRY
+    dim ceilRX
 
     invDet = 1.0 / (self.fPlaneX * self.fDirY - self.fDirX * self.fPlaneY)
     n = self.boundLights.staticLightCount()
@@ -284,23 +293,50 @@ function drawLightPools()
                     losD = self.rc.los(self.wld, self.camX, self.camY, relX / dist2d, relY / dist2d)
                 endif
                 if losD < 0 or losD >= dist2d - 0.1 then
-                    ' Ceiling pool is tighter than the floor pool: the light
-                    ' sits near the ceiling, so its cone barely spreads above
-                    ' but fans wide below. Each surface's radius scales with its
-                    ' vertical distance from the light, times the one spread knob.
-                    ceilVD = math.abs(RcConfig.RC_STD_CEIL - lz)
-                    floorVD = math.abs(lz)
-                    ceilR = (self.poolSpread * ceilVD + 0.08) * (self.viewH / depth)
-                    floorR = (self.poolSpread * floorVD + 0.08) * (self.viewH / depth)
+                    ' Pool world-radius on each surface: scales with that
+                    ' surface's vertical distance from the light (ceiling sits
+                    ' near the light -> tight pool; floor is far -> wide pool),
+                    ' times the one spread knob.
+                    ceilWR = self.poolSpread * math.abs(RcConfig.RC_STD_CEIL - lz) + 0.12
+                    floorWR = self.poolSpread * math.abs(lz) + 0.12
+
                     poolLite = math.clamp(intensity * (1.0 - depth / radiusCells), 0.0, 1.0)
                     alpha = math.clamp(poolLite * 0.6, 0.04, 0.42)
                     pr = math.clamp(255 * poolLite + 40, 0, 255)
                     pg = math.clamp(214 * poolLite + 40, 0, 255)
                     pb = math.clamp(170 * poolLite + 40, 0, 255)
-                    floorY = self.projectY(0, depth)
-                    ceilY = self.projectY(RcConfig.RC_STD_CEIL, depth)
-                    drawing.drawRadialGradientCircle(screenX, floorY, floorR, pr, pg, pb, alpha)
-                    drawing.drawRadialGradientCircle(screenX, ceilY, ceilR, pr, pg, pb, alpha)
+
+                    ' Anchor each pool to its surface plane so it lies flat: the
+                    ' near edge is at perpendicular distance depth-WR, the far
+                    ' edge at depth+WR. Because projection goes as 1/distance the
+                    ' near edge sweeps far more toward the camera than the far
+                    ' edge rises -- that asymmetry is what makes the pool read
+                    ' as painted on the ground, not a floating billboard that
+                    ' tracks the camera.
+                    fNearD = depth - floorWR
+                    if fNearD < 0.12 then
+                        fNearD = 0.12
+                    endif
+                    fFarD = depth + floorWR
+                    fNearY = self.projectY(0, fNearD)
+                    fFarY = self.projectY(0, fFarD)
+                    floorCY = (fNearY + fFarY) / 2
+                    floorRY = math.clamp((fNearY - fFarY) / 2, 1, self.viewH)
+                    floorRX = math.clamp(floorWR * (self.viewH / depth), 1, self.viewW)
+
+                    cNearD = depth - ceilWR
+                    if cNearD < 0.12 then
+                        cNearD = 0.12
+                    endif
+                    cFarD = depth + ceilWR
+                    cNearY = self.projectY(RcConfig.RC_STD_CEIL, cNearD)
+                    cFarY = self.projectY(RcConfig.RC_STD_CEIL, cFarD)
+                    ceilCY = (cNearY + cFarY) / 2
+                    ceilRY = math.clamp((cFarY - cNearY) / 2, 1, self.viewH)
+                    ceilRX = math.clamp(ceilWR * (self.viewH / depth), 1, self.viewW)
+
+                    drawing.drawRadialGradientEllipse(screenX, floorCY, floorRX, floorRY, pr, pg, pb, alpha)
+                    drawing.drawRadialGradientEllipse(screenX, ceilCY, ceilRX, ceilRY, pr, pg, pb, alpha)
                 endif
             endif
         endif

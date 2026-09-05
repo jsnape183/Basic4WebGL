@@ -439,3 +439,16 @@ describe('drawing — drawRadialGradientCircle', () => {
     expect(transpileWithDrawing(call).code).toContain('_sb.drawRadialGradientCircle(');
   });
 });
+
+// ─── drawing — drawRadialGradientEllipse ─────────────────────────────────────
+
+describe('drawing — drawRadialGradientEllipse', () => {
+  const call =
+    'function test()\n  drawing.drawRadialGradientEllipse(100, 120, 80, 20, 255, 220, 160, 0.6)\nendfunction';
+  test('compiles without error', () => {
+    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.drawRadialGradientEllipse(', () => {
+    expect(transpileWithDrawing(call).code).toContain('_sb.drawRadialGradientEllipse(');
+  });
+});
