@@ -9,8 +9,10 @@ Class
 ' corner-solid 45-degree tile; mirrors RcConfig.RC_DIAG_* -- kept as bare
 ' literals here, predating this file's RcConfig dependency).
 '
-' A `light` tag (bare, or `light:<anything>`) sets lightArr(idx) to a 0/1 flag;
+' A `light` tag (bare, or `light:<height>`) sets lightArr(idx) to a 0/1 flag;
 ' RcLights.bakeStatic reads it as a static light source at RC_STATIC_INTENSITY.
+' The tag's optional height (`light:1.8`) is parsed into lightHArr, defaulting
+' to RcConfig.RC_LIGHT_DEFAULT_Z for a bare `light` -- see lightHeightAt.
 
 dim cols
 dim rows
@@ -22,6 +24,7 @@ dim wallTexArr(0)
 dim floorTexArr(0)
 dim ceilTexArr(0)
 dim lightArr(0)
+dim lightHArr(0)
 dim flagsArr(0)
 dim diagArr(0)
 
@@ -62,6 +65,7 @@ function build(tm as tilemapset, wallsLayerName)
         array.push(self.floorColArr, 0 - 1)
         array.push(self.ceilColArr, 0 - 1)
         array.push(self.lightArr, 0)
+        array.push(self.lightHArr, RcConfig.RC_LIGHT_DEFAULT_Z)
         array.push(self.flagsArr, 0)
         array.push(self.diagArr, 0)
     next i
@@ -164,6 +168,7 @@ function applyKv(idx, key, v)
     endif
     if key = "light" then
         self.lightArr(idx) = 1
+        self.lightHArr(idx) = math.val(v)
     endif
     if key = "diag" then
         if v = "nw" then
@@ -279,6 +284,13 @@ function lightAt(col, row)
         return 0
     endif
     return self.lightArr(row * self.cols + col)
+endfunction
+
+function lightHeightAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return RcConfig.RC_LIGHT_DEFAULT_Z
+    endif
+    return self.lightHArr(row * self.cols + col)
 endfunction
 
 function floorTexAt(col, row)
