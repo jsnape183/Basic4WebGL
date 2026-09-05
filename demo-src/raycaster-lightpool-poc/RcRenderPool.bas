@@ -4,12 +4,17 @@ Class
 ' docs/superpowers/specs/2026-09-05-raycaster-lightpool-poc-design.md).
 ' NOT production code. Deliberately much smaller than the shared RcRender.bas:
 ' this POC's map has no floor/ceiling height variation, no diagonal tiles, no
-' textures, so none of that logic is needed. Floor/ceiling are flat, dim,
-' ambient-only fills -- NO per-column light sampling anywhere in the base
-' render. Static lights are drawn afterward as screen-space radial-gradient
-' "pool" overlays (drawLightPools()) instead, using the exact camera-plane
-' billboard-projection formula the shared RcRender.bas already uses for actor
-' billboards (relX/relY -> invDet -> depth/tX -> screenX).
+' textures, so none of that logic is needed.
+'
+' One unified lighting model: every surface -- wall, floor, ceiling -- is lit
+' by the same summed 3D-distance falloff from the static lights, in the same
+' warm colour, over a cool dark ambient base. Walls sample lightAtPoint() per
+' column at their hit point. Floor/ceiling get screen-space radial-gradient
+' "pool" overlays (drawLightPools()) -- the cheap stand-in for per-pixel floor
+' casting -- projected with the same camera-plane transform the shared
+' RcRender.bas uses for actor billboards (relX/relY -> invDet -> depth/tX ->
+' screenX). Ceiling pools are drawn tighter than floor pools because the light
+' sits near the ceiling.
 '
 ' Known POC simplifications (see spec's "Known POC simplifications" section):
 ' pools are true screen-space circles, not perspective-correct ellipses;
@@ -34,7 +39,7 @@ dim fDirX
 dim fDirY
 dim fPlaneX
 dim fPlaneY
-dim poolWorldRadius
+dim poolSpread
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -51,7 +56,7 @@ Constructor(w as RcWorld)
     self.camZ = 0
     self.boundMover = 0
     self.boundLights = 0
-    self.poolWorldRadius = 0.4
+    self.poolSpread = 0.6
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -66,10 +71,58 @@ function bindLights(lights)
     self.boundLights = lights
 endfunction
 
-' World-unit radius of the drawn light pool (screen radius scales down with
-' distance from this). Tunable for the POC without touching the render logic.
-function setPoolRadius(r)
-    self.poolWorldRadius = r
+' The one "overall intensity/spread" knob: how wide each light's pool fans on
+' a surface, per world-unit of vertical distance between the light and that
+' surface. Bigger = bigger, softer pools. Tunable without touching render logic.
+function setPoolSpread(s)
+    self.poolSpread = s
+endfunction
+
+' Summed warm-light contribution (0..~N) at a world point from every static
+' light: true 3D-distance falloff, wall-occluded by a single LOS ray. Used to
+' light walls the SAME way the floor/ceiling pools are lit, so a wall standing
+' in a pool is bright and a wall in a dark corridor is genuinely dark.
+function lightAtPoint(wx, wy, wz)
+    dim total
+    dim i
+    dim n
+    dim lx
+    dim ly
+    dim lz
+    dim dx
+    dim dy
+    dim dz
+    dim d3
+    dim hd
+    dim losD
+    dim t
+    dim intensity
+    dim radiusCells
+    total = 0
+    n = self.boundLights.staticLightCount()
+    for i = 0 to n - 1
+        lx = self.boundLights.staticLightX(i)
+        ly = self.boundLights.staticLightY(i)
+        lz = self.boundLights.staticLightZ(i)
+        intensity = self.boundLights.staticLightIntensity(i)
+        radiusCells = self.boundLights.staticLightRadius(i)
+        dx = wx - lx
+        dy = wy - ly
+        dz = wz - lz
+        d3 = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if d3 < radiusCells then
+            hd = math.sqrt(dx * dx + dy * dy)
+            losD = 0 - 1
+            if hd > 0.001 then
+                losD = self.rc.los(self.wld, lx, ly, dx / hd, dy / hd)
+            endif
+            if losD < 0 or losD >= hd - 0.1 then
+                t = 1.0 - d3 / radiusCells
+                total = total + t * intensity
+            endif
+        endif
+    next i
+    return total
 endfunction
 
 ' Screen Y of world height h at perpendicular distance d. Identical formula to
@@ -97,7 +150,13 @@ function renderFrame()
     dim wallSide
     dim wallTop
     dim wallBot
-    dim shade
+    dim hitX
+    dim hitY
+    dim wLite
+    dim faceMul
+    dim wr
+    dim wg
+    dim wb
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -150,11 +209,19 @@ function renderFrame()
         if wallDist < RcConfig.RC_MAX_DIST then
             wallTop = self.projectY(RcConfig.RC_STD_CEIL, wallDist)
             wallBot = self.projectY(0, wallDist)
-            shade = 150
+            ' The ray's forward component is 1 by construction, so perpendicular
+            ' distance IS the ray parameter -- the hit point is just this.
+            hitX = self.camX + rayX * wallDist
+            hitY = self.camY + rayY * wallDist
+            wLite = self.lightAtPoint(hitX, hitY, RcConfig.RC_EYE_Z)
+            faceMul = 1.0
             if wallSide = 1 then
-                shade = 115
+                faceMul = 0.78
             endif
-            pen.setFillColor(shade, shade, shade)
+            wr = baseCh * 0.5 + wLite * 255 * faceMul
+            wg = baseCh * 0.5 + wLite * 214 * faceMul
+            wb = baseCh * 0.72 + wLite * 170 * faceMul
+            pen.setFillColor(math.clamp(wr, 0, 255), math.clamp(wg, 0, 255), math.clamp(wb, 0, 255))
             drawing.drawRect(destX, (wallTop + wallBot) / 2, RcConfig.RC_STRIP_W, wallBot - wallTop)
         endif
     next col
@@ -183,9 +250,15 @@ function drawLightPools()
     dim screenX
     dim dist2d
     dim losD
-    dim screenR
+    dim ceilVD
+    dim floorVD
+    dim ceilR
+    dim floorR
+    dim poolLite
     dim alpha
-    dim ch
+    dim pr
+    dim pg
+    dim pb
     dim floorY
     dim ceilY
 
@@ -211,13 +284,23 @@ function drawLightPools()
                     losD = self.rc.los(self.wld, self.camX, self.camY, relX / dist2d, relY / dist2d)
                 endif
                 if losD < 0 or losD >= dist2d - 0.1 then
-                    screenR = self.poolWorldRadius * (self.viewH / depth)
-                    alpha = math.clamp((1.0 - depth / radiusCells) * intensity, 0.05, 0.4)
-                    ch = math.clamp(255 * intensity, 120, 255)
+                    ' Ceiling pool is tighter than the floor pool: the light
+                    ' sits near the ceiling, so its cone barely spreads above
+                    ' but fans wide below. Each surface's radius scales with its
+                    ' vertical distance from the light, times the one spread knob.
+                    ceilVD = math.abs(RcConfig.RC_STD_CEIL - lz)
+                    floorVD = math.abs(lz)
+                    ceilR = (self.poolSpread * ceilVD + 0.08) * (self.viewH / depth)
+                    floorR = (self.poolSpread * floorVD + 0.08) * (self.viewH / depth)
+                    poolLite = math.clamp(intensity * (1.0 - depth / radiusCells), 0.0, 1.0)
+                    alpha = math.clamp(poolLite * 0.6, 0.04, 0.42)
+                    pr = math.clamp(255 * poolLite + 40, 0, 255)
+                    pg = math.clamp(214 * poolLite + 40, 0, 255)
+                    pb = math.clamp(170 * poolLite + 40, 0, 255)
                     floorY = self.projectY(0, depth)
                     ceilY = self.projectY(RcConfig.RC_STD_CEIL, depth)
-                    drawing.drawRadialGradientCircle(screenX, floorY, screenR, ch, ch * 0.85, ch * 0.6, alpha)
-                    drawing.drawRadialGradientCircle(screenX, ceilY, screenR, ch, ch * 0.85, ch * 0.6, alpha)
+                    drawing.drawRadialGradientCircle(screenX, floorY, floorR, pr, pg, pb, alpha)
+                    drawing.drawRadialGradientCircle(screenX, ceilY, ceilR, pr, pg, pb, alpha)
                 endif
             endif
         endif
