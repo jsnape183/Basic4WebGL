@@ -17,8 +17,9 @@ Class
 '   blend from bleeding a false dark wedge onto open floor next to a wall.
 '   RcRender additionally samples the open cell in front of a wall FACE
 '   directly, rather than the wall cell itself (Task 6).
-' - addPoint's `z` is stored (lzArr) but not yet read -- reserved for vertical
-'   falloff / spot cones.
+' - Height-aware lighting (opt-in via setHeightAware/sampleAtZ, see below) is
+'   a SEPARATE live per-query path, not a replacement for the baked 2D grid --
+'   see sampleAtZ's own doc comment.
 dim wld as RcWorld
 dim rc as RcCast
 dim cols
@@ -33,6 +34,19 @@ dim liArr(0)
 dim lrArr(0)
 dim lActive(0)
 dim lFalloffArr(0)
+' Static-light parallel arrays (position/height/intensity/radius/falloff),
+' recorded by bakeStatic() alongside the existing dynArr splat -- needed
+' because dynArr only ever stores one final SUMMED scalar per cell, which
+' can't be un-mixed back into individual per-light distances at query time.
+' Read only by sampleAtZ() when heightAwareOn=1.
+dim slxArr(0)
+dim slyArr(0)
+dim slzArr(0)
+dim sliArr(0)
+dim slrArr(0)
+dim slFalloffArr(0)
+' Height-aware sampling (opt-in, default off -- see setHeightAware/sampleAtZ).
+dim heightAwareOn
 ' Largest static+dynamic contribution in the grid, refreshed by bakeStatic() and
 ' update(). Stored WITHOUT ambient so setAmbient() stays live -- see peakLevel().
 dim peakAdd
@@ -44,6 +58,7 @@ Constructor(w as RcWorld)
     self.rows = w.heightCells()
     self.ambient = RcConfig.RC_AMBIENT
     self.peakAdd = 0
+    self.heightAwareOn = 0
     dim n
     dim i
     n = self.cols * self.rows
@@ -60,6 +75,10 @@ endfunction
 
 function ambientLevel()
     return self.ambient
+endfunction
+
+function setHeightAware(v)
+    self.heightAwareOn = v
 endfunction
 
 ' The brightest cell level currently in the grid, clamped exactly like
@@ -101,6 +120,12 @@ function bakeStatic()
         for lc = 0 to self.cols - 1
             if self.wld.lightAt(lc, lr) > 0 then
                 self.splat(lc + 0.5, lr + 0.5, RcConfig.RC_STATIC_INTENSITY, RcConfig.RC_LIGHT_RANGE, RcConfig.RC_FALLOFF_LINEAR)
+                array.push(self.slxArr, lc + 0.5)
+                array.push(self.slyArr, lr + 0.5)
+                array.push(self.slzArr, self.wld.lightHeightAt(lc, lr))
+                array.push(self.sliArr, RcConfig.RC_STATIC_INTENSITY)
+                array.push(self.slrArr, RcConfig.RC_LIGHT_RANGE)
+                array.push(self.slFalloffArr, RcConfig.RC_FALLOFF_LINEAR)
             endif
         next lc
     next lr
@@ -362,6 +387,76 @@ function sampleAt(worldX, worldY)
     c = self.sampleCell(c0, r0 + 1)
     e = self.sampleCell(c0 + 1, r0 + 1)
     return a * (1 - tx) * (1 - ty) + b * tx * (1 - ty) + c * (1 - tx) * ty + e * tx * ty
+endfunction
+
+' One light's height-aware contribution at (wx, wy, wz), LOS-occluded exactly
+' like splatCell (walls are vertical, so occlusion only needs the horizontal
+' direction) but with TRUE 3D distance for the falloff magnitude -- this is
+' the one place in the whole file that reads a light's height for anything
+' other than storage.
+function contribAtZ(wx, wy, wz, lx, ly, lz, intensity, radiusCells, falloff)
+    dim dx
+    dim dy
+    dim dz
+    dim dist
+    dim losD
+    dim t
+    dim hDist
+    dx = wx - lx
+    dy = wy - ly
+    dz = wz - lz
+    dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+    if dist <= 0.001 then
+        return intensity
+    endif
+    if dist >= radiusCells then
+        return 0
+    endif
+    hDist = math.sqrt(dx * dx + dy * dy)
+    if hDist <= 0.001 then
+        losD = 0 - 1
+    else
+        losD = self.rc.los(self.wld, lx, ly, dx / hDist, dy / hDist)
+    endif
+    if losD >= 0 and losD < hDist - 0.05 then
+        return 0
+    endif
+    t = 1.0 - dist / radiusCells
+    if falloff = RcConfig.RC_FALLOFF_QUADRATIC then
+        return intensity * t * t
+    endif
+    return intensity * t
+endfunction
+
+' Live, per-query height-aware light level at (worldX, worldY, worldZ). With
+' heightAwareOn=0 (the default for every demo but the finale) this is a
+' byte-identical passthrough to sampleAt, ignoring worldZ entirely. With it
+' on, sums every static light (all of them -- author-placed, bounded) and
+' every active dynamic light (capped at RC_LIGHT_CAP, matching update()'s
+' existing cap) using TRUE 3D distance, so a floor point and a ceiling point
+' at the same (x, y) now genuinely differ. See RcRender.drawFlatSeg's
+' gradient-shading branch, the only caller.
+function sampleAtZ(worldX, worldY, worldZ)
+    dim total
+    dim i
+    dim count
+    if self.heightAwareOn = 0 then
+        return self.sampleAt(worldX, worldY)
+    endif
+    total = self.ambient
+    for i = 0 to array.arrLength(self.slxArr) - 1
+        total = total + self.contribAtZ(worldX, worldY, worldZ, self.slxArr(i), self.slyArr(i), self.slzArr(i), self.sliArr(i), self.slrArr(i), self.slFalloffArr(i))
+    next i
+    count = 0
+    for i = 0 to array.arrLength(self.lActive) - 1
+        if self.lActive(i) = 1 then
+            if count < RcConfig.RC_LIGHT_CAP then
+                total = total + self.contribAtZ(worldX, worldY, worldZ, self.lxArr(i), self.lyArr(i), self.lzArr(i), self.liArr(i), self.lrArr(i), self.lFalloffArr(i))
+                count = count + 1
+            endif
+        endif
+    next i
+    return math.clamp(total, 0, 1)
 endfunction
 
 EndClass
