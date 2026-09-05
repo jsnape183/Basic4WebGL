@@ -99,4 +99,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterP10Finale',
   },
+  {
+    slug: 'raycaster-lightpool-poc',
+    name: 'Raycaster — Light-Pool POC',
+    tags: ['Raycaster', 'POC'],
+    description:
+      'Rough, throwaway POC validating a screen-space radial-gradient "light pool" overlay for floor/ceiling static lighting -- two rooms and a corridor, testing whether a static light now reads as a round pool instead of the rectangular shaft the per-column-strip approach produced. Not production code.',
+    docsSlug: '',
+    file: 'RaycasterLightpoolPoc',
+  },
 ];
