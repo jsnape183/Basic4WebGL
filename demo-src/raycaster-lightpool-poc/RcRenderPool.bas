@@ -117,6 +117,11 @@ function renderFrame()
     endif
     baseCh = math.clamp(255 * ambient, 8, 30)
 
+    ' Release last frame's drawing objects back to the pool before this frame
+    ' allocates any -- without this every frame leaks ~cols Graphics objects
+    ' and the renderer freezes within seconds.
+    drawing.clear()
+
     ' Flat ambient-only background -- no per-column floor/ceiling sampling at
     ' all. This is the whole point of the POC: static lights are drawn as
     ' overlay pools afterward (drawLightPools), never baked into this fill.
