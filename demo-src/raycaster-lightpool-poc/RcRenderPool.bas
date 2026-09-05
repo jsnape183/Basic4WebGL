@@ -51,7 +51,7 @@ Constructor(w as RcWorld)
     self.camZ = 0
     self.boundMover = 0
     self.boundLights = 0
-    self.poolWorldRadius = 2.5
+    self.poolWorldRadius = 0.4
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -115,7 +115,7 @@ function renderFrame()
     if self.boundLights <> 0 then
         ambient = self.boundLights.ambientLevel()
     endif
-    baseCh = math.clamp(255 * (ambient + 0.15), 20, 90)
+    baseCh = math.clamp(255 * ambient, 8, 30)
 
     ' Flat ambient-only background -- no per-column floor/ceiling sampling at
     ' all. This is the whole point of the POC: static lights are drawn as
@@ -207,7 +207,7 @@ function drawLightPools()
                 endif
                 if losD < 0 or losD >= dist2d - 0.1 then
                     screenR = self.poolWorldRadius * (self.viewH / depth)
-                    alpha = math.clamp((1.0 - depth / radiusCells) * intensity, 0.1, 0.85)
+                    alpha = math.clamp((1.0 - depth / radiusCells) * intensity, 0.05, 0.4)
                     ch = math.clamp(255 * intensity, 120, 255)
                     floorY = self.projectY(0, depth)
                     ceilY = self.projectY(RcConfig.RC_STD_CEIL, depth)
