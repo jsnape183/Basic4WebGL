@@ -426,3 +426,16 @@ describe('drawing — drawFloorStrip', () => {
     expect(transpileWithDrawing(call).code).toContain('_sb.drawFloorStrip(');
   });
 });
+
+// ─── drawing — drawRadialGradientCircle ──────────────────────────────────────
+
+describe('drawing — drawRadialGradientCircle', () => {
+  const call =
+    'function test()\n  drawing.drawRadialGradientCircle(100, 120, 40, 255, 220, 160, 0.6)\nendfunction';
+  test('compiles without error', () => {
+    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.drawRadialGradientCircle(', () => {
+    expect(transpileWithDrawing(call).code).toContain('_sb.drawRadialGradientCircle(');
+  });
+});

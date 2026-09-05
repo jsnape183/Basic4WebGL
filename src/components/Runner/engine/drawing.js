@@ -92,6 +92,40 @@ const _sbDrawing = (() => {
     return g;
   }
 
+  const _radialGradientCache = new Map(); // `${r}:${g}:${b}:${a}` (quantised) -> PIXI.FillGradient
+
+  function _quantizeAlpha01(a) {
+    return Math.min(1, Math.max(0, Math.round(a * 20) / 20)); // 0.05 steps -- imperceptible
+  }
+
+  // Same VRAM-exhaustion and in-flight-destroy hazards as _gradientFor above
+  // apply here (a per-light-per-frame overlay can issue several of these every
+  // frame) -- same fix: cache by quantised key, never evict/destroy mid-session,
+  // only cleared on _drawingReset() (scene switch).
+  function _radialGradientFor(r, g, b, alpha) {
+    const qr = _quantizeChannel(r);
+    const qg = _quantizeChannel(g);
+    const qb = _quantizeChannel(b);
+    const qa = _quantizeAlpha01(alpha);
+    const key = qr + ':' + qg + ':' + qb + ':' + qa;
+    let g2 = _radialGradientCache.get(key);
+    if (!g2) {
+      g2 = new PIXI.FillGradient({
+        type: 'radial',
+        center: { x: 0.5, y: 0.5 },
+        innerRadius: 0,
+        outerCenter: { x: 0.5, y: 0.5 },
+        outerRadius: 0.5,
+        colorStops: [
+          { offset: 0, color: { r: qr, g: qg, b: qb, a: qa } },
+          { offset: 1, color: { r: qr, g: qg, b: qb, a: 0 } },
+        ],
+      });
+      _radialGradientCache.set(key, g2);
+    }
+    return g2;
+  }
+
   function _texFor(imageName, srcX, srcVTop, srcVBot) {
     const vt = srcVTop === undefined ? 0 : srcVTop;
     const vb = srcVBot === undefined ? 1 : srcVBot;
@@ -208,6 +242,18 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
+    // A circle filled with a radial gradient from (r,g,b,alpha) at its centre
+    // fading to fully transparent at its edge -- used by the raycaster
+    // light-pool POC to overlay a soft "pool of light" on floor/ceiling,
+    // independent of the per-column wall/floor render. x/y is the circle's
+    // centre, matching drawCircle.
+    drawRadialGradientCircle(x, y, radius, r, g, b, alpha) {
+      const o = _acquireG();
+      const gradient = _radialGradientFor(r, g, b, alpha);
+      o.circle(0, 0, radius).fill(gradient);
+      o.position.set(x, y);
+      return o;
+    },
     drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot) {
       const o = _acquireS();
       o.texture = _texFor(imageName, srcX, srcVTop, srcVBot);
@@ -288,6 +334,8 @@ const _sbDrawing = (() => {
       _meshTexCache.clear();
       for (const g of _gradientCache.values()) { if (g.destroy) g.destroy(); }
       _gradientCache.clear();
+      for (const g of _radialGradientCache.values()) { if (g.destroy) g.destroy(); }
+      _radialGradientCache.clear();
     },
   };
 })();

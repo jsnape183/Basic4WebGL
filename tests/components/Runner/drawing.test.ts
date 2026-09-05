@@ -319,3 +319,66 @@ describe('drawing — vertical gradient fill', () => {
     expect(gradientCreated).toBe(3);
   });
 });
+
+describe('drawing — radial gradient fill (light-pool POC)', () => {
+  test('drawRadialGradientCircle fills a circle with a radial gradient from the given colour to fully transparent', () => {
+    const { d } = loadDrawing();
+    const o = d.drawRadialGradientCircle(50, 60, 40, 255, 220, 160, 0.6) as FakeGraphics;
+    const style = o.lastFill as {
+      opts: {
+        type: string;
+        center: { x: number; y: number };
+        innerRadius: number;
+        outerCenter: { x: number; y: number };
+        outerRadius: number;
+        colorStops: Array<{ offset: number; color: { r: number; g: number; b: number; a: number } }>;
+      };
+    };
+    expect(style.opts.type).toBe('radial');
+    expect(style.opts.center).toEqual({ x: 0.5, y: 0.5 });
+    expect(style.opts.innerRadius).toBe(0);
+    expect(style.opts.outerCenter).toEqual({ x: 0.5, y: 0.5 });
+    expect(style.opts.outerRadius).toBe(0.5);
+    expect(style.opts.colorStops[0].offset).toBe(0);
+    expect(style.opts.colorStops[0].color.a).toBeCloseTo(0.6, 5);
+    expect(style.opts.colorStops[1].offset).toBe(1);
+    expect(style.opts.colorStops[1].color.a).toBe(0);
+  });
+
+  test('is pooled exactly like drawCircle', () => {
+    const { d } = loadDrawing();
+    d.drawRadialGradientCircle(0, 0, 10, 255, 255, 255, 0.5);
+    d.drawRadialGradientCircle(0, 0, 10, 255, 255, 255, 0.5);
+    expect(gfxCreated).toBe(2);
+    d.clearDrawing();
+    d.drawRadialGradientCircle(0, 0, 10, 255, 255, 255, 0.5);
+    d.drawRadialGradientCircle(0, 0, 10, 255, 255, 255, 0.5);
+    expect(gfxCreated).toBe(2); // reused from the pool
+  });
+
+  test('reuses a cached PIXI.FillGradient for the same colour+alpha instead of allocating a new GPU resource every call', () => {
+    const { d } = loadDrawing();
+    for (let i = 0; i < 50; i++) {
+      d.drawRadialGradientCircle(0, 0, 10, 255, 220, 160, 0.6);
+    }
+    expect(gradientCreated).toBe(1);
+  });
+
+  test('does not evict or destroy cached gradients no matter how many distinct colour+alpha pairs accumulate', () => {
+    const { d } = loadDrawing();
+    for (let i = 0; i < 1000; i++) {
+      d.drawRadialGradientCircle(0, 0, 10, i % 256, 0, 0, 0.5);
+    }
+    expect(gradientDestroyed).toBe(0);
+  });
+
+  test('_drawingReset destroys the cached radial gradients too', () => {
+    const { d } = loadDrawing();
+    d.drawRadialGradientCircle(0, 0, 10, 255, 220, 160, 0.6);
+    const createdBefore = gradientCreated;
+    d._drawingReset();
+    expect(gradientDestroyed).toBeGreaterThanOrEqual(createdBefore);
+    d.drawRadialGradientCircle(0, 0, 10, 255, 220, 160, 0.6);
+    expect(gradientCreated).toBe(createdBefore + 1); // rebuilt, not reused from a destroyed instance
+  });
+});

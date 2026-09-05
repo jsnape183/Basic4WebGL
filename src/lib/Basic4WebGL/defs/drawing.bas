@@ -25,3 +25,7 @@ endfunction
 function drawVGradientRect(x, y, width, height, topR, topG, topB, botR, botG, botB)
     call("_sb.drawVGradientRect(drawvgradientrect_x, drawvgradientrect_y, drawvgradientrect_width, drawvgradientrect_height, drawvgradientrect_topR, drawvgradientrect_topG, drawvgradientrect_topB, drawvgradientrect_botR, drawvgradientrect_botG, drawvgradientrect_botB)")
 endfunction
+
+function drawRadialGradientCircle(x, y, radius, r, g, b, alpha)
+    call("_sb.drawRadialGradientCircle(drawradialgradientcircle_x, drawradialgradientcircle_y, drawradialgradientcircle_radius, drawradialgradientcircle_r, drawradialgradientcircle_g, drawradialgradientcircle_b, drawradialgradientcircle_alpha)")
+endfunction

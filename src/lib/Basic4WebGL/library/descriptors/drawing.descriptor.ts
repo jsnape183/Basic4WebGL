@@ -41,5 +41,11 @@ export const drawingDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.drawVGradientRect(${p.x}, ${p.y}, ${p.width}, ${p.height}, ${p.topR}, ${p.topG}, ${p.topB}, ${p.botR}, ${p.botG}, ${p.botB})`,
     },
+    {
+      name: 'drawRadialGradientCircle',
+      params: ['x', 'y', 'radius', 'r', 'g', 'b', 'alpha'],
+      body: (p, _self) =>
+        `_sb.drawRadialGradientCircle(${p.x}, ${p.y}, ${p.radius}, ${p.r}, ${p.g}, ${p.b}, ${p.alpha})`,
+    },
   ],
 };
