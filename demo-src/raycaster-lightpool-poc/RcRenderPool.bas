@@ -120,10 +120,10 @@ function renderFrame()
     ' Flat ambient-only background -- no per-column floor/ceiling sampling at
     ' all. This is the whole point of the POC: static lights are drawn as
     ' overlay pools afterward (drawLightPools), never baked into this fill.
-    drawing.setLineWidth(0)
-    drawing.setFillColor(baseCh * 0.55, baseCh * 0.55, baseCh * 0.75)
+    pen.setLineWidth(0)
+    pen.setFillColor(baseCh * 0.55, baseCh * 0.55, baseCh * 0.75)
     drawing.drawRect(self.viewW / 2, self.scy / 2, self.viewW, self.scy)
-    drawing.setFillColor(baseCh * 0.4, baseCh * 0.4, baseCh * 0.5)
+    pen.setFillColor(baseCh * 0.4, baseCh * 0.4, baseCh * 0.5)
     drawing.drawRect(self.viewW / 2, self.scy + self.scy / 2, self.viewW, self.viewH - self.scy)
 
     for col = 0 to self.cols - 1
@@ -149,7 +149,7 @@ function renderFrame()
             if wallSide = 1 then
                 shade = 115
             endif
-            drawing.setFillColor(shade, shade, shade)
+            pen.setFillColor(shade, shade, shade)
             drawing.drawRect(destX, (wallTop + wallBot) / 2, RcConfig.RC_STRIP_W, wallBot - wallTop)
         endif
     next col
