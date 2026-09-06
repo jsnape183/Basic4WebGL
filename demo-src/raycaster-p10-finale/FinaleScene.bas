@@ -79,6 +79,13 @@ function onenter()
   ' docs/superpowers/specs/2026-09-04-raycaster-height-aware-lighting-design.md.
   self.lights.setHeightAware(1)
 
+  ' Per-pixel floor field for the standard floor + ceiling: a true floorcast
+  ' (world-space texture x baked static lightmap) instead of flat-shaded
+  ' strips, so the light pools lie painted on the ground. The 3-step dais and
+  ' its risers/soffit keep the per-column path (gradient shading above still
+  ' governs them).
+  self.ren.setFloorField(1)
+
   ' No dynamic lights at all -- every `light` marker in finale.stm was already
   ' baked into staticArr by the RcLights Constructor above. Nothing to update
   ' per frame.
