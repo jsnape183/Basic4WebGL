@@ -126,39 +126,6 @@ const _sbDrawing = (() => {
     return g2;
   }
 
-  // id -> { texture: PIXI.Texture, worldCols, worldRows }. A baked light grid
-  // uploaded once as a clamped, linearly-filtered texture. Rebuilt only on an
-  // explicit re-register (same id) or scene reset -- never per frame.
-  const _lightmapCache = new Map();
-
-  // Per-strip sub-frame textures over a lightmap source. LRU-capped and
-  // destroyed on eviction -- cheap frame views over a shared source, mirrors
-  // _meshTexFor's lifecycle. Cleared on _drawingReset. The FRAME is passed as
-  // exact floats (sub-pixel texture sampling is valid and keeps adjacent
-  // column strips seam-free); only the cache KEY is quantised, finely.
-  const _lightmapFrameCache = new Map();
-
-  function _lightmapFrameFor(id, srcTex, fx, fy, fw, fh) {
-    const q = (n) => Math.round(n * 4) / 4;
-    const ffw = Math.max(0.25, fw), ffh = Math.max(0.25, fh);
-    const key = id + ':' + q(fx) + ':' + q(fy) + ':' + q(ffw) + ':' + q(ffh);
-    let t = _lightmapFrameCache.get(key);
-    if (!t) {
-      t = new PIXI.Texture({
-        source: srcTex.source,
-        frame: new PIXI.Rectangle(fx, fy, ffw, ffh),
-      });
-      _lightmapFrameCache.set(key, t);
-      if (_lightmapFrameCache.size > 256) {
-        const oldest = _lightmapFrameCache.keys().next().value;
-        const old = _lightmapFrameCache.get(oldest);
-        _lightmapFrameCache.delete(oldest);
-        if (old && old.destroy) old.destroy();
-      }
-    }
-    return t;
-  }
-
   function _texFor(imageName, srcX, srcVTop, srcVBot) {
     const vt = srcVTop === undefined ? 0 : srcVTop;
     const vb = srcVBot === undefined ? 1 : srcVBot;
@@ -298,22 +265,6 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
-    // Upload a baked light grid as a texture. `bytes` is a length w*h*4 array of
-    // 0..255 RGBA values, row-major. worldCols/worldRows are the map's cell
-    // dimensions, stored so drawLightmapStrip can map a world point to a UV.
-    registerLightmap(id, w, h, worldCols, worldRows, bytes) {
-      const prev = _lightmapCache.get(id);
-      if (prev && prev.texture && prev.texture.destroy) prev.texture.destroy();
-      const source = new PIXI.BufferImageSource({
-        resource: new Uint8Array(bytes),
-        width: w,
-        height: h,
-        addressMode: 'clamp-to-edge',
-        scaleMode: 'linear',
-      });
-      const texture = new PIXI.Texture({ source });
-      _lightmapCache.set(id, { texture, worldCols, worldRows });
-    },
     drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot) {
       const o = _acquireS();
       o.texture = _texFor(imageName, srcX, srcVTop, srcVBot);
@@ -361,70 +312,6 @@ const _sbDrawing = (() => {
       return m;
     },
 
-    // One perspective-correct quad of a horizontal surface (floor or ceiling),
-    // textured by a registered lightmap sampled in ABSOLUTE world space
-    // (world / mapSize), clamp-wrapped. The screen quad is the axis-aligned
-    // rectangle [sxL..sxR] x [syFar..syNear]; its four corners are floor-cast
-    // to the given world points (near-left/near-right/far-left/far-right), so
-    // the lightmap is pinned to the ground and cannot drift as the camera
-    // moves. Intended to be called ONCE per surface for the whole visible
-    // floor/ceiling -- not per column (per-column meshes seam). No tint --
-    // colour is entirely in the lightmap.
-    drawLightmapStrip(id, sxL, sxR, syNear, syFar, wNearLX, wNearLY, wNearRX, wNearRY, wFarLX, wFarLY, wFarRX, wFarRY) {
-      const entry = _lightmapCache.get(id);
-      if (!entry) return null;
-      const srcTex = entry.texture;
-      const texW = srcTex.source.width;
-      const texH = srcTex.source.height;
-
-      if (Math.abs(syNear - syFar) < 0.0001) return null;
-
-      const minWX = Math.min(wNearLX, wNearRX, wFarLX, wFarRX);
-      const maxWX = Math.max(wNearLX, wNearRX, wFarLX, wFarRX);
-      const minWY = Math.min(wNearLY, wNearRY, wFarLY, wFarRY);
-      const maxWY = Math.max(wNearLY, wNearRY, wFarLY, wFarRY);
-
-      const fx = (minWX / entry.worldCols) * texW;
-      const fy = (minWY / entry.worldRows) * texH;
-      const fw = ((maxWX - minWX) / entry.worldCols) * texW;
-      const fh = ((maxWY - minWY) / entry.worldRows) * texH;
-      const frameTex = _lightmapFrameFor(id, srcTex, fx, fy, fw, fh);
-
-      const m = _acquireM(frameTex);
-
-      // Assign each screen corner to the frame corner (TL,TR,BR,BL == world
-      // (minWX,minWY),(maxWX,minWY),(maxWX,maxWY),(minWX,maxWY)) it is nearest
-      // to in world space, so the lightmap is never flipped. Identity fallback
-      // if the assignment is degenerate.
-      const sc = [
-        { sx: sxL, sy: syFar, wx: wFarLX, wy: wFarLY },
-        { sx: sxR, sy: syFar, wx: wFarRX, wy: wFarRY },
-        { sx: sxR, sy: syNear, wx: wNearRX, wy: wNearRY },
-        { sx: sxL, sy: syNear, wx: wNearLX, wy: wNearLY },
-      ];
-      const fc = [
-        { wx: minWX, wy: minWY }, { wx: maxWX, wy: minWY },
-        { wx: maxWX, wy: maxWY }, { wx: minWX, wy: maxWY },
-      ];
-      const picks = fc.map((f) => {
-        let best = 0, bestD = Infinity;
-        for (let i = 0; i < 4; i++) {
-          const dd = (sc[i].wx - f.wx) ** 2 + (sc[i].wy - f.wy) ** 2;
-          if (dd < bestD) { bestD = dd; best = i; }
-        }
-        return best;
-      });
-      const ordered = new Set(picks).size === 4 ? picks.map((i) => sc[i]) : sc;
-      m.setCorners(
-        ordered[0].sx, ordered[0].sy,
-        ordered[1].sx, ordered[1].sy,
-        ordered[2].sx, ordered[2].sy,
-        ordered[3].sx, ordered[3].sy,
-      );
-      m.tint = 0xffffff;
-      return m;
-    },
-
     clearDrawing() {
       _drawSeq = 0;   // reset per-frame draw-order counter so zIndex stays in a stable band and never drifts past Number range
       for (const o of _liveG) { o.visible = false; _poolG.push(o); }
@@ -460,10 +347,6 @@ const _sbDrawing = (() => {
       _gradientCache.clear();
       for (const g of _radialGradientCache.values()) { if (g.destroy) g.destroy(); }
       _radialGradientCache.clear();
-      for (const e of _lightmapCache.values()) { if (e.texture && e.texture.destroy) e.texture.destroy(); }
-      _lightmapCache.clear();
-      for (const t of _lightmapFrameCache.values()) { if (t && t.destroy) t.destroy(); }
-      _lightmapFrameCache.clear();
     },
   };
 })();

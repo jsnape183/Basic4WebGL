@@ -1,24 +1,25 @@
 Class
 ' RcRenderPool -- rough, throwaway POC renderer validating the light-pool
 ' redesign direction (see
-' docs/superpowers/specs/2026-09-06-raycaster-lightpool-lightmap-design.md).
+' docs/superpowers/specs/2026-09-05-raycaster-lightpool-poc-design.md).
 ' NOT production code. Deliberately much smaller than the shared RcRender.bas:
 ' this POC's map has no floor/ceiling height variation, no diagonal tiles, no
-' textures.
+' textures, so none of that logic is needed.
 '
-' One unified lighting model: every surface is lit by the same summed
-' 3D-distance falloff from the static lights (lightAtPoint), in the same warm
-' colour, over a cool dark ambient base. Walls sample lightAtPoint() per column
-' at their hit point. Floor and ceiling are baked ONCE into two lightmap
-' textures (bakeLightmaps) and drawn per column as perspective-correct strips
-' (drawLightmapStrip) sampling those textures by absolute world position -- so
-' the pools are fixed on the ground under any camera motion.
+' One unified lighting model: every surface -- wall, floor, ceiling -- is lit
+' by the same summed 3D-distance falloff from the static lights, in the same
+' warm colour, over a cool dark ambient base. Walls sample lightAtPoint() per
+' column at their hit point. Floor/ceiling get radial-gradient "pool" overlays
+' (drawLightPools()) -- the cheap stand-in for per-pixel floor casting -- drawn
+' as ellipses anchored to their surface plane (near edge at depth-WR, far edge
+' at depth+WR) so they lie flat on the ground instead of tracking the camera
+' like a billboard. Ceiling pools are tighter than floor pools because the
+' light sits near the ceiling.
 '
-' Known POC simplifications: LOS occlusion is a single ray to each light's
-' centre; the lightmap is baked at lmRes texels per cell (no smarter bake); the
-' per-strip world->UV frame is an axis-aligned approximation that shears
-' slightly on diagonal views (the POC scene is axis-aligned corridors); no
-' dynamic lights.
+' Known POC simplifications: occlusion is a single ray to the light's centre,
+' no penumbra; no per-pixel depth test against walls, so a pool very close to
+' a wall may draw over it; no handling for overlapping lights beyond draw
+' order; floor/ceiling have no texture so there is no static ground reference.
 dim wld as RcWorld
 dim rc as RcCast
 dim camX
@@ -37,7 +38,7 @@ dim fDirX
 dim fDirY
 dim fPlaneX
 dim fPlaneY
-dim lmRes
+dim poolSpread
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -54,7 +55,7 @@ Constructor(w as RcWorld)
     self.camZ = 0
     self.boundMover = 0
     self.boundLights = 0
-    self.lmRes = 8
+    self.poolSpread = 0.6
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -67,78 +68,13 @@ endfunction
 
 function bindLights(lights)
     self.boundLights = lights
-    self.bakeLightmaps()
 endfunction
 
-' Lightmap texel resolution multiplier -- texels per world cell. 2 = a 20x40
-' texel grid for this 10x20 map. Bump for a smoother pool, at a one-time bake
-' cost. Must be set before bindLights().
-function setLightmapRes(n)
-    self.lmRes = n
-endfunction
-
-' Bake a floor lightmap and a ceiling lightmap once: each texel is the summed
-' warm-light contribution at that world point (lightAtPoint -- the SAME math the
-' walls use), plus the cool ambient base. Uploaded via drawing.registerLightmap
-' and never recomputed. This is where the pool shape and the wall occlusion are
-' resolved -- render time is pure projection.
-function bakeLightmaps()
-    dim wc
-    dim hc
-    dim w
-    dim h
-    dim ambient
-    dim ambBase
-    dim tx
-    dim ty
-    dim wx
-    dim wy
-    dim fl
-    dim cl
-    dim idx
-    dim total
-    dim k
-    dim floorArr(0)
-    dim ceilArr(0)
-
-    if self.boundLights = 0 then
-        return
-    endif
-
-    wc = self.wld.widthCells()
-    hc = self.wld.heightCells()
-    w = wc * self.lmRes
-    h = hc * self.lmRes
-
-    ambient = self.boundLights.ambientLevel()
-    ambBase = math.clamp(255 * ambient, 8, 30)
-
-    total = w * h * 4
-    for k = 0 to total - 1
-        array.push(floorArr, 0)
-        array.push(ceilArr, 0)
-    next k
-
-    for ty = 0 to h - 1
-        for tx = 0 to w - 1
-            wx = (tx + 0.5) / self.lmRes
-            wy = (ty + 0.5) / self.lmRes
-            fl = self.lightAtPoint(wx, wy, 0)
-            cl = self.lightAtPoint(wx, wy, RcConfig.RC_STD_CEIL)
-            idx = (ty * w + tx) * 4
-            floorArr(idx) = math.clamp(ambBase * 0.5 + fl * 255, 0, 255)
-            floorArr(idx + 1) = math.clamp(ambBase * 0.5 + fl * 214, 0, 255)
-            floorArr(idx + 2) = math.clamp(ambBase * 0.72 + fl * 170, 0, 255)
-            floorArr(idx + 3) = 255
-            ceilArr(idx) = math.clamp(ambBase * 0.5 + cl * 255, 0, 255)
-            ceilArr(idx + 1) = math.clamp(ambBase * 0.5 + cl * 214, 0, 255)
-            ceilArr(idx + 2) = math.clamp(ambBase * 0.72 + cl * 170, 0, 255)
-            ceilArr(idx + 3) = 255
-        next tx
-    next ty
-
-    drawing.registerLightmap("rcpool_floor", w, h, wc, hc, floorArr)
-    drawing.registerLightmap("rcpool_ceil", w, h, wc, hc, ceilArr)
+' The one "overall intensity/spread" knob: how wide each light's pool fans on
+' a surface, per world-unit of vertical distance between the light and that
+' surface. Bigger = bigger, softer pools. Tunable without touching render logic.
+function setPoolSpread(s)
+    self.poolSpread = s
 endfunction
 
 ' Summed warm-light contribution (0..~N) at a world point from every static
@@ -199,31 +135,6 @@ function projectY(h, d)
     return self.scy + (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
 endfunction
 
-' Inverse of projectY: the perpendicular distance whose surface at height h
-' projects to screen Y `y`. Guarded so a near-horizon row doesn't divide by ~0.
-function projectYInv(h, y)
-    dim denom
-    dim d
-    denom = y - self.scy - self.camPitch
-    if h < RcConfig.RC_EYE_Z then
-        if denom < 0.5 then
-            denom = 0.5
-        endif
-    else
-        if denom > 0 - 0.5 then
-            denom = 0 - 0.5
-        endif
-    endif
-    d = (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / denom)
-    if d < 0.05 then
-        d = 0.05
-    endif
-    if d > RcConfig.RC_MAX_DIST then
-        d = RcConfig.RC_MAX_DIST
-    endif
-    return d
-endfunction
-
 function renderFrame()
     dim ambient
     dim baseCh
@@ -245,19 +156,6 @@ function renderFrame()
     dim wr
     dim wg
     dim wb
-    dim lRayX
-    dim lRayY
-    dim rRayX
-    dim rRayY
-    dim horizonY
-    dim fNearD
-    dim fFarD
-    dim fNearY
-    dim fFarY
-    dim cNearD
-    dim cFarD
-    dim cNearY
-    dim cFarY
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -282,37 +180,14 @@ function renderFrame()
     ' and the renderer freezes within seconds.
     drawing.clear()
 
-    ' Cool dark ambient backdrop -- the baked-lightmap floor/ceiling quads below
-    ' cover it entirely; it only shows if a quad fails.
+    ' Flat ambient-only background -- no per-column floor/ceiling sampling at
+    ' all. This is the whole point of the POC: static lights are drawn as
+    ' overlay pools afterward (drawLightPools), never baked into this fill.
     pen.setLineWidth(0)
     pen.setFillColor(baseCh * 0.55, baseCh * 0.55, baseCh * 0.75)
     drawing.drawRect(self.viewW / 2, self.scy / 2, self.viewW, self.scy)
     pen.setFillColor(baseCh * 0.4, baseCh * 0.4, baseCh * 0.5)
     drawing.drawRect(self.viewW / 2, self.scy + self.scy / 2, self.viewW, self.viewH - self.scy)
-
-    ' Floor + ceiling as ONE perspective quad each, drawn BEFORE the walls so
-    ' the walls occlude them. Corners are the screen edges floor-cast to world,
-    ' so the lightmap is pinned to the ground -- rotating/strafing pans the view
-    ' across a fixed texture, it does not move the pool.
-    if self.boundLights <> 0 then
-        lRayX = self.fDirX + self.fPlaneX * (0 - 1.0)
-        lRayY = self.fDirY + self.fPlaneY * (0 - 1.0)
-        rRayX = self.fDirX + self.fPlaneX * 1.0
-        rRayY = self.fDirY + self.fPlaneY * 1.0
-        horizonY = self.scy + self.camPitch
-
-        fNearY = self.viewH
-        fFarY = horizonY + 2
-        fNearD = self.projectYInv(0, fNearY)
-        fFarD = self.projectYInv(0, fFarY)
-        drawing.drawLightmapStrip("rcpool_floor", 0, self.viewW, fNearY, fFarY, self.camX + lRayX * fNearD, self.camY + lRayY * fNearD, self.camX + rRayX * fNearD, self.camY + rRayY * fNearD, self.camX + lRayX * fFarD, self.camY + lRayY * fFarD, self.camX + rRayX * fFarD, self.camY + rRayY * fFarD)
-
-        cNearY = 0
-        cFarY = horizonY - 2
-        cNearD = self.projectYInv(RcConfig.RC_STD_CEIL, cNearY)
-        cFarD = self.projectYInv(RcConfig.RC_STD_CEIL, cFarY)
-        drawing.drawLightmapStrip("rcpool_ceil", 0, self.viewW, cNearY, cFarY, self.camX + lRayX * cNearD, self.camY + lRayY * cNearD, self.camX + rRayX * cNearD, self.camY + rRayY * cNearD, self.camX + lRayX * cFarD, self.camY + lRayY * cFarD, self.camX + rRayX * cFarD, self.camY + rRayY * cFarD)
-    endif
 
     for col = 0 to self.cols - 1
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
@@ -349,6 +224,136 @@ function renderFrame()
             drawing.drawRect(destX, (wallTop + wallBot) / 2, RcConfig.RC_STRIP_W, wallBot - wallTop)
         endif
     next col
+
+    if self.boundLights <> 0 then
+        self.drawLightPools()
+    endif
+endfunction
+
+' Overlay pass: one radial-gradient "pool" per static light, on the floor and
+' on the ceiling, projected to screen space with the same camera-plane
+' transform the shared RcRender.bas uses for actor billboards.
+function drawLightPools()
+    dim n
+    dim i
+    dim lx
+    dim ly
+    dim lz
+    dim intensity
+    dim radiusCells
+    dim relX
+    dim relY
+    dim invDet
+    dim depth
+    dim tX
+    dim screenX
+    dim dist2d
+    dim losD
+    dim ceilWR
+    dim floorWR
+    dim poolLite
+    dim alpha
+    dim pr
+    dim pg
+    dim pb
+    dim fNearD
+    dim fFarD
+    dim fNearY
+    dim fFarY
+    dim floorCY
+    dim floorRY
+    dim floorRX
+    dim cNearD
+    dim cFarD
+    dim cNearY
+    dim cFarY
+    dim ceilCY
+    dim ceilRY
+    dim ceilRX
+
+    invDet = 1.0 / (self.fPlaneX * self.fDirY - self.fDirX * self.fPlaneY)
+    n = self.boundLights.staticLightCount()
+    for i = 0 to n - 1
+        lx = self.boundLights.staticLightX(i)
+        ly = self.boundLights.staticLightY(i)
+        lz = self.boundLights.staticLightZ(i)
+        intensity = self.boundLights.staticLightIntensity(i)
+        radiusCells = self.boundLights.staticLightRadius(i)
+
+        relX = lx - self.camX
+        relY = ly - self.camY
+        depth = invDet * (0 - self.fPlaneY * relX + self.fPlaneX * relY)
+        if depth > 0.1 then
+            tX = invDet * (self.fDirY * relX - self.fDirX * relY)
+            screenX = (self.viewW / 2) * (1.0 + tX / depth)
+            if screenX > 0 - 200 and screenX < self.viewW + 200 then
+                dist2d = math.sqrt(relX * relX + relY * relY)
+                losD = 0 - 1
+                if dist2d > 0.001 then
+                    losD = self.rc.los(self.wld, self.camX, self.camY, relX / dist2d, relY / dist2d)
+                endif
+                if losD < 0 or losD >= dist2d - 0.1 then
+                    ' Pool world-radius on each surface: scales with that
+                    ' surface's vertical distance from the light (ceiling sits
+                    ' near the light -> tight pool; floor is far -> wide pool),
+                    ' times the one spread knob.
+                    ceilWR = self.poolSpread * math.abs(RcConfig.RC_STD_CEIL - lz) + 0.12
+                    floorWR = self.poolSpread * math.abs(lz) + 0.12
+
+                    poolLite = math.clamp(intensity * (1.0 - depth / radiusCells), 0.0, 1.0)
+                    alpha = math.clamp(poolLite * 0.6, 0.04, 0.42)
+                    pr = math.clamp(255 * poolLite + 40, 0, 255)
+                    pg = math.clamp(214 * poolLite + 40, 0, 255)
+                    pb = math.clamp(170 * poolLite + 40, 0, 255)
+
+                    ' Anchor each pool by its FAR edge (perpendicular distance
+                    ' depth+WR) and extend it toward the camera. The far edge is
+                    ' the stable end -- it barely moves as the player walks --
+                    ' so pinning the ellipse there keeps the pool locked to the
+                    ' ground. The near edge (depth-WR) is clamped so a player
+                    ' standing on top of a light doesn't produce a mile-long
+                    ' ellipse, at the cost of the pool not quite reaching the
+                    ' feet in that extreme -- acceptable for the POC.
+                    fFarD = depth + floorWR
+                    fNearD = depth - floorWR
+                    if fNearD < 0.3 then
+                        fNearD = 0.3
+                    endif
+                    fFarY = self.projectY(0, fFarD)
+                    fNearY = self.projectY(0, fNearD)
+                    if fNearY > self.scy + self.viewH * 2.0 then
+                        fNearY = self.scy + self.viewH * 2.0
+                    endif
+                    floorRY = (fNearY - fFarY) / 2
+                    if floorRY < 1 then
+                        floorRY = 1
+                    endif
+                    floorCY = fFarY + floorRY
+                    floorRX = math.clamp(floorWR * (self.viewH / depth), 1, self.viewW * 1.5)
+
+                    cFarD = depth + ceilWR
+                    cNearD = depth - ceilWR
+                    if cNearD < 0.3 then
+                        cNearD = 0.3
+                    endif
+                    cFarY = self.projectY(RcConfig.RC_STD_CEIL, cFarD)
+                    cNearY = self.projectY(RcConfig.RC_STD_CEIL, cNearD)
+                    if cNearY < self.scy - self.viewH * 2.0 then
+                        cNearY = self.scy - self.viewH * 2.0
+                    endif
+                    ceilRY = (cFarY - cNearY) / 2
+                    if ceilRY < 1 then
+                        ceilRY = 1
+                    endif
+                    ceilCY = cFarY - ceilRY
+                    ceilRX = math.clamp(ceilWR * (self.viewH / depth), 1, self.viewW * 1.5)
+
+                    drawing.drawRadialGradientEllipse(screenX, floorCY, floorRX, floorRY, pr, pg, pb, alpha)
+                    drawing.drawRadialGradientEllipse(screenX, ceilCY, ceilRX, ceilRY, pr, pg, pb, alpha)
+                endif
+            endif
+        endif
+    next i
 endfunction
 
 EndClass

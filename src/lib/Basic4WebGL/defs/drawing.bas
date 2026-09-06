@@ -33,11 +33,3 @@ endfunction
 function drawRadialGradientEllipse(x, y, radiusX, radiusY, r, g, b, alpha)
     call("_sb.drawRadialGradientEllipse(drawradialgradientellipse_x, drawradialgradientellipse_y, drawradialgradientellipse_radiusX, drawradialgradientellipse_radiusY, drawradialgradientellipse_r, drawradialgradientellipse_g, drawradialgradientellipse_b, drawradialgradientellipse_alpha)")
 endfunction
-
-function registerLightmap(id, w, h, worldCols, worldRows, bytes)
-    call("_sb.registerLightmap(registerlightmap_id, registerlightmap_w, registerlightmap_h, registerlightmap_worldCols, registerlightmap_worldRows, registerlightmap_bytes)")
-endfunction
-
-function drawLightmapStrip(id, sxL, sxR, syNear, syFar, wNearLX, wNearLY, wNearRX, wNearRY, wFarLX, wFarLY, wFarRX, wFarRY)
-    call("_sb.drawLightmapStrip(drawlightmapstrip_id, drawlightmapstrip_sxL, drawlightmapstrip_sxR, drawlightmapstrip_syNear, drawlightmapstrip_syFar, drawlightmapstrip_wNearLX, drawlightmapstrip_wNearLY, drawlightmapstrip_wNearRX, drawlightmapstrip_wNearRY, drawlightmapstrip_wFarLX, drawlightmapstrip_wFarLY, drawlightmapstrip_wFarRX, drawlightmapstrip_wFarRY)")
-endfunction

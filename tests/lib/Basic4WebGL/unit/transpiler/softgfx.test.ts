@@ -452,29 +452,3 @@ describe('drawing — drawRadialGradientEllipse', () => {
     expect(transpileWithDrawing(call).code).toContain('_sb.drawRadialGradientEllipse(');
   });
 });
-
-// ─── drawing — registerLightmap ─────────────────────────────────────────────
-
-describe('drawing — registerLightmap', () => {
-  const call =
-    'function test()\n  dim px(0)\n  drawing.registerLightmap("lm", 4, 4, 10, 20, px)\nendfunction';
-  test('compiles without error', () => {
-    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
-  });
-  test('emits _sb.registerLightmap(', () => {
-    expect(transpileWithDrawing(call).code).toContain('_sb.registerLightmap(');
-  });
-});
-
-// ─── drawing — drawLightmapStrip ────────────────────────────────────────────
-
-describe('drawing — drawLightmapStrip', () => {
-  const call =
-    'function test()\n  drawing.drawLightmapStrip("lm", 0, 640, 360, 180, 3.0, 4.0, 7.0, 4.0, 3.0, 20.0, 7.0, 20.0)\nendfunction';
-  test('compiles without error', () => {
-    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
-  });
-  test('emits _sb.drawLightmapStrip(', () => {
-    expect(transpileWithDrawing(call).code).toContain('_sb.drawLightmapStrip(');
-  });
-});
