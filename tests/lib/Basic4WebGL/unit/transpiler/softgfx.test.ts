@@ -465,3 +465,16 @@ describe('drawing — registerLightmap', () => {
     expect(transpileWithDrawing(call).code).toContain('_sb.registerLightmap(');
   });
 });
+
+// ─── drawing — drawLightmapStrip ────────────────────────────────────────────
+
+describe('drawing — drawLightmapStrip', () => {
+  const call =
+    'function test()\n  drawing.drawLightmapStrip("lm", 100, 180, 90, 2.5, 3.1, 5.0, 8.2, 4)\nendfunction';
+  test('compiles without error', () => {
+    expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
+  });
+  test('emits _sb.drawLightmapStrip(', () => {
+    expect(transpileWithDrawing(call).code).toContain('_sb.drawLightmapStrip(');
+  });
+});

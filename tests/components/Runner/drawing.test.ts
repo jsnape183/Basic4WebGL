@@ -464,3 +464,36 @@ describe('drawing — registerLightmap (baked lightmap)', () => {
     expect(destroyed).toBeGreaterThanOrEqual(destroyedBefore + 2);
   });
 });
+
+describe('drawing — drawLightmapStrip (perspective mesh sampling a lightmap)', () => {
+  const bytes = Array.from({ length: 8 * 8 * 4 }, () => 128);
+
+  test('acquires a PerspectiveMesh with the four screen corners of the strip', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('lm', 8, 8, 10, 20, bytes);
+    const m = d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4) as any;
+    expect(m).toBeTruthy();
+    expect(meshCreated).toBeGreaterThanOrEqual(1);
+    const c = m.corners as number[];
+    const xs = [c[0], c[2], c[4], c[6]].sort((a, b) => a - b);
+    const ys = [c[1], c[3], c[5], c[7]].sort((a, b) => a - b);
+    expect(xs[0]).toBe(198);
+    expect(xs[3]).toBe(202);
+    expect(ys[0]).toBe(120);
+    expect(ys[3]).toBe(300);
+  });
+
+  test('returns null for an unregistered id (no crash)', () => {
+    const { d } = loadDrawing();
+    expect(d.drawLightmapStrip('missing', 0, 0, 0, 0, 0, 0, 0, 4)).toBeNull();
+  });
+
+  test('the strip texture is a sub-frame of the registered lightmap, not a fresh upload', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('lm', 8, 8, 10, 20, bytes);
+    const before = bufferSourceCreated;
+    d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4);
+    d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4);
+    expect(bufferSourceCreated).toBe(before);
+  });
+});

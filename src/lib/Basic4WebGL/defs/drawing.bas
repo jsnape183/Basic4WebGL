@@ -37,3 +37,7 @@ endfunction
 function registerLightmap(id, w, h, worldCols, worldRows, bytes)
     call("_sb.registerLightmap(registerlightmap_id, registerlightmap_w, registerlightmap_h, registerlightmap_worldCols, registerlightmap_worldRows, registerlightmap_bytes)")
 endfunction
+
+function drawLightmapStrip(id, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW)
+    call("_sb.drawLightmapStrip(drawlightmapstrip_id, drawlightmapstrip_destX, drawlightmapstrip_yNear, drawlightmapstrip_yFar, drawlightmapstrip_wNearX, drawlightmapstrip_wNearY, drawlightmapstrip_wFarX, drawlightmapstrip_wFarY, drawlightmapstrip_stripW)")
+endfunction

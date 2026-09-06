@@ -131,6 +131,33 @@ const _sbDrawing = (() => {
   // explicit re-register (same id) or scene reset -- never per frame.
   const _lightmapCache = new Map();
 
+  // Per-strip sub-frame textures over a lightmap source, keyed by
+  // `id:fx:fy:fw:fh` (quantised to whole px). LRU-capped and destroyed on
+  // eviction -- cheap frame views over a shared source, mirrors _meshTexFor's
+  // lifecycle. Cleared on _drawingReset.
+  const _lightmapFrameCache = new Map();
+
+  function _lightmapFrameFor(id, srcTex, fx, fy, fw, fh) {
+    const qfx = Math.round(fx), qfy = Math.round(fy);
+    const qfw = Math.max(1, Math.round(fw)), qfh = Math.max(1, Math.round(fh));
+    const key = id + ':' + qfx + ':' + qfy + ':' + qfw + ':' + qfh;
+    let t = _lightmapFrameCache.get(key);
+    if (!t) {
+      t = new PIXI.Texture({
+        source: srcTex.source,
+        frame: new PIXI.Rectangle(qfx, qfy, qfw, qfh),
+      });
+      _lightmapFrameCache.set(key, t);
+      if (_lightmapFrameCache.size > 256) {
+        const oldest = _lightmapFrameCache.keys().next().value;
+        const old = _lightmapFrameCache.get(oldest);
+        _lightmapFrameCache.delete(oldest);
+        if (old && old.destroy) old.destroy();
+      }
+    }
+    return t;
+  }
+
   function _texFor(imageName, srcX, srcVTop, srcVBot) {
     const vt = srcVTop === undefined ? 0 : srcVTop;
     const vb = srcVBot === undefined ? 1 : srcVBot;
@@ -333,6 +360,79 @@ const _sbDrawing = (() => {
       return m;
     },
 
+    // One column-wide perspective-correct strip of a horizontal surface (floor
+    // or ceiling), textured by a registered lightmap sampled in ABSOLUTE world
+    // space (world / mapSize), clamp-wrapped. The screen quad is
+    // [destX ± stripW/2] x [yFar, yNear]; the strip's near/far world points map
+    // to lightmap texels so the pool stays fixed on the ground as the camera
+    // moves. No tiling, no tint -- the colour is entirely in the lightmap.
+    drawLightmapStrip(id, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW) {
+      const entry = _lightmapCache.get(id);
+      if (!entry) return null;
+      const srcTex = entry.texture;
+      const texW = srcTex.source.width;
+      const texH = srcTex.source.height;
+      const hwScreen = stripW / 2;
+
+      let ddx = wFarX - wNearX;
+      let ddy = wFarY - wNearY;
+      const segLen = Math.hypot(ddx, ddy) || 0.0001;
+      const ndx = ddx / segLen;
+      const ndy = ddy / segLen;
+      const perpX = -ndy;
+      const perpY = ndx;
+      const dyScreen = Math.abs(yNear - yFar);
+      const worldW = dyScreen < 0.0001 ? 0.0001 : segLen * (stripW / dyScreen);
+      const hw = worldW / 2;
+
+      const flX = wFarX - perpX * hw, flY = wFarY - perpY * hw;
+      const frX = wFarX + perpX * hw, frY = wFarY + perpY * hw;
+      const nrX = wNearX + perpX * hw, nrY = wNearY + perpY * hw;
+      const nlX = wNearX - perpX * hw, nlY = wNearY - perpY * hw;
+
+      const minWX = Math.min(flX, frX, nrX, nlX);
+      const maxWX = Math.max(flX, frX, nrX, nlX);
+      const minWY = Math.min(flY, frY, nrY, nlY);
+      const maxWY = Math.max(flY, frY, nrY, nlY);
+
+      const fx = (minWX / entry.worldCols) * texW;
+      const fy = (minWY / entry.worldRows) * texH;
+      const fw = ((maxWX - minWX) / entry.worldCols) * texW;
+      const fh = ((maxWY - minWY) / entry.worldRows) * texH;
+      const frameTex = _lightmapFrameFor(id, srcTex, fx, fy, fw, fh);
+
+      const m = _acquireM(frameTex);
+      if (dyScreen < 0.0001) { m.visible = false; return m; }
+
+      const sc = [
+        { sx: destX - hwScreen, sy: yFar, wx: flX, wy: flY },
+        { sx: destX + hwScreen, sy: yFar, wx: frX, wy: frY },
+        { sx: destX + hwScreen, sy: yNear, wx: nrX, wy: nrY },
+        { sx: destX - hwScreen, sy: yNear, wx: nlX, wy: nlY },
+      ];
+      const fc = [
+        { wx: minWX, wy: minWY }, { wx: maxWX, wy: minWY },
+        { wx: maxWX, wy: maxWY }, { wx: minWX, wy: maxWY },
+      ];
+      const picks = fc.map((f) => {
+        let best = 0, bestD = Infinity;
+        for (let i = 0; i < 4; i++) {
+          const dd = (sc[i].wx - f.wx) ** 2 + (sc[i].wy - f.wy) ** 2;
+          if (dd < bestD) { bestD = dd; best = i; }
+        }
+        return best;
+      });
+      const ordered = new Set(picks).size === 4 ? picks.map((i) => sc[i]) : sc;
+      m.setCorners(
+        ordered[0].sx, ordered[0].sy,
+        ordered[1].sx, ordered[1].sy,
+        ordered[2].sx, ordered[2].sy,
+        ordered[3].sx, ordered[3].sy,
+      );
+      m.tint = 0xffffff;
+      return m;
+    },
+
     clearDrawing() {
       _drawSeq = 0;   // reset per-frame draw-order counter so zIndex stays in a stable band and never drifts past Number range
       for (const o of _liveG) { o.visible = false; _poolG.push(o); }
@@ -370,6 +470,8 @@ const _sbDrawing = (() => {
       _radialGradientCache.clear();
       for (const e of _lightmapCache.values()) { if (e.texture && e.texture.destroy) e.texture.destroy(); }
       _lightmapCache.clear();
+      for (const t of _lightmapFrameCache.values()) { if (t && t.destroy) t.destroy(); }
+      _lightmapFrameCache.clear();
     },
   };
 })();
