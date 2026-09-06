@@ -54,7 +54,7 @@ Constructor(w as RcWorld)
     self.camZ = 0
     self.boundMover = 0
     self.boundLights = 0
-    self.lmRes = 2
+    self.lmRes = 8
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -245,14 +245,19 @@ function renderFrame()
     dim wr
     dim wg
     dim wb
-    dim fFarD
-    dim fFarY
+    dim lRayX
+    dim lRayY
+    dim rRayX
+    dim rRayY
+    dim horizonY
     dim fNearD
+    dim fFarD
     dim fNearY
-    dim cFarD
-    dim cFarY
+    dim fFarY
     dim cNearD
+    dim cFarD
     dim cNearY
+    dim cFarY
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -277,14 +282,37 @@ function renderFrame()
     ' and the renderer freezes within seconds.
     drawing.clear()
 
-    ' Flat ambient-only background -- no per-column floor/ceiling sampling at
-    ' all. This is the whole point of the POC: static lights are drawn as
-    ' overlay pools afterward (drawLightPools), never baked into this fill.
+    ' Cool dark ambient backdrop -- the baked-lightmap floor/ceiling quads below
+    ' cover it entirely; it only shows if a quad fails.
     pen.setLineWidth(0)
     pen.setFillColor(baseCh * 0.55, baseCh * 0.55, baseCh * 0.75)
     drawing.drawRect(self.viewW / 2, self.scy / 2, self.viewW, self.scy)
     pen.setFillColor(baseCh * 0.4, baseCh * 0.4, baseCh * 0.5)
     drawing.drawRect(self.viewW / 2, self.scy + self.scy / 2, self.viewW, self.viewH - self.scy)
+
+    ' Floor + ceiling as ONE perspective quad each, drawn BEFORE the walls so
+    ' the walls occlude them. Corners are the screen edges floor-cast to world,
+    ' so the lightmap is pinned to the ground -- rotating/strafing pans the view
+    ' across a fixed texture, it does not move the pool.
+    if self.boundLights <> 0 then
+        lRayX = self.fDirX + self.fPlaneX * (0 - 1.0)
+        lRayY = self.fDirY + self.fPlaneY * (0 - 1.0)
+        rRayX = self.fDirX + self.fPlaneX * 1.0
+        rRayY = self.fDirY + self.fPlaneY * 1.0
+        horizonY = self.scy + self.camPitch
+
+        fNearY = self.viewH
+        fFarY = horizonY + 2
+        fNearD = self.projectYInv(0, fNearY)
+        fFarD = self.projectYInv(0, fFarY)
+        drawing.drawLightmapStrip("rcpool_floor", 0, self.viewW, fNearY, fFarY, self.camX + lRayX * fNearD, self.camY + lRayY * fNearD, self.camX + rRayX * fNearD, self.camY + rRayY * fNearD, self.camX + lRayX * fFarD, self.camY + lRayY * fFarD, self.camX + rRayX * fFarD, self.camY + rRayY * fFarD)
+
+        cNearY = 0
+        cFarY = horizonY - 2
+        cNearD = self.projectYInv(RcConfig.RC_STD_CEIL, cNearY)
+        cFarD = self.projectYInv(RcConfig.RC_STD_CEIL, cFarY)
+        drawing.drawLightmapStrip("rcpool_ceil", 0, self.viewW, cNearY, cFarY, self.camX + lRayX * cNearD, self.camY + lRayY * cNearD, self.camX + rRayX * cNearD, self.camY + rRayY * cNearD, self.camX + lRayX * cFarD, self.camY + lRayY * cFarD, self.camX + rRayX * cFarD, self.camY + rRayY * cFarD)
+    endif
 
     for col = 0 to self.cols - 1
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
@@ -319,24 +347,6 @@ function renderFrame()
             wb = baseCh * 0.72 + wLite * 170 * faceMul
             pen.setFillColor(math.clamp(wr, 0, 255), math.clamp(wg, 0, 255), math.clamp(wb, 0, 255))
             drawing.drawRect(destX, (wallTop + wallBot) / 2, RcConfig.RC_STRIP_W, wallBot - wallTop)
-        else
-            wallTop = self.projectY(RcConfig.RC_STD_CEIL, RcConfig.RC_MAX_DIST)
-            wallBot = self.projectY(0, RcConfig.RC_MAX_DIST)
-            wallDist = RcConfig.RC_MAX_DIST
-        endif
-
-        if self.boundLights <> 0 then
-            fFarD = wallDist
-            fFarY = wallBot
-            fNearY = self.viewH
-            fNearD = self.projectYInv(0, fNearY)
-            drawing.drawLightmapStrip("rcpool_floor", destX, fNearY, fFarY, self.camX + rayX * fNearD, self.camY + rayY * fNearD, self.camX + rayX * fFarD, self.camY + rayY * fFarD, RcConfig.RC_STRIP_W)
-
-            cFarD = wallDist
-            cFarY = wallTop
-            cNearY = 0
-            cNearD = self.projectYInv(RcConfig.RC_STD_CEIL, cNearY)
-            drawing.drawLightmapStrip("rcpool_ceil", destX, cNearY, cFarY, self.camX + rayX * cNearD, self.camY + rayY * cNearD, self.camX + rayX * cFarD, self.camY + rayY * cFarD, RcConfig.RC_STRIP_W)
         endif
     next col
 endfunction

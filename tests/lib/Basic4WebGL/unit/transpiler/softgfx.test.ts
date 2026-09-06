@@ -470,7 +470,7 @@ describe('drawing — registerLightmap', () => {
 
 describe('drawing — drawLightmapStrip', () => {
   const call =
-    'function test()\n  drawing.drawLightmapStrip("lm", 100, 180, 90, 2.5, 3.1, 5.0, 8.2, 4)\nendfunction';
+    'function test()\n  drawing.drawLightmapStrip("lm", 0, 640, 360, 180, 3.0, 4.0, 7.0, 4.0, 3.0, 20.0, 7.0, 20.0)\nendfunction';
   test('compiles without error', () => {
     expect(transpileWithDrawing(call).diagnostics).toHaveLength(0);
   });

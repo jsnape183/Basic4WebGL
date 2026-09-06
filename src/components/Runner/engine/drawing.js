@@ -131,21 +131,22 @@ const _sbDrawing = (() => {
   // explicit re-register (same id) or scene reset -- never per frame.
   const _lightmapCache = new Map();
 
-  // Per-strip sub-frame textures over a lightmap source, keyed by
-  // `id:fx:fy:fw:fh` (quantised to whole px). LRU-capped and destroyed on
-  // eviction -- cheap frame views over a shared source, mirrors _meshTexFor's
-  // lifecycle. Cleared on _drawingReset.
+  // Per-strip sub-frame textures over a lightmap source. LRU-capped and
+  // destroyed on eviction -- cheap frame views over a shared source, mirrors
+  // _meshTexFor's lifecycle. Cleared on _drawingReset. The FRAME is passed as
+  // exact floats (sub-pixel texture sampling is valid and keeps adjacent
+  // column strips seam-free); only the cache KEY is quantised, finely.
   const _lightmapFrameCache = new Map();
 
   function _lightmapFrameFor(id, srcTex, fx, fy, fw, fh) {
-    const qfx = Math.round(fx), qfy = Math.round(fy);
-    const qfw = Math.max(1, Math.round(fw)), qfh = Math.max(1, Math.round(fh));
-    const key = id + ':' + qfx + ':' + qfy + ':' + qfw + ':' + qfh;
+    const q = (n) => Math.round(n * 4) / 4;
+    const ffw = Math.max(0.25, fw), ffh = Math.max(0.25, fh);
+    const key = id + ':' + q(fx) + ':' + q(fy) + ':' + q(ffw) + ':' + q(ffh);
     let t = _lightmapFrameCache.get(key);
     if (!t) {
       t = new PIXI.Texture({
         source: srcTex.source,
-        frame: new PIXI.Rectangle(qfx, qfy, qfw, qfh),
+        frame: new PIXI.Rectangle(fx, fy, ffw, ffh),
       });
       _lightmapFrameCache.set(key, t);
       if (_lightmapFrameCache.size > 256) {
@@ -360,40 +361,28 @@ const _sbDrawing = (() => {
       return m;
     },
 
-    // One column-wide perspective-correct strip of a horizontal surface (floor
-    // or ceiling), textured by a registered lightmap sampled in ABSOLUTE world
-    // space (world / mapSize), clamp-wrapped. The screen quad is
-    // [destX ± stripW/2] x [yFar, yNear]; the strip's near/far world points map
-    // to lightmap texels so the pool stays fixed on the ground as the camera
-    // moves. No tiling, no tint -- the colour is entirely in the lightmap.
-    drawLightmapStrip(id, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY, stripW) {
+    // One perspective-correct quad of a horizontal surface (floor or ceiling),
+    // textured by a registered lightmap sampled in ABSOLUTE world space
+    // (world / mapSize), clamp-wrapped. The screen quad is the axis-aligned
+    // rectangle [sxL..sxR] x [syFar..syNear]; its four corners are floor-cast
+    // to the given world points (near-left/near-right/far-left/far-right), so
+    // the lightmap is pinned to the ground and cannot drift as the camera
+    // moves. Intended to be called ONCE per surface for the whole visible
+    // floor/ceiling -- not per column (per-column meshes seam). No tint --
+    // colour is entirely in the lightmap.
+    drawLightmapStrip(id, sxL, sxR, syNear, syFar, wNearLX, wNearLY, wNearRX, wNearRY, wFarLX, wFarLY, wFarRX, wFarRY) {
       const entry = _lightmapCache.get(id);
       if (!entry) return null;
       const srcTex = entry.texture;
       const texW = srcTex.source.width;
       const texH = srcTex.source.height;
-      const hwScreen = stripW / 2;
 
-      let ddx = wFarX - wNearX;
-      let ddy = wFarY - wNearY;
-      const segLen = Math.hypot(ddx, ddy) || 0.0001;
-      const ndx = ddx / segLen;
-      const ndy = ddy / segLen;
-      const perpX = -ndy;
-      const perpY = ndx;
-      const dyScreen = Math.abs(yNear - yFar);
-      const worldW = dyScreen < 0.0001 ? 0.0001 : segLen * (stripW / dyScreen);
-      const hw = worldW / 2;
+      if (Math.abs(syNear - syFar) < 0.0001) return null;
 
-      const flX = wFarX - perpX * hw, flY = wFarY - perpY * hw;
-      const frX = wFarX + perpX * hw, frY = wFarY + perpY * hw;
-      const nrX = wNearX + perpX * hw, nrY = wNearY + perpY * hw;
-      const nlX = wNearX - perpX * hw, nlY = wNearY - perpY * hw;
-
-      const minWX = Math.min(flX, frX, nrX, nlX);
-      const maxWX = Math.max(flX, frX, nrX, nlX);
-      const minWY = Math.min(flY, frY, nrY, nlY);
-      const maxWY = Math.max(flY, frY, nrY, nlY);
+      const minWX = Math.min(wNearLX, wNearRX, wFarLX, wFarRX);
+      const maxWX = Math.max(wNearLX, wNearRX, wFarLX, wFarRX);
+      const minWY = Math.min(wNearLY, wNearRY, wFarLY, wFarRY);
+      const maxWY = Math.max(wNearLY, wNearRY, wFarLY, wFarRY);
 
       const fx = (minWX / entry.worldCols) * texW;
       const fy = (minWY / entry.worldRows) * texH;
@@ -402,13 +391,16 @@ const _sbDrawing = (() => {
       const frameTex = _lightmapFrameFor(id, srcTex, fx, fy, fw, fh);
 
       const m = _acquireM(frameTex);
-      if (dyScreen < 0.0001) { m.visible = false; return m; }
 
+      // Assign each screen corner to the frame corner (TL,TR,BR,BL == world
+      // (minWX,minWY),(maxWX,minWY),(maxWX,maxWY),(minWX,maxWY)) it is nearest
+      // to in world space, so the lightmap is never flipped. Identity fallback
+      // if the assignment is degenerate.
       const sc = [
-        { sx: destX - hwScreen, sy: yFar, wx: flX, wy: flY },
-        { sx: destX + hwScreen, sy: yFar, wx: frX, wy: frY },
-        { sx: destX + hwScreen, sy: yNear, wx: nrX, wy: nrY },
-        { sx: destX - hwScreen, sy: yNear, wx: nlX, wy: nlY },
+        { sx: sxL, sy: syFar, wx: wFarLX, wy: wFarLY },
+        { sx: sxR, sy: syFar, wx: wFarRX, wy: wFarRY },
+        { sx: sxR, sy: syNear, wx: wNearRX, wy: wNearRY },
+        { sx: sxL, sy: syNear, wx: wNearLX, wy: wNearLY },
       ];
       const fc = [
         { wx: minWX, wy: minWY }, { wx: maxWX, wy: minWY },

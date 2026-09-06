@@ -61,9 +61,13 @@ export const drawingDescriptor: ModuleDescriptor = {
     },
     {
       name: 'drawLightmapStrip',
-      params: ['id', 'destX', 'yNear', 'yFar', 'wNearX', 'wNearY', 'wFarX', 'wFarY', 'stripW'],
+      params: [
+        'id', 'sxL', 'sxR', 'syNear', 'syFar',
+        'wNearLX', 'wNearLY', 'wNearRX', 'wNearRY',
+        'wFarLX', 'wFarLY', 'wFarRX', 'wFarRY',
+      ],
       body: (p, _self) =>
-        `_sb.drawLightmapStrip(${p.id}, ${p.destX}, ${p.yNear}, ${p.yFar}, ${p.wNearX}, ${p.wNearY}, ${p.wFarX}, ${p.wFarY}, ${p.stripW})`,
+        `_sb.drawLightmapStrip(${p.id}, ${p.sxL}, ${p.sxR}, ${p.syNear}, ${p.syFar}, ${p.wNearLX}, ${p.wNearLY}, ${p.wNearRX}, ${p.wNearRY}, ${p.wFarLX}, ${p.wFarLY}, ${p.wFarRX}, ${p.wFarRY})`,
     },
   ],
 };

@@ -465,35 +465,54 @@ describe('drawing — registerLightmap (baked lightmap)', () => {
   });
 });
 
-describe('drawing — drawLightmapStrip (perspective mesh sampling a lightmap)', () => {
+describe('drawing — drawLightmapStrip (one perspective quad per surface)', () => {
   const bytes = Array.from({ length: 8 * 8 * 4 }, () => 128);
+  // full-screen floor quad, camera at (5,3) looking +y: screen rect
+  // [0..640] x [syFar=180 .. syNear=360], near edge world y ~4, far edge ~ far.
+  const quad = (d: any) =>
+    d.drawLightmapStrip(
+      'lm',
+      0, 640, 360, 180, // sxL, sxR, syNear, syFar
+      3.0, 4.0, 7.0, 4.0, // nearL, nearR (world)
+      3.0, 20.0, 7.0, 20.0, // farL, farR (world)
+    );
 
-  test('acquires a PerspectiveMesh with the four screen corners of the strip', () => {
+  test('acquires a PerspectiveMesh spanning the given screen rectangle', () => {
     const { d } = loadDrawing();
     d.registerLightmap('lm', 8, 8, 10, 20, bytes);
-    const m = d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4) as any;
+    const m = quad(d) as any;
     expect(m).toBeTruthy();
     expect(meshCreated).toBeGreaterThanOrEqual(1);
     const c = m.corners as number[];
     const xs = [c[0], c[2], c[4], c[6]].sort((a, b) => a - b);
     const ys = [c[1], c[3], c[5], c[7]].sort((a, b) => a - b);
-    expect(xs[0]).toBe(198);
-    expect(xs[3]).toBe(202);
-    expect(ys[0]).toBe(120);
-    expect(ys[3]).toBe(300);
+    expect(xs[0]).toBe(0);
+    expect(xs[3]).toBe(640);
+    expect(ys[0]).toBe(180);
+    expect(ys[3]).toBe(360);
   });
 
   test('returns null for an unregistered id (no crash)', () => {
     const { d } = loadDrawing();
-    expect(d.drawLightmapStrip('missing', 0, 0, 0, 0, 0, 0, 0, 4)).toBeNull();
+    expect(
+      d.drawLightmapStrip('missing', 0, 640, 360, 180, 0, 0, 1, 0, 0, 1, 1, 1),
+    ).toBeNull();
   });
 
-  test('the strip texture is a sub-frame of the registered lightmap, not a fresh upload', () => {
+  test('returns null for a degenerate (zero-height) screen rect', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('lm', 8, 8, 10, 20, bytes);
+    expect(
+      d.drawLightmapStrip('lm', 0, 640, 200, 200, 3, 4, 7, 4, 3, 20, 7, 20),
+    ).toBeNull();
+  });
+
+  test('samples a sub-frame of the registered lightmap, not a fresh upload', () => {
     const { d } = loadDrawing();
     d.registerLightmap('lm', 8, 8, 10, 20, bytes);
     const before = bufferSourceCreated;
-    d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4);
-    d.drawLightmapStrip('lm', 200, 300, 120, 5.0, 3.0, 5.0, 8.0, 4);
+    quad(d);
+    quad(d);
     expect(bufferSourceCreated).toBe(before);
   });
 });

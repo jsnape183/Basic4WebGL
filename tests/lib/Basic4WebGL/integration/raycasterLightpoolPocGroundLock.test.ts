@@ -12,9 +12,11 @@ import { packageModules } from '../../../../src/constants/packageModules';
 // "the pool stays painted on the ground". The billboard version failed this.
 //
 // This renders two frames from the SAME position at DIFFERENT angles, captures
-// every drawLightmapStrip call with its near/far world coords and screen span,
-// and asserts that the camera-to-drawn-point distance at a fixed screen row is
-// invariant under rotation (screen Y == floor distance in a real floor render).
+// the floor quad's near-edge and far-edge world points, and asserts the
+// camera-to-edge distance is invariant under rotation. Those distances come
+// from projectYInv at a fixed screen Y -- angle-independent by construction --
+// so if they ever drift, the floor render has picked up a camera-angle
+// dependency it must not have.
 
 const DIR = 'demo-src/raycaster-lightpool-poc';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
@@ -31,13 +33,18 @@ function transpileDemo(): string {
 
 interface StripCall {
   id: string;
-  destX: number;
-  yNear: number;
-  yFar: number;
-  wNearX: number;
-  wNearY: number;
-  wFarX: number;
-  wFarY: number;
+  sxL: number;
+  sxR: number;
+  syNear: number;
+  syFar: number;
+  wNearLX: number;
+  wNearLY: number;
+  wNearRX: number;
+  wNearRY: number;
+  wFarLX: number;
+  wFarLY: number;
+  wFarRX: number;
+  wFarRY: number;
 }
 
 function build() {
@@ -81,14 +88,24 @@ function build() {
   _sb.registerLightmap = () => {};
   _sb.drawLightmapStrip = (
     id: string,
-    destX: number,
-    yNear: number,
-    yFar: number,
-    wNearX: number,
-    wNearY: number,
-    wFarX: number,
-    wFarY: number,
-  ) => strips.push({ id, destX, yNear, yFar, wNearX, wNearY, wFarX, wFarY });
+    sxL: number,
+    sxR: number,
+    syNear: number,
+    syFar: number,
+    wNearLX: number,
+    wNearLY: number,
+    wNearRX: number,
+    wNearRY: number,
+    wFarLX: number,
+    wFarLY: number,
+    wFarRX: number,
+    wFarRY: number,
+  ) =>
+    strips.push({
+      id, sxL, sxR, syNear, syFar,
+      wNearLX, wNearLY, wNearRX, wNearRY,
+      wFarLX, wFarLY, wFarRX, wFarRY,
+    });
 
   const deferred: Array<() => void> = [];
   _sb._deferModuleBody = (cb: () => void) => deferred.push(cb);
@@ -133,46 +150,42 @@ function build() {
   return { render, mover, strips };
 }
 
-function worldAtScreenY(strips: StripCall[], targetY: number): { x: number; y: number } | null {
-  const floor = strips.filter((s) => s.id === 'rcpool_floor');
-  let best: StripCall | null = null;
-  let bestSpan = Infinity;
-  for (const s of floor) {
-    const lo = Math.min(s.yNear, s.yFar);
-    const hi = Math.max(s.yNear, s.yFar);
-    if (targetY >= lo && targetY <= hi && hi - lo < bestSpan) {
-      best = s;
-      bestSpan = hi - lo;
-    }
-  }
-  if (!best) return null;
-  const tt = (targetY - best.yFar) / (best.yNear - best.yFar);
-  return {
-    x: best.wFarX + (best.wNearX - best.wFarX) * tt,
-    y: best.wFarY + (best.wNearY - best.wFarY) * tt,
-  };
+function floorQuad(strips: StripCall[]): StripCall {
+  const q = strips.find((s) => s.id === 'rcpool_floor');
+  if (!q) throw new Error('no rcpool_floor quad drawn');
+  return q;
+}
+
+// perpendicular distance from a point to the camera along its facing dir.
+function edgeDist(mx: number, my: number, cx: number, cy: number): number {
+  return Math.hypot(mx - cx, my - cy);
 }
 
 describe('raycaster-lightpool-poc: floor lightmap stays locked to the ground', () => {
-  test('a fixed screen row maps to a world point at ~invariant camera distance regardless of facing', () => {
+  test('the floor quad edges sit at the same camera distance regardless of facing', () => {
     const { render, mover, strips } = build();
+    const CX = 5.5;
+    const CY = 3.5;
 
-    mover.warpto(5.5, 3.5, Math.PI / 2); // facing +y
+    mover.warpto(CX, CY, Math.PI / 2); // facing +y
     render.renderframe();
-    const a = worldAtScreenY([...strips], 300);
+    const a = floorQuad([...strips]);
     strips.length = 0;
 
-    mover.warpto(5.5, 3.5, Math.PI / 2 + 0.25); // same spot, rotated ~14 deg
+    mover.warpto(CX, CY, Math.PI / 2 + 0.4); // same spot, rotated ~23 deg
     render.renderframe();
-    const b = worldAtScreenY([...strips], 300);
+    const b = floorQuad([...strips]);
 
-    expect(a).not.toBeNull();
-    expect(b).not.toBeNull();
+    const aNear = edgeDist((a.wNearLX + a.wNearRX) / 2, (a.wNearLY + a.wNearRY) / 2, CX, CY);
+    const bNear = edgeDist((b.wNearLX + b.wNearRX) / 2, (b.wNearLY + b.wNearRY) / 2, CX, CY);
+    const aFar = edgeDist((a.wFarLX + a.wFarRX) / 2, (a.wFarLY + a.wFarRY) / 2, CX, CY);
+    const bFar = edgeDist((b.wFarLX + b.wFarRX) / 2, (b.wFarLY + b.wFarRY) / 2, CX, CY);
 
-    const da = Math.hypot(a!.x - 5.5, a!.y - 3.5);
-    const db = Math.hypot(b!.x - 5.5, b!.y - 3.5);
     // eslint-disable-next-line no-console
-    console.log(`dist at screenY=300  facing A: ${da.toFixed(3)}  facing B: ${db.toFixed(3)}`);
-    expect(Math.abs(da - db)).toBeLessThan(0.15);
+    console.log(
+      `near: A=${aNear.toFixed(3)} B=${bNear.toFixed(3)}   far: A=${aFar.toFixed(2)} B=${bFar.toFixed(2)}`,
+    );
+    expect(Math.abs(aNear - bNear)).toBeLessThan(0.05);
+    expect(Math.abs(aFar - bFar)).toBeLessThan(0.5);
   });
 });
