@@ -12,6 +12,8 @@ const _sbDrawing = (() => {
   const _poolM = [];                // free PerspectiveMeshes; same high-water-mark growth model as _poolS
   const _DRAW_Z_BASE = 1_000_000;   // drawing objects render above ordinary world sprites
   let _drawSeq = 0;                  // per-frame draw-order counter -> zIndex
+  const _lightmapCache = new Map();  // id -> { texture, worldCols, worldRows, w, h, bytes } -- baked static light grid (registerLightmap)
+  const _planeFields = new Map();    // fieldId -> { source, texture, sprite, w, h, buf } -- persistent per-plane floorcast buffer (drawPlaneField)
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
@@ -312,6 +314,119 @@ const _sbDrawing = (() => {
       return m;
     },
 
+    // Register a baked static-light grid as a clamped, linearly-filtered
+    // texture. `bytes` is a flat RGBA array (row-major, w*h*4); brightness is
+    // stored in R (0..255). worldCols/worldRows are the world-space span the
+    // grid covers, so a sampler can map a world (x,y) to a UV. Rebuilding an id
+    // destroys the previous texture. Torn down in _drawingReset().
+    registerLightmap(id, w, h, worldCols, worldRows, bytes) {
+      const prev = _lightmapCache.get(id);
+      if (prev && prev.texture && prev.texture.destroy) prev.texture.destroy();
+      const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      const source = new PIXI.BufferImageSource({
+        resource: arr,
+        width: w,
+        height: h,
+        addressMode: 'clamp-to-edge',
+        scaleMode: 'linear',
+      });
+      const texture = new PIXI.Texture({ source });
+      _lightmapCache.set(id, { texture, source, worldCols, worldRows, w, h, bytes: arr });
+    },
+
+    // The world point a screen pixel (px, py) looks at on the horizontal plane
+    // at height `pose.planeZ` -- the inverse of RcRender.projectY(). Returns
+    // { wx, wy, d } or null when the pixel is on the wrong side of the horizon
+    // / behind the camera. Shared by drawPlaneField (the per-pixel floorcast)
+    // and its tests, so the GLSL-free CPU path and any future shader agree on
+    // one projection.
+    _planeFieldWorldPos(px, py, pose) {
+      const horizon = pose.scy + pose.camPitch;
+      const rowY = py - horizon;
+      const zDiff = pose.camZ + pose.eyeZ - pose.planeZ;   // >0 for the floor, <0 for the ceiling
+      if (zDiff > 0) {
+        if (rowY <= 0.0001) return null;
+      } else {
+        if (rowY >= -0.0001) return null;
+      }
+      const d = (zDiff * pose.viewH) / rowY;
+      if (d <= 0.05 || d > 64) return null;
+      const camXc = (2 * px) / pose.viewW - 1;
+      const rayX = pose.fDirX + pose.fPlaneX * camXc;
+      const rayY = pose.fDirY + pose.fPlaneY * camXc;
+      return { wx: pose.camX + rayX * d, wy: pose.camY + rayY * d, d };
+    },
+
+    // Per-pixel floorcaster for one flat plane. For every screen pixel it
+    // resolves the world point on the plane (via _planeFieldWorldPos), samples
+    // a procedural world-tiled tile pattern (base colour, checker, thin grid
+    // lines) and multiplies by max(ambient, bakedLight(worldPos)) from the
+    // registered lightmap. Writes into a persistent per-field RGBA buffer that
+    // is uploaded in place (no per-frame GPU alloc/destroy), shown via one
+    // persistent Sprite kept at the current draw-order zIndex so later draws
+    // (walls) paint over it. Static lighting only -- the lightmap is baked once.
+    drawPlaneField(fieldId, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
+      const W = Math.max(1, Math.round(viewW));
+      const H = Math.max(1, Math.round(viewH));
+      let f = _planeFields.get(fieldId);
+      if (!f || f.w !== W || f.h !== H) {
+        if (f) {
+          if (f.sprite && f.sprite.parent) f.sprite.parent.removeChild(f.sprite);
+          if (f.sprite && f.sprite.destroy) f.sprite.destroy();
+          if (f.texture && f.texture.destroy) f.texture.destroy();
+        }
+        const buf = new Uint8Array(W * H * 4);
+        const source = new PIXI.BufferImageSource({ resource: buf, width: W, height: H, scaleMode: 'nearest' });
+        const texture = new PIXI.Texture({ source });
+        const sprite = new PIXI.Sprite(texture);
+        sprite.width = viewW;
+        sprite.height = viewH;
+        if (sprite.anchor && sprite.anchor.set) sprite.anchor.set(0, 0);
+        f = { source, texture, sprite, w: W, h: H, buf };
+        _planeFields.set(fieldId, f);
+      }
+      const buf = f.buf;
+      const lm = _lightmapCache.get(lightmapId);
+      const lmB = lm ? lm.bytes : null;
+      const lmW = lm ? lm.w : 1;
+      const lmH = lm ? lm.h : 1;
+      const lmWC = lm ? lm.worldCols : 1;
+      const lmWR = lm ? lm.worldRows : 1;
+      const pose = { camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW: W, viewH: H, scy, eyeZ, planeZ };
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const o = (y * W + x) * 4;
+          const wp = this._planeFieldWorldPos(x + 0.5, y + 0.5, pose);
+          if (!wp) { buf[o] = 0; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = 0; continue; }
+          const fx = wp.wx - Math.floor(wp.wx);
+          const fy = wp.wy - Math.floor(wp.wy);
+          // procedural tile: checker shade + thin grid lines
+          let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
+          if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;
+          let L = 1.0;
+          if (lmB) {
+            let lx = Math.floor((wp.wx / lmWC) * lmW);
+            let ly = Math.floor((wp.wy / lmWR) * lmH);
+            if (lx < 0) lx = 0; else if (lx >= lmW) lx = lmW - 1;
+            if (ly < 0) ly = 0; else if (ly >= lmH) ly = lmH - 1;
+            L = lmB[(ly * lmW + lx) * 4] / 255;
+          }
+          const m = shade * (ambient > L ? ambient : L);
+          const r = baseR * m, g = baseG * m, b = baseB * m;
+          buf[o] = r > 255 ? 255 : r;
+          buf[o + 1] = g > 255 ? 255 : g;
+          buf[o + 2] = b > 255 ? 255 : b;
+          buf[o + 3] = 255;
+        }
+      }
+      if (f.source.update) f.source.update();
+      const s = f.sprite;
+      if (s.parent !== worldContainer) worldContainer.addChild(s);
+      s.visible = true;
+      s.zIndex = _DRAW_Z_BASE + _drawSeq++;
+      return s;
+    },
+
     clearDrawing() {
       _drawSeq = 0;   // reset per-frame draw-order counter so zIndex stays in a stable band and never drifts past Number range
       for (const o of _liveG) { o.visible = false; _poolG.push(o); }
@@ -347,6 +462,14 @@ const _sbDrawing = (() => {
       _gradientCache.clear();
       for (const g of _radialGradientCache.values()) { if (g.destroy) g.destroy(); }
       _radialGradientCache.clear();
+      for (const e of _lightmapCache.values()) { if (e.texture && e.texture.destroy) e.texture.destroy(); }
+      _lightmapCache.clear();
+      for (const f of _planeFields.values()) {
+        if (f.sprite && f.sprite.parent) f.sprite.parent.removeChild(f.sprite);
+        if (f.sprite && f.sprite.destroy) f.sprite.destroy();
+        if (f.texture && f.texture.destroy) f.texture.destroy();
+      }
+      _planeFields.clear();
     },
   };
 })();

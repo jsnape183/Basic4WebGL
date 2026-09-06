@@ -34,6 +34,14 @@ class FakeTexture {
   destroy() { destroyed++; }
 }
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
+let bufSourceCreated = 0;
+let bufSourceUpdated = 0;
+class FakeBufferImageSource {
+  opts: any; resource: unknown; width: number; height: number;
+  constructor(opts?: any) { bufSourceCreated++; this.opts = opts; this.resource = opts?.resource; this.width = opts?.width; this.height = opts?.height; }
+  update() { bufSourceUpdated++; }
+  destroy() { destroyed++; }
+}
 class FakePerspectiveMesh {
   visible = true; tint = 0xffffff; position = { set() {} };
   parent: unknown = undefined; zIndex = 0;
@@ -57,12 +65,13 @@ class FakeFillGradient {
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
   gradientCreated = gradientDestroyed = 0;
+  bufSourceCreated = bufSourceUpdated = 0;
   lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
   const PIXI = {
     Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture,
     Rectangle: FakeRectangle, PerspectiveMesh: FakePerspectiveMesh,
-    FillGradient: FakeFillGradient,
+    FillGradient: FakeFillGradient, BufferImageSource: FakeBufferImageSource,
   };
   const worldContainer = new FakeContainer();
   const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
@@ -402,5 +411,116 @@ describe('drawing — radial gradient fill (light-pool POC)', () => {
     d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
     d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
     expect(gfxCreated).toBe(2); // reused from the pool
+  });
+});
+
+describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () => {
+  // Forward projection: world (wx,wy) on plane height planeZ -> screen pixel,
+  // using the same camera-plane transform RcRender uses. Inverse of
+  // _planeFieldWorldPos, written independently here.
+  function projectPixel(wx: number, wy: number, p: any) {
+    const relX = wx - p.camX;
+    const relY = wy - p.camY;
+    const invDet = 1 / (p.fPlaneX * p.fDirY - p.fDirX * p.fPlaneY);
+    const d = invDet * (-p.fPlaneY * relX + p.fPlaneX * relY);
+    const tX = invDet * (p.fDirY * relX - p.fDirX * relY);
+    const px = (p.viewW / 2) * (1 + tX / d);
+    const zDiff = p.camZ + p.eyeZ - p.planeZ;
+    const py = p.scy + p.camPitch + (zDiff * p.viewH) / d;
+    return { px, py, d };
+  }
+
+  function pose(angle: number, camX = 4.5, camY = 4.5): any {
+    const fov = 0.66;
+    const dirX = Math.cos(angle), dirY = Math.sin(angle);
+    return {
+      camX, camY, camZ: 0,
+      fDirX: dirX, fDirY: dirY,
+      fPlaneX: -dirY * fov, fPlaneY: dirX * fov,
+      camPitch: 0, viewW: 320, viewH: 200, scy: 100, eyeZ: 0.5, planeZ: 0,
+    };
+  }
+
+  test('_planeFieldWorldPos is the exact inverse of the forward projection, at every camera angle', () => {
+    const { d: draw } = loadDrawing();
+    const targets = [
+      { wx: 5.5, wy: 6.0 },
+      { wx: 3.2, wy: 7.8 },
+      { wx: 6.9, wy: 4.7 },
+    ];
+    for (const ang of [0, 0.4, Math.PI / 2, 2.1, -1.3]) {
+      const p = pose(ang);
+      for (const t of targets) {
+        const fwd = projectPixel(t.wx, t.wy, p);
+        if (fwd.d <= 0.05 || fwd.py <= p.scy) continue; // not on the visible floor for this pose
+        const back = draw._planeFieldWorldPos(fwd.px, fwd.py, p);
+        expect(back).not.toBeNull();
+        expect(back.wx).toBeCloseTo(t.wx, 4);
+        expect(back.wy).toBeCloseTo(t.wy, 4);
+      }
+    }
+  });
+
+  test('a fixed screen pixel maps to a pose-dependent world point, but the round-trip always holds (ground-lock)', () => {
+    const { d: draw } = loadDrawing();
+    const px = 200, py = 150;
+    const wpA = draw._planeFieldWorldPos(px, py, pose(0.2));
+    const wpB = draw._planeFieldWorldPos(px, py, pose(0.2 + 0.15)); // small rotation
+    expect(wpA).not.toBeNull();
+    expect(wpB).not.toBeNull();
+    // the world point under the pixel moves when the camera turns...
+    expect(Math.hypot(wpA.wx - wpB.wx, wpA.wy - wpB.wy)).toBeGreaterThan(0.01);
+    // ...but each still projects back to exactly that pixel
+    const rtA = projectPixel(wpA.wx, wpA.wy, pose(0.2));
+    expect(rtA.px).toBeCloseTo(px, 3);
+    expect(rtA.py).toBeCloseTo(py, 3);
+  });
+
+  test('_planeFieldWorldPos returns null above the horizon for a floor plane', () => {
+    const { d: draw } = loadDrawing();
+    expect(draw._planeFieldWorldPos(160, 40, pose(0))).toBeNull(); // py < horizon (100)
+  });
+
+  test('registerLightmap builds a clamped buffer source + texture; rebuilding an id destroys the old', () => {
+    const { d } = loadDrawing();
+    const bytes = new Array(2 * 2 * 4).fill(255);
+    d.registerLightmap('lm', 2, 2, 10, 20, bytes);
+    expect(bufSourceCreated).toBe(1);
+    expect(textureCreated).toBe(1);
+    expect(lastTexOpts.source.opts.addressMode).toBe('clamp-to-edge');
+    expect(lastTexOpts.source.opts.width).toBe(2);
+    const before = destroyed;
+    d.registerLightmap('lm', 2, 2, 10, 20, bytes);
+    expect(destroyed).toBe(before + 1); // previous texture destroyed
+  });
+
+  test('drawPlaneField paints lit floor pixels, reuses its sprite + buffer across frames, and honours the lightmap', () => {
+    const { d, worldContainer } = loadDrawing();
+    // 1x1 lightmap, fully dark
+    d.registerLightmap('lmDark', 1, 1, 10, 20, [0, 0, 0, 255]);
+    const p = pose(Math.PI / 2, 4.5, 3.0);
+    const args = [
+      'floor', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lmDark', 0.1, 200, 180, 150,
+    ] as const;
+    const s1 = d.drawPlaneField(...args);
+    expect(worldContainer.children).toContain(s1);
+    expect(spriteCreated).toBe(1);
+    expect(bufSourceCreated).toBe(2); // lightmap + field
+    // dark lightmap + ambient 0.1 -> floor pixels are dim but present (alpha 255)
+    const buf = (s1.texture as any).opts.source.resource as Uint8Array;
+    let litBelow = 0;
+    for (let y = p.viewH / 2 + 10; y < p.viewH; y++) {
+      const o = (Math.floor(y) * p.viewW + p.viewW / 2) * 4;
+      if (buf[o + 3] === 255 && buf[o] > 0 && buf[o] < 120) litBelow++;
+    }
+    expect(litBelow).toBeGreaterThan(10);
+    const s2 = d.drawPlaneField(...args);
+    expect(s2).toBe(s1);              // same persistent sprite
+    expect(spriteCreated).toBe(1);    // no new allocation
+    expect(bufSourceUpdated).toBeGreaterThan(0); // updated in place
+
+    d._drawingReset();
+    expect(worldContainer.children).not.toContain(s1);
   });
 });
