@@ -547,17 +547,27 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     const { d } = loadDrawing();
     d.registerLightmap('lm2', 1, 1, 4, 4, [255, 255, 255, 255]);
     // 2x2 grid: one cell textured, three empty
-    d.registerFieldTiles('atlas1', 2, 2, ['tileA.png', '', '', '']);
+    // cell 0 names a texture (undecodable under jsdom); every cell is also
+    // flat-coloured 0x3366cc
+    const names = new Array(16).fill('');
+    names[0] = 'tileA.png';
+    d.registerFieldTiles('atlas1', 4, 4, names, new Array(16).fill(0x3366cc));
     // the named tile was decode-attempted and cached (null under jsdom)
     expect(d._fieldTexPixels('tileA.png')).toBeNull();
     const p = pose(Math.PI / 2, 1.5, 0.5);
     const s = d.drawPlaneField(
       'ff', '', 'atlas1', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
-      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm2', 0.2, 160, 150, 140,
+      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm2', 1.0, 160, 150, 140,
     );
     const buf = (s.texture as any).opts.source.resource as Uint8Array;
     let lit = 0;
-    for (let i = 3; i < buf.length; i += 4) if (buf[i] === 255) lit++;
-    expect(lit).toBeGreaterThan(0); // renders (cells with no decodable tex fall back to the checker)
+    let sawBlue = 0;
+    for (let i = 0; i < buf.length; i += 4) {
+      if (buf[i + 3] === 255) lit++;
+      // the flat-colour cell paints 0x33/0x66/0xcc at full light
+      if (buf[i] === 0x33 && buf[i + 1] === 0x66 && buf[i + 2] === 0xcc) sawBlue++;
+    }
+    expect(lit).toBeGreaterThan(0);
+    expect(sawBlue).toBeGreaterThan(0); // the per-cell flat colour rendered
   });
 });

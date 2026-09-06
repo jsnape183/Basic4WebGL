@@ -30,8 +30,8 @@ function registerLightmap(id, width, height, worldCols, worldRows, bytes)
     call("_sb.registerLightmap(registerlightmap_id, registerlightmap_width, registerlightmap_height, registerlightmap_worldCols, registerlightmap_worldRows, registerlightmap_bytes)")
 endfunction
 
-function registerFieldTiles(atlasId, cols, rows, cellNames)
-    call("_sb.registerFieldTiles(registerfieldtiles_atlasId, registerfieldtiles_cols, registerfieldtiles_rows, registerfieldtiles_cellNames)")
+function registerFieldTiles(atlasId, cols, rows, cellNames, cellColors)
+    call("_sb.registerFieldTiles(registerfieldtiles_atlasId, registerfieldtiles_cols, registerfieldtiles_rows, registerfieldtiles_cellNames, registerfieldtiles_cellColors)")
 endfunction
 
 function drawPlaneField(fieldId, texName, tilesId, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)

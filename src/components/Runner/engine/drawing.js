@@ -16,7 +16,7 @@ const _sbDrawing = (() => {
   const _lightmapCache = new Map();  // id -> { texture, worldCols, worldRows, w, h, bytes } -- baked static light grid (registerLightmap)
   const _planeFields = new Map();    // fieldId -> { source, texture, sprite, w, h, buf } -- persistent per-plane floorcast buffer (drawPlaneField)
   const _fieldTexCache = new Map();  // imageName -> { data:Uint8ClampedArray, w, h } | null -- CPU pixels of a floor/ceiling tile texture, decoded once via a 2D canvas (null = decode unavailable -> procedural fallback)
-  const _fieldTilesCache = new Map(); // atlasId -> { cols, rows, cellPix:(pix|null)[] } -- per-cell floor/ceiling texture grid (registerFieldTiles)
+  const _fieldTilesCache = new Map(); // atlasId -> { cols, rows, cellPix:(pix|null)[], cellCol:Int32Array } -- per-cell floor/ceiling texture + flat-colour grid (registerFieldTiles)
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
@@ -390,19 +390,29 @@ const _sbDrawing = (() => {
       return out;
     },
 
-    // Register a per-cell floor/ceiling texture grid. `cellNames` is a flat
-    // array (row-major, cols*rows) of pre-loaded image names, "" where a cell
-    // has none. Each distinct name is decoded once (via _fieldTexPixels) and
-    // the result stored per cell, so drawPlaneField's per-pixel lookup is O(1).
-    // Torn down in _drawingReset().
-    registerFieldTiles(atlasId, cols, rows, cellNames) {
-      const cellPix = new Array(cols * rows).fill(null);
-      const n = Math.min(cellNames.length, cols * rows);
-      for (let i = 0; i < n; i++) {
+    // Register a per-cell floor/ceiling surface grid. Both arrays are flat
+    // (row-major, cols*rows). `cellNames`: pre-loaded image names, "" for none
+    // -- each distinct name decoded once via _fieldTexPixels. `cellColors`:
+    // packed r*65536+g*256+b, or -1 for none. drawPlaneField picks per pixel:
+    // cell texture > cell flat colour > scene default texture > procedural
+    // checker. Torn down in _drawingReset().
+    registerFieldTiles(atlasId, cols, rows, cellNames, cellColors) {
+      const total = cols * rows;
+      const cellPix = new Array(total).fill(null);
+      const cellCol = new Int32Array(total).fill(-1);
+      const nN = Math.min(cellNames.length, total);
+      for (let i = 0; i < nN; i++) {
         const nm = cellNames[i];
         if (nm) cellPix[i] = this._fieldTexPixels(nm);
       }
-      _fieldTilesCache.set(atlasId, { cols, rows, cellPix });
+      if (cellColors) {
+        const nC = Math.min(cellColors.length, total);
+        for (let i = 0; i < nC; i++) {
+          const v = cellColors[i];
+          if (typeof v === 'number' && v >= 0) cellCol[i] = v | 0;
+        }
+      }
+      _fieldTilesCache.set(atlasId, { cols, rows, cellPix, cellCol });
     },
 
     // Per-pixel floorcaster for one flat plane. Resolves the world point each
@@ -430,6 +440,7 @@ const _sbDrawing = (() => {
       const tiCols = tiles ? tiles.cols : 0;
       const tiRows = tiles ? tiles.rows : 0;
       const cellPix = tiles ? tiles.cellPix : null;
+      const cellCol = tiles ? tiles.cellCol : null;
       const W = Math.max(1, Math.round(viewW / SCALE));
       const H = Math.max(1, Math.round(viewH / SCALE));
       let f = _planeFields.get(fieldId);
@@ -483,17 +494,22 @@ const _sbDrawing = (() => {
           const fx = wx - flx;
           const fy = wy - fly;
           let r, g, b;
-          // per-cell texture > scene-default texture > procedural checker
-          let cd = tdata, cw = tw, ch = th;
+          // per-cell texture > per-cell flat colour > scene texture > checker
+          let cd = null, cw = 1, ch = 1, cellRGB = -1;
           if (cellPix && flx >= 0 && flx < tiCols && fly >= 0 && fly < tiRows) {
-            const cp = cellPix[fly * tiCols + flx];
+            const idx = fly * tiCols + flx;
+            const cp = cellPix[idx];
             if (cp) { cd = cp.data; cw = cp.w; ch = cp.h; }
+            else if (cellCol) { const v = cellCol[idx]; if (v >= 0) cellRGB = v; }
           }
+          if (!cd && cellRGB < 0 && tdata) { cd = tdata; cw = tw; ch = th; }
           if (cd) {
             let tx = (fx * cw) | 0; if (tx >= cw) tx = cw - 1; else if (tx < 0) tx = 0;
             let ty = (fy * ch) | 0; if (ty >= ch) ty = ch - 1; else if (ty < 0) ty = 0;
             const ti = (ty * cw + tx) * 4;
             r = cd[ti]; g = cd[ti + 1]; b = cd[ti + 2];
+          } else if (cellRGB >= 0) {
+            r = (cellRGB >>> 16) & 255; g = (cellRGB >>> 8) & 255; b = cellRGB & 255;
           } else {
             let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
             if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;

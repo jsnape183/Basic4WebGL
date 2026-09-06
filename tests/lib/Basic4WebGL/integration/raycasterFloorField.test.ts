@@ -66,15 +66,15 @@ function build(markers: Array<{ row: number; col: number; tag: string }> = []) {
   _sb.getStageHeight = () => 200;
 
   const lightmaps: unknown[] = [];
-  const tileAtlases: Array<{ id: unknown; cols: unknown; rows: unknown; names: unknown }> = [];
+  const tileAtlases: Array<{ id: unknown; cols: unknown; rows: unknown; names: unknown; colors: unknown }> = [];
   const planes: unknown[][] = [];
   let rects = 0;
   _sb.setFillColor = () => {};
   _sb.drawRect = () => { rects++; };
   _sb.drawImageStrip = () => {};
   _sb.registerLightmap = (id: unknown) => { lightmaps.push(id); };
-  _sb.registerFieldTiles = (id: unknown, cols: unknown, rows: unknown, names: unknown) => {
-    tileAtlases.push({ id, cols, rows, names });
+  _sb.registerFieldTiles = (id: unknown, cols: unknown, rows: unknown, names: unknown, colors: unknown) => {
+    tileAtlases.push({ id, cols, rows, names, colors });
   };
   _sb.drawPlaneField = (...a: unknown[]) => { planes.push(a); };
 
@@ -160,6 +160,23 @@ describe('RcRender per-pixel floor field', () => {
     // floor plane's tilesId arg is the atlas; ceiling's is still ""
     expect(planes[0][2]).toBe('rc_ff_floor_tiles');
     expect(planes[1][2]).toBe('');
+  });
+
+  test('fcol: markers feed the field too -- per-cell flat colour in the atlas, no strip-path colour exclusion', () => {
+    const { render, mover, lights, tileAtlases, planes } = build([
+      { row: 5, col: 5, tag: 'fcol:3366cc' },
+      { row: 5, col: 6, tag: 'fcol:3366cc' },
+    ]);
+    lights.setambient(0.2);
+    render.setfloorfield(1);
+    mover.warpto(5.5, 2.5, Math.PI / 2);
+    render.renderframe();
+
+    expect(tileAtlases.map((a) => a.id)).toEqual(['rc_ff_floor_tiles']);
+    const colors = tileAtlases[0].colors as number[];
+    expect(colors[5 * 12 + 5]).toBe(0x3366cc); // packed rgb
+    expect(colors[0]).toBe(-1); // no colour
+    expect(planes[0][2]).toBe('rc_ff_floor_tiles');
   });
 
   test('lightmaps are baked once, not per frame', () => {

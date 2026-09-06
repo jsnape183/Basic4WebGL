@@ -258,10 +258,13 @@ function bakeFieldTiles()
     dim col
     dim row
     dim nm
+    dim cv
     dim anyF
     dim anyC
     dim fnames(0)
     dim cnames(0)
+    dim fcols(0)
+    dim ccols(0)
     mc = self.wld.widthCells()
     mr = self.wld.heightCells()
     anyF = 0
@@ -270,12 +273,16 @@ function bakeFieldTiles()
         for col = 0 to mc - 1
             nm = self.wld.floorTexAt(col, row)
             array.push(fnames, nm)
-            if string.len(nm) > 0 then
+            cv = self.wld.floorColAt(col, row)
+            array.push(fcols, cv)
+            if string.len(nm) > 0 or cv >= 0 then
                 anyF = 1
             endif
             nm = self.wld.ceilTexAt(col, row)
             array.push(cnames, nm)
-            if string.len(nm) > 0 then
+            cv = self.wld.ceilColAt(col, row)
+            array.push(ccols, cv)
+            if string.len(nm) > 0 or cv >= 0 then
                 anyC = 1
             endif
         next col
@@ -283,11 +290,11 @@ function bakeFieldTiles()
     self.ffFloorTilesId = ""
     self.ffCeilTilesId = ""
     if anyF = 1 then
-        drawing.registerFieldTiles("rc_ff_floor_tiles", mc, mr, fnames)
+        drawing.registerFieldTiles("rc_ff_floor_tiles", mc, mr, fnames, fcols)
         self.ffFloorTilesId = "rc_ff_floor_tiles"
     endif
     if anyC = 1 then
-        drawing.registerFieldTiles("rc_ff_ceil_tiles", mc, mr, cnames)
+        drawing.registerFieldTiles("rc_ff_ceil_tiles", mc, mr, cnames, ccols)
         self.ffCeilTilesId = "rc_ff_ceil_tiles"
     endif
 endfunction
@@ -1325,10 +1332,10 @@ function renderFrame()
                 ' the background fill already painted. One FLOORSTEP makes
                 ' sfD > 0 (and/or sfH <> 0), so a stepped column resumes the full
                 ' per-column path from that point on.
-                if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                 endif
-                if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                 endif
                 hitWall = 1
@@ -1349,7 +1356,7 @@ function renderFrame()
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
                     ' Skip only the pristine standard floor from the camera --
                     ' exactly what the background fill already covers.
-                    if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                    if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                     endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
@@ -1370,7 +1377,7 @@ function renderFrame()
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                    if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                     endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
@@ -1399,10 +1406,10 @@ function renderFrame()
         endwhile
 
         if hitWall = 0 then
-            if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+            if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
                 self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
             endif
-            if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+            if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
                 self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
             endif
         endif
