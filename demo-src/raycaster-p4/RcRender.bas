@@ -86,6 +86,24 @@ dim surfSegN
 ' byte-identical in behaviour to before this field existed.
 dim gradientShadeOn
 
+' Per-instance opt-in for the per-pixel floor-field renderer (setFloorField).
+' 0 = default (the flat-strip / drawFill path below, unchanged). 1 = the
+' STANDARD floor plane (h = 0) and STANDARD ceiling (h = RC_STD_CEIL) are
+' drawn once each by drawing.drawPlaneField(): a per-pixel floorcast that
+' reconstructs the world point every screen pixel looks at and samples a
+' procedural world-tiled tile pattern x a baked static lightmap -- so lit
+' pools stay locked to the ground under rotation. Steps, pits, soffits and
+' risers (sfH <> 0 / sfD <> 0 / colour-tagged) keep the per-column strip
+' path. Lightmaps are baked once, lazily, on the first renderFrame().
+dim floorFieldOn
+dim floorFieldBaked
+dim ffFloorR
+dim ffFloorG
+dim ffFloorB
+dim ffCeilR
+dim ffCeilG
+dim ffCeilB
+
 Constructor(w as RcWorld)
     dim di
     self.wld = w
@@ -109,6 +127,14 @@ Constructor(w as RcWorld)
     self.flatFillOn = RcConfig.RC_FLAT_FILL
     self.surfSegN = 1
     self.gradientShadeOn = 0
+    self.floorFieldOn = 0
+    self.floorFieldBaked = 0
+    self.ffFloorR = 105
+    self.ffFloorG = 105
+    self.ffFloorB = 130
+    self.ffCeilR = 80
+    self.ffCeilG = 80
+    self.ffCeilB = 105
     self.fDirX = 1
     self.fDirY = 0
     self.fPlaneX = 0
@@ -136,6 +162,82 @@ endfunction
 ' docs/superpowers/specs/2026-09-04-raycaster-floor-ceiling-gradient-shading-design.md.
 function setGradientShading(v)
     self.gradientShadeOn = v
+endfunction
+
+' Opt in to the per-pixel floor-field renderer for the standard floor/ceiling
+' planes (see the floorFieldOn field comment). Supersedes flatFill and gradient
+' shading for those two planes; steps/pits/soffits are unaffected.
+function setFloorField(v)
+    self.floorFieldOn = v
+endfunction
+
+' Base tile colour (0..255 per channel) for the floor field and the ceiling
+' field. Defaults roughly match the flat-strip floor/ceiling greys.
+function setFloorFieldColors(fr, fg, fb, cr, cg, cb)
+    self.ffFloorR = fr
+    self.ffFloorG = fg
+    self.ffFloorB = fb
+    self.ffCeilR = cr
+    self.ffCeilG = cg
+    self.ffCeilB = cb
+endfunction
+
+' Bake the two static lightmaps the floor field samples -- one grid over the
+' whole map, RES texels per cell, each texel = RcLights.sampleAtZ() (ambient +
+' falloff + LOS occlusion already included) at just above the floor / just
+' below the ceiling. Called once, lazily, from renderFrame().
+function bakeFloorField()
+    dim res
+    dim mc
+    dim mr
+    dim gw
+    dim gh
+    dim tx
+    dim ty
+    dim wx
+    dim wy
+    dim vF
+    dim vC
+    dim fb(0)
+    dim cb(0)
+    res = 4
+    mc = self.wld.widthCells()
+    mr = self.wld.heightCells()
+    gw = mc * res
+    gh = mr * res
+    for ty = 0 to gh - 1
+        for tx = 0 to gw - 1
+            wx = (tx + 0.5) / res
+            wy = (ty + 0.5) / res
+            vF = 0.0
+            vC = 0.0
+            if self.boundLights <> 0 then
+                vF = math.clamp(self.boundLights.sampleAtZ(wx, wy, 0.05), 0, 1)
+                vC = math.clamp(self.boundLights.sampleAtZ(wx, wy, RcConfig.RC_STD_CEIL - 0.05), 0, 1)
+            endif
+            array.push(fb, math.floor(vF * 255))
+            array.push(fb, math.floor(vF * 255))
+            array.push(fb, math.floor(vF * 255))
+            array.push(fb, 255)
+            array.push(cb, math.floor(vC * 255))
+            array.push(cb, math.floor(vC * 255))
+            array.push(cb, math.floor(vC * 255))
+            array.push(cb, 255)
+        next tx
+    next ty
+    drawing.registerLightmap("rc_ff_floor", gw, gh, mc, mr, fb)
+    drawing.registerLightmap("rc_ff_ceil", gw, gh, mc, mr, cb)
+    self.floorFieldBaked = 1
+endfunction
+
+' Emit one floor-field plane via the engine's per-pixel floorcaster.
+function emitFloorField(planeZ, lmId, br, bg, bb)
+    dim amb
+    amb = RcConfig.RC_AMBIENT
+    if self.boundLights <> 0 then
+        amb = self.boundLights.ambientLevel()
+    endif
+    drawing.drawPlaneField(lmId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
 endfunction
 
 function bindActors(actors)
@@ -996,6 +1098,7 @@ function renderFrame()
     dim wtex
     dim fillOn
     dim fillLite
+    dim stdCovered
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -1071,7 +1174,7 @@ function renderFrame()
         fillLite = self.boundLights.sampleCell(camCol, camRow)
     endif
     fillOn = 0
-    if self.flatFillOn = 1 and self.gradientShadeOn = 0 then
+    if self.flatFillOn = 1 and self.gradientShadeOn = 0 and self.floorFieldOn = 0 then
         if self.wld.floorHeightAt(camCol, camRow) = 0 then
             if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
                 fillOn = 1
@@ -1081,6 +1184,21 @@ function renderFrame()
     if fillOn = 1 then
         self.drawFill(horizon, self.viewH, RcConfig.RC_SHADE_FLOOR_TOP, fillLite)
         self.drawFill(0, horizon, RcConfig.RC_SHADE_CEIL_UNDER, fillLite)
+    endif
+
+    ' The per-pixel floor field covers exactly the pristine standard floor /
+    ' standard ceiling -- same territory fillOn claims -- so the per-column
+    ' skip guards below treat either as "already painted". A stepped/pitted/
+    ' colour-tagged column still resumes the full per-column path (sfH <> 0 /
+    ' sfD <> 0 / colour-clean check).
+    stdCovered = fillOn
+    if self.floorFieldOn = 1 then
+        if self.floorFieldBaked = 0 then
+            self.bakeFloorField()
+        endif
+        self.emitFloorField(0, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
+        self.emitFloorField(RcConfig.RC_STD_CEIL, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
+        stdCovered = 1
     endif
 
     for col = 0 to self.cols - 1
@@ -1144,10 +1262,10 @@ function renderFrame()
                 ' the background fill already painted. One FLOORSTEP makes
                 ' sfD > 0 (and/or sfH <> 0), so a stepped column resumes the full
                 ' per-column path from that point on.
-                if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                 endif
-                if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                 endif
                 hitWall = 1
@@ -1168,7 +1286,7 @@ function renderFrame()
                     newH = self.wld.floorHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
                     ' Skip only the pristine standard floor from the camera --
                     ' exactly what the background fill already covers.
-                    if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
+                    if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                     endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
@@ -1189,7 +1307,7 @@ function renderFrame()
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                    if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                     endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
@@ -1218,10 +1336,10 @@ function renderFrame()
         endwhile
 
         if hitWall = 0 then
-            if fillOn = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+            if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
                 self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
             endif
-            if fillOn = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
+            if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
                 self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
             endif
         endif
