@@ -99,6 +99,8 @@ dim floorFieldOn
 dim floorFieldBaked
 dim defFloorTex
 dim defCeilTex
+dim ffFloorTilesId
+dim ffCeilTilesId
 dim ffFloorR
 dim ffFloorG
 dim ffFloorB
@@ -133,6 +135,8 @@ Constructor(w as RcWorld)
     self.floorFieldBaked = 0
     self.defFloorTex = ""
     self.defCeilTex = ""
+    self.ffFloorTilesId = ""
+    self.ffCeilTilesId = ""
     self.ffFloorR = 105
     self.ffFloorG = 105
     self.ffFloorB = 130
@@ -244,14 +248,58 @@ function bakeFloorField()
     self.floorFieldBaked = 1
 endfunction
 
+' Register per-cell floor/ceiling textures from the world's ftex:/ctex: markers
+' (RcWorld.floorTexAt / ceilTexAt). One flat name-per-cell array per plane;
+' registered only when at least one cell carries a texture, so a level with no
+' ftex:/ctex: pays nothing. Called once, from renderFrame(), with bakeFloorField.
+function bakeFieldTiles()
+    dim mc
+    dim mr
+    dim col
+    dim row
+    dim nm
+    dim anyF
+    dim anyC
+    dim fnames(0)
+    dim cnames(0)
+    mc = self.wld.widthCells()
+    mr = self.wld.heightCells()
+    anyF = 0
+    anyC = 0
+    for row = 0 to mr - 1
+        for col = 0 to mc - 1
+            nm = self.wld.floorTexAt(col, row)
+            array.push(fnames, nm)
+            if string.len(nm) > 0 then
+                anyF = 1
+            endif
+            nm = self.wld.ceilTexAt(col, row)
+            array.push(cnames, nm)
+            if string.len(nm) > 0 then
+                anyC = 1
+            endif
+        next col
+    next row
+    self.ffFloorTilesId = ""
+    self.ffCeilTilesId = ""
+    if anyF = 1 then
+        drawing.registerFieldTiles("rc_ff_floor_tiles", mc, mr, fnames)
+        self.ffFloorTilesId = "rc_ff_floor_tiles"
+    endif
+    if anyC = 1 then
+        drawing.registerFieldTiles("rc_ff_ceil_tiles", mc, mr, cnames)
+        self.ffCeilTilesId = "rc_ff_ceil_tiles"
+    endif
+endfunction
+
 ' Emit one floor-field plane via the engine's per-pixel floorcaster.
-function emitFloorField(planeZ, texName, lmId, br, bg, bb)
+function emitFloorField(planeZ, texName, tilesId, lmId, br, bg, bb)
     dim amb
     amb = RcConfig.RC_AMBIENT
     if self.boundLights <> 0 then
         amb = self.boundLights.ambientLevel()
     endif
-    drawing.drawPlaneField(lmId, texName, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
+    drawing.drawPlaneField(lmId, texName, tilesId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
 endfunction
 
 function bindActors(actors)
@@ -1209,9 +1257,10 @@ function renderFrame()
     if self.floorFieldOn = 1 then
         if self.floorFieldBaked = 0 then
             self.bakeFloorField()
+            self.bakeFieldTiles()
         endif
-        self.emitFloorField(0, self.defFloorTex, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
-        self.emitFloorField(RcConfig.RC_STD_CEIL, self.defCeilTex, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
+        self.emitFloorField(0, self.defFloorTex, self.ffFloorTilesId, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
+        self.emitFloorField(RcConfig.RC_STD_CEIL, self.defCeilTex, self.ffCeilTilesId, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
         stdCovered = 1
     endif
 

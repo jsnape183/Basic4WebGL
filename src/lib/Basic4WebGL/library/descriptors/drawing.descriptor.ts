@@ -48,13 +48,19 @@ export const drawingDescriptor: ModuleDescriptor = {
         `_sb.registerLightmap(${p.id}, ${p.width}, ${p.height}, ${p.worldCols}, ${p.worldRows}, ${p.bytes})`,
     },
     {
+      name: 'registerFieldTiles',
+      params: ['atlasId', 'cols', 'rows', 'cellNames'],
+      body: (p, _self) =>
+        `_sb.registerFieldTiles(${p.atlasId}, ${p.cols}, ${p.rows}, ${p.cellNames})`,
+    },
+    {
       name: 'drawPlaneField',
       params: [
-        'fieldId', 'texName', 'planeZ', 'camX', 'camY', 'camZ', 'dirX', 'dirY', 'planeX', 'planeY',
+        'fieldId', 'texName', 'tilesId', 'planeZ', 'camX', 'camY', 'camZ', 'dirX', 'dirY', 'planeX', 'planeY',
         'pitch', 'viewW', 'viewH', 'scy', 'eyeZ', 'lightmapId', 'ambient', 'baseR', 'baseG', 'baseB',
       ],
       body: (p, _self) =>
-        `_sb.drawPlaneField(${p.fieldId}, ${p.texName}, ${p.planeZ}, ${p.camX}, ${p.camY}, ${p.camZ}, ${p.dirX}, ${p.dirY}, ${p.planeX}, ${p.planeY}, ${p.pitch}, ${p.viewW}, ${p.viewH}, ${p.scy}, ${p.eyeZ}, ${p.lightmapId}, ${p.ambient}, ${p.baseR}, ${p.baseG}, ${p.baseB})`,
+        `_sb.drawPlaneField(${p.fieldId}, ${p.texName}, ${p.tilesId}, ${p.planeZ}, ${p.camX}, ${p.camY}, ${p.camZ}, ${p.dirX}, ${p.dirY}, ${p.planeX}, ${p.planeY}, ${p.pitch}, ${p.viewW}, ${p.viewH}, ${p.scy}, ${p.eyeZ}, ${p.lightmapId}, ${p.ambient}, ${p.baseR}, ${p.baseG}, ${p.baseB})`,
     },
     {
       name: 'drawRadialGradientCircle',

@@ -141,14 +141,28 @@ Stores a pre-computed grid of brightness values under a name, so a renderer can 
 
 **Returns:** nothing.
 
-## drawPlaneField(fieldId, texName, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
+## registerFieldTiles(atlasId, cols, rows, cellNames)
 
-Fills the screen with one flat floor or ceiling surface, drawn in true perspective: for every pixel it works out the exact spot on the ground that pixel is looking at, paints the texture there (one full copy of the image per world unit), and dims it by the brightness stored in a registered lightmap (never darker than `ambient`). Because the lookup is by world position, both the texture and the lit patches stay locked to the ground as the camera turns. Pass `""` for `texName` to use a built-in checker pattern tinted by `baseR/baseG/baseB` instead. Advanced renderers only — call it once per surface, before drawing the walls that sit in front of it.
+Stores a per-cell texture grid for a floor or ceiling, so different tiles of the map can show different images. `cellNames` is a flat list, one pre-loaded image name per grid cell (left-to-right then top-to-bottom), with `""` where a cell has no texture of its own. `drawPlaneField` then picks each pixel's texture by which cell the pixel lands in, falling back to its default texture (or the checker) for empty cells. Advanced renderers only.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| atlasId   | string | Name to store this grid under, passed back to `drawPlaneField` |
+| cols      | number | Grid cells across |
+| rows      | number | Grid cells down |
+| cellNames | array  | Flat list of image names, `cols * rows` long, `""` for none |
+
+**Returns:** nothing.
+
+## drawPlaneField(fieldId, texName, tilesId, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
+
+Fills the screen with one flat floor or ceiling surface, drawn in true perspective: for every pixel it works out the exact spot on the ground that pixel is looking at, paints the texture there (one full copy of the image per world unit), and dims it by the brightness stored in a registered lightmap (never darker than `ambient`). Because the lookup is by world position, both the texture and the lit patches stay locked to the ground as the camera turns. Each pixel picks its texture in order: the per-cell grid from `tilesId` (if that cell has one), then `texName`, then a built-in checker tinted by `baseR/baseG/baseB`. Advanced renderers only — call it once per surface, before drawing the walls that sit in front of it.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
 | fieldId   | string | Name for this surface's reusable pixel buffer |
-| texName   | string | A pre-loaded image to tile across the surface, or `""` for the built-in checker |
+| texName   | string | Default image to tile across the surface, or `""` for the built-in checker |
+| tilesId   | string | A grid registered with `registerFieldTiles` for per-cell textures, or `""` |
 | planeZ    | number | Height of the surface (0 = floor, 1 = standard ceiling) |
 | camX, camY, camZ | number | Camera position |
 | dirX, dirY | number | Direction the camera faces |

@@ -41,6 +41,8 @@ dim fPlaneX
 dim fPlaneY
 dim floorTex
 dim ceilTex
+dim floorTilesId
+dim ceilTilesId
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -63,6 +65,8 @@ Constructor(w as RcWorld)
     self.fPlaneY = self.fovScale
     self.floorTex = ""
     self.ceilTex = ""
+    self.floorTilesId = ""
+    self.ceilTilesId = ""
 EndConstructor
 
 ' World-tiled texture names (one tile per world unit) for the floor/ceiling
@@ -79,6 +83,46 @@ endfunction
 function bindLights(lights)
     self.boundLights = lights
     self.bakeLightmaps()
+    self.bakeFieldTiles()
+endfunction
+
+' Register per-cell floor/ceiling textures from the world's ftex:/ctex: markers.
+function bakeFieldTiles()
+    dim mc
+    dim mr
+    dim col
+    dim row
+    dim nm
+    dim anyF
+    dim anyC
+    dim fnames(0)
+    dim cnames(0)
+    mc = self.wld.widthCells()
+    mr = self.wld.heightCells()
+    anyF = 0
+    anyC = 0
+    for row = 0 to mr - 1
+        for col = 0 to mc - 1
+            nm = self.wld.floorTexAt(col, row)
+            array.push(fnames, nm)
+            if string.len(nm) > 0 then
+                anyF = 1
+            endif
+            nm = self.wld.ceilTexAt(col, row)
+            array.push(cnames, nm)
+            if string.len(nm) > 0 then
+                anyC = 1
+            endif
+        next col
+    next row
+    if anyF = 1 then
+        drawing.registerFieldTiles("rcpoc_floor_tiles", mc, mr, fnames)
+        self.floorTilesId = "rcpoc_floor_tiles"
+    endif
+    if anyC = 1 then
+        drawing.registerFieldTiles("rcpoc_ceil_tiles", mc, mr, cnames)
+        self.ceilTilesId = "rcpoc_ceil_tiles"
+    endif
 endfunction
 
 ' Bake the two static lightmaps ONCE. Grid is RES texels per world cell; each
@@ -183,11 +227,11 @@ function projectY(h, d)
 endfunction
 
 function drawFloorField()
-    drawing.drawPlaneField("rcpoc_floor", self.floorTex, 0, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_floor", self.boundLights.ambientLevel(), 150, 140, 125)
+    drawing.drawPlaneField("rcpoc_floor", self.floorTex, self.floorTilesId, 0, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_floor", self.boundLights.ambientLevel(), 150, 140, 125)
 endfunction
 
 function drawCeilField()
-    drawing.drawPlaneField("rcpoc_ceil", self.ceilTex, RcConfig.RC_STD_CEIL, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_ceil", self.boundLights.ambientLevel(), 120, 120, 140)
+    drawing.drawPlaneField("rcpoc_ceil", self.ceilTex, self.ceilTilesId, RcConfig.RC_STD_CEIL, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_ceil", self.boundLights.ambientLevel(), 120, 120, 140)
 endfunction
 
 function renderFrame()

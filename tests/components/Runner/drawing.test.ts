@@ -500,7 +500,7 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     d.registerLightmap('lmDark', 1, 1, 10, 20, [0, 0, 0, 255]);
     const p = pose(Math.PI / 2, 4.5, 3.0);
     const args = [
-      'floor', '', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      'floor', '', '', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
       p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lmDark', 0.1, 200, 180, 150,
     ] as const;
     const s1 = d.drawPlaneField(...args);
@@ -533,7 +533,7 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     d.registerLightmap('lm1', 1, 1, 10, 20, [255, 255, 255, 255]);
     const p = pose(Math.PI / 2, 4.5, 3.0);
     const s = d.drawPlaneField(
-      'floorTex', 'some_tiles.png', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      'floorTex', 'some_tiles.png', '', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
       p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm1', 0.1, 200, 180, 150,
     );
     const src = (s.texture as any).opts.source;
@@ -541,5 +541,23 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     let lit = 0;
     for (let i = 3; i < buf.length; i += 4) if (buf[i] === 255) lit++;
     expect(lit).toBeGreaterThan(0); // still drew a floor via the checker fallback
+  });
+
+  test('registerFieldTiles decodes each named cell texture and drawPlaneField accepts the atlas id', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('lm2', 1, 1, 4, 4, [255, 255, 255, 255]);
+    // 2x2 grid: one cell textured, three empty
+    d.registerFieldTiles('atlas1', 2, 2, ['tileA.png', '', '', '']);
+    // the named tile was decode-attempted and cached (null under jsdom)
+    expect(d._fieldTexPixels('tileA.png')).toBeNull();
+    const p = pose(Math.PI / 2, 1.5, 0.5);
+    const s = d.drawPlaneField(
+      'ff', '', 'atlas1', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm2', 0.2, 160, 150, 140,
+    );
+    const buf = (s.texture as any).opts.source.resource as Uint8Array;
+    let lit = 0;
+    for (let i = 3; i < buf.length; i += 4) if (buf[i] === 255) lit++;
+    expect(lit).toBeGreaterThan(0); // renders (cells with no decodable tex fall back to the checker)
   });
 });

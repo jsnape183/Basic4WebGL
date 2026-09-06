@@ -35,7 +35,7 @@ interface RcRenderLike {
 interface RcMoverLike { warpto(x: number, y: number, angle: number): void }
 interface RcLightsLike { setambient(v: number): void; addpoint(x: number, y: number, z: number, i: number, r: number): number; update(): void }
 
-function build() {
+function build(markers: Array<{ row: number; col: number; tag: string }> = []) {
   const walls = Array.from({ length: 12 }, (_, r) =>
     Array.from({ length: 12 }, (_, c) => (r === 0 || r === 11 || c === 0 || c === 11 ? 1 : 0)),
   );
@@ -61,17 +61,21 @@ function build() {
   _sb.tileMapHeightPx = () => walls.length * tw;
   _sb.tileAt = (_h: unknown, px: number, py: number) =>
     walls[Math.floor(py / tw)]?.[Math.floor(px / tw)] ?? 0;
-  _sb.allMarkers = () => [];
+  _sb.allMarkers = () => markers;
   _sb.getStageWidth = () => 320;
   _sb.getStageHeight = () => 200;
 
   const lightmaps: unknown[] = [];
+  const tileAtlases: Array<{ id: unknown; cols: unknown; rows: unknown; names: unknown }> = [];
   const planes: unknown[][] = [];
   let rects = 0;
   _sb.setFillColor = () => {};
   _sb.drawRect = () => { rects++; };
   _sb.drawImageStrip = () => {};
   _sb.registerLightmap = (id: unknown) => { lightmaps.push(id); };
+  _sb.registerFieldTiles = (id: unknown, cols: unknown, rows: unknown, names: unknown) => {
+    tileAtlases.push({ id, cols, rows, names });
+  };
   _sb.drawPlaneField = (...a: unknown[]) => { planes.push(a); };
 
   const deferred: Array<() => void> = [];
@@ -101,7 +105,7 @@ function build() {
   const lights = new RcLights(world) as RcLightsLike;
   render.bindlights(lights);
   render.bindcamera(mover);
-  return { render, mover, lights, lightmaps, planes, rects: () => rects };
+  return { render, mover, lights, lightmaps, tileAtlases, planes, rects: () => rects };
 }
 
 describe('RcRender per-pixel floor field', () => {
@@ -125,14 +129,37 @@ describe('RcRender per-pixel floor field', () => {
 
     expect(lightmaps).toEqual(['rc_ff_floor', 'rc_ff_ceil']);
     // one floor plane (planeZ 0) + one ceiling plane (planeZ RC_STD_CEIL == 1)
-    // args: fieldId, texName, planeZ, camX, camY, camZ, ...
+    // args: fieldId, texName, tilesId, planeZ, camX, camY, camZ, ...
     expect(planes.length).toBe(2);
-    expect(planes[0][1]).toBe(''); // no texture set -> procedural checker
-    expect(planes[0][2]).toBe(0);
-    expect(planes[1][2]).toBe(1);
-    expect(planes[0][3]).toBeCloseTo(5.5, 5); // camX
+    expect(planes[0][1]).toBe(''); // no scene texture -> procedural checker
+    expect(planes[0][2]).toBe(''); // no ftex: markers -> no per-cell atlas
+    expect(planes[0][3]).toBe(0);
+    expect(planes[1][3]).toBe(1);
+    expect(planes[0][4]).toBeCloseTo(5.5, 5); // camX
     // walls still render
     expect(rects()).toBeGreaterThan(0);
+  });
+
+  test('ftex: markers -> registerFieldTiles once + the atlas id threaded into the floor plane', () => {
+    const { render, mover, lights, tileAtlases, planes } = build([
+      { row: 5, col: 5, tag: 'ftex:stone.png' },
+      { row: 5, col: 6, tag: 'ftex:stone.png' },
+    ]);
+    lights.setambient(0.2);
+    render.setfloorfield(1);
+    mover.warpto(5.5, 2.5, Math.PI / 2);
+    render.renderframe();
+    render.renderframe();
+
+    expect(tileAtlases.map((a) => a.id)).toEqual(['rc_ff_floor_tiles']); // floor only, once
+    const atlas = tileAtlases[0];
+    expect(atlas.cols).toBe(12);
+    expect(atlas.rows).toBe(12);
+    expect((atlas.names as string[])[5 * 12 + 5]).toBe('stone.png');
+    expect((atlas.names as string[])[0]).toBe('');
+    // floor plane's tilesId arg is the atlas; ceiling's is still ""
+    expect(planes[0][2]).toBe('rc_ff_floor_tiles');
+    expect(planes[1][2]).toBe('');
   });
 
   test('lightmaps are baked once, not per frame', () => {

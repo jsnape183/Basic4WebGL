@@ -16,6 +16,7 @@ const _sbDrawing = (() => {
   const _lightmapCache = new Map();  // id -> { texture, worldCols, worldRows, w, h, bytes } -- baked static light grid (registerLightmap)
   const _planeFields = new Map();    // fieldId -> { source, texture, sprite, w, h, buf } -- persistent per-plane floorcast buffer (drawPlaneField)
   const _fieldTexCache = new Map();  // imageName -> { data:Uint8ClampedArray, w, h } | null -- CPU pixels of a floor/ceiling tile texture, decoded once via a 2D canvas (null = decode unavailable -> procedural fallback)
+  const _fieldTilesCache = new Map(); // atlasId -> { cols, rows, cellPix:(pix|null)[] } -- per-cell floor/ceiling texture grid (registerFieldTiles)
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
@@ -389,6 +390,21 @@ const _sbDrawing = (() => {
       return out;
     },
 
+    // Register a per-cell floor/ceiling texture grid. `cellNames` is a flat
+    // array (row-major, cols*rows) of pre-loaded image names, "" where a cell
+    // has none. Each distinct name is decoded once (via _fieldTexPixels) and
+    // the result stored per cell, so drawPlaneField's per-pixel lookup is O(1).
+    // Torn down in _drawingReset().
+    registerFieldTiles(atlasId, cols, rows, cellNames) {
+      const cellPix = new Array(cols * rows).fill(null);
+      const n = Math.min(cellNames.length, cols * rows);
+      for (let i = 0; i < n; i++) {
+        const nm = cellNames[i];
+        if (nm) cellPix[i] = this._fieldTexPixels(nm);
+      }
+      _fieldTilesCache.set(atlasId, { cols, rows, cellPix });
+    },
+
     // Per-pixel floorcaster for one flat plane. Resolves the world point each
     // screen pixel looks at, samples a world-tiled texture (`texName`, one tile
     // per world unit) -- or a procedural checker when no texture resolves --
@@ -404,12 +420,16 @@ const _sbDrawing = (() => {
     // divide, no allocation. The buffer is rendered at 1/_PF_SCALE resolution
     // and upscaled by the sprite; _planeFieldWorldPos is the un-optimised
     // reference the tests pin this against.
-    drawPlaneField(fieldId, texName, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
+    drawPlaneField(fieldId, texName, tilesId, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
       const SCALE = _PF_SCALE;
       const tex = texName ? this._fieldTexPixels(texName) : null;
       const tdata = tex ? tex.data : null;
       const tw = tex ? tex.w : 1;
       const th = tex ? tex.h : 1;
+      const tiles = tilesId ? _fieldTilesCache.get(tilesId) : null;
+      const tiCols = tiles ? tiles.cols : 0;
+      const tiRows = tiles ? tiles.rows : 0;
+      const cellPix = tiles ? tiles.cellPix : null;
       const W = Math.max(1, Math.round(viewW / SCALE));
       const H = Math.max(1, Math.round(viewH / SCALE));
       let f = _planeFields.get(fieldId);
@@ -458,14 +478,22 @@ const _sbDrawing = (() => {
         let wy = camY + (dirLY + (dirRY - dirLY) * halfStepFrac) * d;
         const stepX = spanX / W, stepY = spanY / W;
         for (let bx = 0; bx < W; bx++) {
-          const fx = wx - Math.floor(wx);
-          const fy = wy - Math.floor(wy);
+          const flx = Math.floor(wx);
+          const fly = Math.floor(wy);
+          const fx = wx - flx;
+          const fy = wy - fly;
           let r, g, b;
-          if (tdata) {
-            let tx = (fx * tw) | 0; if (tx >= tw) tx = tw - 1; else if (tx < 0) tx = 0;
-            let ty = (fy * th) | 0; if (ty >= th) ty = th - 1; else if (ty < 0) ty = 0;
-            const ti = (ty * tw + tx) * 4;
-            r = tdata[ti]; g = tdata[ti + 1]; b = tdata[ti + 2];
+          // per-cell texture > scene-default texture > procedural checker
+          let cd = tdata, cw = tw, ch = th;
+          if (cellPix && flx >= 0 && flx < tiCols && fly >= 0 && fly < tiRows) {
+            const cp = cellPix[fly * tiCols + flx];
+            if (cp) { cd = cp.data; cw = cp.w; ch = cp.h; }
+          }
+          if (cd) {
+            let tx = (fx * cw) | 0; if (tx >= cw) tx = cw - 1; else if (tx < 0) tx = 0;
+            let ty = (fy * ch) | 0; if (ty >= ch) ty = ch - 1; else if (ty < 0) ty = 0;
+            const ti = (ty * cw + tx) * 4;
+            r = cd[ti]; g = cd[ti + 1]; b = cd[ti + 2];
           } else {
             let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
             if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;
@@ -540,6 +568,7 @@ const _sbDrawing = (() => {
       }
       _planeFields.clear();
       _fieldTexCache.clear();
+      _fieldTilesCache.clear();
     },
   };
 })();

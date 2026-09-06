@@ -30,8 +30,12 @@ function registerLightmap(id, width, height, worldCols, worldRows, bytes)
     call("_sb.registerLightmap(registerlightmap_id, registerlightmap_width, registerlightmap_height, registerlightmap_worldCols, registerlightmap_worldRows, registerlightmap_bytes)")
 endfunction
 
-function drawPlaneField(fieldId, texName, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
-    call("_sb.drawPlaneField(drawplanefield_fieldId, drawplanefield_texName, drawplanefield_planeZ, drawplanefield_camX, drawplanefield_camY, drawplanefield_camZ, drawplanefield_dirX, drawplanefield_dirY, drawplanefield_planeX, drawplanefield_planeY, drawplanefield_pitch, drawplanefield_viewW, drawplanefield_viewH, drawplanefield_scy, drawplanefield_eyeZ, drawplanefield_lightmapId, drawplanefield_ambient, drawplanefield_baseR, drawplanefield_baseG, drawplanefield_baseB)")
+function registerFieldTiles(atlasId, cols, rows, cellNames)
+    call("_sb.registerFieldTiles(registerfieldtiles_atlasId, registerfieldtiles_cols, registerfieldtiles_rows, registerfieldtiles_cellNames)")
+endfunction
+
+function drawPlaneField(fieldId, texName, tilesId, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
+    call("_sb.drawPlaneField(drawplanefield_fieldId, drawplanefield_texName, drawplanefield_tilesId, drawplanefield_planeZ, drawplanefield_camX, drawplanefield_camY, drawplanefield_camZ, drawplanefield_dirX, drawplanefield_dirY, drawplanefield_planeX, drawplanefield_planeY, drawplanefield_pitch, drawplanefield_viewW, drawplanefield_viewH, drawplanefield_scy, drawplanefield_eyeZ, drawplanefield_lightmapId, drawplanefield_ambient, drawplanefield_baseR, drawplanefield_baseG, drawplanefield_baseB)")
 endfunction
 
 function drawRadialGradientCircle(x, y, radius, r, g, b, alpha)
