@@ -44,6 +44,8 @@ function onenter()
     self.lights.setAmbient(0.08)
     self.ren.bindLights(self.lights)
     self.ren.bindCamera(self.me)
+    ' Swap the procedural checker for a real world-tiled texture on the floor.
+    self.ren.setFieldTextures("rc_placeholder_tiles.png", "")
 
     self.titleText = new Text("Raycaster Light-Pool POC", 12, 10)
     self.titleText.setStyle(16, 255, 220, 120)

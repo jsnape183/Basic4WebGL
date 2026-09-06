@@ -500,7 +500,7 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     d.registerLightmap('lmDark', 1, 1, 10, 20, [0, 0, 0, 255]);
     const p = pose(Math.PI / 2, 4.5, 3.0);
     const args = [
-      'floor', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      'floor', '', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
       p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lmDark', 0.1, 200, 180, 150,
     ] as const;
     const s1 = d.drawPlaneField(...args);
@@ -525,5 +525,21 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
 
     d._drawingReset();
     expect(worldContainer.children).not.toContain(s1);
+  });
+
+  test('_fieldTexPixels returns null when no 2D canvas is available, and drawPlaneField still renders (procedural fallback)', () => {
+    const { d } = loadDrawing();
+    expect(d._fieldTexPixels('some_tiles.png')).toBeNull(); // jsdom: no canvas 2D context
+    d.registerLightmap('lm1', 1, 1, 10, 20, [255, 255, 255, 255]);
+    const p = pose(Math.PI / 2, 4.5, 3.0);
+    const s = d.drawPlaneField(
+      'floorTex', 'some_tiles.png', 0, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm1', 0.1, 200, 180, 150,
+    );
+    const src = (s.texture as any).opts.source;
+    const buf = src.resource as Uint8Array;
+    let lit = 0;
+    for (let i = 3; i < buf.length; i += 4) if (buf[i] === 255) lit++;
+    expect(lit).toBeGreaterThan(0); // still drew a floor via the checker fallback
   });
 });

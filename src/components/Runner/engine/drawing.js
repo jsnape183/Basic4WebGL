@@ -15,6 +15,7 @@ const _sbDrawing = (() => {
   const _PF_SCALE = 2;               // drawPlaneField renders the floorcast buffer at 1/N screen resolution, upscaled by the sprite. 1 = full res (crispest, slowest); 2 = quarter the pixels; 3 = ninth.
   const _lightmapCache = new Map();  // id -> { texture, worldCols, worldRows, w, h, bytes } -- baked static light grid (registerLightmap)
   const _planeFields = new Map();    // fieldId -> { source, texture, sprite, w, h, buf } -- persistent per-plane floorcast buffer (drawPlaneField)
+  const _fieldTexCache = new Map();  // imageName -> { data:Uint8ClampedArray, w, h } | null -- CPU pixels of a floor/ceiling tile texture, decoded once via a 2D canvas (null = decode unavailable -> procedural fallback)
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
   const _meshTexCache = new Map();  // `${imageName}:${uOff}:${vOff}:${uSpan}:${vSpan}` -> PIXI.Texture (world-tiled frame, repeat wrap; LRU-capped at 256)
 
@@ -358,9 +359,40 @@ const _sbDrawing = (() => {
       return { wx: pose.camX + rayX * d, wy: pose.camY + rayY * d, d };
     },
 
+    // CPU pixels of a floor/ceiling tile texture, decoded once through a 2D
+    // canvas and cached. Returns null (and caches null) when no canvas 2D
+    // context is available (e.g. jsdom under test) or the asset can't be
+    // drawn -- drawPlaneField then falls back to its procedural checker.
+    _fieldTexPixels(name) {
+      if (_fieldTexCache.has(name)) return _fieldTexCache.get(name);
+      let out = null;
+      try {
+        const asset = _sbAssets.get(name);
+        const srcObj = asset && asset.source ? asset.source : asset;
+        const res = srcObj && srcObj.resource ? srcObj.resource : srcObj;
+        const w = (srcObj && (srcObj.pixelWidth || srcObj.width)) || (res && res.width) || (asset && asset.width);
+        const h = (srcObj && (srcObj.pixelHeight || srcObj.height)) || (res && res.height) || (asset && asset.height);
+        if (res && w && h && typeof document !== 'undefined' && document.createElement) {
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
+          const ctx = c.getContext && c.getContext('2d', { willReadFrequently: true });
+          if (ctx && ctx.drawImage && ctx.getImageData) {
+            ctx.drawImage(res, 0, 0, w, h);
+            out = { data: ctx.getImageData(0, 0, w, h).data, w, h };
+          }
+        }
+      } catch (e) {
+        out = null;
+      }
+      _fieldTexCache.set(name, out);
+      return out;
+    },
+
     // Per-pixel floorcaster for one flat plane. Resolves the world point each
-    // screen pixel looks at, samples a procedural world-tiled tile pattern
-    // (checker + thin grid lines) and multiplies by max(ambient,
+    // screen pixel looks at, samples a world-tiled texture (`texName`, one tile
+    // per world unit) -- or a procedural checker when no texture resolves --
+    // and multiplies by max(ambient,
     // bakedLight(worldPos)) from the registered lightmap. Writes a persistent
     // per-field RGBA buffer uploaded in place (no per-frame GPU alloc/destroy),
     // shown via one persistent Sprite at the current draw-order zIndex so later
@@ -372,8 +404,12 @@ const _sbDrawing = (() => {
     // divide, no allocation. The buffer is rendered at 1/_PF_SCALE resolution
     // and upscaled by the sprite; _planeFieldWorldPos is the un-optimised
     // reference the tests pin this against.
-    drawPlaneField(fieldId, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
+    drawPlaneField(fieldId, texName, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
       const SCALE = _PF_SCALE;
+      const tex = texName ? this._fieldTexPixels(texName) : null;
+      const tdata = tex ? tex.data : null;
+      const tw = tex ? tex.w : 1;
+      const th = tex ? tex.h : 1;
       const W = Math.max(1, Math.round(viewW / SCALE));
       const H = Math.max(1, Math.round(viewH / SCALE));
       let f = _planeFields.get(fieldId);
@@ -424,8 +460,17 @@ const _sbDrawing = (() => {
         for (let bx = 0; bx < W; bx++) {
           const fx = wx - Math.floor(wx);
           const fy = wy - Math.floor(wy);
-          let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
-          if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;
+          let r, g, b;
+          if (tdata) {
+            let tx = (fx * tw) | 0; if (tx >= tw) tx = tw - 1; else if (tx < 0) tx = 0;
+            let ty = (fy * th) | 0; if (ty >= th) ty = th - 1; else if (ty < 0) ty = 0;
+            const ti = (ty * tw + tx) * 4;
+            r = tdata[ti]; g = tdata[ti + 1]; b = tdata[ti + 2];
+          } else {
+            let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
+            if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;
+            r = baseR * shade; g = baseG * shade; b = baseB * shade;
+          }
           let L = 1.0;
           if (lmB) {
             let lx = (wx * lmSX) | 0;
@@ -434,10 +479,10 @@ const _sbDrawing = (() => {
             if (ly < 0) ly = 0; else if (ly >= lmH) ly = lmH - 1;
             L = lmB[(ly * lmW + lx) * 4] * 0.00392156862745098; // /255
           }
-          const m = shade * (ambient > L ? ambient : L);
-          let r = baseR * m; if (r > 255) r = 255;
-          let g = baseG * m; if (g > 255) g = 255;
-          let b = baseB * m; if (b > 255) b = 255;
+          const m = ambient > L ? ambient : L;
+          r *= m; if (r > 255) r = 255;
+          g *= m; if (g > 255) g = 255;
+          b *= m; if (b > 255) b = 255;
           buf[o] = r; buf[o + 1] = g; buf[o + 2] = b; buf[o + 3] = 255;
           o += 4;
           wx += stepX; wy += stepY;
@@ -494,6 +539,7 @@ const _sbDrawing = (() => {
         if (f.texture && f.texture.destroy) f.texture.destroy();
       }
       _planeFields.clear();
+      _fieldTexCache.clear();
     },
   };
 })();

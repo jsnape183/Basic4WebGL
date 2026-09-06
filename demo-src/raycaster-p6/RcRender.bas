@@ -97,6 +97,8 @@ dim gradientShadeOn
 ' path. Lightmaps are baked once, lazily, on the first renderFrame().
 dim floorFieldOn
 dim floorFieldBaked
+dim defFloorTex
+dim defCeilTex
 dim ffFloorR
 dim ffFloorG
 dim ffFloorB
@@ -129,6 +131,8 @@ Constructor(w as RcWorld)
     self.gradientShadeOn = 0
     self.floorFieldOn = 0
     self.floorFieldBaked = 0
+    self.defFloorTex = ""
+    self.defCeilTex = ""
     self.ffFloorR = 105
     self.ffFloorG = 105
     self.ffFloorB = 130
@@ -169,6 +173,16 @@ endfunction
 ' shading for those two planes; steps/pits/soffits are unaffected.
 function setFloorField(v)
     self.floorFieldOn = v
+endfunction
+
+' World-tiled texture (one tile per world unit) for the floor field / ceiling
+' field. "" (default) = the procedural checker. Only used when setFloorField(1).
+function setFloorTexture(name)
+    self.defFloorTex = name
+endfunction
+
+function setCeilTexture(name)
+    self.defCeilTex = name
 endfunction
 
 ' Base tile colour (0..255 per channel) for the floor field and the ceiling
@@ -231,13 +245,13 @@ function bakeFloorField()
 endfunction
 
 ' Emit one floor-field plane via the engine's per-pixel floorcaster.
-function emitFloorField(planeZ, lmId, br, bg, bb)
+function emitFloorField(planeZ, texName, lmId, br, bg, bb)
     dim amb
     amb = RcConfig.RC_AMBIENT
     if self.boundLights <> 0 then
         amb = self.boundLights.ambientLevel()
     endif
-    drawing.drawPlaneField(lmId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
+    drawing.drawPlaneField(lmId, texName, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
 endfunction
 
 function bindActors(actors)
@@ -1196,8 +1210,8 @@ function renderFrame()
         if self.floorFieldBaked = 0 then
             self.bakeFloorField()
         endif
-        self.emitFloorField(0, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
-        self.emitFloorField(RcConfig.RC_STD_CEIL, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
+        self.emitFloorField(0, self.defFloorTex, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
+        self.emitFloorField(RcConfig.RC_STD_CEIL, self.defCeilTex, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
         stdCovered = 1
     endif
 

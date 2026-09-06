@@ -39,6 +39,8 @@ dim fDirX
 dim fDirY
 dim fPlaneX
 dim fPlaneY
+dim floorTex
+dim ceilTex
 
 Constructor(w as RcWorld)
     self.wld = w
@@ -59,7 +61,16 @@ Constructor(w as RcWorld)
     self.fDirY = 0
     self.fPlaneX = 0
     self.fPlaneY = self.fovScale
+    self.floorTex = ""
+    self.ceilTex = ""
 EndConstructor
+
+' World-tiled texture names (one tile per world unit) for the floor/ceiling
+' fields. "" = the engine's procedural checker.
+function setFieldTextures(floorName, ceilName)
+    self.floorTex = floorName
+    self.ceilTex = ceilName
+endfunction
 
 function bindCamera(mover)
     self.boundMover = mover
@@ -172,11 +183,11 @@ function projectY(h, d)
 endfunction
 
 function drawFloorField()
-    drawing.drawPlaneField("rcpoc_floor", 0, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_floor", self.boundLights.ambientLevel(), 150, 140, 125)
+    drawing.drawPlaneField("rcpoc_floor", self.floorTex, 0, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_floor", self.boundLights.ambientLevel(), 150, 140, 125)
 endfunction
 
 function drawCeilField()
-    drawing.drawPlaneField("rcpoc_ceil", RcConfig.RC_STD_CEIL, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_ceil", self.boundLights.ambientLevel(), 120, 120, 140)
+    drawing.drawPlaneField("rcpoc_ceil", self.ceilTex, RcConfig.RC_STD_CEIL, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, "rcpoc_ceil", self.boundLights.ambientLevel(), 120, 120, 140)
 endfunction
 
 function renderFrame()

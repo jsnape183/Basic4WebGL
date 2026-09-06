@@ -80,7 +80,7 @@ function build() {
   _sb.drawRadialGradientCircle = () => { ellipseCalls++; };
   _sb.registerLightmap = (id: unknown) => { lightmapIds.push(id); };
   _sb.drawPlaneField = (
-    fieldId: unknown, planeZ: number, camX: number, camY: number, _camZ: number, dirX: number,
+    fieldId: unknown, _texName: unknown, planeZ: number, camX: number, camY: number, _camZ: number, dirX: number,
   ) => {
     planeCalls.push({ fieldId, planeZ, camX, camY, dirX });
   };

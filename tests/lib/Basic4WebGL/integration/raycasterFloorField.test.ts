@@ -125,11 +125,12 @@ describe('RcRender per-pixel floor field', () => {
 
     expect(lightmaps).toEqual(['rc_ff_floor', 'rc_ff_ceil']);
     // one floor plane (planeZ 0) + one ceiling plane (planeZ RC_STD_CEIL == 1)
+    // args: fieldId, texName, planeZ, camX, camY, camZ, ...
     expect(planes.length).toBe(2);
-    expect(planes[0][1]).toBe(0);
-    expect(planes[1][1]).toBe(1);
-    // camera position is threaded through (args: fieldId, planeZ, camX, camY, ...)
-    expect(planes[0][2]).toBeCloseTo(5.5, 5);
+    expect(planes[0][1]).toBe(''); // no texture set -> procedural checker
+    expect(planes[0][2]).toBe(0);
+    expect(planes[1][2]).toBe(1);
+    expect(planes[0][3]).toBeCloseTo(5.5, 5); // camX
     // walls still render
     expect(rects()).toBeGreaterThan(0);
   });

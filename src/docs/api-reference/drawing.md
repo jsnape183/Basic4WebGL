@@ -141,13 +141,14 @@ Stores a pre-computed grid of brightness values under a name, so a renderer can 
 
 **Returns:** nothing.
 
-## drawPlaneField(fieldId, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
+## drawPlaneField(fieldId, texName, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
 
-Fills the screen with one flat floor or ceiling surface, drawn in true perspective: for every pixel it works out the exact spot on the ground that pixel is looking at, paints a tiled tile pattern there, and dims it by the brightness stored in a registered lightmap (never darker than `ambient`). Because the lookup is by world position, lit patches stay locked to the ground as the camera turns. Advanced renderers only — call it once per surface, before drawing the walls that sit in front of it.
+Fills the screen with one flat floor or ceiling surface, drawn in true perspective: for every pixel it works out the exact spot on the ground that pixel is looking at, paints the texture there (one full copy of the image per world unit), and dims it by the brightness stored in a registered lightmap (never darker than `ambient`). Because the lookup is by world position, both the texture and the lit patches stay locked to the ground as the camera turns. Pass `""` for `texName` to use a built-in checker pattern tinted by `baseR/baseG/baseB` instead. Advanced renderers only — call it once per surface, before drawing the walls that sit in front of it.
 
 | Parameter | Type   | Description |
 |-----------|--------|-------------|
 | fieldId   | string | Name for this surface's reusable pixel buffer |
+| texName   | string | A pre-loaded image to tile across the surface, or `""` for the built-in checker |
 | planeZ    | number | Height of the surface (0 = floor, 1 = standard ceiling) |
 | camX, camY, camZ | number | Camera position |
 | dirX, dirY | number | Direction the camera faces |

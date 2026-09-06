@@ -50,11 +50,11 @@ export const drawingDescriptor: ModuleDescriptor = {
     {
       name: 'drawPlaneField',
       params: [
-        'fieldId', 'planeZ', 'camX', 'camY', 'camZ', 'dirX', 'dirY', 'planeX', 'planeY',
+        'fieldId', 'texName', 'planeZ', 'camX', 'camY', 'camZ', 'dirX', 'dirY', 'planeX', 'planeY',
         'pitch', 'viewW', 'viewH', 'scy', 'eyeZ', 'lightmapId', 'ambient', 'baseR', 'baseG', 'baseB',
       ],
       body: (p, _self) =>
-        `_sb.drawPlaneField(${p.fieldId}, ${p.planeZ}, ${p.camX}, ${p.camY}, ${p.camZ}, ${p.dirX}, ${p.dirY}, ${p.planeX}, ${p.planeY}, ${p.pitch}, ${p.viewW}, ${p.viewH}, ${p.scy}, ${p.eyeZ}, ${p.lightmapId}, ${p.ambient}, ${p.baseR}, ${p.baseG}, ${p.baseB})`,
+        `_sb.drawPlaneField(${p.fieldId}, ${p.texName}, ${p.planeZ}, ${p.camX}, ${p.camY}, ${p.camZ}, ${p.dirX}, ${p.dirY}, ${p.planeX}, ${p.planeY}, ${p.pitch}, ${p.viewW}, ${p.viewH}, ${p.scy}, ${p.eyeZ}, ${p.lightmapId}, ${p.ambient}, ${p.baseR}, ${p.baseG}, ${p.baseB})`,
     },
     {
       name: 'drawRadialGradientCircle',
