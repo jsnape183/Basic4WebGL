@@ -30,7 +30,15 @@ class FakeSprite {
 }
 class FakeTexture {
   opts: any;
-  constructor(opts?: unknown) { textureCreated++; this.opts = opts; lastTexOpts = opts; }
+  source: any;
+  frame: any;
+  constructor(opts?: any) {
+    textureCreated++;
+    this.opts = opts;
+    lastTexOpts = opts;
+    this.source = opts?.source;
+    this.frame = opts?.frame;
+  }
   destroy() { destroyed++; }
 }
 class FakeRectangle { constructor(public x: number, public y: number, public w: number, public h: number) {} }
@@ -53,16 +61,34 @@ class FakeFillGradient {
   constructor(opts?: unknown) { gradientCreated++; this.opts = opts; }
   destroy() { gradientDestroyed++; }
 }
+let bufferSourceCreated = 0;
+class FakeBufferImageSource {
+  opts: any;
+  width: number;
+  height: number;
+  addressMode = '';
+  scaleMode = '';
+  constructor(opts: any) {
+    bufferSourceCreated++;
+    this.opts = opts;
+    this.width = opts.width;
+    this.height = opts.height;
+    this.addressMode = opts.addressMode ?? '';
+    this.scaleMode = opts.scaleMode ?? '';
+  }
+}
 
 function loadDrawing() {
   gfxCreated = spriteCreated = textureCreated = destroyed = meshCreated = meshDestroyed = 0;
   gradientCreated = gradientDestroyed = 0;
+  bufferSourceCreated = 0;
   lastTexOpts = null;
   const src = readFileSync('src/components/Runner/engine/drawing.js', 'utf-8');
   const PIXI = {
     Graphics: FakeGraphics, Sprite: FakeSprite, Texture: FakeTexture,
     Rectangle: FakeRectangle, PerspectiveMesh: FakePerspectiveMesh,
     FillGradient: FakeFillGradient,
+    BufferImageSource: FakeBufferImageSource,
   };
   const worldContainer = new FakeContainer();
   const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
@@ -402,5 +428,39 @@ describe('drawing — radial gradient fill (light-pool POC)', () => {
     d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
     d.drawRadialGradientEllipse(0, 0, 40, 10, 255, 255, 255, 0.5);
     expect(gfxCreated).toBe(2); // reused from the pool
+  });
+});
+
+describe('drawing — registerLightmap (baked lightmap)', () => {
+  const bytes = (n: number) => Array.from({ length: n * n * 4 }, (_, i) => i % 256);
+
+  test('builds a clamped linear texture from the byte array, keyed by id', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('rcpool_floor', 4, 4, 10, 20, bytes(4));
+    expect(bufferSourceCreated).toBe(1);
+    expect(textureCreated).toBeGreaterThanOrEqual(1);
+    const src = (lastTexOpts as any).source;
+    expect(src.width).toBe(4);
+    expect(src.height).toBe(4);
+    expect(src.addressMode).toBe('clamp-to-edge');
+    expect(src.scaleMode).toBe('linear');
+  });
+
+  test('a second call with the same id destroys the previous texture and rebuilds', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('rcpool_floor', 4, 4, 10, 20, bytes(4));
+    const destroyedBefore = destroyed;
+    d.registerLightmap('rcpool_floor', 4, 4, 10, 20, bytes(4));
+    expect(destroyed).toBe(destroyedBefore + 1);
+    expect(bufferSourceCreated).toBe(2);
+  });
+
+  test('_drawingReset destroys all registered lightmap textures', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('rcpool_floor', 4, 4, 10, 20, bytes(4));
+    d.registerLightmap('rcpool_ceil', 4, 4, 10, 20, bytes(4));
+    const destroyedBefore = destroyed;
+    d._drawingReset();
+    expect(destroyed).toBeGreaterThanOrEqual(destroyedBefore + 2);
   });
 });

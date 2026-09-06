@@ -126,6 +126,11 @@ const _sbDrawing = (() => {
     return g2;
   }
 
+  // id -> { texture: PIXI.Texture, worldCols, worldRows }. A baked light grid
+  // uploaded once as a clamped, linearly-filtered texture. Rebuilt only on an
+  // explicit re-register (same id) or scene reset -- never per frame.
+  const _lightmapCache = new Map();
+
   function _texFor(imageName, srcX, srcVTop, srcVBot) {
     const vt = srcVTop === undefined ? 0 : srcVTop;
     const vb = srcVBot === undefined ? 1 : srcVBot;
@@ -265,6 +270,22 @@ const _sbDrawing = (() => {
       o.position.set(x, y);
       return o;
     },
+    // Upload a baked light grid as a texture. `bytes` is a length w*h*4 array of
+    // 0..255 RGBA values, row-major. worldCols/worldRows are the map's cell
+    // dimensions, stored so drawLightmapStrip can map a world point to a UV.
+    registerLightmap(id, w, h, worldCols, worldRows, bytes) {
+      const prev = _lightmapCache.get(id);
+      if (prev && prev.texture && prev.texture.destroy) prev.texture.destroy();
+      const source = new PIXI.BufferImageSource({
+        resource: new Uint8Array(bytes),
+        width: w,
+        height: h,
+        addressMode: 'clamp-to-edge',
+        scaleMode: 'linear',
+      });
+      const texture = new PIXI.Texture({ source });
+      _lightmapCache.set(id, { texture, worldCols, worldRows });
+    },
     drawImageStrip(imageName, srcX, destX, destY, destWidth, destHeight, tint, srcVTop, srcVBot) {
       const o = _acquireS();
       o.texture = _texFor(imageName, srcX, srcVTop, srcVBot);
@@ -347,6 +368,8 @@ const _sbDrawing = (() => {
       _gradientCache.clear();
       for (const g of _radialGradientCache.values()) { if (g.destroy) g.destroy(); }
       _radialGradientCache.clear();
+      for (const e of _lightmapCache.values()) { if (e.texture && e.texture.destroy) e.texture.destroy(); }
+      _lightmapCache.clear();
     },
   };
 })();

@@ -53,5 +53,11 @@ export const drawingDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.drawRadialGradientEllipse(${p.x}, ${p.y}, ${p.radiusX}, ${p.radiusY}, ${p.r}, ${p.g}, ${p.b}, ${p.alpha})`,
     },
+    {
+      name: 'registerLightmap',
+      params: ['id', 'w', 'h', 'worldCols', 'worldRows', 'bytes'],
+      body: (p, _self) =>
+        `_sb.registerLightmap(${p.id}, ${p.w}, ${p.h}, ${p.worldCols}, ${p.worldRows}, ${p.bytes})`,
+    },
   ],
 };
