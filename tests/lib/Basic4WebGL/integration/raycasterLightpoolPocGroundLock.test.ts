@@ -5,16 +5,15 @@ import '@Basic4WebGL/transpilerRules';
 import { sortByDependencies } from '@Basic4WebGL/sortByDependencies';
 import { packageModules } from '../../../../src/constants/packageModules';
 
-// Regression guard for the light-pool POC's ground-lock: the earlier version
-// drew each pool as a screen-space CIRCLE with one anchor point, so it
-// translated rigidly as the player moved and read as a floating orb that
-// tracked the camera. The fix draws an ELLIPSE anchored by its FAR edge
-// (perpendicular distance depth+WR) and extends it toward the camera.
+// Ground-lock guard for the light-pool POC after the floor-field rewrite.
 //
-// This test renders two frames -- camera at A, then walked ~1 cell forward
-// toward the light -- and asserts the pool's NEAR edge sweeps several times
-// further than its FAR edge moves. That asymmetry is the "painted on the
-// ground" signature; a rigid billboard would move both edges equally.
+// The old renderer drew each pool as a screen-space ellipse re-derived from
+// the camera every frame, so it slid under rotation. The new renderer hands
+// the engine's per-pixel floorcaster (drawPlaneField) a STABLE plane -- fixed
+// planeZ, fixed lightmap id -- and only the camera pose changes. The pixel
+// projection (and its ground-lock) is unit-tested in drawing.test.ts; this
+// test just proves the demo feeds drawPlaneField correctly and no longer
+// emits the old ellipse overlay.
 
 const DIR = 'demo-src/raycaster-lightpool-poc';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
@@ -29,11 +28,12 @@ function transpileDemo(): string {
   return String(result.code);
 }
 
-interface Ellipse {
-  x: number;
-  y: number;
-  rx: number;
-  ry: number;
+interface PlaneCall {
+  fieldId: unknown;
+  planeZ: number;
+  camX: number;
+  camY: number;
+  dirX: number;
 }
 
 function build() {
@@ -70,13 +70,20 @@ function build() {
   _sb.getStageWidth = () => 640;
   _sb.getStageHeight = () => 360;
 
-  const ellipses: Ellipse[] = [];
+  const planeCalls: PlaneCall[] = [];
+  let ellipseCalls = 0;
+  let lightmapIds: unknown[] = [];
   _sb.setFillColor = () => {};
   _sb.setLineWidth = () => {};
   _sb.drawRect = () => {};
-  _sb.drawRadialGradientCircle = () => {};
-  _sb.drawRadialGradientEllipse = (x: number, y: number, rx: number, ry: number) =>
-    ellipses.push({ x, y, rx, ry });
+  _sb.drawRadialGradientEllipse = () => { ellipseCalls++; };
+  _sb.drawRadialGradientCircle = () => { ellipseCalls++; };
+  _sb.registerLightmap = (id: unknown) => { lightmapIds.push(id); };
+  _sb.drawPlaneField = (
+    fieldId: unknown, planeZ: number, camX: number, camY: number, _camZ: number, dirX: number,
+  ) => {
+    planeCalls.push({ fieldId, planeZ, camX, camY, dirX });
+  };
 
   const deferred: Array<() => void> = [];
   _sb._deferModuleBody = (cb: () => void) => deferred.push(cb);
@@ -118,42 +125,37 @@ function build() {
   lights.setambient(0.08);
   render.bindlights(lights);
   render.bindcamera(mover);
-  return { render, mover, ellipses };
+  return { render, mover, planeCalls, ellipseCalls: () => ellipseCalls, lightmapIds: () => lightmapIds };
 }
 
-describe('raycaster-lightpool-poc: light pools stay locked to the ground', () => {
-  test('floor pool far edge stays pinned while near edge sweeps as the camera walks toward the light', () => {
-    const { render, mover, ellipses } = build();
+describe('raycaster-lightpool-poc: floor-field feeds a stable plane, no ellipse overlay', () => {
+  test('bindLights bakes a floor and a ceiling lightmap', () => {
+    const { lightmapIds } = build();
+    expect(lightmapIds()).toEqual(['rcpoc_floor', 'rcpoc_ceil']);
+  });
 
-    // Light A sits at world (4.5, 4.5, 0.9). Camera facing +y (south) toward it.
+  test('each frame draws exactly one floor + one ceiling field, at fixed planeZ, only the camera changes', () => {
+    const { render, mover, planeCalls, ellipseCalls } = build();
+
     mover.warpto(4.5, 3.0, Math.PI / 2);
     render.renderframe();
-    // largest-rx ellipse in the lower half = the nearby floor pool
-    const a = ellipses.filter((e) => e.y > 180).sort((p, q) => q.rx - p.rx)[0];
-    ellipses.length = 0;
+    const a = planeCalls.slice();
+    planeCalls.length = 0;
 
-    mover.warpto(4.5, 4.0, Math.PI / 2); // walked 1 cell closer
+    mover.warpto(4.5, 3.0, Math.PI / 2 + 0.3); // rotate in place
     render.renderframe();
-    const b = ellipses.filter((e) => e.y > 180).sort((p, q) => q.rx - p.rx)[0];
+    const b = planeCalls.slice();
 
-    expect(a).toBeDefined();
-    expect(b).toBeDefined();
-
-    const aFar = a.y - a.ry; // top of the floor ellipse == far edge
-    const aNear = a.y + a.ry; // bottom == near edge
-    const bFar = b.y - b.ry;
-    const bNear = b.y + b.ry;
-
-    // eslint-disable-next-line no-console
-    console.log(
-      `A: far=${aFar.toFixed(0)} near=${aNear.toFixed(0)}  B: far=${bFar.toFixed(0)} near=${bNear.toFixed(0)}  ` +
-        `farMoved=${Math.abs(bFar - aFar).toFixed(0)} nearMoved=${Math.abs(bNear - aNear).toFixed(0)}`,
-    );
-
-    const farMoved = Math.abs(bFar - aFar);
-    const nearMoved = Math.abs(bNear - aNear);
-
-    // Ground-lock signature: the near edge moves several times more than the far edge.
-    expect(nearMoved).toBeGreaterThan(farMoved * 2);
+    expect(a.map((c) => c.fieldId)).toEqual(['rcpoc_floor', 'rcpoc_ceil']);
+    expect(b.map((c) => c.fieldId)).toEqual(['rcpoc_floor', 'rcpoc_ceil']);
+    // plane heights are constant across the rotation...
+    expect(a[0].planeZ).toBe(b[0].planeZ);
+    expect(a[1].planeZ).toBe(b[1].planeZ);
+    expect(a[0].planeZ).toBe(0);
+    expect(a[1].planeZ).toBeGreaterThan(0);
+    // ...the camera direction is what moved
+    expect(a[0].dirX).not.toBeCloseTo(b[0].dirX, 3);
+    // and the drifting ellipse overlay is gone
+    expect(ellipseCalls()).toBe(0);
   });
 });
