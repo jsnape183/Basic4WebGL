@@ -123,3 +123,41 @@ function onupdate(delta)
   next col
 endfunction
 ```
+
+## registerLightmap(id, width, height, worldCols, worldRows, bytes)
+
+Stores a pre-computed grid of brightness values under a name, so a renderer can look up "how lit is this spot on the ground?" without recalculating it every frame. This is an advanced building block for custom first-person renderers — a normal 2D game never needs it.
+
+`bytes` is a flat list of colour values, four per grid cell (red, green, blue, then 255), read left-to-right then top-to-bottom. Brightness is taken from the red value (0–255). `worldCols` and `worldRows` are how many world units the whole grid covers, so a lookup can turn a world position into a grid position.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| id        | string | Name to store this grid under, reused when drawing |
+| width     | number | Grid cells across |
+| height    | number | Grid cells down |
+| worldCols | number | World units the grid spans horizontally |
+| worldRows | number | World units the grid spans vertically |
+| bytes     | array  | Flat list of colour values, `width * height * 4` long |
+
+**Returns:** nothing.
+
+## drawPlaneField(fieldId, planeZ, camX, camY, camZ, dirX, dirY, planeX, planeY, pitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB)
+
+Fills the screen with one flat floor or ceiling surface, drawn in true perspective: for every pixel it works out the exact spot on the ground that pixel is looking at, paints a tiled tile pattern there, and dims it by the brightness stored in a registered lightmap (never darker than `ambient`). Because the lookup is by world position, lit patches stay locked to the ground as the camera turns. Advanced renderers only — call it once per surface, before drawing the walls that sit in front of it.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| fieldId   | string | Name for this surface's reusable pixel buffer |
+| planeZ    | number | Height of the surface (0 = floor, 1 = standard ceiling) |
+| camX, camY, camZ | number | Camera position |
+| dirX, dirY | number | Direction the camera faces |
+| planeX, planeY | number | Camera view-plane vector (sets the field of view) |
+| pitch     | number | Vertical look offset in pixels |
+| viewW, viewH | number | Size of the view in pixels |
+| scy       | number | Screen Y of the horizon before pitch |
+| eyeZ      | number | Eye height above the camera position |
+| lightmapId | string | Name of a grid registered with `registerLightmap` |
+| ambient   | number | Lowest brightness, 0–1 |
+| baseR, baseG, baseB | number | Base tile colour, 0–255 per channel |
+
+**Returns:** nothing.

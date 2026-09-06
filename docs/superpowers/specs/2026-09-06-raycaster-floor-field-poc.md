@@ -1,6 +1,10 @@
 # Raycaster Floor-Field POC — combined spec + plan
 
-**Status:** approved to execute (streamlined — token-constrained session).
+**Status:** implemented (commits after `6f2b802`). Route A landed as the
+GLSL-free CPU floorcaster (route C internals) — chosen up front because a
+shader can't be visually debugged in this session. `drawPlaneField`'s
+signature is shader-swappable later. Visual acceptance pass is pending (user,
+off-session).
 
 **Goal:** Replace the raycaster light-pool POC's drifting floor/ceiling "pool"
 overlays with a true per-pixel floor-caster: one engine primitive that, for
