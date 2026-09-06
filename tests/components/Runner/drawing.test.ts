@@ -508,13 +508,16 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     expect(spriteCreated).toBe(1);
     expect(bufSourceCreated).toBe(2); // lightmap + field
     // dark lightmap + ambient 0.1 -> floor pixels are dim but present (alpha 255)
-    const buf = (s1.texture as any).opts.source.resource as Uint8Array;
+    const src = (s1.texture as any).opts.source;
+    const buf = src.resource as Uint8Array;
+    const bw = src.width as number; // downscaled buffer width
+    const bh = src.height as number;
     let litBelow = 0;
-    for (let y = p.viewH / 2 + 10; y < p.viewH; y++) {
-      const o = (Math.floor(y) * p.viewW + p.viewW / 2) * 4;
+    for (let y = Math.floor(bh / 2) + 5; y < bh; y++) {
+      const o = (y * bw + Math.floor(bw / 2)) * 4;
       if (buf[o + 3] === 255 && buf[o] > 0 && buf[o] < 120) litBelow++;
     }
-    expect(litBelow).toBeGreaterThan(10);
+    expect(litBelow).toBeGreaterThan(5);
     const s2 = d.drawPlaneField(...args);
     expect(s2).toBe(s1);              // same persistent sprite
     expect(spriteCreated).toBe(1);    // no new allocation

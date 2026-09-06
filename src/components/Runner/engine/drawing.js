@@ -12,6 +12,7 @@ const _sbDrawing = (() => {
   const _poolM = [];                // free PerspectiveMeshes; same high-water-mark growth model as _poolS
   const _DRAW_Z_BASE = 1_000_000;   // drawing objects render above ordinary world sprites
   let _drawSeq = 0;                  // per-frame draw-order counter -> zIndex
+  const _PF_SCALE = 2;               // drawPlaneField renders the floorcast buffer at 1/N screen resolution, upscaled by the sprite. 1 = full res (crispest, slowest); 2 = quarter the pixels; 3 = ninth.
   const _lightmapCache = new Map();  // id -> { texture, worldCols, worldRows, w, h, bytes } -- baked static light grid (registerLightmap)
   const _planeFields = new Map();    // fieldId -> { source, texture, sprite, w, h, buf } -- persistent per-plane floorcast buffer (drawPlaneField)
   const _texCache = new Map();      // `${imageName}:${srcX}:${vTop}:${vBot}` -> PIXI.Texture (LRU-capped at 512)
@@ -357,17 +358,24 @@ const _sbDrawing = (() => {
       return { wx: pose.camX + rayX * d, wy: pose.camY + rayY * d, d };
     },
 
-    // Per-pixel floorcaster for one flat plane. For every screen pixel it
-    // resolves the world point on the plane (via _planeFieldWorldPos), samples
-    // a procedural world-tiled tile pattern (base colour, checker, thin grid
-    // lines) and multiplies by max(ambient, bakedLight(worldPos)) from the
-    // registered lightmap. Writes into a persistent per-field RGBA buffer that
-    // is uploaded in place (no per-frame GPU alloc/destroy), shown via one
-    // persistent Sprite kept at the current draw-order zIndex so later draws
-    // (walls) paint over it. Static lighting only -- the lightmap is baked once.
+    // Per-pixel floorcaster for one flat plane. Resolves the world point each
+    // screen pixel looks at, samples a procedural world-tiled tile pattern
+    // (checker + thin grid lines) and multiplies by max(ambient,
+    // bakedLight(worldPos)) from the registered lightmap. Writes a persistent
+    // per-field RGBA buffer uploaded in place (no per-frame GPU alloc/destroy),
+    // shown via one persistent Sprite at the current draw-order zIndex so later
+    // draws (walls) paint over it. Static lighting only.
+    //
+    // Perf: the projection is the classic floorcast form -- perpendicular
+    // distance `d` is constant along a screen row and the world point steps
+    // linearly across it, so the inner loop is two adds + a lightmap lookup, no
+    // divide, no allocation. The buffer is rendered at 1/_PF_SCALE resolution
+    // and upscaled by the sprite; _planeFieldWorldPos is the un-optimised
+    // reference the tests pin this against.
     drawPlaneField(fieldId, planeZ, camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW, viewH, scy, eyeZ, lightmapId, ambient, baseR, baseG, baseB) {
-      const W = Math.max(1, Math.round(viewW));
-      const H = Math.max(1, Math.round(viewH));
+      const SCALE = _PF_SCALE;
+      const W = Math.max(1, Math.round(viewW / SCALE));
+      const H = Math.max(1, Math.round(viewH / SCALE));
       let f = _planeFields.get(fieldId);
       if (!f || f.w !== W || f.h !== H) {
         if (f) {
@@ -390,33 +398,49 @@ const _sbDrawing = (() => {
       const lmB = lm ? lm.bytes : null;
       const lmW = lm ? lm.w : 1;
       const lmH = lm ? lm.h : 1;
-      const lmWC = lm ? lm.worldCols : 1;
-      const lmWR = lm ? lm.worldRows : 1;
-      const pose = { camX, camY, camZ, fDirX, fDirY, fPlaneX, fPlaneY, camPitch, viewW: W, viewH: H, scy, eyeZ, planeZ };
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const o = (y * W + x) * 4;
-          const wp = this._planeFieldWorldPos(x + 0.5, y + 0.5, pose);
-          if (!wp) { buf[o] = 0; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = 0; continue; }
-          const fx = wp.wx - Math.floor(wp.wx);
-          const fy = wp.wy - Math.floor(wp.wy);
-          // procedural tile: checker shade + thin grid lines
+      const lmSX = lm ? lmW / lm.worldCols : 0;   // world -> lightmap texel scale
+      const lmSY = lm ? lmH / lm.worldRows : 0;
+      const horizon = scy + camPitch;
+      const zDiff = camZ + eyeZ - planeZ;          // >0 floor, <0 ceiling
+      const isFloor = zDiff > 0;
+      // ray directions at the left/right screen edges (camXc = -1 .. +1)
+      const dirLX = fDirX - fPlaneX, dirLY = fDirY - fPlaneY;
+      const dirRX = fDirX + fPlaneX, dirRY = fDirY + fPlaneY;
+      const halfStepFrac = 0.5 / W;                // sample at pixel centres
+      for (let by = 0; by < H; by++) {
+        let o = by * W * 4;
+        const sy = (by + 0.5) * SCALE;
+        const rowY = sy - horizon;
+        const bad = isFloor ? rowY <= 0.0001 : rowY >= -0.0001;
+        let d = bad ? 0 : (zDiff * viewH) / rowY;
+        if (bad || d <= 0.05 || d > 64) {
+          for (let bx = 0; bx < W; bx++) { buf[o] = 0; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = 0; o += 4; }
+          continue;
+        }
+        const spanX = (dirRX - dirLX) * d, spanY = (dirRY - dirLY) * d;
+        let wx = camX + (dirLX + (dirRX - dirLX) * halfStepFrac) * d;
+        let wy = camY + (dirLY + (dirRY - dirLY) * halfStepFrac) * d;
+        const stepX = spanX / W, stepY = spanY / W;
+        for (let bx = 0; bx < W; bx++) {
+          const fx = wx - Math.floor(wx);
+          const fy = wy - Math.floor(wy);
           let shade = ((fx < 0.5) === (fy < 0.5)) ? 1.0 : 0.82;
           if (fx < 0.03 || fx > 0.97 || fy < 0.03 || fy > 0.97) shade = 0.55;
           let L = 1.0;
           if (lmB) {
-            let lx = Math.floor((wp.wx / lmWC) * lmW);
-            let ly = Math.floor((wp.wy / lmWR) * lmH);
+            let lx = (wx * lmSX) | 0;
+            let ly = (wy * lmSY) | 0;
             if (lx < 0) lx = 0; else if (lx >= lmW) lx = lmW - 1;
             if (ly < 0) ly = 0; else if (ly >= lmH) ly = lmH - 1;
-            L = lmB[(ly * lmW + lx) * 4] / 255;
+            L = lmB[(ly * lmW + lx) * 4] * 0.00392156862745098; // /255
           }
           const m = shade * (ambient > L ? ambient : L);
-          const r = baseR * m, g = baseG * m, b = baseB * m;
-          buf[o] = r > 255 ? 255 : r;
-          buf[o + 1] = g > 255 ? 255 : g;
-          buf[o + 2] = b > 255 ? 255 : b;
-          buf[o + 3] = 255;
+          let r = baseR * m; if (r > 255) r = 255;
+          let g = baseG * m; if (g > 255) g = 255;
+          let b = baseB * m; if (b > 255) b = 255;
+          buf[o] = r; buf[o + 1] = g; buf[o + 2] = b; buf[o + 3] = 255;
+          o += 4;
+          wx += stepX; wy += stepY;
         }
       }
       if (f.source.update) f.source.update();

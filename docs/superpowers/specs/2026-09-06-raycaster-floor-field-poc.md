@@ -105,6 +105,16 @@ push `[round(v*255), same, same, 255]`. `z = 0.05` for the floor map,
 3. **Docs.** API-reference entry for `registerLightmap`/`drawPlaneField`;
    note the POC in the raycaster guide; this spec's status → done.
 
+## Perf pass (post-"perfect but slow")
+
+`drawPlaneField` inner loop rewritten to the classic floorcast form: `d`
+constant per row, world point stepped linearly across the row — no per-pixel
+divide, no per-pixel object allocation. Buffer rendered at `1/_PF_SCALE`
+screen resolution (`_PF_SCALE = 2` → quarter the pixels), upscaled by the
+sprite. `_planeFieldWorldPos` kept as the un-optimised reference the tests
+pin against. Next lever if still needed: one combined buffer/sprite/upload
+for both planes, each touching only its own side of the horizon.
+
 ## Testing (automated ceiling is low — accepted)
 
 - `_planeFieldWorldPos` pure-math round-trip + pose-independence (the
