@@ -85,6 +85,10 @@ function onenter()
   ' its risers/soffit keep the per-column path (gradient shading above still
   ' governs them).
   self.ren.setFloorField(1)
+  ' Concrete floor + ceiling everywhere by default; per-cell fcol:/ccol: accents
+  ' and the two ftex:rc_placeholder_tiles.png rooms in finale.stm override it.
+  self.ren.setFloorTexture("rc_tex_concrete.png")
+  self.ren.setCeilTexture("rc_tex_concrete.png")
 
   ' No dynamic lights at all -- every `light` marker in finale.stm was already
   ' baked into staticArr by the RcLights Constructor above. Nothing to update

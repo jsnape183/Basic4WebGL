@@ -141,16 +141,17 @@ Stores a pre-computed grid of brightness values under a name, so a renderer can 
 
 **Returns:** nothing.
 
-## registerFieldTiles(atlasId, cols, rows, cellNames)
+## registerFieldTiles(atlasId, cols, rows, cellNames, cellColors)
 
-Stores a per-cell texture grid for a floor or ceiling, so different tiles of the map can show different images. `cellNames` is a flat list, one pre-loaded image name per grid cell (left-to-right then top-to-bottom), with `""` where a cell has no texture of its own. `drawPlaneField` then picks each pixel's texture by which cell the pixel lands in, falling back to its default texture (or the checker) for empty cells. Advanced renderers only.
+Stores a per-cell surface grid for a floor or ceiling, so different tiles of the map can show different images or flat colours. Both lists are flat, one entry per grid cell (left-to-right then top-to-bottom). `cellNames` holds pre-loaded image names (`""` for none); `cellColors` holds packed colours as `red * 65536 + green * 256 + blue`, or `-1` for none. `drawPlaneField` picks each pixel by which cell it lands in: the cell's image, then the cell's flat colour, then the surface's default texture, then the checker. Advanced renderers only.
 
-| Parameter | Type   | Description |
-|-----------|--------|-------------|
-| atlasId   | string | Name to store this grid under, passed back to `drawPlaneField` |
-| cols      | number | Grid cells across |
-| rows      | number | Grid cells down |
-| cellNames | array  | Flat list of image names, `cols * rows` long, `""` for none |
+| Parameter  | Type   | Description |
+|------------|--------|-------------|
+| atlasId    | string | Name to store this grid under, passed back to `drawPlaneField` |
+| cols       | number | Grid cells across |
+| rows       | number | Grid cells down |
+| cellNames  | array  | Flat list of image names, `cols * rows` long, `""` for none |
+| cellColors | array  | Flat list of packed colours, `cols * rows` long, `-1` for none |
 
 **Returns:** nothing.
 

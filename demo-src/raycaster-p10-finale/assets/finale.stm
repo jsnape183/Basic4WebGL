@@ -1800,6 +1800,126 @@
      "row": 15,
      "col": 15,
      "tag": "light:1.7"
+    },
+    {
+     "row": 4,
+     "col": 14,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 4,
+     "col": 15,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 4,
+     "col": 16,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 4,
+     "col": 17,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 5,
+     "col": 14,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 5,
+     "col": 15,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 5,
+     "col": 16,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 5,
+     "col": 17,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 6,
+     "col": 14,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 6,
+     "col": 15,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 6,
+     "col": 16,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 6,
+     "col": 17,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 15,
+     "col": 4,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 15,
+     "col": 5,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 15,
+     "col": 6,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 15,
+     "col": 7,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 16,
+     "col": 4,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 16,
+     "col": 5,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 16,
+     "col": 6,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 16,
+     "col": 7,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 17,
+     "col": 4,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 17,
+     "col": 5,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 17,
+     "col": 6,
+     "tag": "ftex:rc_placeholder_tiles.png"
+    },
+    {
+     "row": 17,
+     "col": 7,
+     "tag": "ftex:rc_placeholder_tiles.png"
     }
    ]
   }

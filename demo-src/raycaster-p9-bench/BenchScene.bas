@@ -25,6 +25,7 @@ dim curSize
 dim auto
 dim autoIdx
 dim enemyN
+dim ffOn
 
 Constructor()
   input.bind("fwd", "key", keyboard.W)
@@ -39,6 +40,7 @@ Constructor()
   input.bind("s2", "key", keyboard.DIGIT_2)
   input.bind("s3", "key", keyboard.DIGIT_3)
   input.bind("autop", "key", keyboard.P)
+  input.bind("fft", "key", keyboard.T)
 EndConstructor
 
 function onenter()
@@ -48,13 +50,14 @@ function onenter()
   self.maxMs = 0
   self.auto = 0
   self.autoIdx = 0
+  self.ffOn = 1
   self.sd = new StressData()
   self.loadSize(32)
 
   self.hudA = new Text("...", 12, 10)
   self.hudA.setStyle(14, 255, 220, 120)
   hud.add(self.hudA)
-  self.hudB = new Text("WASD/QE/RF   1-2-3 size   P autopilot", 12, 28)
+  self.hudB = new Text("WASD/QE/RF   1-2-3 size   P autopilot   T floor-field", 12, 28)
   self.hudB.setStyle(12, 180, 255, 180)
   hud.add(self.hudB)
 
@@ -77,6 +80,12 @@ function loadSize(n)
   self.ren.bindCamera(self.me)
   self.ren.bindActors(self.acts)
   self.ren.setWallTexture("rc_tex_concrete.png")
+  ' Per-pixel floor/ceiling field -- the whole point of this bench pass is to
+  ' confirm the floorcast (two drawPlaneField calls/frame) is affordable on the
+  ' big multi-tier stress map. T toggles it live to A/B the frame cost.
+  self.ren.setFloorTexture("rc_tex_floor.png")
+  self.ren.setCeilTexture("rc_tex_ceil.png")
+  self.ren.setFloorField(self.ffOn)
   self.torch = self.lights.addPoint(2.5 * sc, 2.5 * sc, 0.5, 0.9, RcConfig.RC_LIGHT_RANGE)
   self.enemyN = self.sd.enemyCount(n)
   cap = self.acts.poolSize()
@@ -109,6 +118,10 @@ function onupdate(delta)
   endif
   if input.pressed("autop") then
     self.auto = 1 - self.auto
+  endif
+  if input.pressed("fft") then
+    self.ffOn = 1 - self.ffOn
+    self.ren.setFloorField(self.ffOn)
   endif
 
   if self.auto = 1 then
