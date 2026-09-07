@@ -88,6 +88,11 @@ endfunction
 ' --- spawn the mover at the wanted entry --------------------------------
 ' Looks for an `entry:` marker whose `entry:` value = wantName. Falls back to
 ' `entry:start`, then to cell (1.5, 1.5). Sets position AND facing.
+'
+' Uses tm.allMarkers() (not markersByTag) because the engine's markersByTag
+' does an EXACT tag-string match -- our tags are compound ("entry:start face:e")
+' so we read every marker and filter on the parsed `entry:` token, the same way
+' RcWorld.bas consumes its tags.
 function spawnAtEntry(mover as RcMover, tm as tilemapset, wantName)
   dim markers
   dim mi
@@ -111,7 +116,7 @@ function spawnAtEntry(mover as RcMover, tm as tilemapset, wantName)
   startY = 1.5
   startAngle = 0.0
 
-  markers = tm.markersByTag("entry")
+  markers = tm.allMarkers()
   for mi = 0 to array.arrLength(markers) - 1
     mk = markers(mi)
     name = tagValue(mk.tag, "entry")
@@ -156,21 +161,24 @@ function findDoorInReach(tm as tilemapset, px, py, reach)
 
   haveBest = 0
   bestD = 0.0
-  markers = tm.markersByTag("door")
+  ' allMarkers + token filter -- see the note on spawnAtEntry re: markersByTag.
+  markers = tm.allMarkers()
   for mi = 0 to array.arrLength(markers) - 1
     mk = markers(mi)
-    cx = mk.col + 0.5
-    cy = mk.row + 0.5
-    d = math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py))
-    if d <= reach then
-      if haveBest = 0 then
-        haveBest = 1
-        best = mk
-        bestD = d
-      else
-        if d < bestD then
+    if string.len(tagValue(mk.tag, "door")) > 0 then
+      cx = mk.col + 0.5
+      cy = mk.row + 0.5
+      d = math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py))
+      if d <= reach then
+        if haveBest = 0 then
+          haveBest = 1
           best = mk
           bestD = d
+        else
+          if d < bestD then
+            best = mk
+            bestD = d
+          endif
         endif
       endif
     endif
