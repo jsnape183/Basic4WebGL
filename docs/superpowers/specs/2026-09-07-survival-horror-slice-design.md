@@ -94,7 +94,13 @@ the circle can hurt you.
 ### 3.1 Movement & interaction
 
 - Reuse the demo raycaster's movement: forward / back, strafe left / right, turn
-  left / right. Mouse-look is out of scope unless the demo already has it.
+  left / right, plus pitch (Y-look) on arrows Up/Down and the right analogue
+  stick. Mouse-look is out of scope.
+- **Lighting/surfaces (added in phase 1):** each scene binds an `RcLights` rig
+  (uniform ambient only so far — point lights come with the lighting/enemy
+  phases) and runs the per-pixel textured floor+ceiling field
+  (`RcRender.setFloorField`). Per-area ambient is the first atmosphere lever
+  (tunnel dim, platform bright).
 - **Interact** action (new engine primitive — see §5): a single button that,
   when aimed at an interactable, triggers it. Used for:
   - Picking up scrap / ammo (or pickups auto-collect on walk-over — decide in
