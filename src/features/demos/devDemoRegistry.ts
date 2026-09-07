@@ -108,4 +108,13 @@ export const devDemoRegistry: DemoEntry[] = [
     docsSlug: '',
     file: 'RaycasterLightpoolPoc',
   },
+  {
+    slug: 'survival-slice',
+    name: 'Survival Slice',
+    tags: ['Raycaster', 'Survival Horror', 'WIP'],
+    description:
+      'Survival-horror vertical slice, built phase by phase (spec docs/superpowers/specs/2026-09-07-survival-horror-slice-design.md). Phase 1: three connected raycaster scenes — Old Platform, Disused Tunnel, Concourse Stairwell — joined by interact-to-use doorways; entry points and doorways authored as .stm markers, target entry carried across scenemanager.switch via a shared GameState.',
+    docsSlug: '',
+    file: 'SurvivalSlice',
+  },
 ];
