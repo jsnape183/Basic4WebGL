@@ -1,0 +1,29 @@
+{
+  "tileWidth": 16,
+  "tileHeight": 16,
+  "tileImage": "rc_placeholder_tiles.png",
+  "layers": {
+    "walls": [
+      [1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    "tags": {
+      "type": "markers",
+      "markers": [
+        { "row": 5, "col": 6, "tag": "entry:start face:e" },
+        { "row": 7, "col": 3, "tag": "entry:from_tunnel face:n" },
+        { "row": 2, "col": 8, "tag": "entry:from_stairwell face:s" },
+        { "row": 8, "col": 3, "tag": "door:tunnel:from_platform label:Enter_tunnel" },
+        { "row": 1, "col": 8, "tag": "door:stairwell:from_platform label:Ascend" }
+      ]
+    }
+  }
+}
