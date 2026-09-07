@@ -101,7 +101,8 @@ handles cheaply, and the transition is a normal `scenemanager.switch`.
 
 How large can one area get before you must split it? See the Phase 9 benchmark
 report (`docs/raycaster-benchmark-report.md` in the repository) for the measured
-area-size limits once measured.
+area-size limits, and the `raycaster-p9-bench` demo to profile your own map
+(`T` toggles the floor field against the on-screen frame time).
 
 ## RcCast — casting rays
 
@@ -189,6 +190,10 @@ endfunction
 | `ren.projectY(height, distance)` | screen Y for a world height at a distance (mostly internal) |
 | `ren.columnCount()` | how many vertical strips wide the view is |
 | `ren.setWallTexture(name)` | default wall texture for the whole level (see Wall textures below) |
+| `ren.setFloorField(1)` | draw the standard floor & ceiling with the per-pixel floorcaster — real textures and ground-locked light (see Floor and ceiling below) |
+| `ren.setFloorTexture(name)` / `ren.setCeilTexture(name)` | world-tiled texture for the floor field |
+| `ren.setGradientShading(1)` | smooth near→far light gradient on floor/ceiling colour runs, instead of stepped bands |
+| `ren.setFlatFill(0)` | force the accurate per-column floor/ceiling path (needed under a short-radius light) |
 
 `RcRender` also fills the flat, horizontal surfaces you see wherever a floor or
 ceiling changes height — the top of a step, the floor of a pit, the underside of
@@ -214,20 +219,43 @@ diagonal-wall tiles get a real slice of the wall texture. A wall with no texture
 
 ### Floor and ceiling colour
 
-Floors and ceilings are flat-shaded. Colour an individual tile with an
-`fcol:RRGGBB` (floor) or `ccol:RRGGBB` (ceiling) marker tag — six hex digits,
-like a web colour:
+By default floors and ceilings are flat-shaded (with `setFloorField(1)` they are
+textured — see below). Colour an individual tile with an `fcol:RRGGBB` (floor) or
+`ccol:RRGGBB` (ceiling) marker tag — six hex digits, like a web colour:
 
 ```json
 { "row": 3, "col": 4, "tag": "fcol:7a4f2a ccol:2a3550" }
 ```
 
 The colour is scaled by the tile's light level, the same as the default grey.
-A tile with no `fcol:`/`ccol:` keeps the default shading. Floor and ceiling
-**textures are not implemented** in the library — `drawFloorStrip` exists in the
-`drawing` engine module but `RcRender` does not call it, and perspective-correct
-floor/ceiling texturing is deferred to a later phase. Use `fcol:`/`ccol:` for
-flat colour; only walls are textured.
+A tile with no `fcol:`/`ccol:` keeps the default shading.
+
+### Floor and ceiling textures — the floor field
+
+Turn on the per-pixel floor renderer and the **standard** floor (height 0) and
+ceiling (`RC_STD_CEIL`) are drawn by a true floorcaster — every screen pixel is
+resolved to the exact world spot it looks at, then textured and lit:
+
+```bas
+function onenter()
+  self.ren = new RcRender(self.wld)
+  self.ren.bindLights(self.lights)
+  self.ren.setFloorField(1)
+  self.ren.setFloorTexture("rc_floor.png")   ' one tile per world unit
+  self.ren.setCeilTexture("rc_ceil.png")     ' "" keeps a built-in checker
+endfunction
+```
+
+Because the sample is by world position, the texture recedes in correct
+perspective and pools of light stay painted on the ground as you turn. Override
+the texture per cell with `ftex:<image>` / `ctex:<image>` markers; `fcol:`/`ccol:`
+flat colours render through the same path, so a scene can mix textured, coloured
+and plain floor with no seam. Steps, pit floors and soffits keep the flat-shaded
+strip path.
+
+The floor field bakes its lighting **once**, from the scene's static lights, so
+it is for static lighting — a moving torch won't light it. Default off; every
+scene that doesn't call `setFloorField(1)` is unchanged.
 
 ### Phase 3 limits
 
@@ -236,8 +264,9 @@ filled in. Diagonal-wall tiles are textured with a real slice of the wall
 texture. Occlusion is a single per-column window — a raised floor clamps it from
 below, a dropped ceiling from above, and farther geometry shows through a pit or
 a raised ceiling. Floor and ceiling light is smoothly blended between cells;
-walls and sprites are lit per-cell. No texture atlas, no animated/scrolling
-textures, floors and ceilings are flat-shaded, and the sky is still a plain
+walls and sprites are lit per-cell. The standard floor and ceiling can be
+textured with `setFloorField(1)` (above); stepped/pit surfaces stay flat-shaded.
+No texture atlas, no animated/scrolling textures, and the sky is still a plain
 gradient.
 
 ## RcMover — walking around
@@ -308,7 +337,10 @@ endfunction
 ```
 
 Any cell you mark `light` in the Tilemap Editor becomes a **static** light, baked
-once when the world loads.
+once when the world loads. A game with static lights in every room and no
+player-carried torch reads well: you walk dark corridors into fixed pools of
+light. Give a marker a height with `light:1.8` (bare `light` sits at 0.85, just
+under the ceiling).
 
 | Call | Does |
 |---|---|
@@ -318,14 +350,18 @@ once when the world loads.
 | `lights.setLightFalloff(handle, kind)` | `RcConfig.RC_FALLOFF_LINEAR` (default) or `RC_FALLOFF_QUADRATIC` — quadratic concentrates brightness near the light and drops away faster, a small bright pool rather than a wide gradual gradient (closer to a real torch/lamp) |
 | `lights.moveLight(handle, x, y)` / `setLightIntensity(handle, b)` / `setLightRadius(handle, reachCells)` / `removeLight(handle)` | change a light |
 | `lights.update()` | recompute the moving lights — call every `onupdate`, before `renderFrame` |
+| `lights.setHeightAware(1)` | sample lights by true 3D distance — a floor spot and a ceiling spot under the same fixture now differ (needed for tall rooms and the floor field) |
 | `lights.sampleCell(col, row)` | the total light at a cell, `0`–`1` |
+| `lights.sampleAt(x, y)` / `sampleAtZ(x, y, z)` | light at an arbitrary world point (2D / 3D) |
 | `RcRender.bindLights(lights)` | shade the view by this grid |
 
 ### Phase 5 limits
 
 Light is a single brightness value — no colour yet. Only point lights (no spot
 cones). Moving lights are fully recomputed every frame (no caching). At most
-`RcConfig.RC_LIGHT_CAP` moving lights contribute at once.
+`RcConfig.RC_LIGHT_CAP` moving lights contribute at once. Per light you can set
+the falloff curve (`setLightFalloff`, linear or quadratic), intensity and radius.
+The floor field (`RcRender.setFloorField`) bakes only the **static** lights.
 
 ## RcActors — billboards and ray hits
 
@@ -462,13 +498,14 @@ applied to vertical space specifically.
 
 ### Phase 9 limits
 
-Floor and ceiling **textures** are not implemented — surfaces are flat-shaded
-colour only (`fcol:` / `ccol:`), even though walls are texture-mapped. The
-per-column occlusion window, light-grid recompute, and span walk all run in
-plain softBASIC — none of it is engine-side, so there's headroom left in
-principle, but no further optimisation rung has shipped past the Phase 9
-painter's-fill pass. A wall-batching approach (rendering all wall columns as
-one mesh instead of one draw call per column) was prototyped and rejected —
+The standard floor and ceiling are texture-mapped via `setFloorField(1)` (a
+per-pixel floorcaster, drawn engine-side in two calls a frame); stepped and pit
+surfaces are still flat-shaded colour (`fcol:` / `ccol:`). The per-column
+occlusion window, light-grid recompute, and span walk all run in plain
+softBASIC, so there's headroom left in principle, but no further optimisation
+rung has shipped past the Phase 9 painter's-fill pass. A wall-batching approach
+(rendering all wall columns as one mesh instead of one draw call per column) was
+prototyped and rejected —
 see `docs/raycaster-mesh-spike-findings.md` — it only ever covered walls, not
 floors/ceilings/actors, and traded no geometry or lighting benefit for a
 hand-maintained shader.
