@@ -303,8 +303,8 @@ From `docs/raycaster-game-concept.md`'s "Engine asks", the slice needs:
 
 | Primitive | Size | Phase | Notes |
 |---|---|---|---|
-| **Interact action** | Small | 1 | Input side is already covered by the action map. First use is scene transitions. |
-| **Scene transition trigger + entry points** | Small–Med | 1 | Doorway/stairwell tile marker in `.stm`; on Interact, fade + load target scene + place player at a named entry point. Built on the engine's existing scene management. |
+| ~~Interact action~~ | — | 1 | **Not an engine primitive.** `input.bind`/`input.pressed` already exist; the "aim and press" logic is game `.bas`. |
+| ~~Scene transition trigger + entry points~~ | — | 1 | **Not an engine primitive.** `scenemanager.switch` + `tilemapset.markersByTag` + `RcMover.warpTo` already exist; the doorway/entry logic is game `.bas` (`AreaHelpers.bas`). Confirmed during phase-1 planning. |
 | **Paused text-overlay mode** | Small | 2 | Overlay pauses the sim and draws a fullscreen text panel (the demo's zero-art billboard trick works for this). |
 | **`raycast(x, y, dx, dy)` line-of-sight helper** | Medium | 5 | Returns first wall hit / distance along a ray in grid space. Trooper fire, cover checks. Every future raycaster game wants this rather than hand-rolled DDA. |
 | **Minimap** (auto-revealing, per-area state colour) | Medium | 6 (optional) | Easy-mode assist only. Not core to the slice; cut if it costs too much. |
