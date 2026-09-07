@@ -42,7 +42,13 @@ god's-eye read.
 
 ## 2. Geography — three areas
 
-The slice is a hub and two spokes.
+The slice is a hub and two spokes. The raycaster has no meaningful verticality,
+so the three areas are **not one contiguous map** — each is its own raycaster
+**scene** (`.stm` + scene module, using the engine's existing scene management),
+joined by **transition triggers**. A transition is a doorway / stairwell mouth
+tile that, on **Interact**, fades out and loads the target scene, placing the
+player at that scene's matching **entry point**. Backtracking still works — it is
+a scene load with whatever spawn set the area's current state dictates.
 
 | Area | Direction | Role | State behaviour |
 |---|---|---|---|
@@ -95,6 +101,9 @@ the circle can hurt you.
     phase 2; auto-collect is simpler and fine for the slice).
   - Wall terminals (opens a paused fullscreen text overlay).
   - Safe-zone nodes (activate / rest / workbench prompts).
+  - **Scene transitions** — a doorway / stairwell tile shows a prompt
+    ("▲ Ascend", "Enter tunnel"); Interact fades out and loads the target
+    scene at its matching entry point.
 
 ### 3.2 Combat
 
@@ -225,13 +234,16 @@ Each phase is independently runnable and playtestable, mirroring the raycaster
 engine's own p1–p10 build. Ship each as its own `.stm` + `.bas` demo project (or
 successive commits on one), following the six-step module process in `CLAUDE.md`.
 
-### Phase 1 — Map + controls
+### Phase 1 — Map + controls + scene transitions
 
-- Three areas authored in `.stm`, connected (Tunnel ↔ Platform ↔ Stairwell).
-- Raycaster walk / strafe / turn.
-- Interact action wired (even if it does nothing yet).
-- Static world, no entities.
-- **Test:** the space is navigable and reads as three distinct connected areas.
+- Three scenes authored in `.stm` (Platform, Tunnel, Stairwell), each a stub
+  layout with an entry point and the doorway/stairwell transition tiles.
+- Raycaster walk / strafe / turn — tunable.
+- **Interact** action wired, with its first real use: scene transitions
+  (doorway prompt → fade → load target scene at matching entry point).
+- Static world, no entities, no pickups.
+- **Test:** the space is navigable, the three scenes read as distinct connected
+  areas, transitions feel right, and the controls feel good.
 
 ### Phase 2 — Weapons + pickups
 
@@ -291,7 +303,9 @@ From `docs/raycaster-game-concept.md`'s "Engine asks", the slice needs:
 
 | Primitive | Size | Phase | Notes |
 |---|---|---|---|
-| **Interact action + paused text-overlay mode** | Small | 2 | Input side is already covered by the action map. Overlay pauses the sim and draws a fullscreen text panel (the demo's zero-art billboard trick works for this). |
+| **Interact action** | Small | 1 | Input side is already covered by the action map. First use is scene transitions. |
+| **Scene transition trigger + entry points** | Small–Med | 1 | Doorway/stairwell tile marker in `.stm`; on Interact, fade + load target scene + place player at a named entry point. Built on the engine's existing scene management. |
+| **Paused text-overlay mode** | Small | 2 | Overlay pauses the sim and draws a fullscreen text panel (the demo's zero-art billboard trick works for this). |
 | **`raycast(x, y, dx, dy)` line-of-sight helper** | Medium | 5 | Returns first wall hit / distance along a ray in grid space. Trooper fire, cover checks. Every future raycaster game wants this rather than hand-rolled DDA. |
 | **Minimap** (auto-revealing, per-area state colour) | Medium | 6 (optional) | Easy-mode assist only. Not core to the slice; cut if it costs too much. |
 
@@ -340,3 +354,9 @@ gating, and the facility act with the deep narrative payload.
    Street as separate gates.
 5. **Audio-log channel** — include only if audio playback is already cheap in
    the engine at phase 2.
+6. **Scene transition affordance** — how much fade/animation, whether the
+   doorway needs art or a zero-art trick suffices, how player facing is set on
+   arrival. Phase 1 tuning.
+7. **Circle vs. discrete scenes** — collapse depth stays a single global; each
+   scene reads it on load to pick its spawn set. Confirm this composes cleanly
+   when phase 6 lands (expected fine — no per-scene timers).
