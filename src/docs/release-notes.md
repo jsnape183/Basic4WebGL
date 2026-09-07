@@ -1,5 +1,39 @@
 # Release Notes
 
+## v0.7.3 — 2026-09-07
+
+### Raycaster: per-pixel floor & ceiling renderer
+
+- `RcRender.setFloorField(1)` replaces the flat-shaded floor/ceiling strips with a true per-pixel floorcaster: every screen pixel is resolved to the exact world point it looks at, then textured and lit from a lightmap baked once from the scene's static lights. Because the sample is by world position, textures recede in correct perspective and pools of light stay painted on the ground as you turn or strafe — no sliding. Steps, pits, soffits and risers keep the existing per-column path. Default off, so every scene that doesn't opt in is unchanged.
+- `setFloorTexture(name)` / `setCeilTexture(name)` — a world-tiled texture, one full copy of the image per world unit. `ftex:<image>` / `ctex:<image>` markers in the tilemap override the default for individual cells; `fcol:RRGGBB` / `ccol:RRGGBB` flat colours render through the same path, so the whole standard floor and ceiling is one renderer with no seam between textured, coloured and plain areas.
+- **Raycaster Finale** now has a concrete-textured floor and ceiling with two tiled accent rooms. **Raycaster P9 Bench** has a `T` key to toggle the floorcaster live against its frame-time readout.
+
+### Raycaster: static & height-aware lighting
+
+- A player-carried torch is no longer required — a `light:` marker in each room casts a fixed pool, baked once at load, so walking a dark corridor into a lit room reads the way it should.
+- `light:` markers take an optional height (`light:1.8`). A fixture near the ceiling now lights a floor point and a ceiling point differently — lighting is sampled in true 3D via `RcLights.sampleAtZ`.
+- `RcLights.setLightFalloff(handle, kind)` — per-light falloff curve: linear (default, even ramp to the edge) or quadratic (a bright pool that dies off fast, closer to a real torch). Light radius is configurable per light.
+- `RcRender.setGradientShading(1)` fills each floor/ceiling colour run with one shape carrying a real near→far light gradient, instead of stepped ~1-metre bands.
+
+### Raycaster: surfaces & textures
+
+- **Textured walls** — `RcRender.setWallTexture(name)` for the whole level, `tex:<image>` markers per cell. Diagonal faces carry a real along-the-face texture coordinate.
+- Per-tile flat floor/ceiling colour via `fcol:RRGGBB` / `ccol:RRGGBB` markers.
+- Floor/ceiling **heights** stack freely per cell (`floor:` / `ceil:` markers) — staircases, raised daises, pits, low tunnels. New demo: **Raycaster P8 — Multi-Tier**.
+- The experimental "upper regions" feature from v0.7.2 (a second stacked level per cell, the `upper` layer, `me.regionId()`, and the slice-list occlusion model) has been **removed** — it cost too much occlusion-model complexity for the payoff. Per-cell height stacking above covers staircases and mezzanine-style geometry.
+
+### New drawing primitives
+
+- `drawing.drawPlaneField(...)` — the per-pixel floorcaster.
+- `drawing.registerLightmap(...)` / `drawing.registerFieldTiles(...)` — register a baked light grid, and a per-cell texture + flat-colour grid, for `drawPlaneField`.
+- `drawing.drawVGradientRect(...)` — a rectangle filled with a true top-to-bottom colour gradient.
+- `drawing.drawRadialGradientCircle(...)` / `drawing.drawRadialGradientEllipse(...)` — a soft radial-gradient blob that fades to transparent at its edge.
+
+### New engine primitives
+
+- `time.now()` — milliseconds since the game started.
+- `world.fps()` — the current frame rate.
+
 ## v0.7.2 — 2026-09-02
 
 ### Raycaster library: diagonal walls
