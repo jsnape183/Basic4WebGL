@@ -59,12 +59,13 @@ shipped library — no `.bas` def files, no engine JS, no descriptor/generator w
   drawn from `tileImage`). `tags.markers` is a flat list of `{row, col, tag}`;
   `tag` is a space-separated string of tokens, each either a bare flag (`door`)
   or `key:value` (`entry:start`).
-- **Reading markers at runtime:** `tm.markersByTag("entry")` returns an array of
-  `Marker` objects whose tag *contains* the token `entry` (matches `entry:start`,
-  `entry:from_tunnel`, etc). A `Marker` has fields `.x`, `.y` (pixel centre),
-  `.col`, `.row` (cell), `.tag` (the full string). `tm.allMarkers()` returns all
-  of them. Confirmed in `src/lib/Basic4WebGL/defs/tilemapset.bas` and
-  `src/lib/Basic4WebGL/defs/marker.bas`.
+- **Reading markers at runtime:** `tm.markersByTag(tag)` does an **exact**
+  tag-string match (`src/components/Runner/engine/tilemap.js` → `if (m.tag !== tag)`),
+  so it is useless for compound tags like `"entry:start face:e"`. Use
+  `tm.allMarkers()` (returns every marker as `{x, y, col, row, tag}`) and filter
+  in softBASIC on the parsed token — the same way `RcWorld.bas` consumes its
+  tags. A `Marker` has `.x`, `.y` (pixel centre), `.col`, `.row` (cell), `.tag`
+  (full string).
 - **Raycaster scene skeleton** (from `demo-src/raycaster-p4/WalkScene.bas`):
   ```bas
   self.tm  = new tilemapset("p4room.stm")
