@@ -11,6 +11,7 @@ dim tm as tilemapset
 dim wld as RcWorld
 dim ren as RcRender
 dim me as RcMover
+dim lights as RcLights
 dim titleText as Text
 dim hintText as Text
 dim promptText as Text
@@ -31,12 +32,24 @@ function onenter()
   self.ren.bindCamera(self.me)
   self.ren.setWallTexture("rc_tex_concrete.png")
 
+  ' Uniform ambient for now (no point lights yet -- those arrive with the
+  ' lighting/enemy phases). Bright enough to build a level by.
+  self.lights = new RcLights(self.wld)
+  self.lights.setAmbient(0.8)
+  self.ren.bindLights(self.lights)
+
+  ' Per-pixel textured floor + ceiling (world-space, so it stays put as you
+  ' turn). Baked once against the ambient/lightmap above.
+  self.ren.setFloorField(1)
+  self.ren.setFloorTexture("rc_tex_concrete.png")
+  self.ren.setCeilTexture("rc_tex_concrete.png")
+
   areahelpers.spawnAtEntry(self.me, self.tm, self.state.takePendingEntry())
 
   self.titleText = new Text("OLD PLATFORM", 12, 10)
   self.titleText.setStyle(16, 255, 220, 120)
   hud.add(self.titleText)
-  self.hintText = new Text("WASD move/turn   E interact", 12, 30)
+  self.hintText = new Text("WASD move  arrows turn/look  E interact", 12, 30)
   self.hintText.setStyle(12, 180, 200, 220)
   hud.add(self.hintText)
   self.promptText = new Text("", stage.width() / 2 - 90, stage.height() - 60)
@@ -120,15 +133,20 @@ function onupdate(delta)
   dim fwd
   dim strafe
   dim turnAxis
+  dim lookAxis
   dim door as Marker
 
   fwd = controls.readFwd()
   strafe = controls.readStrafe()
   turnAxis = controls.readTurn()
+  lookAxis = controls.readLook()
 
   self.me.move(fwd * RcConfig.RC_MOVE_SPEED, strafe * RcConfig.RC_MOVE_SPEED)
   if turnAxis <> 0 then
     self.me.turn(turnAxis * RcConfig.RC_TURN_SPEED * (delta / 1000.0))
+  endif
+  if lookAxis <> 0 then
+    self.me.look(lookAxis * RcConfig.RC_LOOK_SPEED * (delta / 1000.0))
   endif
   self.me.step(delta)
 

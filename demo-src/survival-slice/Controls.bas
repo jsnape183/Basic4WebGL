@@ -9,6 +9,7 @@
 '   fwd/back      W/S           left stick Y
 '   strafeL/R     A/D           left stick X
 '   turnL/R       arrows L/R    right stick X
+'   lookU/lookD   arrows U/D    right stick Y   (pitch)
 '   interact      E             controller A (edge-triggered via input.pressed)
 
 function bindAll()
@@ -24,6 +25,10 @@ function bindAll()
   input.bind("turnL", "axis", controller.RSTICK_LEFT)
   input.bind("turnR", "key", keyboard.RIGHT)
   input.bind("turnR", "axis", controller.RSTICK_RIGHT)
+  input.bind("lookU", "key", keyboard.UP)
+  input.bind("lookU", "axis", controller.RSTICK_UP)
+  input.bind("lookD", "key", keyboard.DOWN)
+  input.bind("lookD", "axis", controller.RSTICK_DOWN)
   input.bind("interact", "key", keyboard.E)
   input.bind("interact", "button", controller.A)
 endfunction
@@ -38,6 +43,10 @@ endfunction
 
 function readTurn()
   return input.axis("turnL", "turnR")
+endfunction
+
+function readLook()
+  return input.axis("lookD", "lookU")
 endfunction
 
 function interactPressed()

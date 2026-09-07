@@ -12,6 +12,7 @@ dim tm as tilemapset
 dim wld as RcWorld
 dim ren as RcRender
 dim me as RcMover
+dim lights as RcLights
 dim titleText as Text
 dim promptText as Text
 dim doorReach
@@ -31,6 +32,14 @@ function onenter()
   self.ren.bindCamera(self.me)
   self.ren.setWallTexture("rc_tex_concrete.png")
 
+  self.lights = new RcLights(self.wld)
+  self.lights.setAmbient(0.7)
+  self.ren.bindLights(self.lights)
+
+  self.ren.setFloorField(1)
+  self.ren.setFloorTexture("rc_tex_concrete.png")
+  self.ren.setCeilTexture("rc_tex_concrete.png")
+
   areahelpers.spawnAtEntry(self.me, self.tm, self.state.takePendingEntry())
 
   self.titleText = new Text("CONCOURSE STAIRWELL", 12, 10)
@@ -45,15 +54,20 @@ function onupdate(delta)
   dim fwd
   dim strafe
   dim turnAxis
+  dim lookAxis
   dim door as Marker
 
   fwd = controls.readFwd()
   strafe = controls.readStrafe()
   turnAxis = controls.readTurn()
+  lookAxis = controls.readLook()
 
   self.me.move(fwd * RcConfig.RC_MOVE_SPEED, strafe * RcConfig.RC_MOVE_SPEED)
   if turnAxis <> 0 then
     self.me.turn(turnAxis * RcConfig.RC_TURN_SPEED * (delta / 1000.0))
+  endif
+  if lookAxis <> 0 then
+    self.me.look(lookAxis * RcConfig.RC_LOOK_SPEED * (delta / 1000.0))
   endif
   self.me.step(delta)
 
