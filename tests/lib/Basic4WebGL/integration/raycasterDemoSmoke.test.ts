@@ -20,8 +20,9 @@ import { packageModules } from '../../../../src/constants/packageModules';
 const DEMO_SRC = 'demo-src';
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
+const DEMO_DIR_RE = /^(raycaster-p\d+(-[a-z]+)?|survival-slice)$/;
 const phaseDirs = readdirSync(DEMO_SRC, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && /^raycaster-p\d+(-[a-z]+)?$/.test(entry.name))
+  .filter((entry) => entry.isDirectory() && DEMO_DIR_RE.test(entry.name))
   .map((entry) => entry.name)
   .sort();
 
