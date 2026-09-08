@@ -9,6 +9,10 @@
 - Multi-tag cells render truthfully on the canvas: the first tag's letter plus a `+N` badge, with every tag listed in the hover tooltip.
 - In Select mode the cell cursor is always a pointer.
 
+### Raycaster: fixes
+
+- A `floor:` / `ceil:` step no longer reads as self-lit. The renderer's flat floor/ceiling fill assumed a single height across the visible plane; a step elsewhere was then drawn at its own (brighter, if near a light) local light and stood out against the flat field. A map with any non-standard `floor:`/`ceil:` height now skips that fill (`RcWorld.hasHeightVariation()`), so the floor around a step is lit per-column and matches it. `setFloorField` / `setFlatFill(0)` scenes were already unaffected.
+
 ## v0.7.3 — 2026-09-07
 
 ### Raycaster: per-pixel floor & ceiling renderer
