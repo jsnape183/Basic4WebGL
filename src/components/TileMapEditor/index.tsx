@@ -100,6 +100,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [markerSelectMode, setMarkerSelectMode] = useState(false);
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
   // 1 (solid) by default, matching this layer kind's original always-solid
   // painting behavior before Not Solid existed as an option.
   const [selectedCollisionValue, setSelectedCollisionValue] = useState<number>(1);
@@ -128,7 +130,56 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     onDirtyChange?.(asset.id, isDirty);
   }, [isDirty, asset.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Switching layers drops any cell selection — it referred to the old layer.
+  useEffect(() => { setSelectedCell(null); }, [activeIndex, asset.id]);
+
   const activeLayer = draftDoc.layers[activeIndex];
+
+  // Every tag assigned to the selected cell — a marker cell can hold several,
+  // one MarkerEntry each, all sharing the cell's row/col.
+  const selectedCellTags =
+    activeLayer?.kind === 'marker' && selectedCell
+      ? Array.from(
+          new Set(
+            activeLayer.markers
+              .filter((m) => m.row === selectedCell.row && m.col === selectedCell.col)
+              .map((m) => m.tag)
+          )
+        )
+      : [];
+
+  const handleSelectCell = (row: number, col: number) => {
+    setSelectedCell((prev) => (prev && prev.row === row && prev.col === col ? null : { row, col }));
+  };
+
+  const mutateSelectedCellMarkers = (
+    fn: (cellTags: string[]) => string[]
+  ) => {
+    if (!selectedCell) return;
+    const { row, col } = selectedCell;
+    setDraftDoc((prev) => ({
+      ...prev,
+      layers: prev.layers.map((l, i) => {
+        if (i !== activeIndex || l.kind !== 'marker') return l;
+        const current = Array.from(
+          new Set(l.markers.filter((m) => m.row === row && m.col === col).map((m) => m.tag))
+        );
+        const nextTags = fn(current);
+        const others = l.markers.filter((m) => !(m.row === row && m.col === col));
+        return { ...l, markers: [...others, ...nextTags.map((tag) => ({ row, col, tag }))] };
+      }),
+    }));
+    setIsDirty(true);
+  };
+
+  // Add the tag if the cell doesn't already have it, remove it if it does —
+  // lets a cell accumulate multiple tags instead of replacing.
+  const handleToggleSelectedCellTag = (tag: string) =>
+    mutateSelectedCellMarkers((tags) =>
+      tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]
+    );
+
+  const handleClearSelectedCell = () => mutateSelectedCellMarkers(() => []);
 
   // A marker layer has no dense array of its own to derive grid dimensions
   // from — every layer in a document is assumed to share one grid size, so
@@ -314,6 +365,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
                       markers={layer.markers}
                       onPaintCell={handlePaintCell}
                       interactive={isActive}
+                      selectMode={markerSelectMode}
+                      selectedCell={isActive ? selectedCell : null}
+                      onSelectCell={handleSelectCell}
                       onHoverCell={(row, col) => setHoverCell({ row, col })}
                       onHoverEnd={() => setHoverCell(null)}
                     />
@@ -344,7 +398,18 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         </div>
         <div className="h-40 flex-shrink-0 border-t border-ds-border">
           {activeLayer?.kind === 'marker' ? (
-            <TagPicker tags={markerTags} selectedTag={selectedTag} onSelectTag={setSelectedTag} />
+            <TagPicker
+              tags={markerTags}
+              selectedTag={selectedTag}
+              onSelectTag={setSelectedTag}
+              selectMode={markerSelectMode}
+              onToggleSelectMode={() => setMarkerSelectMode((v) => !v)}
+              selectedCell={selectedCell}
+              cellTags={selectedCellTags}
+              onToggleCellTag={handleToggleSelectedCellTag}
+              onClearCell={handleClearSelectedCell}
+              onDeselectCell={() => setSelectedCell(null)}
+            />
           ) : activeLayer?.kind === 'collision' ? (
             <CollisionPicker selectedValue={selectedCollisionValue} onSelectValue={setSelectedCollisionValue} />
           ) : (

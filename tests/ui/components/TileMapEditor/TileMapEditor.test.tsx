@@ -304,6 +304,53 @@ describe('TileMapEditor — marker layers', () => {
     expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'pickup' }] });
   });
 
+  test('select mode: a cell can be given multiple tags, and all of them save and show', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    // Paint one tag the normal way first.
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+    // Switch to Select mode, pick that cell, add a second tag without losing the first.
+    await userEvent.click(screen.getByLabelText('Select tool'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'pickup{Enter}');
+
+    // Both tags are shown as removable chips for the selected cell.
+    expect(screen.getByLabelText('Remove tag spawn')).toBeInTheDocument();
+    expect(screen.getByLabelText('Remove tag pickup')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.markers3).toEqual({
+      type: 'markers',
+      markers: [
+        { row: 0, col: 1, tag: 'spawn' },
+        { row: 0, col: 1, tag: 'pickup' },
+      ],
+    });
+  });
+
+  test('select mode: clicking an assigned-tag chip removes just that tag', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByLabelText('Select tool'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'pickup{Enter}');
+
+    await userEvent.click(screen.getByLabelText('Remove tag spawn'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.markers3).toEqual({
+      type: 'markers',
+      markers: [{ row: 0, col: 1, tag: 'pickup' }],
+    });
+  });
+
   test('a saved marker layer survives closing and reopening the asset, and stays editable', async () => {
     const { store } = await renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));

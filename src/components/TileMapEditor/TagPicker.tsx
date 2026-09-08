@@ -1,63 +1,184 @@
 import React, { useState } from 'react';
+import { tagColor } from './tagColor';
 
 type Props = {
   tags: string[];
+  /** Paint mode: the tag loaded to paint with. `null` means the eraser. */
   selectedTag: string | null;
   onSelectTag: (tag: string | null) => void;
+  /** When provided, shows a Select-mode toggle. */
+  selectMode?: boolean;
+  onToggleSelectMode?: () => void;
+  /** The cell currently selected on the canvas (select mode only). */
+  selectedCell?: { row: number; col: number } | null;
+  /** Every tag assigned to the selected cell — a cell can hold several. */
+  cellTags?: string[];
+  /** Add the tag to the selected cell if absent, remove it if present. */
+  onToggleCellTag?: (tag: string) => void;
+  /** Remove every tag from the selected cell. */
+  onClearCell?: () => void;
+  onDeselectCell?: () => void;
 };
 
-const TagPicker: React.FC<Props> = ({ tags, selectedTag, onSelectTag }) => {
+const TagPicker: React.FC<Props> = ({
+  tags,
+  selectedTag,
+  onSelectTag,
+  selectMode = false,
+  onToggleSelectMode,
+  selectedCell = null,
+  cellTags = [],
+  onToggleCellTag,
+  onClearCell,
+  onDeselectCell,
+}) => {
   const [draftTag, setDraftTag] = useState('');
+  const editingCell = selectMode && !!selectedCell;
 
   const commitNewTag = () => {
     const trimmed = draftTag.trim();
     if (!trimmed) return;
-    onSelectTag(trimmed);
+    if (editingCell) {
+      if (!cellTags.includes(trimmed)) onToggleCellTag?.(trimmed);
+    } else {
+      onSelectTag(trimmed);
+    }
     setDraftTag('');
   };
 
   return (
     <div className="flex flex-col h-full p-2 gap-2 overflow-y-auto">
-      <button
-        type="button"
-        onClick={() => onSelectTag(null)}
-        aria-label="Eraser"
-        aria-pressed={selectedTag === null}
-        className={`text-xs px-2 py-1 rounded border ${
-          selectedTag === null
-            ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
-            : 'border-ds-border text-ds-text-muted hover:text-ds-text'
-        }`}
-      >
-        Eraser
-      </button>
-      <div className="flex flex-wrap gap-1">
-        {tags.map((tag) => (
+      {onToggleSelectMode && (
+        <div className="flex items-center gap-2">
           <button
-            key={tag}
             type="button"
-            onClick={() => onSelectTag(tag)}
-            aria-label={`Tag ${tag}`}
-            aria-pressed={selectedTag === tag}
-            className={`px-2 py-1 rounded-full text-xs border ${
-              selectedTag === tag
+            onClick={onToggleSelectMode}
+            aria-label="Select tool"
+            aria-pressed={selectMode}
+            className={`text-xs px-2 py-1 rounded border ${
+              selectMode
                 ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
                 : 'border-ds-border text-ds-text-muted hover:text-ds-text'
             }`}
           >
-            {tag}
+            Select
           </button>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={draftTag}
-        onChange={(e) => setDraftTag(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') commitNewTag(); }}
-        placeholder="+ new tag name..."
-        aria-label="New tag name"
-        className="w-full bg-ds-bg border border-ds-border rounded px-2 py-1 text-xs text-ds-text focus:outline-none focus:ring-1 focus:ring-ds-accent"
-      />
+          {selectMode && (
+            <span className="text-xs text-ds-text-muted">
+              {selectedCell
+                ? `Row ${selectedCell.row}, Col ${selectedCell.col} · ${cellTags.length} tag${cellTags.length === 1 ? '' : 's'}`
+                : 'Click a cell to select it'}
+            </span>
+          )}
+          {editingCell && (
+            <button
+              type="button"
+              onClick={onDeselectCell}
+              className="text-xs px-2 py-1 rounded border border-ds-border text-ds-text-muted hover:text-ds-text"
+            >
+              Deselect
+            </button>
+          )}
+        </div>
+      )}
+
+      {editingCell ? (
+        <>
+          <div className="flex flex-wrap items-center gap-1">
+            {cellTags.length === 0 && (
+              <span className="text-xs text-ds-text-dim">No tags on this cell yet</span>
+            )}
+            {cellTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleCellTag?.(tag)}
+                aria-label={`Remove tag ${tag}`}
+                className="px-2 py-1 rounded-full text-xs text-white flex items-center gap-1"
+                style={{ backgroundColor: tagColor(tag) }}
+              >
+                {tag} <span aria-hidden="true">×</span>
+              </button>
+            ))}
+            {cellTags.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearCell}
+                aria-label="Clear cell"
+                className="text-xs px-2 py-1 rounded border border-ds-border text-ds-text-muted hover:text-ds-text"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="text-[10px] uppercase tracking-wide text-ds-text-dim">Add a tag</div>
+          <div className="flex flex-wrap gap-1">
+            {tags.filter((t) => !cellTags.includes(t)).map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleCellTag?.(tag)}
+                aria-label={`Add tag ${tag}`}
+                className="px-2 py-1 rounded-full text-xs border border-ds-border text-ds-text-muted hover:text-ds-text"
+              >
+                + {tag}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={draftTag}
+            onChange={(e) => setDraftTag(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitNewTag(); }}
+            placeholder="+ new tag name..."
+            aria-label="New tag name"
+            className="w-full bg-ds-bg border border-ds-border rounded px-2 py-1 text-xs text-ds-text focus:outline-none focus:ring-1 focus:ring-ds-accent"
+          />
+        </>
+      ) : selectMode ? null : (
+        <>
+          <button
+            type="button"
+            onClick={() => onSelectTag(null)}
+            aria-label="Eraser"
+            aria-pressed={selectedTag === null}
+            className={`text-xs px-2 py-1 rounded border ${
+              selectedTag === null
+                ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
+                : 'border-ds-border text-ds-text-muted hover:text-ds-text'
+            }`}
+          >
+            Eraser
+          </button>
+          <div className="flex flex-wrap gap-1">
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onSelectTag(tag)}
+                aria-label={`Tag ${tag}`}
+                aria-pressed={selectedTag === tag}
+                className={`px-2 py-1 rounded-full text-xs border ${
+                  selectedTag === tag
+                    ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
+                    : 'border-ds-border text-ds-text-muted hover:text-ds-text'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={draftTag}
+            onChange={(e) => setDraftTag(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitNewTag(); }}
+            placeholder="+ new tag name..."
+            aria-label="New tag name"
+            className="w-full bg-ds-bg border border-ds-border rounded px-2 py-1 text-xs text-ds-text focus:outline-none focus:ring-1 focus:ring-ds-accent"
+          />
+        </>
+      )}
     </div>
   );
 };

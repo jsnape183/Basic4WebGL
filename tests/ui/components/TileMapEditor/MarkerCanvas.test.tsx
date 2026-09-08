@@ -41,6 +41,55 @@ describe('MarkerCanvas', () => {
     expect(onPaintCell).toHaveBeenCalledTimes(2);
   });
 
+  test('a cell with multiple tags shows the first tag\'s letter, a +N badge, and all tags in the title', () => {
+    render(
+      <MarkerCanvas
+        rows={1}
+        cols={1}
+        markers={[{ row: 0, col: 0, tag: 'spawn' }, { row: 0, col: 0, tag: 'pickup' }]}
+        onPaintCell={vi.fn()}
+      />
+    );
+    const cell = screen.getByLabelText('Row 0, Column 0');
+    expect(cell).toHaveTextContent('S');
+    expect(cell).toHaveTextContent('+1');
+    expect(cell).toHaveAttribute('title', 'spawn, pickup');
+  });
+
+  test('selectMode: mouse down selects a cell instead of painting it', () => {
+    const onPaintCell = vi.fn();
+    const onSelectCell = vi.fn();
+    render(
+      <MarkerCanvas
+        rows={2}
+        cols={2}
+        markers={[]}
+        onPaintCell={onPaintCell}
+        onSelectCell={onSelectCell}
+        selectMode
+      />
+    );
+    fireEvent.mouseDown(screen.getByLabelText('Row 1, Column 0'));
+    expect(onSelectCell).toHaveBeenCalledWith(1, 0);
+    expect(onPaintCell).not.toHaveBeenCalled();
+  });
+
+  test('selectMode: the selected cell is marked aria-selected', () => {
+    render(
+      <MarkerCanvas
+        rows={2}
+        cols={2}
+        markers={[]}
+        onPaintCell={vi.fn()}
+        onSelectCell={vi.fn()}
+        selectMode
+        selectedCell={{ row: 0, col: 1 }}
+      />
+    );
+    expect(screen.getByLabelText('Row 0, Column 1')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('Row 0, Column 0')).toHaveAttribute('aria-selected', 'false');
+  });
+
   test('interactive=false renders marker content but no aria-label, role, or mouse handlers', () => {
     const onPaintCell = vi.fn();
     render(<MarkerCanvas rows={2} cols={2} markers={[{ row: 0, col: 1, tag: 'spawn' }]} onPaintCell={onPaintCell} interactive={false} />);
