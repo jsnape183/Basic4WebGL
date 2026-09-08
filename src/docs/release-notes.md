@@ -1,5 +1,14 @@
 # Release Notes
 
+## v0.7.4 — 2026-09-08
+
+### Tilemap editor: select & multi-tag marker cells
+
+- Marker layers have a new **Select** tool. Click a cell to select it (no paint, no erase) and the tag panel shows exactly what that cell carries.
+- A marker cell can now hold **more than one tag** from the editor. In Select mode, assigned tags show as removable chips, and you can add more without replacing the existing ones (or **Clear** the cell). Paint mode is unchanged — it still stamps a single tag.
+- Multi-tag cells render truthfully on the canvas: the first tag's letter plus a `+N` badge, with every tag listed in the hover tooltip.
+- In Select mode the cell cursor is always a pointer.
+
 ## v0.7.3 — 2026-09-07
 
 ### Raycaster: per-pixel floor & ceiling renderer
