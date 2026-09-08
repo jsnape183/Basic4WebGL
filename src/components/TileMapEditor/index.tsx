@@ -221,8 +221,16 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         ...prev,
         layers: prev.layers.map((l, i) => {
           if (i !== activeIndex || l.kind !== 'marker') return l;
-          const withoutCell = l.markers.filter((m) => !(m.row === row && m.col === col));
-          const newMarkers = selectedTag ? [...withoutCell, { row, col, tag: selectedTag }] : withoutCell;
+          // Eraser (no tag loaded) clears the cell; painting a tag merges it
+          // into whatever the cell already carries rather than replacing.
+          let newMarkers: MarkerEntry[];
+          if (!selectedTag) {
+            newMarkers = l.markers.filter((m) => !(m.row === row && m.col === col));
+          } else if (l.markers.some((m) => m.row === row && m.col === col && m.tag === selectedTag)) {
+            newMarkers = l.markers;
+          } else {
+            newMarkers = [...l.markers, { row, col, tag: selectedTag }];
+          }
           return { ...l, markers: newMarkers };
         }),
       }));
@@ -301,12 +309,19 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(false);
   };
 
-  // The currently-selected tag is always shown as a chip even before any
-  // marker uses it yet, so picking/typing a tag gives immediate visual
-  // confirmation of what's "loaded" to paint with.
+  // Every tag used anywhere in the document — not just the active layer — so
+  // a tag coined on one marker layer is reusable on every other one. The
+  // currently-selected tag is always shown too, even before any marker uses
+  // it, so picking/typing a tag gives immediate visual confirmation of
+  // what's "loaded" to paint with.
   const markerTags =
     activeLayer?.kind === 'marker'
-      ? Array.from(new Set([...activeLayer.markers.map((m) => m.tag), ...(selectedTag ? [selectedTag] : [])]))
+      ? Array.from(
+          new Set([
+            ...draftDoc.layers.flatMap((l) => (l.kind === 'marker' ? l.markers.map((m) => m.tag) : [])),
+            ...(selectedTag ? [selectedTag] : []),
+          ])
+        )
       : [];
 
   if (stmLoading) {

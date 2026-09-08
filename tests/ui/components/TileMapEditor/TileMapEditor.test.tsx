@@ -291,7 +291,7 @@ describe('TileMapEditor — marker layers', () => {
     expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [] });
   });
 
-  test('placing a second marker on an already-marked cell replaces the tag', async () => {
+  test('painting a second tag on an already-marked cell merges the tags', async () => {
     await renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));
     await userEvent.click(screen.getByText('markers3'));
@@ -301,7 +301,39 @@ describe('TileMapEditor — marker layers', () => {
     fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
     const decoded = await readSavedStm();
-    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'pickup' }] });
+    expect(decoded.layers.markers3).toEqual({
+      type: 'markers',
+      markers: [
+        { row: 0, col: 1, tag: 'spawn' },
+        { row: 0, col: 1, tag: 'pickup' },
+      ],
+    });
+  });
+
+  test('painting the same tag twice on a cell does not duplicate it', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'spawn' }] });
+  });
+
+  test('tags coined on one marker layer are offered as chips on another marker layer', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers4'));
+    // The 'spawn' tag is available to paint with here even though no marker
+    // on this layer uses it yet.
+    expect(screen.getByLabelText('Tag spawn')).toBeInTheDocument();
   });
 
   test('select mode: a cell can be given multiple tags, and all of them save and show', async () => {
