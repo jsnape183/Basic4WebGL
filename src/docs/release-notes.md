@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.7.5 — 2026-09-08
+
+### Tilemap editor: marker painting quality-of-life
+
+- Painting a tag onto an already-tagged marker cell now **merges** the tags instead of replacing what's there. Painting the same tag twice is a no-op; the eraser still clears the whole cell.
+- The paint palette now offers **every tag used anywhere in the tilemap**, not just the ones on the layer you're editing — a tag coined on one marker layer is reusable on all of them.
+
 ## v0.7.4 — 2026-09-08
 
 ### Tilemap editor: select & multi-tag marker cells
