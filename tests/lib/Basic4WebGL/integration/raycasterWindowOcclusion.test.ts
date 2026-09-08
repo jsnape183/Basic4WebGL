@@ -115,6 +115,7 @@ const openWorld = {
   floortexat: () => '',
   ceiltexat: () => '',
   hassurfacecolor: () => 0,
+  hasheightvariation: () => 0,
   floorcolat: () => -1,
   ceilcolat: () => -1,
   widthcells: () => 8,
@@ -162,6 +163,7 @@ describe('RcRender single-window occlusion', () => {
     const colWorld = {
       ...openWorld,
       hassurfacecolor: () => 1,
+      hasheightvariation: () => 0,
       // cols 1-3 one colour, 4-6 another, rest none
       floorcolat: (c: number) => {
         if (c >= 1 && c <= 3) return 0x804020;
@@ -269,6 +271,7 @@ describe('RcRender single-window occlusion', () => {
     const colWorld = {
       ...texWorld,
       hassurfacecolor: () => 1,
+      hasheightvariation: () => 0,
       floorcolat: (c: number) => (c >= 4 && c <= 6 ? 0x804020 : -1),
       ceilcolat: () => -1,
     };

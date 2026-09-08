@@ -35,6 +35,12 @@ dim floorColArr(0)
 dim ceilColArr(0)
 dim surfColSeen
 
+' Fast-path flag: 1 if any cell carries a non-standard floor: / ceil: height
+' (a step, dais, pit or soffit). The renderer's flat floor/ceiling fill
+' assumes a single height across the visible plane, which a step breaks, so
+' RcRender skips that optimisation when this is set.
+dim heightVarSeen
+
 Constructor(tm as tilemapset, wallsLayerName)
     self.build(tm, wallsLayerName)
 EndConstructor
@@ -43,6 +49,7 @@ function build(tm as tilemapset, wallsLayerName)
     dim tw
     dim th
     self.surfColSeen = 0
+    self.heightVarSeen = 0
     tw = tm.tileWidth()
     th = tm.tileHeight()
 
@@ -162,9 +169,15 @@ function applyKv(idx, key, v)
     endif
     if key = "floor" then
         self.floorHArr(idx) = math.val(v)
+        if math.val(v) <> 0 then
+            self.heightVarSeen = 1
+        endif
     endif
     if key = "ceil" then
         self.ceilHArr(idx) = math.val(v)
+        if math.val(v) <> RcConfig.RC_STD_CEIL then
+            self.heightVarSeen = 1
+        endif
     endif
     if key = "light" then
         self.lightArr(idx) = 1
@@ -311,6 +324,14 @@ endfunction
 ' per-cell surface march entirely when no level uses the feature.
 function hasSurfaceColor()
     return self.surfColSeen
+endfunction
+
+' 1 if any cell carries a non-standard floor:/ceil: height. RcRender uses this
+' to skip its flat single-height floor/ceiling fill (invalid once a step is in
+' view -- the step then renders at its true local light while the flat fill
+' around it stays at the camera cell's, reading as a glowing step).
+function hasHeightVariation()
+    return self.heightVarSeen
 endfunction
 
 function floorColAt(col, row)

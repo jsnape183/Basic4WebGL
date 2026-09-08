@@ -1243,7 +1243,7 @@ function renderFrame()
         fillLite = self.boundLights.sampleCell(camCol, camRow)
     endif
     fillOn = 0
-    if self.flatFillOn = 1 and self.gradientShadeOn = 0 and self.floorFieldOn = 0 then
+    if self.flatFillOn = 1 and self.gradientShadeOn = 0 and self.floorFieldOn = 0 and self.wld.hasHeightVariation() = 0 then
         if self.wld.floorHeightAt(camCol, camRow) = 0 then
             if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
                 fillOn = 1

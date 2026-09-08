@@ -193,7 +193,7 @@ endfunction
 | `ren.setFloorField(1)` | draw the standard floor & ceiling with the per-pixel floorcaster — real textures and ground-locked light (see Floor and ceiling below) |
 | `ren.setFloorTexture(name)` / `ren.setCeilTexture(name)` | world-tiled texture for the floor field |
 | `ren.setGradientShading(1)` | smooth near→far light gradient on floor/ceiling colour runs, instead of stepped bands |
-| `ren.setFlatFill(0)` | force the accurate per-column floor/ceiling path (needed under a short-radius light) |
+| `ren.setFlatFill(0)` | force the accurate per-column floor/ceiling path (needed under a short-radius light; already automatic once the map has any `floor:`/`ceil:` height variation) |
 
 `RcRender` also fills the flat, horizontal surfaces you see wherever a floor or
 ceiling changes height — the top of a step, the floor of a pit, the underside of

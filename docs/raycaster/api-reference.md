@@ -106,6 +106,7 @@ return a safe default out of bounds.
 | `wallTexAt` / `floorTexAt` / `ceilTexAt` `(col, row)` | image name or `""` |
 | `floorColAt(col, row)` / `ceilColAt(col, row)` | packed `r*65536+g*256+b`, or -1 |
 | `hasSurfaceColor()` | 1 if any cell carries `fcol:`/`ccol:` (fast-path flag) |
+| `hasHeightVariation()` | 1 if any cell carries a non-standard `floor:`/`ceil:` height. RcRender skips its flat floor/ceiling fill when set (a step would otherwise read as self-lit against the flat fill). |
 | `lightAt(col, row)` | 1 if a static-light cell |
 | `lightHeightAt(col, row)` | that light's Z |
 | `widthCells()` / `heightCells()` | grid dimensions |
@@ -215,7 +216,7 @@ raycast scene). Call `renderFrame()` every `onupdate`.
 
 | Method | Does |
 |---|---|
-| `setFlatFill(v)` | 1 (default) = paint the standard floor/ceiling once at the camera cell's brightness; 0 = force the accurate per-column path (needed under short-radius lights) |
+| `setFlatFill(v)` | 1 (default) = paint the standard floor/ceiling once at the camera cell's brightness; 0 = force the accurate per-column path (needed under short-radius lights). Auto-disabled when `RcWorld.hasHeightVariation()` is set — a step would otherwise glow against the flat fill. |
 | `setGradientShading(v)` | 1 = one gradient shape per floor/ceiling colour run (near→far light), instead of stepped bands |
 | `setFloorField(v)` | 1 = draw the **standard** floor (h=0) and ceiling (h=`RC_STD_CEIL`) with the per-pixel floorcaster: world-space texture × baked static lightmap, so texture and light pools stay locked to the ground. Steps/pits/soffits keep the strip path. Lightmap baked once on frame 1. Default 0. |
 | `setFloorTexture(name)` / `setCeilTexture(name)` | world-tiled texture (one tile per world unit) for the floor field; `""` = procedural checker. `ftex:`/`ctex:` markers override per cell. |
