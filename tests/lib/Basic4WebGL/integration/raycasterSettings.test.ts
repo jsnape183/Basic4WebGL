@@ -197,3 +197,45 @@ describe('RcWorld resolves stdCeil / lightDefaultZ via cfg', () => {
     expect(world.lightheightat(2, 2)).toBe(1.8);
   });
 });
+
+describe('RcMover honours cfg', () => {
+  const border = (_h: unknown, px: number, py: number) => {
+    const c = Math.floor(px / 16), r = Math.floor(py / 16);
+    return (r === 0 || r === 7 || c === 0 || c === 7) ? 1 : 0;
+  };
+
+  test('gravity: a stronger cfg.gravity makes the same fall drop further', () => {
+    const { RcWorld, TileMapSet, RcMover, RcSettings } = loadPkg(border, [], 8, 8);
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+
+    const m1 = new RcMover(w, 4.5, 4.5, 0.3, 0.6);
+    m1.warpto(4.5, 4.5, 0);
+    m1.jump();                       // launch upward so several steps are airborne
+    for (let i = 0; i < 4; i++) m1.step(16);
+    const zDefault = m1.z();
+
+    const m2 = new RcMover(w, 4.5, 4.5, 0.3, 0.6);
+    const fast = new RcSettings();
+    fast.setgravity(42);             // 3x
+    m2.bindsettings(fast);
+    m2.warpto(4.5, 4.5, 0);
+    m2.jump();
+    for (let i = 0; i < 4; i++) m2.step(16);
+    expect(m2.z()).toBeLessThan(zDefault); // heavier gravity -> lower after 4 steps
+  });
+
+  test('stepUp gates blocked() against a ledge', () => {
+    const { RcWorld, TileMapSet, RcMover, RcSettings } = loadPkg(
+      border, [{ row: 2, col: 3, tag: 'floor:0.3' }], 8, 8,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+
+    const m = new RcMover(w, 4.5, 4.5, 0.3, 0.6); // ctor sets pz = floorHeightAt(4,4) = 0
+    expect(m.blocked(3, 2)).toBe(0);  // 0.3 - 0 <= default stepUp 0.35 -> steppable
+
+    const low = new RcSettings();
+    low.setstepup(0.2);
+    m.bindsettings(low);
+    expect(m.blocked(3, 2)).toBe(1);  // 0.3 > 0.2 -> now blocked
+  });
+});

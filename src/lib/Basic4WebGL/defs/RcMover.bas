@@ -37,8 +37,10 @@ dim grounded
 dim mvFwd
 dim mvStrafe
 dim wantJump
+dim cfg as RcSettings
 
 Constructor(w as RcWorld, x, y, radius, bodyHeight)
+    self.cfg = new RcSettings()
     self.wld = w
     self.px = x
     self.py = y
@@ -54,6 +56,10 @@ Constructor(w as RcWorld, x, y, radius, bodyHeight)
     self.wantJump = 0
 EndConstructor
 
+function bindSettings(s as RcSettings)
+    self.cfg = s
+endfunction
+
 ' intent -- REPLACED each frame and cleared by step(); turn()/look() apply immediately and accumulate.
 function move(fwd, strafe)
     self.mvFwd = fwd
@@ -65,7 +71,7 @@ function turn(dAngle)
 endfunction
 
 function look(dPitch)
-    self.pit = math.clamp(self.pit + dPitch, 0 - RcConfig.RC_MAX_PITCH, RcConfig.RC_MAX_PITCH)
+    self.pit = math.clamp(self.pit + dPitch, 0 - self.cfg.maxPitch(), self.cfg.maxPitch())
 endfunction
 
 ' Snap the body to (x, y) facing `angle`, clearing vertical velocity. Used by the
@@ -89,7 +95,7 @@ function blocked(cx, cy)
     if self.wld.wallAt(cx, cy) > 0 then
         return 1
     endif
-    if self.wld.floorHeightAt(cx, cy) - self.pz > RcConfig.RC_STEP_UP then
+    if self.wld.floorHeightAt(cx, cy) - self.pz > self.cfg.stepUp() then
         return 1
     endif
     if self.wld.ceilHeightAt(cx, cy) - self.pz < self.ht then
@@ -132,8 +138,8 @@ function step(dt)
     dim dny
 
     dsec = dt / 1000.0
-    if dsec > RcConfig.RC_MAX_STEP_DT then
-        dsec = RcConfig.RC_MAX_STEP_DT
+    if dsec > self.cfg.maxStepDt() then
+        dsec = self.cfg.maxStepDt()
     endif
 
     dirX = math.cos(self.ang)
@@ -204,7 +210,7 @@ function step(dt)
 
     if self.wantJump = 1 then
         if self.grounded = 1 then
-            self.vz = RcConfig.RC_JUMP_VEL
+            self.vz = self.cfg.jumpVel()
             self.grounded = 0
         endif
     endif
@@ -217,7 +223,7 @@ function step(dt)
     groundH = self.wld.floorHeightAt(math.floor(self.px), math.floor(self.py))
     steppingUp = 0
     if self.grounded = 1 and groundH > self.pz then
-        if groundH - self.pz <= RcConfig.RC_STEP_UP then
+        if groundH - self.pz <= self.cfg.stepUp() then
             steppingUp = 1
         endif
     endif
@@ -225,7 +231,7 @@ function step(dt)
         self.pz = groundH
         self.vz = 0
     else
-        self.vz = self.vz - RcConfig.RC_GRAVITY * dsec
+        self.vz = self.vz - self.cfg.gravity() * dsec
         self.pz = self.pz + self.vz * dsec
         if self.pz <= groundH then
             self.pz = groundH
