@@ -1,5 +1,17 @@
 # Release Notes
 
+## v0.7.6 — 2026-09-09
+
+### softRaycaster package
+
+- The raycaster library (`RcConfig`, `RcWorld`, `RcCast`, `RcMover`, `RcLights`, `RcActors`, `RcRender`) is now an **opt-in first-party package**, `softRaycaster`. Add it from the package picker (it needs **softGfx**) instead of copying the `Rc*` files into every project. Exported and imported projects carry their package list.
+
+### Raycaster: multi-plane textured floor field
+
+- With `setFloorField(1)`, **raised and lowered surfaces are textured too**. The floorcaster now runs one pass per distinct floor height and per distinct ceiling height, each masked to the cells at that height — so a `floor:` step-top, a raised platform, a pit floor or a dropped soffit gets the same per-pixel texture-and-light treatment as the standard floor, not a flat fill.
+- A step's vertical **riser** is drawn only when its face is toward you (the front of a raised platform, a ceiling soffit) and is textured at the surface's own scale so it reads as a continuous lip.
+- When you stand on a platform and look over its edge, the down-step's riser is culled and the view is clamped at the edge, so geometry on the lower level can no longer bleed up over the platform you're standing on.
+
 ## v0.7.5 — 2026-09-08
 
 ### Tilemap editor: marker painting quality-of-life
