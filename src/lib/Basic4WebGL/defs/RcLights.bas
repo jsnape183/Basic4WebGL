@@ -117,13 +117,19 @@ function refreshPeak()
 endfunction
 
 ' Splat every `light:` cell into dynArr (used here as scratch), then copy the
-' result into staticArr element-wise and zero dynArr. Called once from the
-' Constructor, before any dynamic lights exist.
+' result into staticArr element-wise and zero dynArr.
+' Re-entrant: also called by bindSettings(). Zeroes its dynArr scratch on
+' entry so a re-bake after update() never folds live dynamic light into
+' the static grid.
 function bakeStatic()
     dim lc
     dim lr
     dim i
     dim n
+    n = self.cols * self.rows
+    for i = 0 to n - 1
+        self.dynArr(i) = 0
+    next i
     array.clear(self.slxArr)
     array.clear(self.slyArr)
     array.clear(self.slzArr)

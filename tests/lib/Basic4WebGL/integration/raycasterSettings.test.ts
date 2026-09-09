@@ -279,4 +279,27 @@ describe('RcLights honours cfg via re-bake', () => {
     lights.bindsettings(new RcSettings());
     expect(lights.staticlightcount()).toBe(before);
   });
+
+  test('re-bind after update() does not bake dynamic light into the static grid', () => {
+    const { RcWorld, TileMapSet, RcLights, RcSettings } = loadPkg(
+      (_h: unknown, px: number, py: number) => {
+        const c = Math.floor(px / 16), r = Math.floor(py / 16);
+        return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
+      },
+      [{ row: 3, col: 3, tag: 'light' }],
+      10, 10,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const lights = new RcLights(w);
+    lights.setambient(0.0);
+    const staticPeak = lights.peaklevel();          // marker only
+
+    lights.addpoint(6.5, 6.5, 0.5, 3.0, 5);         // bright point light, far from the marker
+    lights.update();
+    expect(lights.peaklevel()).toBeGreaterThan(staticPeak);   // point light dominates the frame
+
+    lights.bindsettings(new RcSettings());           // re-bake static
+    // the point light must NOT have been folded into the static grid:
+    expect(lights.peaklevel()).toBeCloseTo(staticPeak, 5);
+  });
 });
