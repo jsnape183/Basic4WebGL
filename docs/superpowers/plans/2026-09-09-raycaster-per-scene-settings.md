@@ -1304,7 +1304,11 @@ self.lights = new RcLights(self.wld)
 self.lights.bindSettings(self.cfg)
 ```
 
-An object you never bind uses the defaults — mixing bound and unbound is fine.
+Bind the **same** `RcSettings` object to all of them — `RcWorld` and `RcRender`
+both consult `stdCeil` and must agree. An object you never bind uses the plain
+defaults, and mixing bound-with-defaults and unbound is fine, but two *different*
+tuned objects on the same scene will disagree.
+
 Then in `onupdate`, read the movement knobs off it:
 
 ```bas
