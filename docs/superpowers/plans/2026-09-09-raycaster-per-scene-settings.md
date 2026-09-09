@@ -774,7 +774,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the failing test**
 
-Append a new `describe`. Reuse the corridor-world factory from Task 3 (extract it to a `loadPkg(tileAt, markers)` helper in the file if not already). Build a flat 6x6 room, put the mover on a ledge, and measure the fall:
+Append a new `describe`, reusing the `loadPkg` helper from Task 1 (`loadPkg(tileAt, markers, cols, rows)`, `tileAt` is `(h, px, py) => number` in pixel coords):
 
 ```ts
 describe('RcMover honours cfg', () => {
@@ -955,7 +955,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 describe('RcLights honours cfg via re-bake', () => {
   test('raising staticLightIntensity after bind lifts the baked peak', () => {
     const { RcWorld, TileMapSet, RcLights, RcSettings } = loadPkg(
-      (px: number, py: number) => {
+      (_h: unknown, px: number, py: number) => {
         const c = Math.floor(px / 16), r = Math.floor(py / 16);
         return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
       },
@@ -976,7 +976,7 @@ describe('RcLights honours cfg via re-bake', () => {
 
   test('re-bind does not duplicate static-light entries', () => {
     const { RcWorld, TileMapSet, RcLights, RcSettings } = loadPkg(
-      (px: number, py: number) => {
+      (_h: unknown, px: number, py: number) => {
         const c = Math.floor(px / 16), r = Math.floor(py / 16);
         return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
       },
@@ -1110,7 +1110,7 @@ describe('RcRender honours cfg', () => {
   test('bindSettings forwards to the owned RcCast (far wall drops with maxDist)', () => {
     // corridor: wall at col 30; player col 1 facing east.
     const { RcWorld, TileMapSet, RcRender, RcMover, RcSettings } = loadPkg(
-      (px: number, py: number) => {
+      (_h: unknown, px: number, py: number) => {
         const c = Math.floor(px / 16), r = Math.floor(py / 16);
         if (r === 0 || r === 3 || c === 0 || c === 31) return 1;
         return c === 30 ? 1 : 0;
@@ -1137,7 +1137,7 @@ describe('RcRender honours cfg', () => {
 
   test('eyeZ changes the horizon (projectY of h=0 at a fixed distance)', () => {
     const { RcWorld, TileMapSet, RcRender, RcSettings } = loadPkg(
-      (px: number, py: number) => {
+      (_h: unknown, px: number, py: number) => {
         const c = Math.floor(px / 16), r = Math.floor(py / 16);
         return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
       }, [], 10, 10,
