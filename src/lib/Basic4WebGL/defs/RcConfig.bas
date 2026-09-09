@@ -24,6 +24,18 @@
 ' `:height` suffix) in RcWorld -- just under RC_STD_CEIL (1.0), approximating
 ' a ceiling-mounted fixture rather than a light embedded in the ceiling
 ' surface itself. See RcWorld.applyFlag/applyKv and RcLights.sampleAtZ.
+'
+' RcConfig is now DEFAULTS + STRUCTURAL CONSTANTS. Behavioural knobs (movement,
+' physics, static-light bake, render distance, standard ceiling, surface-light
+' banding, actor height) are seeded from here into RcSettings, which a scene can
+' mutate and bind per-object -- see RcSettings.bas. The enum-style constants
+' (RC_SPAN_*, RC_DIAG_*, RC_SHADE_*, RC_HIT_*, RC_FALLOFF_*), RC_STRIP_W,
+' RC_TEX_SIZE, RC_MAX_MARCH_ITERS, RC_ACTOR_POOL, RC_FLAT_FILL and RC_UNTAGGED
+' are structural and stay fixed at runtime.
+'
+' RC_MAX_MARCH_ITERS caps ray-march steps at ~2x RcSettings.maxDist boundary
+' crossings; a scene that raises maxDist past ~250 must raise this too (it is
+' not an RcSettings knob).
 const
     RC_MAX_DIST = 32
     RC_MAX_MARCH_ITERS = 512
@@ -61,6 +73,7 @@ const
     RC_DIAG_SW = 4
     RC_SPAN_SIDE_DIAG = 2
     RC_STD_CEIL = 1.0
+    RC_UNTAGGED = 999999
     RC_TEX_SIZE = 64
     RC_FLAT_FILL = 1
     RC_SURF_LIGHT_STEP = 0.12
