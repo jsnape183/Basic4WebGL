@@ -149,7 +149,6 @@ function bakeStatic()
             endif
         next lc
     next lr
-    n = self.cols * self.rows
     for i = 0 to n - 1
         self.staticArr(i) = self.dynArr(i)
         self.dynArr(i) = 0

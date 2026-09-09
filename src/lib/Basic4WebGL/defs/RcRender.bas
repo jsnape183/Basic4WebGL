@@ -74,7 +74,7 @@ dim flatFillOn
 
 ' How many flat light steps a floor/ceiling surface is allowed across half the
 ' screen, recomputed once per renderFrame() from the bound lights' dynamic range
-' (peakLevel() - ambientLevel()) and capped at RcConfig.RC_SURF_SEG_MAX. It is
+' (peakLevel() - ambientLevel()) and capped at cfg.surfSegMax() (default RC_SURF_SEG_MAX). It is
 ' deliberately a FRAME-global number, not a per-band or per-column one -- see
 ' drawFlatSeg. 1 = no subdivision (a uniformly lit scene pays nothing).
 dim surfSegN
@@ -332,7 +332,7 @@ endfunction
 
 ' Perpendicular wall distance for screen column col. Out-of-range columns return
 ' 0 (nearer than any wall) so a billboard clipped against them never draws
-' off-screen; an in-range column with no wall hit returns RcConfig.RC_MAX_DIST.
+' off-screen; an in-range column with no wall hit returns cfg.maxDist().
 function depthAt(col)
     if col < 0 then
         return 0

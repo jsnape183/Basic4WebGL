@@ -224,7 +224,7 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
 endfunction
 
 ' Line-of-sight: distance to the first opaque wall along (dx,dy), or -1 if none
-' within RcConfig.RC_MAX_DIST. Shares beginMarch/stepMarch with cast().
+' within cfg.maxDist() (default RC_MAX_DIST). Shares beginMarch/stepMarch with cast().
 ' Does NOT touch the span arrays -- a caller that interleaves los() and cast()
 ' still reads the last cast()'s spans from spanCount()/spanKind(i)/...
 function los(wld as RcWorld, ox, oy, dx, dy)
