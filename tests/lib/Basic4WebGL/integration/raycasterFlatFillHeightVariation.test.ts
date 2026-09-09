@@ -104,6 +104,9 @@ describe('floor: step no longer reads as self-lit (flat fill auto-off on height 
     expect(setup([]).world.hasheightvariation()).toBe(0);
     expect(setup(STEP).world.hasheightvariation()).toBe(1);
     expect(setup([{ row: 5, col: 5, tag: 'ceil:0.6' }]).world.hasheightvariation()).toBe(1);
+    // ANY explicit ceil: tag is variation, even one matching the compiled default
+    // (a raised-stdCeil scene needs a ceil:1.0 soffit off the flat-fill fast path).
+    expect(setup([{ row: 5, col: 5, tag: 'ceil:1.0' }]).world.hasheightvariation()).toBe(1);
     expect(setup([{ row: 5, col: 5, tag: 'floor:0' }]).world.hasheightvariation()).toBe(0);
   });
 

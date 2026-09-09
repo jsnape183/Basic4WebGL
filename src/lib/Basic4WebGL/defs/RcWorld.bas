@@ -182,12 +182,12 @@ function applyKv(idx, key, v)
     endif
     if key = "ceil" then
         self.ceilHArr(idx) = math.val(v)
-        ' NB: compared to the compiled default, not cfg.stdCeil() -- bindSettings
-        ' comes after parse. A scene that sets stdCeil AND tags cells to match will
-        ' trip heightVarSeen (a small render cost, never wrong). See RcSettings docs.
-        if math.val(v) <> RcConfig.RC_STD_CEIL then
-            self.heightVarSeen = 1
-        endif
+        ' ANY explicit ceil: tag is height variation -- don't compare to a
+        ' default. Comparing to the compiled RC_STD_CEIL would miss a low soffit
+        ' tagged ceil:1.0 under a scene that bound a raised stdCeil, and the
+        ' flat-fill fast path would then paint it wrong. A redundant ceil:<default>
+        ' tag only costs that scene the fast path, never correctness.
+        self.heightVarSeen = 1
     endif
     if key = "light" then
         self.lightArr(idx) = 1
