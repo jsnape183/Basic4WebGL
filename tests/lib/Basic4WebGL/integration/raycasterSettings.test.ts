@@ -239,3 +239,44 @@ describe('RcMover honours cfg', () => {
     expect(m.blocked(3, 2)).toBe(1);  // 0.3 > 0.2 -> now blocked
   });
 });
+
+describe('RcLights honours cfg via re-bake', () => {
+  test('raising staticLightIntensity after bind lifts the baked peak', () => {
+    const { RcWorld, TileMapSet, RcLights, RcSettings } = loadPkg(
+      (_h: unknown, px: number, py: number) => {
+        const c = Math.floor(px / 16), r = Math.floor(py / 16);
+        return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
+      },
+      [{ row: 3, col: 3, tag: 'light' }],
+      10, 10,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const lights = new RcLights(w);
+    lights.setambient(0.0);
+    const peakDefault = lights.peaklevel();       // ambient 0 + baked static
+    expect(peakDefault).toBeGreaterThan(0);
+
+    const bright = new RcSettings();
+    bright.setstaticlightintensity(2.0);          // vs default 0.9
+    lights.bindsettings(bright);
+    expect(lights.peaklevel()).toBeGreaterThan(peakDefault); // re-bake happened
+  });
+
+  test('re-bind does not duplicate static-light entries', () => {
+    const { RcWorld, TileMapSet, RcLights, RcSettings } = loadPkg(
+      (_h: unknown, px: number, py: number) => {
+        const c = Math.floor(px / 16), r = Math.floor(py / 16);
+        return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
+      },
+      [{ row: 3, col: 3, tag: 'light' }, { row: 6, col: 6, tag: 'light' }],
+      10, 10,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const lights = new RcLights(w);
+    lights.setheightaware(1); // exercises the slxArr path
+    const before = lights.staticlightcount();     // == 2
+    lights.bindsettings(new RcSettings());
+    lights.bindsettings(new RcSettings());
+    expect(lights.staticlightcount()).toBe(before);
+  });
+});

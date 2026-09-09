@@ -50,8 +50,10 @@ dim heightAwareOn
 ' Largest static+dynamic contribution in the grid, refreshed by bakeStatic() and
 ' update(). Stored WITHOUT ambient so setAmbient() stays live -- see peakLevel().
 dim peakAdd
+dim cfg as RcSettings
 
 Constructor(w as RcWorld)
+    self.cfg = new RcSettings()
     self.wld = w
     self.rc = new RcCast()
     self.cols = w.widthCells()
@@ -68,6 +70,12 @@ Constructor(w as RcWorld)
     next i
     self.bakeStatic()
 EndConstructor
+
+function bindSettings(s as RcSettings)
+    self.cfg = s
+    self.rc.bindSettings(s)
+    self.bakeStatic()
+endfunction
 
 function setAmbient(level)
     self.ambient = level
@@ -116,15 +124,21 @@ function bakeStatic()
     dim lr
     dim i
     dim n
+    array.clear(self.slxArr)
+    array.clear(self.slyArr)
+    array.clear(self.slzArr)
+    array.clear(self.sliArr)
+    array.clear(self.slrArr)
+    array.clear(self.slFalloffArr)
     for lr = 0 to self.rows - 1
         for lc = 0 to self.cols - 1
             if self.wld.lightAt(lc, lr) > 0 then
-                self.splat(lc + 0.5, lr + 0.5, RcConfig.RC_STATIC_INTENSITY, RcConfig.RC_LIGHT_RANGE, RcConfig.RC_FALLOFF_LINEAR)
+                self.splat(lc + 0.5, lr + 0.5, self.cfg.staticLightIntensity(), self.cfg.staticLightRange(), RcConfig.RC_FALLOFF_LINEAR)
                 array.push(self.slxArr, lc + 0.5)
                 array.push(self.slyArr, lr + 0.5)
                 array.push(self.slzArr, self.wld.lightHeightAt(lc, lr))
-                array.push(self.sliArr, RcConfig.RC_STATIC_INTENSITY)
-                array.push(self.slrArr, RcConfig.RC_LIGHT_RANGE)
+                array.push(self.sliArr, self.cfg.staticLightIntensity())
+                array.push(self.slrArr, self.cfg.staticLightRange())
                 array.push(self.slFalloffArr, RcConfig.RC_FALLOFF_LINEAR)
             endif
         next lc
@@ -257,7 +271,7 @@ function update()
     count = 0
     for i = 0 to array.arrLength(self.lActive) - 1
         if self.lActive(i) = 1 then
-            if count < RcConfig.RC_LIGHT_CAP then
+            if count < self.cfg.lightCap() then
                 self.splat(self.lxArr(i), self.lyArr(i), self.liArr(i), self.lrArr(i), self.lFalloffArr(i))
                 count = count + 1
             endif
@@ -450,7 +464,7 @@ function sampleAtZ(worldX, worldY, worldZ)
     count = 0
     for i = 0 to array.arrLength(self.lActive) - 1
         if self.lActive(i) = 1 then
-            if count < RcConfig.RC_LIGHT_CAP then
+            if count < self.cfg.lightCap() then
                 total = total + self.contribAtZ(worldX, worldY, worldZ, self.lxArr(i), self.lyArr(i), self.lzArr(i), self.liArr(i), self.lrArr(i), self.lFalloffArr(i))
                 count = count + 1
             endif
