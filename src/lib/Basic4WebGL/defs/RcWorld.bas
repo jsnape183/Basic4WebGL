@@ -41,9 +41,16 @@ dim surfColSeen
 ' RcRender skips that optimisation when this is set.
 dim heightVarSeen
 
+dim cfg as RcSettings
+
 Constructor(tm as tilemapset, wallsLayerName)
+    self.cfg = new RcSettings()
     self.build(tm, wallsLayerName)
 EndConstructor
+
+function bindSettings(s as RcSettings)
+    self.cfg = s
+endfunction
 
 function build(tm as tilemapset, wallsLayerName)
     dim tw
@@ -65,14 +72,14 @@ function build(tm as tilemapset, wallsLayerName)
     for i = 0 to total - 1
         array.push(self.wallArr, 0)
         array.push(self.floorHArr, 0)
-        array.push(self.ceilHArr, RcConfig.RC_STD_CEIL)
+        array.push(self.ceilHArr, RcConfig.RC_UNTAGGED)
         array.push(self.wallTexArr, "")
         array.push(self.floorTexArr, "")
         array.push(self.ceilTexArr, "")
         array.push(self.floorColArr, 0 - 1)
         array.push(self.ceilColArr, 0 - 1)
         array.push(self.lightArr, 0)
-        array.push(self.lightHArr, RcConfig.RC_LIGHT_DEFAULT_Z)
+        array.push(self.lightHArr, RcConfig.RC_UNTAGGED)
         array.push(self.flagsArr, 0)
         array.push(self.diagArr, 0)
     next i
@@ -175,6 +182,9 @@ function applyKv(idx, key, v)
     endif
     if key = "ceil" then
         self.ceilHArr(idx) = math.val(v)
+        ' NB: compared to the compiled default, not cfg.stdCeil() -- bindSettings
+        ' comes after parse. A scene that sets stdCeil AND tags cells to match will
+        ' trip heightVarSeen (a small render cost, never wrong). See RcSettings docs.
         if math.val(v) <> RcConfig.RC_STD_CEIL then
             self.heightVarSeen = 1
         endif
@@ -265,10 +275,15 @@ endfunction
 function ceilHeightAt(col, row)
     ' OOB cells are solid walls, so this OOB value is informational only.
     ' 1.0 matches the standard ceiling.
+    dim v
     if self.inBounds(col, row) = 0 then
-        return RcConfig.RC_STD_CEIL
+        return self.cfg.stdCeil()
     endif
-    return self.ceilHArr(row * self.cols + col)
+    v = self.ceilHArr(row * self.cols + col)
+    if v = RcConfig.RC_UNTAGGED then
+        return self.cfg.stdCeil()
+    endif
+    return v
 endfunction
 
 function flagsAt(col, row)
@@ -300,10 +315,15 @@ function lightAt(col, row)
 endfunction
 
 function lightHeightAt(col, row)
+    dim v
     if self.inBounds(col, row) = 0 then
-        return RcConfig.RC_LIGHT_DEFAULT_Z
+        return self.cfg.lightDefaultZ()
     endif
-    return self.lightHArr(row * self.cols + col)
+    v = self.lightHArr(row * self.cols + col)
+    if v = RcConfig.RC_UNTAGGED then
+        return self.cfg.lightDefaultZ()
+    endif
+    return v
 endfunction
 
 function floorTexAt(col, row)

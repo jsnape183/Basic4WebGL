@@ -155,3 +155,45 @@ describe('RcCast honours cfg.maxDist', () => {
     expect(cast.spancount()).toBeGreaterThan(0);       // back in range
   });
 });
+
+describe('RcWorld resolves stdCeil / lightDefaultZ via cfg', () => {
+  // 4x4 room: border walls, open interior.
+  const room4: TileAt = (_h, px, py) => {
+    const c = Math.floor(px / 16), r = Math.floor(py / 16);
+    return (r === 0 || r === 3 || c === 0 || c === 3) ? 1 : 0;
+  };
+
+  test('untagged ceiling follows the bound stdCeil; tagged cells do not', () => {
+    const { RcWorld, TileMapSet, RcSettings } = loadPkg(room4, [
+      { row: 1, col: 1, tag: 'ceil:0.5' },
+    ], 4, 4);
+    const world = new RcWorld(new TileMapSet('c.stm'), 'walls');
+
+    expect(world.ceilheightat(2, 2)).toBe(1.0);   // untagged, default
+    expect(world.ceilheightat(1, 1)).toBe(0.5);   // tagged
+
+    const cfg = new RcSettings();
+    cfg.setstdceil(3.0);
+    world.bindsettings(cfg);
+    expect(world.ceilheightat(2, 2)).toBe(3.0);   // untagged now 3.0
+    expect(world.ceilheightat(1, 1)).toBe(0.5);   // tagged unchanged
+    expect(world.ceilheightat(-1, 0)).toBe(3.0);  // out of bounds follows cfg
+  });
+
+  test('bare light height follows lightDefaultZ; light:<h> does not', () => {
+    const { RcWorld, TileMapSet, RcSettings } = loadPkg(room4, [
+      { row: 1, col: 1, tag: 'light' },
+      { row: 2, col: 2, tag: 'light:1.8' },
+    ], 4, 4);
+    const world = new RcWorld(new TileMapSet('c.stm'), 'walls');
+
+    expect(world.lightheightat(1, 1)).toBe(0.85);
+    expect(world.lightheightat(2, 2)).toBe(1.8);
+
+    const cfg = new RcSettings();
+    cfg.setlightdefaultz(2.4);
+    world.bindsettings(cfg);
+    expect(world.lightheightat(1, 1)).toBe(2.4);
+    expect(world.lightheightat(2, 2)).toBe(1.8);
+  });
+});
