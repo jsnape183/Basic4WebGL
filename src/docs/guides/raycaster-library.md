@@ -255,7 +255,13 @@ the texture per cell with `ftex:<image>` / `ctex:<image>` markers; `fcol:`/`ccol
 flat colours render through the same path, so a scene can mix textured, coloured
 and plain floor with no seam. **Raised and lowered surfaces are textured too** —
 a `floor:` step-top, a raised platform, a pit floor, a lowered soffit all get
-the floorcaster. Only the thin riser faces between heights stay flat-shaded.
+the floorcaster. A step's vertical riser face is drawn only when it actually
+faces you — the front of a raised platform, a dropped ceiling's soffit — and is
+textured with the default floor / ceiling texture at the same scale as the
+surface, so it reads as a continuous lip. When you stand on a platform and look
+over its edge, the down-step's riser is culled (you can't see the underside of
+the floor you're standing on) and the view is clamped at the edge, so nothing
+on the lower level bleeds up over your platform.
 
 The floor field bakes its lighting **once**, from the scene's static lights, so
 it is for static lighting — a moving torch won't light it. Default off; every

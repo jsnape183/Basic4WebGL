@@ -576,6 +576,59 @@ function drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lightLevel)
     return 1
 endfunction
 
+' A *visible* step riser -- the vertical face of an UP-step (a raised platform
+' seen from the low side) or a ceiling soffit. The renderFrame step branches
+' decide visibility: a DOWN-step's riser faces away from a camera on the higher
+' floor and is never passed here (the window is clamped to its edge instead).
+' The flat drawStrip band (shadeKind 2/3) reads as a rendering glitch next to
+' the textured field, so when the field is on and a surface texture is set,
+' paint the riser with that same texture at the *same world scale* as the field
+' (1 texture tile per world unit, so a 0.2-tall step shows 0.2 of a tile) and
+' at the same sampled light -- it blends as a continuous lip. worldH is the
+' face's world height. Falls back to the flat strip with the field off / no tex.
+function drawRiser(destX, sTop, sBot, winTop, winBot, tex, u, lite, worldH, shadeKind)
+    dim t
+    dim b
+    dim vSpan
+    dim vT
+    dim vB
+    dim srcX
+    dim ch
+    if self.floorFieldOn = 0 or string.len(tex) = 0 then
+        return self.drawStrip(destX, sTop, sBot, winTop, winBot, shadeKind, lite)
+    endif
+    t = sTop
+    b = sBot
+    if t < winTop then
+        t = winTop
+    endif
+    if b > winBot then
+        b = winBot
+    endif
+    if b <= t then
+        return 0
+    endif
+    vSpan = sBot - sTop
+    if vSpan <= 0 then
+        return 0
+    endif
+    vT = ((t - sTop) / vSpan) * worldH
+    vB = ((b - sTop) / vSpan) * worldH
+    srcX = math.floor(u * RcConfig.RC_TEX_SIZE)
+    if srcX < 0 then
+        srcX = 0
+    endif
+    if srcX >= RcConfig.RC_TEX_SIZE then
+        srcX = RcConfig.RC_TEX_SIZE - 1
+    endif
+    ' Flat grey tint (no blue lift) at the sampled light -- the textured floor
+    ' field shades its texels the same way, so the lip matches.
+    ch = 255 * lite
+    drawing.drawImageStrip(tex, srcX, destX, (t + b) / 2, RcConfig.RC_STRIP_W, b - t, self.packTint(ch, ch, ch), vT, vB)
+    self.primCount = self.primCount + 1
+    return 1
+endfunction
+
 ' Full-viewport-width flat fill for the painter's background floor/ceiling
 ' (rung 1). shadeKind 4 = floor top, 6 = ceiling under -- the only two the
 ' background ever uses.
@@ -1186,6 +1239,7 @@ function renderFrame()
     dim stdCovered
     dim hi
     dim ci
+    dim riserU
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -1386,7 +1440,34 @@ function renderFrame()
                     if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                     endif
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
+                    riserU = self.camY + rayY * d
+                    if self.rc.spanSide(i) <> 0 then
+                        riserU = self.camX + rayX * d
+                    endif
+                    riserU = riserU - math.floor(riserU)
+                    ' Field off: the legacy flat strip for every step. Field on:
+                    ' an UP-step shows a real riser face -- draw it textured. A
+                    ' DOWN-step's riser faces away from a camera on the higher
+                    ' floor (that floor's own top surface hides the riser AND
+                    ' everything past the step below its edge), so draw nothing
+                    ' and clamp the window to the edge -- otherwise a wall on the
+                    ' lower level paints a wedge over the platform you stand on.
+                    if self.floorFieldOn = 0 then
+                        self.drawStrip(destX, sTop, sBot, winTop, winBot, 2, lite)
+                    else
+                        if newH > runFloorH then
+                            self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defFloorTex, riserU, lite, newH - runFloorH, 2)
+                        else
+                            if self.camZ + RcConfig.RC_EYE_Z >= runFloorH then
+                                newY = self.projectY(runFloorH, d)
+                                if newY < winBot then
+                                    winBot = newY
+                                endif
+                            else
+                                self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defFloorTex, riserU, lite, runFloorH - newH, 2)
+                            endif
+                        endif
+                    endif
                     if newH > runFloorH then
                         newY = self.projectY(newH, d)
                         if newY < winBot then
@@ -1407,7 +1488,32 @@ function renderFrame()
                     if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                     endif
-                    self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
+                    riserU = self.camY + rayY * d
+                    if self.rc.spanSide(i) <> 0 then
+                        riserU = self.camX + rayX * d
+                    endif
+                    riserU = riserU - math.floor(riserU)
+                    ' Mirror of the floor case. Field on: a ceiling DROP (soffit)
+                    ' shows a real riser face from below -- draw it. A ceiling
+                    ' RISE has its riser face hidden by the lower ceiling's
+                    ' underside for a camera below it, so clamp the window up to
+                    ' that edge instead.
+                    if self.floorFieldOn = 0 then
+                        self.drawStrip(destX, sTop, sBot, winTop, winBot, 3, lite)
+                    else
+                        if newH < runCeilH then
+                            self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defCeilTex, riserU, lite, runCeilH - newH, 3)
+                        else
+                            if self.camZ + RcConfig.RC_EYE_Z <= runCeilH then
+                                newY = self.projectY(runCeilH, d)
+                                if newY > winTop then
+                                    winTop = newY
+                                endif
+                            else
+                                self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defCeilTex, riserU, lite, newH - runCeilH, 3)
+                            endif
+                        endif
+                    endif
                     if newH < runCeilH then
                         newY = self.projectY(newH, d)
                         if newY > winTop then
