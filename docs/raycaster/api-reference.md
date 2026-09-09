@@ -134,7 +134,7 @@ return a safe default out of bounds.
 | `wallTexAt` / `floorTexAt` / `ceilTexAt` `(col, row)` | image name or `""` |
 | `floorColAt(col, row)` / `ceilColAt(col, row)` | packed `r*65536+g*256+b`, or -1 |
 | `hasSurfaceColor()` | 1 if any cell carries `fcol:`/`ccol:` (fast-path flag) |
-| `hasHeightVariation()` | 1 if any cell carries a non-standard `floor:`/`ceil:` height. RcRender skips its flat floor/ceiling fill when set (a step would otherwise read as self-lit against the flat fill). |
+| `hasHeightVariation()` | 1 if any cell carries a non-zero `floor:` or *any* `ceil:` tag. RcRender skips its flat floor/ceiling fill when set (a step would otherwise read as self-lit against the flat fill). |
 | `lightAt(col, row)` | 1 if a static-light cell |
 | `lightHeightAt(col, row)` | that light's Z |
 | `widthCells()` / `heightCells()` | grid dimensions |

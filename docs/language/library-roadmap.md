@@ -497,6 +497,26 @@ Phase 10 (docs) in progress (2026-09-04), tracked in
 `docs/superpowers/plans/2026-09-03-raycaster-descope-upper-regions.md`. Guide:
 `src/docs/guides/raycaster-library.md`.
 
+**Per-scene tuning — RcSettings [DONE 2026-09-09].** `RcConfig` stayed a
+`const` block, so no scene could change movement feel, render distance, ceiling
+height, etc. New `RcSettings` value object (module `rcsettings`, second in the
+`softraycaster` dependency order) holds 18 behavioural knobs — `moveSpeed`
+`turnSpeed` `lookSpeed` `gravity` `jumpVel` `stepUp` `maxStepDt` `maxPitch`
+`eyeZ` `maxDist` `staticLightRange` `lightCap` `staticLightIntensity`
+`lightDefaultZ` `stdCeil` `surfLightStep` `surfSegMax` `actorHeight` — each
+seeded from its `RcConfig.RC_*` default in the constructor. A scene builds one,
+tweaks it, and calls `bindSettings(cfg)` on its `RcWorld` / `RcCast` / `RcMover`
+/ `RcRender` / `RcLights`; `RcRender` & `RcLights` forward to the `RcCast` they
+own, `RcLights.bindSettings` re-runs `bakeStatic()`, `RcWorld` resolves
+`stdCeil` / `lightDefaultZ` at query time via an `RC_UNTAGGED` sentinel. Every
+Rc* class defaults its own `cfg` to `new RcSettings()`, so an unbound scene is
+byte-identical (regression: the full raycaster suite). `RcConfig`'s enum-style
+constants stay fixed. Also fixed alongside: any explicit `ceil:` tag now trips
+`hasHeightVariation()` (previously only a *non-default* value did, which missed
+a low soffit under a raised `stdCeil`). Spec:
+`docs/superpowers/specs/2026-09-09-raycaster-per-scene-settings-design.md`,
+plan: `docs/superpowers/plans/2026-09-09-raycaster-per-scene-settings.md`.
+
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Floor/ceiling
 surface light is bilinear-interpolated between cells; walls and sprites are lit per-cell.
@@ -509,7 +529,9 @@ floors and ceilings are flat-shaded (per-tile `fcol:`/`ccol:` colour), never tex
 textures, performance unprofiled. Room-over-room / stacked walkable regions are not
 supported — multi-tier levels use `floor:`/`ceil:` steps. Diagonal-wall tiles carry a
 real along-chord wall-U (texture the 45° face) but cannot combine with a floor/ceiling
-step in the same cell. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
+step in the same cell. `RcConfig` is the *defaults* — a scene overrides the behavioural
+constants per-object via `RcSettings.bindSettings` (movement, physics, `maxDist`,
+`stdCeil`, light bake, surface banding, actor height); the enum-style constants stay fixed. `RcRender`'s depth buffer for billboard occlusion is **per-column** (one
 nearest-wall distance each — a column's DDA terminates at its first wall, which is
 all billboard clipping needs), not per-span. `RcRender` fills floor/ceiling
 horizontal surfaces (step tops, pit floors, ceiling undersides, soffits) as flat
