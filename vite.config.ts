@@ -19,6 +19,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Integration tests transpile the full softBASIC standard library (now
+    // including softRaycaster) several times per test — a full compile is ~1s,
+    // and the machine is often loaded. 5s is not enough headroom.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     setupFiles: ['./tests/ui/setup.ts'],
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', 'tests/scratch/**'],

@@ -26,6 +26,24 @@ The main first-party package. Provides graphics, animation, and asset management
 | `tilemap` | Tile-based map rendering |
 | `audio` | Sound effects and background music |
 
+## softRaycaster
+
+An opt-in first-party package for building a first-person, DOOM-style raycaster in game code. Needs **softGfx**. Add it from the package picker.
+
+**Modules:**
+
+| Module | Description |
+|--------|-------------|
+| `RcConfig` | Shared constants (`RcConfig.RC_MOVE_SPEED`, `RC_MAX_DIST`, …) |
+| `RcWorld` | A tagged tilemap parsed into a queryable world |
+| `RcCast` | Ray marching — an ordered near→far span list + line-of-sight |
+| `RcMover` | Height-aware player body: collision, step-up, gravity, jump |
+| `RcLights` | Per-cell light grid: ambient, baked static lights, dynamic point lights |
+| `RcActors` | Billboard pool + `los` / `hitscan` / `near` ray queries |
+| `RcRender` | The first-person view — walls, textured floors/ceilings, lighting |
+
+See **Docs → Building a Raycaster** for the full guide.
+
 ## Sprite
 
 Renders a static image. Position, scale and rotation are managed via `self.transform`.
