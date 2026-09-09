@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.7.7 — 2026-09-09
+
+### Tilemap editor: a persistent tag registry
+
+- A tilemap now keeps a **tag registry** — every tag name stays available to paint with even after its last marker is erased, so tags no longer vanish mid-edit. The registry is saved with the `.stm` file; legacy files pick up their existing tags automatically on first open.
+- Unused tags (no marker anywhere uses them) show a **×** on their paint-palette chip to delete them from the registry; tags still in use can't be deleted.
+
 ## v0.7.6 — 2026-09-09
 
 ### softRaycaster package

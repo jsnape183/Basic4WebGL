@@ -28,17 +28,33 @@ type StmLayerValue =
   | { type: 'collision'; data: number[][] };
 
 export function decodeStmText(raw: string): StmDoc {
-  let parsed: { tileWidth?: number; tileHeight?: number; tileImage?: string; layers?: Record<string, StmLayerValue> };
+  let parsed: {
+    tileWidth?: number;
+    tileHeight?: number;
+    tileImage?: string;
+    tags?: unknown;
+    layers?: Record<string, StmLayerValue>;
+  };
   try {
     parsed = JSON.parse(raw || '{}');
   } catch {
     parsed = {};
   }
   const layerEntries = Object.entries(parsed.layers ?? {});
+  // Seed the tag registry from any stored `tags` plus every tag a marker
+  // actually uses, so a legacy file with no `tags` field still surfaces its
+  // tags and re-saves with a proper registry.
+  const storedTags = Array.isArray(parsed.tags)
+    ? parsed.tags.filter((t): t is string => typeof t === 'string')
+    : [];
+  const usedTags = layerEntries.flatMap(([, value]) =>
+    !Array.isArray(value) && value.type === 'markers' ? value.markers.map((m) => m.tag) : []
+  );
   return {
     tileWidth: parsed.tileWidth ?? 16,
     tileHeight: parsed.tileHeight ?? 16,
     tileImage: parsed.tileImage ?? '',
+    tags: Array.from(new Set([...storedTags, ...usedTags])),
     layers: layerEntries.map(([name, value]): EditorLayer => {
       if (Array.isArray(value)) return { key: crypto.randomUUID(), name, kind: 'tile', data: value };
       if (value.type === 'collision') return { key: crypto.randomUUID(), name, kind: 'collision', data: value.data };
@@ -63,10 +79,12 @@ function buildStmLayers(doc: StmDoc): Record<string, StmLayerValue> {
 }
 
 export function exportStmDoc(doc: StmDoc): string {
+  const tags = doc.tags ?? [];
   return JSON.stringify({
     tileWidth: doc.tileWidth,
     tileHeight: doc.tileHeight,
     tileImage: doc.tileImage,
+    ...(tags.length ? { tags } : {}),
     layers: buildStmLayers(doc),
   });
 }
@@ -172,12 +190,36 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(true);
   };
 
+  // The tag registry lives on the doc, so a tag stays available to paint with
+  // even after its last marker is erased. New tags are registered wherever
+  // they're first introduced; removal is explicit (and only offered for tags
+  // no marker still uses).
+  const registerTag = (tag: string) => {
+    setDraftDoc((prev) =>
+      (prev.tags ?? []).includes(tag) ? prev : { ...prev, tags: [...(prev.tags ?? []), tag] }
+    );
+    setIsDirty(true);
+  };
+
+  const handleSelectPaintTag = (tag: string | null) => {
+    if (tag) registerTag(tag);
+    setSelectedTag(tag);
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setDraftDoc((prev) => ({ ...prev, tags: (prev.tags ?? []).filter((t) => t !== tag) }));
+    setSelectedTag((prev) => (prev === tag ? null : prev));
+    setIsDirty(true);
+  };
+
   // Add the tag if the cell doesn't already have it, remove it if it does —
   // lets a cell accumulate multiple tags instead of replacing.
-  const handleToggleSelectedCellTag = (tag: string) =>
+  const handleToggleSelectedCellTag = (tag: string) => {
+    if (!selectedCellTags.includes(tag)) registerTag(tag);
     mutateSelectedCellMarkers((tags) =>
       tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]
     );
+  };
 
   const handleClearSelectedCell = () => mutateSelectedCellMarkers(() => []);
 
@@ -217,6 +259,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         }),
       }));
     } else {
+      if (selectedTag) registerTag(selectedTag);
       setDraftDoc((prev) => ({
         ...prev,
         layers: prev.layers.map((l, i) => {
@@ -309,16 +352,21 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(false);
   };
 
-  // Every tag used anywhere in the document — not just the active layer — so
-  // a tag coined on one marker layer is reusable on every other one. The
-  // currently-selected tag is always shown too, even before any marker uses
-  // it, so picking/typing a tag gives immediate visual confirmation of
-  // what's "loaded" to paint with.
+  // Which tags a marker somewhere still uses — the rest are removable from
+  // the registry without losing any placed markers.
+  const tagsInUse = new Set(
+    draftDoc.layers.flatMap((l) => (l.kind === 'marker' ? l.markers.map((m) => m.tag) : []))
+  );
+
+  // The registry plus every tag a marker uses (a legacy file mid-migration
+  // may have markers whose tag isn't registered yet) plus the loaded paint
+  // tag, so picking/typing one gives immediate visual confirmation.
   const markerTags =
     activeLayer?.kind === 'marker'
       ? Array.from(
           new Set([
-            ...draftDoc.layers.flatMap((l) => (l.kind === 'marker' ? l.markers.map((m) => m.tag) : [])),
+            ...(draftDoc.tags ?? []),
+            ...tagsInUse,
             ...(selectedTag ? [selectedTag] : []),
           ])
         )
@@ -416,7 +464,9 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
             <TagPicker
               tags={markerTags}
               selectedTag={selectedTag}
-              onSelectTag={setSelectedTag}
+              onSelectTag={handleSelectPaintTag}
+              tagsInUse={Array.from(tagsInUse)}
+              onRemoveTag={handleRemoveTag}
               selectMode={markerSelectMode}
               onToggleSelectMode={() => setMarkerSelectMode((v) => !v)}
               selectedCell={selectedCell}

@@ -18,6 +18,10 @@ type Props = {
   /** Remove every tag from the selected cell. */
   onClearCell?: () => void;
   onDeselectCell?: () => void;
+  /** Tags a marker somewhere still uses — these can't be removed from the registry. */
+  tagsInUse?: string[];
+  /** Delete a tag from the tilemap's registry (offered only for unused tags). */
+  onRemoveTag?: (tag: string) => void;
 };
 
 const TagPicker: React.FC<Props> = ({
@@ -31,6 +35,8 @@ const TagPicker: React.FC<Props> = ({
   onToggleCellTag,
   onClearCell,
   onDeselectCell,
+  tagsInUse = [],
+  onRemoveTag,
 }) => {
   const [draftTag, setDraftTag] = useState('');
   const editingCell = selectMode && !!selectedCell;
@@ -151,22 +157,40 @@ const TagPicker: React.FC<Props> = ({
             Eraser
           </button>
           <div className="flex flex-wrap gap-1">
-            {tags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => onSelectTag(tag)}
-                aria-label={`Tag ${tag}`}
-                aria-pressed={selectedTag === tag}
-                className={`px-2 py-1 rounded-full text-xs border ${
-                  selectedTag === tag
-                    ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
-                    : 'border-ds-border text-ds-text-muted hover:text-ds-text'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
+            {tags.map((tag) => {
+              const removable = !!onRemoveTag && !tagsInUse.includes(tag);
+              return (
+                <span
+                  key={tag}
+                  className={`inline-flex items-center rounded-full text-xs border ${
+                    selectedTag === tag
+                      ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
+                      : 'border-ds-border text-ds-text-muted'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectTag(tag)}
+                    aria-label={`Tag ${tag}`}
+                    aria-pressed={selectedTag === tag}
+                    className={`pl-2 py-1 hover:text-ds-text ${removable ? 'pr-1' : 'pr-2'}`}
+                  >
+                    {tag}
+                  </button>
+                  {removable && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveTag?.(tag)}
+                      aria-label={`Delete tag ${tag} from tilemap`}
+                      title="Unused — delete from tilemap"
+                      className="pr-2 pl-0.5 py-1 text-ds-text-dim hover:text-ds-error"
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              );
+            })}
           </div>
           <input
             type="text"

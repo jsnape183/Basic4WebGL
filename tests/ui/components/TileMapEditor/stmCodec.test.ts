@@ -153,6 +153,26 @@ describe('exportStmDoc', () => {
     });
   });
 
+  test('omits the tag registry when empty, and round-trips it when present', () => {
+    const base: StmDoc = {
+      tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png',
+      layers: [{ key: 'k1', name: 'spawns', kind: 'marker', markers: [] }],
+    };
+    expect(JSON.parse(exportStmDoc(base))).not.toHaveProperty('tags');
+
+    const withTags: StmDoc = { ...base, tags: ['spawn', 'boss'] };
+    const asDataUrl = 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(exportStmDoc(withTags))));
+    expect(decodeStmContent(asDataUrl).tags).toEqual(['spawn', 'boss']);
+  });
+
+  test('decode seeds the registry from tags a marker uses even with no stored tags field', () => {
+    const content = toDataUrl({
+      tileWidth: 8, tileHeight: 8, tileImage: 'a.png',
+      layers: { spawns: { type: 'markers', markers: [{ row: 0, col: 0, tag: 'legacy' }] } },
+    });
+    expect(decodeStmContent(content).tags).toEqual(['legacy']);
+  });
+
   test('serializes a collision layer as { type: "collision", data }', () => {
     const doc: StmDoc = {
       tileWidth: 8,

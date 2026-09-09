@@ -9,5 +9,9 @@ export type StmDoc = {
   tileWidth: number;
   tileHeight: number;
   tileImage: string;
+  /** The tilemap's tag registry — every tag name available to paint with,
+   * kept independently of whether any marker currently uses it so a tag
+   * doesn't vanish the moment its last marker is erased. */
+  tags?: string[];
   layers: EditorLayer[];
 };

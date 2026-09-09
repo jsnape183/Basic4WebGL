@@ -322,6 +322,55 @@ describe('TileMapEditor — marker layers', () => {
     expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'spawn' }] });
   });
 
+  test('a tag stays available to paint with after its last marker is erased', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    // Erase the only 'spawn' marker.
+    await userEvent.click(screen.getByLabelText('Eraser'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    // The tag is still offered.
+    expect(screen.getByLabelText('Tag spawn')).toBeInTheDocument();
+  });
+
+  test('the tag registry round-trips through save and reload', async () => {
+    const { store } = await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    // Coin a tag but never place it.
+    await userEvent.type(screen.getByLabelText('New tag name'), 'boss{Enter}');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).tags).toEqual(['boss']);
+
+    const saved = store.getState().assets.byId['m1'];
+    cleanup();
+    render(
+      <Provider store={store}>
+        <TileMapEditor asset={saved} onDirtyChange={vi.fn()} />
+      </Provider>
+    );
+    await screen.findByText('background');
+    await userEvent.click(screen.getByText('markers3'));
+    expect(screen.getByLabelText('Tag boss')).toBeInTheDocument();
+  });
+
+  test('an unused tag can be deleted from the registry; a used one cannot', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'used{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'unused{Enter}');
+
+    // 'used' has a marker -> no delete affordance; 'unused' does.
+    expect(screen.queryByLabelText('Delete tag used from tilemap')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Delete tag unused from tilemap'));
+    expect(screen.queryByLabelText('Tag unused')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Tag used')).toBeInTheDocument();
+  });
+
   test('tags coined on one marker layer are offered as chips on another marker layer', async () => {
     await renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));
