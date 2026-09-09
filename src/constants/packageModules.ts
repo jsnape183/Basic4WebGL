@@ -33,6 +33,14 @@ import hud from '../lib/Basic4WebGL/defs/hud.bas?raw';
 import Keyframe from '../lib/Basic4WebGL/defs/Keyframe.bas?raw';
 import tween from '../lib/Basic4WebGL/defs/tween.bas?raw';
 import Emitter from '../lib/Basic4WebGL/defs/Emitter.bas?raw';
+import RcConfig from '../lib/Basic4WebGL/defs/RcConfig.bas?raw';
+import RcWorld from '../lib/Basic4WebGL/defs/RcWorld.bas?raw';
+import RcCast from '../lib/Basic4WebGL/defs/RcCast.bas?raw';
+import RcMover from '../lib/Basic4WebGL/defs/RcMover.bas?raw';
+import RcLights from '../lib/Basic4WebGL/defs/RcLights.bas?raw';
+import RcActor from '../lib/Basic4WebGL/defs/RcActor.bas?raw';
+import RcActors from '../lib/Basic4WebGL/defs/RcActors.bas?raw';
+import RcRender from '../lib/Basic4WebGL/defs/RcRender.bas?raw';
 
 export const packageModules: Record<string, string> = {
   math,
@@ -70,4 +78,12 @@ export const packageModules: Record<string, string> = {
   Keyframe,
   tween,
   Emitter,
+  rcconfig: RcConfig,
+  rcworld: RcWorld,
+  rccast: RcCast,
+  rcmover: RcMover,
+  rclights: RcLights,
+  rcactor: RcActor,
+  rcactors: RcActors,
+  rcrender: RcRender,
 };

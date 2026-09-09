@@ -26,7 +26,7 @@ export const importProject =
       id: newProjectId,
       name: json.project.name,
       tags: options?.tags,
-      packageIds: ['softcore', 'softgfx'],
+      packageIds: json.project.packageIds ?? ['softcore', 'softgfx'],
     }));
 
     json.folders.forEach((f) => {

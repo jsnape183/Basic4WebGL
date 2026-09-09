@@ -17,4 +17,17 @@ export const firstPartyPackages: IPackage[] = [
     isFirstParty: true,
     moduleNames: ['gfx', 'input', 'drawing', 'stage', 'pen', 'assetmanager', 'ObjectTransform', 'sprite', 'animatedsprite', 'text', 'tilemap', 'tilemaplayer', 'tilemapset', 'audio', 'collision', 'pathfinding', 'marker', 'rayhit', 'scene', 'scenemanager', 'camera', 'world', 'hud', 'Keyframe', 'tween', 'Emitter', 'keyboard', 'controller'],
   },
+  {
+    // First-person raycaster library (RcWorld/RcCast/RcRender/RcMover/RcLights/
+    // RcActors). Opt-in — a 2D game shouldn't carry it. Needs softGfx (drawing,
+    // tilemapset, input, scene). Module order is a real dependency order: lib
+    // files are parsed in this sequence and typed fields need their target
+    // module declared first.
+    id: 'softraycaster',
+    name: 'softRaycaster',
+    version: '1.0.0',
+    isCore: false,
+    isFirstParty: true,
+    moduleNames: ['rcconfig', 'rcworld', 'rccast', 'rcmover', 'rclights', 'rcactor', 'rcactors', 'rcrender'],
+  },
 ];

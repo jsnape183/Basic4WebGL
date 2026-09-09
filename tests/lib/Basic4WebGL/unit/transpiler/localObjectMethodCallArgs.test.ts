@@ -27,32 +27,6 @@ const pkgLib = Object.entries(packageModules).map(([name, source]) => ({
   source,
 }));
 
-const actorFile = {
-  name: 'RcActor',
-  source: [
-    'Class',
-    '  dim ax',
-    '  dim ay',
-    '  function x()',
-    '    return self.ax',
-    '  endfunction',
-    '  function y()',
-    '    return self.ay',
-    '  endfunction',
-    '  function visible()',
-    '    return 1',
-    '  endfunction',
-    '  function distanceTo(px, py)',
-    '    dim dx',
-    '    dim dy',
-    '    dx = self.ax - px',
-    '    dy = self.ay - py',
-    '    return math.sqrt(dx * dx + dy * dy)',
-    '  endfunction',
-    'endclass',
-  ].join('\n'),
-};
-
 const t = (files: { name: string; source: string }[], main: string) =>
   compiler.transpile({
     lib: pkgLib,
@@ -78,7 +52,7 @@ describe('method call with args on a local object, in expression context', () =>
         'endclass',
       ].join('\n'),
     };
-    const r = t([actorFile, game], 'dim g as Game()');
+    const r = t([game], 'dim g as Game()');
     expect(r.diagnostics).toEqual([]);
     expect(r.code).toContain('near_d = near_a.distanceto(near_x,near_y);');
   });
@@ -98,7 +72,7 @@ describe('method call with args on a local object, in expression context', () =>
         'endclass',
       ].join('\n'),
     };
-    const r = t([actorFile, game], 'dim g as Game()');
+    const r = t([game], 'dim g as Game()');
     expect(r.diagnostics).toEqual([]);
   });
 
@@ -115,7 +89,7 @@ describe('method call with args on a local object, in expression context', () =>
         'endclass',
       ].join('\n'),
     };
-    const r = t([actorFile, game], 'dim g as Game()');
+    const r = t([game], 'dim g as Game()');
     expect(r.diagnostics).toEqual([]);
   });
 });

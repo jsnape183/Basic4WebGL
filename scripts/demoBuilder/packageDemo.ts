@@ -59,7 +59,8 @@ function mimeTypeFor(fileName: string): string {
 export function packageDemo(
   projectName: string,
   basFiles: RawBasFile[],
-  assets: RawAsset[]
+  assets: RawAsset[],
+  packageIds?: string[]
 ): ProjectExportJson {
   const sortedFiles = [...basFiles].sort((a, b) => a.name.localeCompare(b.name));
   const files = sortedFiles.map((f) => ({
@@ -81,7 +82,9 @@ export function packageDemo(
 
   return {
     version: 1,
-    project: { name: projectName },
+    project: packageIds && packageIds.length > 0
+      ? { name: projectName, packageIds }
+      : { name: projectName },
     folders: [],
     files,
     assets: assetEntries,

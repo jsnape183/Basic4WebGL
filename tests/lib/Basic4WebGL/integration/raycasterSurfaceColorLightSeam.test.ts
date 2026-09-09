@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
-import { sortByDependencies } from '@Basic4WebGL/sortByDependencies';
 import { packageModules } from '../../../../src/constants/packageModules';
 
 // Regression guard: an fcol:/ccol: tile tag must not change the LIGHTING of the
@@ -31,18 +29,7 @@ import { packageModules } from '../../../../src/constants/packageModules';
 // of one lattice per band.
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
-const CANON = 'demo-src/raycaster/lib';
-const LIB_FILES = [
-  'RcConfig.bas',
-  'RcWorld.bas',
-  'RcCast.bas',
-  'RcLights.bas',
-  'RcMover.bas',
-  'RcActor.bas',
-  'RcActors.bas',
-  'RcRender.bas',
-];
-
+// Rc* modules come from the softRaycaster package (lib); nothing to compile as files here.
 const VIEW_W = 320;
 const VIEW_H = 200;
 
@@ -87,12 +74,7 @@ function patchMarkers(hex: string): Marker[] {
 
 function renderFrame(markers: Marker[]): Draw[] {
   const walls = roomWalls();
-  const files = LIB_FILES.map((name) => ({
-    name,
-    source: readFileSync(`${CANON}/${name}`, 'utf-8'),
-  }));
-  const { files: ordered, error } = sortByDependencies(files);
-  expect(error).toBeUndefined();
+  const ordered: Array<{ name: string; source: string }> = []; // Rc* now from the softRaycaster package (lib)
   const result = compiler.transpile({ lib, files: ordered });
   expect(result.diagnostics).toEqual([]);
 

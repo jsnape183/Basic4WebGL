@@ -24,8 +24,11 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-const DEFAULT_PACKAGE_IDS = ['softcore', 'softgfx'];
-const lib = DEFAULT_PACKAGE_IDS.flatMap((pkgId) => {
+const packagesFile = join(sourceDir, 'packages');
+const PACKAGE_IDS = readdirSync(sourceDir).includes('packages')
+  ? readFileSync(packagesFile, 'utf-8').split('\n').map((s) => s.trim()).filter(Boolean)
+  : ['softcore', 'softgfx'];
+const lib = PACKAGE_IDS.flatMap((pkgId) => {
   const pkg = firstPartyPackages.find((p) => p.id === pkgId);
   if (!pkg) return [];
   return pkg.moduleNames.map((name) => ({ name, source: packageModules[name] ?? '' }));

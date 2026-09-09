@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
@@ -13,11 +12,8 @@ import { packageModules } from '../../../../src/constants/packageModules';
 
 const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
-const CANON = 'demo-src/raycaster/lib';
-const files = ['RcConfig.bas', 'RcWorld.bas'].map((name) => ({
-  name,
-  source: readFileSync(`${CANON}/${name}`, 'utf-8'),
-}));
+// Rc* modules come from the softRaycaster package (lib); nothing to compile as files here.
+const files: Array<{ name: string; source: string }> = [];
 
 function buildWorld(walls: number[][], markers: Array<{ row: number; col: number; tag: string }>) {
   const { files: ordered, error } = sortByDependencies(files);

@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
-import { sortByDependencies } from '@Basic4WebGL/sortByDependencies';
 import { packageModules } from '../../../../src/constants/packageModules';
 
 // Phase 9 benchmark. Drives RcRender + RcActors + RcLights over a fixed camera
@@ -53,11 +52,8 @@ interface World {
 }
 
 function transpileLib(): string {
-  const names = ['RcConfig', 'RcWorld', 'RcCast', 'RcMover', 'RcLights', 'RcActor', 'RcActors', 'RcRender'];
-  const raw = names.map((n) => ({ name: `${n}.bas`, source: readFileSync(`${LIBDIR}/${n}.bas`, 'utf-8') }));
-  const { files, error } = sortByDependencies(raw);
-  expect(error).toBeUndefined();
-  const result = compiler.transpile({ lib, files });
+  // Rc* modules ship in the softRaycaster package (lib).
+  const result = compiler.transpile({ lib, files: [] });
   expect(result.diagnostics).toEqual([]);
   return String(result.code);
 }

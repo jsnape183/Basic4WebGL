@@ -5,12 +5,15 @@ at `/docs`. It exists for agents and maintainers building games/demos on the
 softBASIC raycaster library. The player-facing how-to is
 `src/docs/guides/raycaster-library.md`.
 
-**Source of truth:** `demo-src/raycaster/lib/*.bas`. Every `demo-src/raycaster-p*/`
-directory ships a byte-identical copy (buildDemo is non-recursive) — the copies
-are enforced by `tests/lib/Basic4WebGL/integration/raycasterDemoLibSync.test.ts`.
-Edit the canonical files, then
-`for d in $(find demo-src -maxdepth 2 -name '<file>.bas' -not -path '*/raycaster/lib/*'); do cp demo-src/raycaster/lib/<file>.bas "$d"; done`.
-Regenerate this doc by re-reading the `.bas` files.
+**Source of truth:** `src/lib/Basic4WebGL/defs/Rc*.bas` — the `softRaycaster`
+first-party package (`src/constants/firstPartyPackages.ts`, id `softraycaster`).
+It's **opt-in**: a project or demo adds `softraycaster` to its `packageIds`
+(the app's package picker, or a `packages` file in a demo dir). Edit the def
+files directly — no copies to sync. Regenerate this doc by re-reading them.
+
+`softRaycaster` needs `softGfx` (drawing, tilemapset, input, scene). The
+`moduleNames` order in `firstPartyPackages.ts` is a real dependency order —
+lib files are parsed in that sequence.
 
 Classes are used with `self.x = new RcFoo(...)` and `self.x.method(...)` (softBASIC
 `self.` is mandatory inside classes). Module functions keep their prefix

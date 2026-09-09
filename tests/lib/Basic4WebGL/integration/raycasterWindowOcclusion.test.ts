@@ -1,8 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
 import { describe, test, expect } from 'vitest';
 import compiler from '@Basic4WebGL/index';
 import '@Basic4WebGL/transpilerRules';
-import { sortByDependencies } from '@Basic4WebGL/sortByDependencies';
 import { packageModules } from '../../../../src/constants/packageModules';
 
 // Focused guard for the single-window occlusion renderer (post upper-region
@@ -11,23 +9,21 @@ import { packageModules } from '../../../../src/constants/packageModules';
 // shorter far strips), a pit column still shows the wall beyond, and a
 // multi-cell coloured floor run coalesces into one strip per colour boundary.
 
-const lib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
-const DIR = 'demo-src/raycaster-p3';
+const baseLib = Object.entries(packageModules).map(([name, source]) => ({ name, source }));
 
+// Rc* now ship in the softRaycaster package (lib). `flatFill=false` flips the
+// RcConfig.RC_FLAT_FILL constant in the packaged source — the one-constant
+// revert of rung 1.
 function transpileP3(flatFill = true): string {
-  const names = readdirSync(DIR).filter((n) => n.endsWith('.bas')).sort();
-  const raw = names.map((name) => {
-    let source = readFileSync(`${DIR}/${name}`, 'utf-8');
-    if (!flatFill && name === 'RcConfig.bas') {
-      const patched = source.replace('RC_FLAT_FILL = 1', 'RC_FLAT_FILL = 0');
-      expect(patched).not.toBe(source); // guard against a silent rename
-      source = patched;
-    }
-    return { name, source };
-  });
-  const { files, error } = sortByDependencies(raw);
-  expect(error).toBeUndefined();
-  const result = compiler.transpile({ lib, files });
+  const lib = flatFill
+    ? baseLib
+    : baseLib.map((m) => {
+        if (m.name !== 'rcconfig') return m;
+        const source = m.source.replace('RC_FLAT_FILL = 1', 'RC_FLAT_FILL = 0');
+        expect(source).not.toBe(m.source); // guard against a silent rename
+        return { name: m.name, source };
+      });
+  const result = compiler.transpile({ lib, files: [] });
   expect(result.diagnostics).toEqual([]);
   return String(result.code);
 }

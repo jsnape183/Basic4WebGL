@@ -8,7 +8,7 @@ import { blobToDataUrl } from '../../lib/storage/dataUrl';
 
 export interface ProjectExportJson {
   version: 1;
-  project: { name: string }; // packageIds excluded — importer applies a fresh default
+  project: { name: string; packageIds?: string[] }; // packageIds carried so an exported project re-imports with the same packages; absent -> importer default
   folders: Array<{ id: string; name: string; parentId: string | null; section: 'files' | 'assets' }>;
   files: Array<{ id: string; name: string; source: string; folderId: string | null; fullName: string }>;
   assets: Array<{ id: string; name: string; content: string; folderId: string | null; fullName: string }>;
@@ -62,7 +62,7 @@ export async function buildExportJson(
     }
   });
 
-  return { version: 1, project: { name: project.name }, folders, files, assets, fileOrder, assetOrder };
+  return { version: 1, project: { name: project.name, packageIds: project.packageIds }, folders, files, assets, fileOrder, assetOrder };
 }
 
 export function triggerDownload(json: ProjectExportJson, filename: string): void {

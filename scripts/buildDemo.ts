@@ -21,6 +21,13 @@ if (basFiles.length === 0) {
   process.exit(1);
 }
 
+// Optional: a `packages` file in the demo dir, one package id per line
+// (e.g. softcore / softgfx / softraycaster). Absent -> importer default.
+const packagesFile = join(sourceDir, 'packages');
+const packageIds: string[] | undefined = existsSync(packagesFile)
+  ? readFileSync(packagesFile, 'utf-8').split('\n').map((s) => s.trim()).filter(Boolean)
+  : undefined;
+
 const assetsDir = join(sourceDir, 'assets');
 const assets: RawAsset[] = existsSync(assetsDir)
   ? readdirSync(assetsDir, { withFileTypes: true })
@@ -31,7 +38,7 @@ const assets: RawAsset[] = existsSync(assetsDir)
       }))
   : [];
 
-const json = packageDemo(slug, basFiles, assets);
+const json = packageDemo(slug, basFiles, assets, packageIds);
 
 const OUT_DIR = 'src/docs/demos';
 const outPath = join(OUT_DIR, `${slug}.b4wgl.json`);

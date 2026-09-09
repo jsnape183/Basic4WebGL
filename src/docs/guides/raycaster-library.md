@@ -1,7 +1,10 @@
 # Building a Raycaster (softBASIC library)
 
-A first-person raycaster you can drop into a project as a set of `.bas` modules.
-This guide is built up phase by phase alongside the library itself.
+A first-person raycaster you can add to a project as the **softRaycaster**
+package. Open the package picker in the file tree and add softRaycaster (it
+needs softGfx) — the `RcWorld` / `RcCast` / `RcRender` / `RcMover` / `RcLights`
+/ `RcActors` classes and the `RcConfig` constants are then available to your
+game code, no files to copy in.
 
 ## RcWorld — the map
 
