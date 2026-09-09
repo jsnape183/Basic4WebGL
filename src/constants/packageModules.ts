@@ -34,6 +34,7 @@ import Keyframe from '../lib/Basic4WebGL/defs/Keyframe.bas?raw';
 import tween from '../lib/Basic4WebGL/defs/tween.bas?raw';
 import Emitter from '../lib/Basic4WebGL/defs/Emitter.bas?raw';
 import RcConfig from '../lib/Basic4WebGL/defs/RcConfig.bas?raw';
+import RcSettings from '../lib/Basic4WebGL/defs/RcSettings.bas?raw';
 import RcWorld from '../lib/Basic4WebGL/defs/RcWorld.bas?raw';
 import RcCast from '../lib/Basic4WebGL/defs/RcCast.bas?raw';
 import RcMover from '../lib/Basic4WebGL/defs/RcMover.bas?raw';
@@ -79,6 +80,7 @@ export const packageModules: Record<string, string> = {
   tween,
   Emitter,
   rcconfig: RcConfig,
+  rcsettings: RcSettings,
   rcworld: RcWorld,
   rccast: RcCast,
   rcmover: RcMover,

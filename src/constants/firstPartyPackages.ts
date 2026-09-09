@@ -28,6 +28,6 @@ export const firstPartyPackages: IPackage[] = [
     version: '1.0.0',
     isCore: false,
     isFirstParty: true,
-    moduleNames: ['rcconfig', 'rcworld', 'rccast', 'rcmover', 'rclights', 'rcactor', 'rcactors', 'rcrender'],
+    moduleNames: ['rcconfig', 'rcsettings', 'rcworld', 'rccast', 'rcmover', 'rclights', 'rcactor', 'rcactors', 'rcrender'],
   },
 ];
