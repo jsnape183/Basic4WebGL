@@ -303,3 +303,48 @@ describe('RcLights honours cfg via re-bake', () => {
     expect(lights.peaklevel()).toBeCloseTo(staticPeak, 5);
   });
 });
+
+describe('RcRender honours cfg', () => {
+  test('bindSettings forwards to the owned RcCast (far wall drops with maxDist)', () => {
+    const { RcWorld, TileMapSet, RcRender, RcMover, RcSettings } = loadPkg(
+      (_h: unknown, px: number, py: number) => {
+        const c = Math.floor(px / 16), r = Math.floor(py / 16);
+        if (r === 0 || r === 3 || c === 0 || c === 31) return 1;
+        return c === 30 ? 1 : 0;
+      },
+      [], 32, 4,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const ren = new RcRender(w);
+    const me = new RcMover(w, 1.5, 1.5, 0.3, 0.6);
+    me.warpto(1.5, 1.5, 0);
+    ren.bindcamera(me);
+
+    // ray straight down the long corridor toward the far wall at c=30 (~28.5 away)
+    ren.rc.cast(w, 1.5, 1.5, 1, 0);
+    const farDefault = ren.rc.spancount();
+    expect(farDefault).toBeGreaterThan(0);
+
+    const near = new RcSettings();
+    near.setmaxdist(10);
+    ren.bindsettings(near); // must reach self.rc
+    ren.rc.cast(w, 1.5, 1.5, 1, 0);
+    expect(ren.rc.spancount()).not.toBe(farDefault);
+  });
+
+  test('eyeZ changes the horizon (projectY of h=0 at a fixed distance)', () => {
+    const { RcWorld, TileMapSet, RcRender, RcSettings } = loadPkg(
+      (_h: unknown, px: number, py: number) => {
+        const c = Math.floor(px / 16), r = Math.floor(py / 16);
+        return (r === 0 || r === 9 || c === 0 || c === 9) ? 1 : 0;
+      }, [], 10, 10,
+    );
+    const w = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const ren = new RcRender(w);
+    const y0 = ren.projecty(0, 4);
+    const tall = new RcSettings();
+    tall.seteyez(1.5);
+    ren.bindsettings(tall);
+    expect(ren.projecty(0, 4)).toBeGreaterThan(y0);
+  });
+});

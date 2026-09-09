@@ -31,6 +31,7 @@ Class
 ' mis-transpile -> runtime ReferenceError).
 dim wld as RcWorld
 dim rc as RcCast
+dim cfg as RcSettings
 dim camX
 dim camY
 dim camAngle
@@ -114,6 +115,7 @@ dim ffCeilB
 
 Constructor(w as RcWorld)
     dim di
+    self.cfg = new RcSettings()
     self.wld = w
     self.rc = new RcCast()
     self.camX = 2.0
@@ -152,12 +154,17 @@ Constructor(w as RcWorld)
     self.fPlaneX = 0
     self.fPlaneY = self.fovScale
     for di = 0 to self.cols - 1
-        array.push(self.depthArr, RcConfig.RC_MAX_DIST)
+        array.push(self.depthArr, self.cfg.maxDist())
     next di
 EndConstructor
 
 function bindCamera(mover)
     self.boundMover = mover
+endfunction
+
+function bindSettings(s as RcSettings)
+    self.cfg = s
+    self.rc.bindSettings(s)
 endfunction
 
 ' Override rung 1's painter's background fill for this instance -- 0 forces
@@ -235,7 +242,7 @@ function bakeFloorField()
             vC = 0.0
             if self.boundLights <> 0 then
                 vF = math.clamp(self.boundLights.sampleAtZ(wx, wy, 0.05), 0, 1)
-                vC = math.clamp(self.boundLights.sampleAtZ(wx, wy, RcConfig.RC_STD_CEIL - 0.05), 0, 1)
+                vC = math.clamp(self.boundLights.sampleAtZ(wx, wy, self.cfg.stdCeil() - 0.05), 0, 1)
             endif
             array.push(fb, math.floor(vF * 255))
             array.push(fb, math.floor(vF * 255))
@@ -316,7 +323,7 @@ function emitFloorField(fieldId, planeZ, texName, tilesId, lmId, br, bg, bb)
     if self.boundLights <> 0 then
         amb = self.boundLights.ambientLevel()
     endif
-    drawing.drawPlaneField(fieldId, texName, tilesId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
+    drawing.drawPlaneField(fieldId, texName, tilesId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, self.cfg.eyeZ(), lmId, amb, br, bg, bb)
 endfunction
 
 function bindActors(actors)
@@ -440,7 +447,7 @@ function drawActors()
         cx = (self.viewW / 2) * (1.0 + tX / depth)
 
         feetY = self.projectY(a.z(), depth)
-        headY = self.projectY(a.z() + RcConfig.RC_ACTOR_HEIGHT, depth)
+        headY = self.projectY(a.z() + self.cfg.actorHeight(), depth)
         hPx = feetY - headY
         wPx = hPx * (fw / fh)
 
@@ -482,7 +489,7 @@ function setCamera(x, y, angle, pitch)
     self.camX = x
     self.camY = y
     self.camAngle = angle
-    self.camPitch = math.clamp(pitch, 0 - RcConfig.RC_MAX_PITCH, RcConfig.RC_MAX_PITCH)
+    self.camPitch = math.clamp(pitch, 0 - self.cfg.maxPitch(), self.cfg.maxPitch())
 endfunction
 
 function setFov(degrees)
@@ -521,7 +528,7 @@ function projectY(h, d)
     if dd < 0.05 then
         dd = 0.05
     endif
-    return self.scy + (self.camZ + RcConfig.RC_EYE_Z - h) * (self.viewH / dd) + self.camPitch
+    return self.scy + (self.camZ + self.cfg.eyeZ() - h) * (self.viewH / dd) + self.camPitch
 endfunction
 
 ' Draws a vertical strip [sTop..sBot] clipped to [winTop..winBot], flat-shaded.
@@ -750,17 +757,17 @@ function depthAtScreenY(hh, y)
     dim k
     dim dy
     dim d
-    k = (self.camZ + RcConfig.RC_EYE_Z - hh) * self.viewH
+    k = (self.camZ + self.cfg.eyeZ() - hh) * self.viewH
     dy = y - (self.scy + self.camPitch)
     if dy < 0.0001 and dy > 0 - 0.0001 then
-        return RcConfig.RC_MAX_DIST
+        return self.cfg.maxDist()
     endif
     d = k / dy
     if d < 0.05 then
         d = 0.05
     endif
-    if d > RcConfig.RC_MAX_DIST then
-        d = RcConfig.RC_MAX_DIST
+    if d > self.cfg.maxDist() then
+        d = self.cfg.maxDist()
     endif
     return d
 endfunction
@@ -1093,7 +1100,7 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
         self.drawFlatSeg(destX, hh, dNear, dFar, winTop, winBot, kind, 0 - 1, lite, rayX, rayY, dNear, dFar)
         return
     endif
-    eyeZ = self.camZ + RcConfig.RC_EYE_Z
+    eyeZ = self.camZ + self.cfg.eyeZ()
     isFloor = 0
     if hh < eyeZ then
         isFloor = 1
@@ -1264,12 +1271,12 @@ function renderFrame()
         bgLite = self.boundLights.ambientLevel()
         ' One number for the whole frame -- drawFlatSeg's light lattice has to be
         ' identical for every column, so this cannot be derived per band.
-        self.surfSegN = math.ceil((self.boundLights.peakLevel() - self.boundLights.ambientLevel()) / RcConfig.RC_SURF_LIGHT_STEP)
+        self.surfSegN = math.ceil((self.boundLights.peakLevel() - self.boundLights.ambientLevel()) / self.cfg.surfLightStep())
         if self.surfSegN < 1 then
             self.surfSegN = 1
         endif
-        if self.surfSegN > RcConfig.RC_SURF_SEG_MAX then
-            self.surfSegN = RcConfig.RC_SURF_SEG_MAX
+        if self.surfSegN > self.cfg.surfSegMax() then
+            self.surfSegN = self.cfg.surfSegMax()
         endif
     endif
 
@@ -1317,7 +1324,7 @@ function renderFrame()
     fillOn = 0
     if self.flatFillOn = 1 and self.gradientShadeOn = 0 and self.floorFieldOn = 0 and self.wld.hasHeightVariation() = 0 then
         if self.wld.floorHeightAt(camCol, camRow) = 0 then
-            if self.wld.ceilHeightAt(camCol, camRow) = RcConfig.RC_STD_CEIL then
+            if self.wld.ceilHeightAt(camCol, camRow) = self.cfg.stdCeil() then
                 fillOn = 1
             endif
         endif
@@ -1364,7 +1371,7 @@ function renderFrame()
         runFloorH = self.wld.floorHeightAt(camCol, camRow)
         runCeilH = self.wld.ceilHeightAt(camCol, camRow)
         destX = col * RcConfig.RC_STRIP_W + RcConfig.RC_STRIP_W / 2
-        self.depthArr(col) = RcConfig.RC_MAX_DIST
+        self.depthArr(col) = self.cfg.maxDist()
 
         hitWall = 0
         sfH = runFloorH
@@ -1416,7 +1423,7 @@ function renderFrame()
                 if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, sfH, sfD, d, winTop, winBot, sfKind, sfLite, rayX, rayY)
                 endif
-                if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                if stdCovered = 0 or scD <> 0 or scH <> self.cfg.stdCeil() or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                     self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                 endif
                 hitWall = 1
@@ -1458,7 +1465,7 @@ function renderFrame()
                         if newH > runFloorH then
                             self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defFloorTex, riserU, lite, newH - runFloorH, 2)
                         else
-                            if self.camZ + RcConfig.RC_EYE_Z >= runFloorH then
+                            if self.camZ + self.cfg.eyeZ() >= runFloorH then
                                 newY = self.projectY(runFloorH, d)
                                 if newY < winBot then
                                     winBot = newY
@@ -1485,7 +1492,7 @@ function renderFrame()
                     runFloorH = newH
                 else
                     newH = self.wld.ceilHeightAt(self.rc.spanCol(i), self.rc.spanRow(i))
-                    if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
+                    if stdCovered = 0 or scD <> 0 or scH <> self.cfg.stdCeil() or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, d, rayX, rayY) = 0) then
                         self.drawSurface(destX, scH, scD, d, winTop, winBot, scKind, scLite, rayX, rayY)
                     endif
                     riserU = self.camY + rayY * d
@@ -1504,7 +1511,7 @@ function renderFrame()
                         if newH < runCeilH then
                             self.drawRiser(destX, sTop, sBot, winTop, winBot, self.defCeilTex, riserU, lite, runCeilH - newH, 3)
                         else
-                            if self.camZ + RcConfig.RC_EYE_Z <= runCeilH then
+                            if self.camZ + self.cfg.eyeZ() <= runCeilH then
                                 newY = self.projectY(runCeilH, d)
                                 if newY > winTop then
                                     winTop = newY
@@ -1539,11 +1546,11 @@ function renderFrame()
         endwhile
 
         if hitWall = 0 then
-            if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
-                self.drawSurface(destX, sfH, sfD, RcConfig.RC_MAX_DIST, winTop, winBot, sfKind, sfLite, rayX, rayY)
+            if stdCovered = 0 or sfD <> 0 or sfH <> 0 or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.floorBandClean(0, self.cfg.maxDist(), rayX, rayY) = 0) then
+                self.drawSurface(destX, sfH, sfD, self.cfg.maxDist(), winTop, winBot, sfKind, sfLite, rayX, rayY)
             endif
-            if stdCovered = 0 or scD <> 0 or scH <> RcConfig.RC_STD_CEIL or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, RcConfig.RC_MAX_DIST, rayX, rayY) = 0) then
-                self.drawSurface(destX, scH, scD, RcConfig.RC_MAX_DIST, winTop, winBot, scKind, scLite, rayX, rayY)
+            if stdCovered = 0 or scD <> 0 or scH <> self.cfg.stdCeil() or (self.wld.hasSurfaceColor() = 1 and self.floorFieldOn = 0 and self.ceilBandClean(0, self.cfg.maxDist(), rayX, rayY) = 0) then
+                self.drawSurface(destX, scH, scD, self.cfg.maxDist(), winTop, winBot, scKind, scLite, rayX, rayY)
             endif
         endif
     next col
