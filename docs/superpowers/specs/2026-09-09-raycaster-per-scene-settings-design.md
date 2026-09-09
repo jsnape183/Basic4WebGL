@@ -225,20 +225,23 @@ settings) — not run for this change.
 
 ## Docs
 
-1. **New API Reference page** `src/docs/api-reference/rcsettings.md` (added to
-   `src/docs/manifest.ts` under the raycaster API group): `## Constructor`,
-   then a table of all 18 knobs — name, what it does, default, sensible range,
-   which object consumes it — then the `bindSettings` call pattern and a
-   worked "tight room vs open exterior" two-scene example.
-2. **`src/docs/guides/raycaster-library.md`** — new "Per-scene tuning"
-   section after the setup section: what `RcSettings` is, the bind-early
-   rule, the `stdCeil` shortcut for "tall walls everywhere" (ties back to the
-   earlier `ceil:` guidance), the `heightVarSeen` and `maxDist` caveats.
-3. **`docs/raycaster/api-reference.md`** (internal) — `RcSettings` row in the
-   module table; note the `bindSettings` fan-out and the two re-init points.
-4. **`src/docs/language-guide/packages.md`** — add `RcSettings` to the
+The raycaster has **no per-module API pages** in the app (no
+`src/docs/api-reference/rc*.md`, nothing in `src/docs/manifest.ts`) — it is
+documented entirely through the "Building a Raycaster" guide. `RcSettings`
+follows that: no new app page, no manifest change.
+
+1. **`src/docs/guides/raycaster-library.md`** — new "Per-scene tuning"
+   section after the `RcWorld` setup section: what `RcSettings` is, the
+   bind-early rule, the **full 18-knob table** (name / effect / default /
+   which object consumes it), the `stdCeil` shortcut for "tall everywhere"
+   (ties back to the earlier `ceil:` guidance), the `heightVarSeen` and
+   `maxDist` caveats, and a worked "tight room vs open yard" two-scene example.
+2. **`docs/raycaster/api-reference.md`** (internal agent ref) — `RcSettings`
+   row in the module table; note the `bindSettings` fan-out and the two
+   re-init points.
+3. **`src/docs/language-guide/packages.md`** — add `RcSettings` to the
    `softRaycaster` module table.
-5. **Release notes** + version bump — only when the user asks to push
+4. **Release notes** + version bump — only when the user asks to push
    (per CLAUDE.md).
 
 ## Roadmap
@@ -263,9 +266,7 @@ settings) — not run for this change.
 | `src/constants/packageModules.ts` | import + `rcsettings` entry |
 | `src/constants/firstPartyPackages.ts` | `rcsettings` in `moduleNames` |
 | `tests/lib/Basic4WebGL/integration/raycasterSettings.test.ts` | **new** |
-| `src/docs/api-reference/rcsettings.md` | **new** |
-| `src/docs/manifest.ts` | register the new API page |
-| `src/docs/guides/raycaster-library.md` | "Per-scene tuning" section |
+| `src/docs/guides/raycaster-library.md` | "Per-scene tuning" section + 18-knob table |
 | `docs/raycaster/api-reference.md` | `RcSettings` row |
 | `src/docs/language-guide/packages.md` | `RcSettings` in the table |
 | `docs/language/library-roadmap.md` | mark resolved / shipped note |
