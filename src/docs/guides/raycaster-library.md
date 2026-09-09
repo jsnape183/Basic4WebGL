@@ -52,7 +52,7 @@ Every accessor takes a cell column and row as whole numbers, starting at `0`.
 | `wld.widthCells()` / `wld.heightCells()` | map size in cells |
 | `wld.wallAt(col, row)` | `0` open, `>0` the wall tile's id (out of bounds = `1`) |
 | `wld.floorHeightAt(col, row)` | floor height (`0` standard, negative = pit; out of bounds = `0`) |
-| `wld.ceilHeightAt(col, row)` | ceiling height (`1` standard; out of bounds = `1`) |
+| `wld.ceilHeightAt(col, row)` | ceiling height (`1` standard; out of bounds = `1`) — follows `RcSettings.stdCeil` when bound |
 | `wld.flagsAt(col, row)` | bitset: `1` door, `2` lift, `4` water, `8` sky (out of bounds = `0`) |
 | `wld.wallTexAt(col, row)` | the cell's `tex:` texture name, or `""` |
 | `wld.floorColAt(col, row)` / `wld.ceilColAt(col, row)` | the cell's `fcol:` / `ccol:` colour as a packed `r*65536 + g*256 + b`, or `-1` if unset (out of bounds = `-1`) |
@@ -106,6 +106,74 @@ How large can one area get before you must split it? See the Phase 9 benchmark
 report (`docs/raycaster-benchmark-report.md` in the repository) for the measured
 area-size limits, and the `raycaster-p9-bench` demo to profile your own map
 (`T` toggles the floor field against the on-screen frame time).
+
+## Per-scene tuning
+
+`RcConfig` holds the raycaster's default numbers. `RcSettings` lets one scene
+override them without affecting another — a cramped indoor area and an open
+exterior can have different movement feel, render distance and ceiling height
+in the same project.
+
+Build one, set the knobs you care about, and `bindSettings` it to every
+raycaster object **right after you create that object** — before the first
+`step` / `renderFrame`:
+
+```bas
+self.cfg = new RcSettings()
+self.cfg.setStdCeil(3.0)      ' every untagged cell is 3 units tall
+self.cfg.setMoveSpeed(3.4)
+
+self.wld = new RcWorld(self.tm, "walls")
+self.wld.bindSettings(self.cfg)
+self.ren = new RcRender(self.wld)
+self.ren.bindSettings(self.cfg)
+self.me = new RcMover(self.wld, 1.5, 1.5, 0.3, 0.6)
+self.me.bindSettings(self.cfg)
+self.lights = new RcLights(self.wld)
+self.lights.bindSettings(self.cfg)
+```
+
+Bind the **same** `RcSettings` object to all of them — `RcWorld` and `RcRender`
+both consult `stdCeil` and must agree. An object you never bind uses the plain
+defaults, and mixing bound-with-defaults and unbound is fine, but two *different*
+tuned objects on the same scene will disagree.
+
+Then in `onupdate`, read the movement knobs off it:
+
+```bas
+self.me.move(controls.readFwd() * self.cfg.moveSpeed(), controls.readStrafe() * self.cfg.moveSpeed())
+```
+
+| getter / setter | effect | default |
+|---|---|---|
+| `moveSpeed` / `setMoveSpeed` | forward/strafe speed (cells/sec) — your `onupdate` applies it | `2.6` |
+| `turnSpeed` / `setTurnSpeed` | yaw speed | `2.4` |
+| `lookSpeed` / `setLookSpeed` | look up/down speed | `400` |
+| `gravity` / `setGravity` | downward acceleration | `14` |
+| `jumpVel` / `setJumpVel` | jump launch speed | `5` |
+| `stepUp` / `setStepUp` | tallest ledge you can walk straight onto | `0.35` |
+| `maxStepDt` / `setMaxStepDt` | movement sub-step cap (collision safety — leave it) | `0.1` |
+| `maxPitch` / `setMaxPitch` | how far the view can tilt up/down | `220` |
+| `eyeZ` / `setEyeZ` | camera height above the floor | `0.5` |
+| `maxDist` / `setMaxDist` | how far rays look for walls | `32` |
+| `staticLightRange` / `setStaticLightRange` | radius (cells) of a `light:` marker's pool | `6` |
+| `lightCap` / `setLightCap` | max dynamic point lights at once | `4` |
+| `staticLightIntensity` / `setStaticLightIntensity` | brightness of a `light:` marker | `0.9` |
+| `lightDefaultZ` / `setLightDefaultZ` | height of a bare `light` marker | `0.85` |
+| `stdCeil` / `setStdCeil` | ceiling height of every cell you didn't tag `ceil:` | `1.0` |
+| `surfLightStep` / `setSurfLightStep` | floor/ceiling light-banding step | `0.12` |
+| `surfSegMax` / `setSurfSegMax` | cap on those bands | `6` |
+| `actorHeight` / `setActorHeight` | drawn height of an `RcActors` billboard | `1.0` |
+
+**`setStdCeil` is the easy way to make a whole level tall** — no need to tag
+every cell `ceil:` (see the ceiling-height notes above). One caveat: any cell
+you *do* tag `ceil:` (even `ceil:3` matching a `stdCeil` of 3) counts as height
+variation and takes a slightly slower drawing path — leave cells untagged where
+the scene default already gives you what you want.
+
+**`maxDist`** controls wall render distance only; the floor and ceiling always
+fill to the horizon. Beyond ~250 you also need to raise `RC_MAX_MARCH_ITERS`
+in `RcConfig.bas` (it is not an `RcSettings` knob).
 
 ## RcCast — casting rays
 

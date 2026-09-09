@@ -59,7 +59,11 @@ beats the procedural checker, per cell).
 
 ## RcConfig
 
-Constants, referenced fully-qualified: `RcConfig.RC_MOVE_SPEED`.
+Constants, referenced fully-qualified: `RcConfig.RC_MOVE_SPEED`. These are now
+the *defaults*; a scene can override the behavioural ones per-object via
+`RcSettings` (see below). The enum-style constants (`RC_SPAN_*`, `RC_DIAG_*`,
+`RC_SHADE_*`, `RC_HIT_*`, `RC_FALLOFF_*`), `RC_STRIP_W`, `RC_TEX_SIZE`,
+`RC_MAX_MARCH_ITERS`, `RC_ACTOR_POOL`, `RC_FLAT_FILL`, `RC_UNTAGGED` stay fixed.
 
 | Constant | Value | Meaning |
 |---|---|---|
@@ -90,6 +94,27 @@ Constants, referenced fully-qualified: `RcConfig.RC_MOVE_SPEED`.
 | `RC_FLAT_FILL` | 1 | default for `RcRender.setFlatFill` |
 | `RC_SURF_LIGHT_STEP` / `RC_SURF_SEG_MAX` | 0.12 / 6 | floor/ceiling light-band subdivision |
 | `RC_SHADE_*` | 4–7 | internal surface-kind shade indices |
+
+---
+
+## RcSettings
+
+Mutable per-scene overrides for the `RcConfig` defaults. A scene builds
+`new RcSettings()`, calls `set<Knob>(v)`, and `bindSettings(cfg)` on each
+raycaster object it creates.
+
+- `bindSettings(s)` exists on `RcWorld` / `RcCast` / `RcMover` / `RcRender` /
+  `RcLights`. `RcRender` & `RcLights` forward it to the `RcCast` they own.
+  `RcLights.bindSettings` also re-runs `bakeStatic()` (idempotent — `bakeStatic`
+  clears its `sl*Arr` and zeroes its `dynArr` scratch on entry).
+- `RcWorld` resolves `stdCeil` / `lightDefaultZ` at query time via the
+  `RC_UNTAGGED` (999999) sentinel — no re-init on bind.
+- Every Rc* class defaults its own `cfg` to `new RcSettings()`, so an unbound
+  scene renders byte-identically. Bind the SAME object to all of them.
+- Knobs: `moveSpeed` `turnSpeed` `lookSpeed` `gravity` `jumpVel` `stepUp`
+  `maxStepDt` `maxPitch` `eyeZ` `maxDist` `staticLightRange` `lightCap`
+  `staticLightIntensity` `lightDefaultZ` `stdCeil` `surfLightStep` `surfSegMax`
+  `actorHeight`. `moveSpeed`/`turnSpeed`/`lookSpeed` are scene-consumed only.
 
 ---
 

@@ -35,6 +35,7 @@ An opt-in first-party package for building a first-person, DOOM-style raycaster 
 | Module | Description |
 |--------|-------------|
 | `RcConfig` | Shared constants (`RcConfig.RC_MOVE_SPEED`, `RC_MAX_DIST`, …) |
+| `RcSettings` | Per-scene overrides for the `RcConfig` defaults |
 | `RcWorld` | A tagged tilemap parsed into a queryable world |
 | `RcCast` | Ray marching — an ordered near→far span list + line-of-sight |
 | `RcMover` | Height-aware player body: collision, step-up, gravity, jump |
