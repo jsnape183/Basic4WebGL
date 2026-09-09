@@ -127,3 +127,31 @@ describe('RcSettings', () => {
     }
   });
 });
+
+describe('RcCast honours cfg.maxDist', () => {
+  // 40-wide corridor, wall at col 20. Ray east from (1.5,1.5): perp dist ~18.5.
+  const tileAt = (_h: unknown, px: number, py: number) => {
+    const c = Math.floor(px / 16), r = Math.floor(py / 16);
+    if (r === 0 || r === 2 || c === 0) return 1;
+    return c === 20 ? 1 : 0;
+  };
+
+  test('the wall is seen at default maxDist, gone below it, back above it', () => {
+    const { RcWorld, TileMapSet, RcCast, RcSettings } = loadPkg(tileAt, [], 40, 3);
+    const world = new RcWorld(new TileMapSet('c.stm'), 'walls');
+    const cast = new RcCast();
+
+    cast.cast(world, 1.5, 1.5, 1, 0);
+    expect(cast.spancount()).toBeGreaterThan(0);       // wall at ~18.5 < default 32
+
+    const near = new RcSettings();
+    near.setmaxdist(10);
+    cast.bindsettings(near);
+    cast.cast(world, 1.5, 1.5, 1, 0);
+    expect(cast.spancount()).toBe(0);                  // ~18.5 > 10
+
+    near.setmaxdist(50);
+    cast.cast(world, 1.5, 1.5, 1, 0);
+    expect(cast.spancount()).toBeGreaterThan(0);       // back in range
+  });
+});

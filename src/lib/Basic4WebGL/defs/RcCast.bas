@@ -45,8 +45,15 @@ dim mSideY
 dim mEntryDist
 dim mSide
 
+dim cfg as RcSettings
+
 Constructor()
+    self.cfg = new RcSettings()
 EndConstructor
+
+function bindSettings(s as RcSettings)
+    self.cfg = s
+endfunction
 
 function reset()
     array.clear(self.kindArr)
@@ -157,7 +164,7 @@ function cast(wld as RcWorld, ox, oy, dx, dy)
         iters = iters + 1
         self.stepMarch()
 
-        if self.mEntryDist > RcConfig.RC_MAX_DIST then
+        if self.mEntryDist > self.cfg.maxDist() then
             return
         endif
 
@@ -230,7 +237,7 @@ function los(wld as RcWorld, ox, oy, dx, dy)
     while iters < RcConfig.RC_MAX_MARCH_ITERS
         iters = iters + 1
         self.stepMarch()
-        if self.mEntryDist > RcConfig.RC_MAX_DIST then
+        if self.mEntryDist > self.cfg.maxDist() then
             return -1
         endif
         if wld.wallAt(self.mMapX, self.mMapY) > 0 then
