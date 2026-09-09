@@ -396,10 +396,11 @@ const _sbDrawing = (() => {
     // packed r*65536+g*256+b, or -1 for none. drawPlaneField picks per pixel:
     // cell texture > cell flat colour > scene default texture > procedural
     // checker. Torn down in _drawingReset().
-    registerFieldTiles(atlasId, cols, rows, cellNames, cellColors) {
+    registerFieldTiles(atlasId, cols, rows, cellNames, cellColors, cellHeights) {
       const total = cols * rows;
       const cellPix = new Array(total).fill(null);
       const cellCol = new Int32Array(total).fill(-1);
+      const cellH = new Float32Array(total); // 0 == standard floor / caller passes standard ceiling explicitly
       const nN = Math.min(cellNames.length, total);
       for (let i = 0; i < nN; i++) {
         const nm = cellNames[i];
@@ -412,7 +413,14 @@ const _sbDrawing = (() => {
           if (typeof v === 'number' && v >= 0) cellCol[i] = v | 0;
         }
       }
-      _fieldTilesCache.set(atlasId, { cols, rows, cellPix, cellCol });
+      if (cellHeights) {
+        const nH = Math.min(cellHeights.length, total);
+        for (let i = 0; i < nH; i++) {
+          const v = cellHeights[i];
+          if (typeof v === 'number') cellH[i] = v;
+        }
+      }
+      _fieldTilesCache.set(atlasId, { cols, rows, cellPix, cellCol, cellH, hasH: !!cellHeights });
     },
 
     // Per-pixel floorcaster for one flat plane. Resolves the world point each
@@ -441,6 +449,9 @@ const _sbDrawing = (() => {
       const tiRows = tiles ? tiles.rows : 0;
       const cellPix = tiles ? tiles.cellPix : null;
       const cellCol = tiles ? tiles.cellCol : null;
+      // Per-cell height mask: when the atlas carries real heights, this pass
+      // paints only the cells at `planeZ` (the rest is another height's pass).
+      const cellH = tiles && tiles.hasH ? tiles.cellH : null;
       const W = Math.max(1, Math.round(viewW / SCALE));
       const H = Math.max(1, Math.round(viewH / SCALE));
       let f = _planeFields.get(fieldId);
@@ -491,6 +502,15 @@ const _sbDrawing = (() => {
         for (let bx = 0; bx < W; bx++) {
           const flx = Math.floor(wx);
           const fly = Math.floor(wy);
+          if (cellH) {
+            const inb = flx >= 0 && flx < tiCols && fly >= 0 && fly < tiRows;
+            const ch0 = inb ? cellH[fly * tiCols + flx] : 0;
+            if (!inb || Math.abs(ch0 - planeZ) > 0.02) {
+              buf[o] = 0; buf[o + 1] = 0; buf[o + 2] = 0; buf[o + 3] = 0;
+              o += 4; wx += stepX; wy += stepY;
+              continue;
+            }
+          }
           const fx = wx - flx;
           const fy = wy - fly;
           let r, g, b;

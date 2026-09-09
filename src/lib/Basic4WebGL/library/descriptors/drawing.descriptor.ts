@@ -49,9 +49,9 @@ export const drawingDescriptor: ModuleDescriptor = {
     },
     {
       name: 'registerFieldTiles',
-      params: ['atlasId', 'cols', 'rows', 'cellNames', 'cellColors'],
+      params: ['atlasId', 'cols', 'rows', 'cellNames', 'cellColors', 'cellHeights'],
       body: (p, _self) =>
-        `_sb.registerFieldTiles(${p.atlasId}, ${p.cols}, ${p.rows}, ${p.cellNames}, ${p.cellColors})`,
+        `_sb.registerFieldTiles(${p.atlasId}, ${p.cols}, ${p.rows}, ${p.cellNames}, ${p.cellColors}, ${p.cellHeights})`,
     },
     {
       name: 'drawPlaneField',

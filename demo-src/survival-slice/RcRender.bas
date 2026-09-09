@@ -101,6 +101,10 @@ dim defFloorTex
 dim defCeilTex
 dim ffFloorTilesId
 dim ffCeilTilesId
+' Distinct floor heights (ascending) and ceiling heights (descending) present
+' in the map -- the field emits one textured pass per height (bakeFieldTiles).
+dim ffFloorHeights(0)
+dim ffCeilHeights(0)
 dim ffFloorR
 dim ffFloorG
 dim ffFloorB
@@ -259,54 +263,60 @@ function bakeFieldTiles()
     dim row
     dim nm
     dim cv
-    dim anyF
-    dim anyC
+    dim fh
+    dim ch
     dim fnames(0)
     dim cnames(0)
     dim fcols(0)
     dim ccols(0)
+    dim fheights(0)
+    dim cheights(0)
     mc = self.wld.widthCells()
     mr = self.wld.heightCells()
-    anyF = 0
-    anyC = 0
+    array.clear(self.ffFloorHeights)
+    array.clear(self.ffCeilHeights)
     for row = 0 to mr - 1
         for col = 0 to mc - 1
             nm = self.wld.floorTexAt(col, row)
             array.push(fnames, nm)
             cv = self.wld.floorColAt(col, row)
             array.push(fcols, cv)
-            if string.len(nm) > 0 or cv >= 0 then
-                anyF = 1
+            fh = self.wld.floorHeightAt(col, row)
+            array.push(fheights, fh)
+            if array.contains(self.ffFloorHeights, fh) = 0 then
+                array.push(self.ffFloorHeights, fh)
             endif
             nm = self.wld.ceilTexAt(col, row)
             array.push(cnames, nm)
             cv = self.wld.ceilColAt(col, row)
             array.push(ccols, cv)
-            if string.len(nm) > 0 or cv >= 0 then
-                anyC = 1
+            ch = self.wld.ceilHeightAt(col, row)
+            array.push(cheights, ch)
+            if array.contains(self.ffCeilHeights, ch) = 0 then
+                array.push(self.ffCeilHeights, ch)
             endif
         next col
     next row
-    self.ffFloorTilesId = ""
-    self.ffCeilTilesId = ""
-    if anyF = 1 then
-        drawing.registerFieldTiles("rc_ff_floor_tiles", mc, mr, fnames, fcols)
-        self.ffFloorTilesId = "rc_ff_floor_tiles"
-    endif
-    if anyC = 1 then
-        drawing.registerFieldTiles("rc_ff_ceil_tiles", mc, mr, cnames, ccols)
-        self.ffCeilTilesId = "rc_ff_ceil_tiles"
-    endif
+    array.sort(self.ffFloorHeights)
+    array.sort(self.ffCeilHeights)
+    ' Both atlases carry the per-cell height grid the passes mask against, so
+    ' register them unconditionally whenever the field is on.
+    drawing.registerFieldTiles("rc_ff_floor_tiles", mc, mr, fnames, fcols, fheights)
+    self.ffFloorTilesId = "rc_ff_floor_tiles"
+    drawing.registerFieldTiles("rc_ff_ceil_tiles", mc, mr, cnames, ccols, cheights)
+    self.ffCeilTilesId = "rc_ff_ceil_tiles"
 endfunction
 
 ' Emit one floor-field plane via the engine's per-pixel floorcaster.
-function emitFloorField(planeZ, texName, tilesId, lmId, br, bg, bb)
+' fieldId is this pass's own persistent pixel buffer; lmId is the shared
+' (2D-baked) lightmap all passes of this surface sample.
+function emitFloorField(fieldId, planeZ, texName, tilesId, lmId, br, bg, bb)
     dim amb
     amb = RcConfig.RC_AMBIENT
     if self.boundLights <> 0 then
         amb = self.boundLights.ambientLevel()
     endif
-    drawing.drawPlaneField(lmId, texName, tilesId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
+    drawing.drawPlaneField(fieldId, texName, tilesId, planeZ, self.camX, self.camY, self.camZ, self.fDirX, self.fDirY, self.fPlaneX, self.fPlaneY, self.camPitch, self.viewW, self.viewH, self.scy, RcConfig.RC_EYE_Z, lmId, amb, br, bg, bb)
 endfunction
 
 function bindActors(actors)
@@ -1017,6 +1027,12 @@ function drawSurface(destX, hh, dNear, dFar, winTop, winBot, kind, lite, rayX, r
     dim mx
     dim my
     dim guard
+    ' The per-pixel floor field owns every horizontal floor/ceiling surface, at
+    ' every height (one drawPlaneField pass each). Only the risers (drawStrip)
+    ' and walls stay on the per-column path.
+    if self.floorFieldOn = 1 then
+        return
+    endif
     if winBot <= winTop then
         return
     endif
@@ -1168,6 +1184,8 @@ function renderFrame()
     dim fillOn
     dim fillLite
     dim stdCovered
+    dim hi
+    dim ci
 
     if self.boundMover <> 0 then
         self.camX = self.boundMover.x()
@@ -1266,8 +1284,17 @@ function renderFrame()
             self.bakeFloorField()
             self.bakeFieldTiles()
         endif
-        self.emitFloorField(0, self.defFloorTex, self.ffFloorTilesId, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
-        self.emitFloorField(RcConfig.RC_STD_CEIL, self.defCeilTex, self.ffCeilTilesId, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
+        ' One textured pass per distinct floor height (ascending -> the highest,
+        ' nearest plane's sprite gets the latest draw order and paints on top),
+        ' then per distinct ceiling height (descending -> lowest ceiling on top).
+        for hi = 0 to array.arrLength(self.ffFloorHeights) - 1
+            self.emitFloorField("rc_ff_floor" + string.str(hi), self.ffFloorHeights(hi), self.defFloorTex, self.ffFloorTilesId, "rc_ff_floor", self.ffFloorR, self.ffFloorG, self.ffFloorB)
+        next hi
+        ci = array.arrLength(self.ffCeilHeights) - 1
+        while ci >= 0
+            self.emitFloorField("rc_ff_ceil" + string.str(ci), self.ffCeilHeights(ci), self.defCeilTex, self.ffCeilTilesId, "rc_ff_ceil", self.ffCeilR, self.ffCeilG, self.ffCeilB)
+            ci = ci - 1
+        endwhile
         stdCovered = 1
     endif
 

@@ -100,6 +100,8 @@ function bakeFieldTiles()
     dim cnames(0)
     dim fcols(0)
     dim ccols(0)
+    dim fheights(0)
+    dim cheights(0)
     mc = self.wld.widthCells()
     mr = self.wld.heightCells()
     anyF = 0
@@ -110,6 +112,7 @@ function bakeFieldTiles()
             array.push(fnames, nm)
             cv = self.wld.floorColAt(col, row)
             array.push(fcols, cv)
+            array.push(fheights, self.wld.floorHeightAt(col, row))
             if string.len(nm) > 0 or cv >= 0 then
                 anyF = 1
             endif
@@ -117,17 +120,18 @@ function bakeFieldTiles()
             array.push(cnames, nm)
             cv = self.wld.ceilColAt(col, row)
             array.push(ccols, cv)
+            array.push(cheights, self.wld.ceilHeightAt(col, row))
             if string.len(nm) > 0 or cv >= 0 then
                 anyC = 1
             endif
         next col
     next row
     if anyF = 1 then
-        drawing.registerFieldTiles("rcpoc_floor_tiles", mc, mr, fnames, fcols)
+        drawing.registerFieldTiles("rcpoc_floor_tiles", mc, mr, fnames, fcols, fheights)
         self.floorTilesId = "rcpoc_floor_tiles"
     endif
     if anyC = 1 then
-        drawing.registerFieldTiles("rcpoc_ceil_tiles", mc, mr, cnames, ccols)
+        drawing.registerFieldTiles("rcpoc_ceil_tiles", mc, mr, cnames, ccols, cheights)
         self.ceilTilesId = "rcpoc_ceil_tiles"
     endif
 endfunction

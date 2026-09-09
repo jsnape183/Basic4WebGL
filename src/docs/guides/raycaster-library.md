@@ -250,8 +250,9 @@ Because the sample is by world position, the texture recedes in correct
 perspective and pools of light stay painted on the ground as you turn. Override
 the texture per cell with `ftex:<image>` / `ctex:<image>` markers; `fcol:`/`ccol:`
 flat colours render through the same path, so a scene can mix textured, coloured
-and plain floor with no seam. Steps, pit floors and soffits keep the flat-shaded
-strip path.
+and plain floor with no seam. **Raised and lowered surfaces are textured too** —
+a `floor:` step-top, a raised platform, a pit floor, a lowered soffit all get
+the floorcaster. Only the thin riser faces between heights stay flat-shaded.
 
 The floor field bakes its lighting **once**, from the scene's static lights, so
 it is for static lighting — a moving torch won't light it. Default off; every

@@ -218,7 +218,7 @@ raycast scene). Call `renderFrame()` every `onupdate`.
 |---|---|
 | `setFlatFill(v)` | 1 (default) = paint the standard floor/ceiling once at the camera cell's brightness; 0 = force the accurate per-column path (needed under short-radius lights). Auto-disabled when `RcWorld.hasHeightVariation()` is set — a step would otherwise glow against the flat fill. |
 | `setGradientShading(v)` | 1 = one gradient shape per floor/ceiling colour run (near→far light), instead of stepped bands |
-| `setFloorField(v)` | 1 = draw the **standard** floor (h=0) and ceiling (h=`RC_STD_CEIL`) with the per-pixel floorcaster: world-space texture × baked static lightmap, so texture and light pools stay locked to the ground. Steps/pits/soffits keep the strip path. Lightmap baked once on frame 1. Default 0. |
+| `setFloorField(v)` | 1 = draw **every** horizontal floor/ceiling surface — standard planes *and* every `floor:`/`ceil:` height — with the per-pixel floorcaster: one textured pass per distinct height, masked to the cells at that height (near-over-far), world-space texture × baked static lightmap. Only the risers (thin vertical faces between heights) and walls stay on the per-column strip path. Lightmap is 2D-baked once on frame 1 and shared across all passes. Default 0. |
 | `setFloorTexture(name)` / `setCeilTexture(name)` | world-tiled texture (one tile per world unit) for the floor field; `""` = procedural checker. `ftex:`/`ctex:` markers override per cell. |
 | `setFloorFieldColors(fr,fg,fb, cr,cg,cb)` | base tint for the floor-field checker (floor / ceiling), when no texture |
 

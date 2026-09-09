@@ -66,15 +66,15 @@ function build(markers: Array<{ row: number; col: number; tag: string }> = []) {
   _sb.getStageHeight = () => 200;
 
   const lightmaps: unknown[] = [];
-  const tileAtlases: Array<{ id: unknown; cols: unknown; rows: unknown; names: unknown; colors: unknown }> = [];
+  const tileAtlases: Array<{ id: unknown; cols: unknown; rows: unknown; names: unknown; colors: unknown; heights: unknown }> = [];
   const planes: unknown[][] = [];
   let rects = 0;
   _sb.setFillColor = () => {};
   _sb.drawRect = () => { rects++; };
   _sb.drawImageStrip = () => {};
   _sb.registerLightmap = (id: unknown) => { lightmaps.push(id); };
-  _sb.registerFieldTiles = (id: unknown, cols: unknown, rows: unknown, names: unknown, colors: unknown) => {
-    tileAtlases.push({ id, cols, rows, names, colors });
+  _sb.registerFieldTiles = (id: unknown, cols: unknown, rows: unknown, names: unknown, colors: unknown, heights: unknown) => {
+    tileAtlases.push({ id, cols, rows, names, colors, heights });
   };
   _sb.drawPlaneField = (...a: unknown[]) => { planes.push(a); };
 
@@ -118,8 +118,8 @@ describe('RcRender per-pixel floor field', () => {
     expect(planes).toEqual([]);
   });
 
-  test('floor field on: bakes one floor + one ceiling lightmap, emits one plane each per frame', () => {
-    const { render, mover, lights, lightmaps, planes, rects } = build();
+  test('floor field on (flat map): one floor pass + one ceiling pass, both carrying the tile atlas', () => {
+    const { render, mover, lights, lightmaps, tileAtlases, planes, rects } = build();
     lights.setambient(0.2);
     lights.addpoint(5.5, 9.5, 0.5, 0.9, 8);
     lights.update();
@@ -128,41 +128,44 @@ describe('RcRender per-pixel floor field', () => {
     render.renderframe();
 
     expect(lightmaps).toEqual(['rc_ff_floor', 'rc_ff_ceil']);
-    // one floor plane (planeZ 0) + one ceiling plane (planeZ RC_STD_CEIL == 1)
+    // both atlases always register (they carry the per-cell height grid)
+    expect(tileAtlases.map((a) => a.id).sort()).toEqual(['rc_ff_ceil_tiles', 'rc_ff_floor_tiles']);
+    // flat map: floor heights [0], ceil heights [1] -> one pass each
     // args: fieldId, texName, tilesId, planeZ, camX, camY, camZ, ...
     expect(planes.length).toBe(2);
-    expect(planes[0][1]).toBe(''); // no scene texture -> procedural checker
-    expect(planes[0][2]).toBe(''); // no ftex: markers -> no per-cell atlas
-    expect(planes[0][3]).toBe(0);
-    expect(planes[1][3]).toBe(1);
-    expect(planes[0][4]).toBeCloseTo(5.5, 5); // camX
-    // walls still render
-    expect(rects()).toBeGreaterThan(0);
+    const floor = planes.find((p) => p[0] === 'rc_ff_floor0')!;
+    const ceil = planes.find((p) => p[0] === 'rc_ff_ceil0')!;
+    expect(floor[2]).toBe('rc_ff_floor_tiles');
+    expect(floor[3]).toBe(0);
+    expect(ceil[2]).toBe('rc_ff_ceil_tiles');
+    expect(ceil[3]).toBe(1);
+    expect(floor[4]).toBeCloseTo(5.5, 5); // camX
+    expect(rects()).toBeGreaterThan(0); // walls still render
   });
 
-  test('ftex: markers -> registerFieldTiles once + the atlas id threaded into the floor plane', () => {
-    const { render, mover, lights, tileAtlases, planes } = build([
-      { row: 5, col: 5, tag: 'ftex:stone.png' },
-      { row: 5, col: 6, tag: 'ftex:stone.png' },
-    ]);
-    lights.setambient(0.2);
+  test('a floor:0.2 region -> a second floor pass at planeZ 0.2, and the atlas heights grid', () => {
+    const raised: Array<{ row: number; col: number; tag: string }> = [];
+    for (let r = 4; r <= 7; r++) for (let c = 4; c <= 7; c++) raised.push({ row: r, col: c, tag: 'floor:0.2' });
+    const { render, mover, lights, tileAtlases, planes } = build(raised);
+    lights.setambient(0.4);
     render.setfloorfield(1);
     mover.warpto(5.5, 2.5, Math.PI / 2);
     render.renderframe();
-    render.renderframe();
 
-    expect(tileAtlases.map((a) => a.id)).toEqual(['rc_ff_floor_tiles']); // floor only, once
-    const atlas = tileAtlases[0];
-    expect(atlas.cols).toBe(12);
-    expect(atlas.rows).toBe(12);
-    expect((atlas.names as string[])[5 * 12 + 5]).toBe('stone.png');
-    expect((atlas.names as string[])[0]).toBe('');
-    // floor plane's tilesId arg is the atlas; ceiling's is still ""
-    expect(planes[0][2]).toBe('rc_ff_floor_tiles');
-    expect(planes[1][2]).toBe('');
+    const floorAtlas = tileAtlases.find((a) => a.id === 'rc_ff_floor_tiles')!;
+    const heights = floorAtlas.heights as number[];
+    expect(heights[5 * 12 + 5]).toBeCloseTo(0.2, 5); // a raised cell
+    expect(heights[0]).toBe(0); // border / unmarked cell
+
+    // two floor passes: planeZ 0 and planeZ 0.2, ascending (0 first, 0.2 on top)
+    const floorPasses = planes.filter((p) => String(p[0]).startsWith('rc_ff_floor'));
+    expect(floorPasses.map((p) => p[3])).toEqual([0, 0.2]);
+    expect(floorPasses.map((p) => p[0])).toEqual(['rc_ff_floor0', 'rc_ff_floor1']);
+    // exactly one ceiling pass (ceiling is flat)
+    expect(planes.filter((p) => String(p[0]).startsWith('rc_ff_ceil')).length).toBe(1);
   });
 
-  test('fcol: markers feed the field too -- per-cell flat colour in the atlas, no strip-path colour exclusion', () => {
+  test('fcol: markers still feed the field -- per-cell flat colour in the atlas', () => {
     const { render, mover, lights, tileAtlases, planes } = build([
       { row: 5, col: 5, tag: 'fcol:3366cc' },
       { row: 5, col: 6, tag: 'fcol:3366cc' },
@@ -172,11 +175,10 @@ describe('RcRender per-pixel floor field', () => {
     mover.warpto(5.5, 2.5, Math.PI / 2);
     render.renderframe();
 
-    expect(tileAtlases.map((a) => a.id)).toEqual(['rc_ff_floor_tiles']);
-    const colors = tileAtlases[0].colors as number[];
-    expect(colors[5 * 12 + 5]).toBe(0x3366cc); // packed rgb
-    expect(colors[0]).toBe(-1); // no colour
-    expect(planes[0][2]).toBe('rc_ff_floor_tiles');
+    const colors = tileAtlases.find((a) => a.id === 'rc_ff_floor_tiles')!.colors as number[];
+    expect(colors[5 * 12 + 5]).toBe(0x3366cc);
+    expect(colors[0]).toBe(-1);
+    expect(planes.find((p) => p[0] === 'rc_ff_floor0')![2]).toBe('rc_ff_floor_tiles');
   });
 
   test('lightmaps are baked once, not per frame', () => {

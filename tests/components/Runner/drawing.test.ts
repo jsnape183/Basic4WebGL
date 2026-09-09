@@ -570,4 +570,38 @@ describe('drawing — registerLightmap + drawPlaneField (floor-field POC)', () =
     expect(lit).toBeGreaterThan(0);
     expect(sawBlue).toBeGreaterThan(0); // the per-cell flat colour rendered
   });
+
+  test('cellHeights mask: a plane pass paints only the cells at its planeZ', () => {
+    const { d } = loadDrawing();
+    d.registerLightmap('lm3', 1, 1, 8, 8, [255, 255, 255, 255]);
+    // 8x8 grid, near half (rows >= 4 in the camera's forward direction) raised to 0.2
+    const heights = new Array(64).fill(0);
+    for (let r = 4; r < 8; r++) for (let c = 0; c < 8; c++) heights[r * 8 + c] = 0.2;
+    const names = new Array(64).fill('');
+    const colors = new Array(64).fill(0x3366cc);
+    d.registerFieldTiles('atlasH', 8, 8, names, colors, heights);
+
+    const p = pose(Math.PI / 2, 3.5, 2.0); // facing +y, into rows 2..7
+    const common = [
+      '', 'atlasH', 0 /* planeZ placeholder */, p.camX, p.camY, p.camZ, p.fDirX, p.fDirY, p.fPlaneX, p.fPlaneY,
+      p.camPitch, p.viewW, p.viewH, p.scy, p.eyeZ, 'lm3', 1.0, 160, 150, 140,
+    ];
+    const opaque = (s: any) => {
+      const buf = (s.texture as any).opts.source.resource as Uint8Array;
+      let n = 0;
+      for (let i = 3; i < buf.length; i += 4) if (buf[i] === 255) n++;
+      return n;
+    };
+
+    const flat = d.drawPlaneField('h0', ...([common[0], common[1], 0, ...common.slice(3)] as any));
+    const raised = d.drawPlaneField('h02', ...([common[0], common[1], 0.2, ...common.slice(3)] as any));
+
+    // both passes paint something, and neither paints the whole buffer
+    // (each is masked to roughly half the cells)
+    expect(opaque(flat)).toBeGreaterThan(50);
+    expect(opaque(raised)).toBeGreaterThan(50);
+    const total = (p.viewW / 2) * (p.viewH / 2);
+    expect(opaque(flat)).toBeLessThan(total * 0.95);
+    expect(opaque(raised)).toBeLessThan(total * 0.95);
+  });
 });
