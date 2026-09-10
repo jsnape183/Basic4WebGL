@@ -14,3 +14,20 @@ export function resizeGrid(data: number[][], rows: number, cols: number): number
   }
   return out;
 }
+
+/**
+ * Reshape every layer of a doc to the new grid size. Tile and collision layers
+ * go through `resizeGrid`; marker layers drop any marker whose row or column
+ * now falls outside the grid. All other fields (tags, tile size, image, layer
+ * identity) are carried through unchanged. The input doc is not mutated.
+ */
+export function resizeStmDoc(doc: StmDoc, rows: number, cols: number): StmDoc {
+  return {
+    ...doc,
+    layers: doc.layers.map((l) => {
+      if (l.kind === 'tile') return { ...l, data: resizeGrid(l.data, rows, cols) };
+      if (l.kind === 'collision') return { ...l, data: resizeGrid(l.data, rows, cols) };
+      return { ...l, markers: l.markers.filter((m) => m.row < rows && m.col < cols) };
+    }),
+  };
+}

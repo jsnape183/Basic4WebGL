@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { resizeGrid } from '../../../../src/components/TileMapEditor/resize';
+import { resizeGrid, resizeStmDoc } from '../../../../src/components/TileMapEditor/resize';
+import { StmDoc } from '../../../../src/components/TileMapEditor/types';
 
 describe('resizeGrid', () => {
   test('growing rows pads new rows with zeros, keeps existing rows', () => {
@@ -36,5 +37,58 @@ describe('resizeGrid', () => {
     const out = resizeGrid(src, 1, 2);
     out[0][0] = 99;
     expect(src[0][0]).toBe(1);
+  });
+});
+
+describe('resizeStmDoc', () => {
+  const doc: StmDoc = {
+    tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png', tags: ['spawn', 'exit'],
+    layers: [
+      { key: 'k1', name: 'ground', kind: 'tile', data: [[1, 2], [3, 4]] },
+      { key: 'k2', name: 'solid', kind: 'collision', data: [[1, 0], [0, 1]] },
+      { key: 'k3', name: 'marks', kind: 'marker', markers: [
+        { row: 0, col: 0, tag: 'spawn' },
+        { row: 1, col: 1, tag: 'exit' },
+      ] },
+    ],
+  };
+
+  test('reshapes every dense layer to the new size', () => {
+    const out = resizeStmDoc(doc, 3, 3);
+    expect((out.layers[0] as { data: number[][] }).data).toEqual([[1, 2, 0], [3, 4, 0], [0, 0, 0]]);
+    expect((out.layers[1] as { data: number[][] }).data).toEqual([[1, 0, 0], [0, 1, 0], [0, 0, 0]]);
+  });
+
+  test('drops markers that fall outside the new bounds, keeps the rest', () => {
+    const out = resizeStmDoc(doc, 1, 1);
+    expect((out.layers[2] as { markers: unknown[] }).markers).toEqual([{ row: 0, col: 0, tag: 'spawn' }]);
+  });
+
+  test('a marker exactly on the new edge is dropped (indices are 0-based)', () => {
+    const out = resizeStmDoc(doc, 1, 2);
+    expect((out.layers[2] as { markers: unknown[] }).markers).toEqual([{ row: 0, col: 0, tag: 'spawn' }]);
+  });
+
+  test('preserves tags, tile size, image, and every layer key/name/kind', () => {
+    const out = resizeStmDoc(doc, 2, 2);
+    expect(out.tags).toEqual(['spawn', 'exit']);
+    expect(out.tileWidth).toBe(8);
+    expect(out.tileHeight).toBe(8);
+    expect(out.tileImage).toBe('tiles.png');
+    expect(out.layers.map((l) => [l.key, l.name, l.kind])).toEqual([
+      ['k1', 'ground', 'tile'], ['k2', 'solid', 'collision'], ['k3', 'marks', 'marker'],
+    ]);
+  });
+
+  test('resizing to the current size is a no-op in content terms', () => {
+    const out = resizeStmDoc(doc, 2, 2);
+    expect((out.layers[0] as { data: number[][] }).data).toEqual([[1, 2], [3, 4]]);
+    expect((out.layers[2] as { markers: unknown[] }).markers).toEqual(doc.layers[2].kind === 'marker' ? doc.layers[2].markers : []);
+  });
+
+  test('does not mutate the input doc', () => {
+    resizeStmDoc(doc, 1, 1);
+    expect((doc.layers[0] as { data: number[][] }).data).toEqual([[1, 2], [3, 4]]);
+    expect((doc.layers[2] as { markers: unknown[] }).markers).toHaveLength(2);
   });
 });
