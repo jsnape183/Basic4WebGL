@@ -1,5 +1,23 @@
 # Release Notes
 
+## v0.7.8 — 2026-09-10
+
+### Tilemap editor: resize the grid
+
+- A **Resize** button in the toolbar changes a tilemap's rows and columns. Enter the new totals — content stays anchored to the top-left, larger pads empty cells, smaller trims from the bottom and right. Shrinking that would discard painted tiles, collision cells, or markers asks for confirmation first (the editor has no undo yet).
+
+### Tilemap editor: paint with multiple tags at once
+
+- On a marker layer you can now load several tags before painting — click a tag chip to add it to the brush, click again to remove it. Painting a cell stamps every loaded tag it doesn't already carry (drag-paint too). The **Eraser** is a separate, mutually-exclusive choice; with nothing loaded and the eraser off, painting does nothing.
+
+### Raycaster: per-scene tuning with `RcSettings`
+
+- `RcSettings` is a value object that overrides `RcConfig`'s default numbers for one scene without touching another — a cramped indoor area and an open exterior can have different movement feel, render distance, and ceiling height in the same project. Build one, set the knobs (`setStdCeil`, `setMoveSpeed`, gravity/jump/step, `maxDist`, eye height, pitch limits, light knobs, surface/actor heights…), and `bindSettings(cfg)` it to each raycaster object (`RcWorld`, `RcCast`, `RcMover`, `RcLights`, `RcRender`) right after you create it.
+
+### Raycaster: `RcRender.setWallTexScale`
+
+- `setWallTexScale(n)` repeats the wall texture once per `n` world units up the wall (anchored at the floor) instead of stretching one copy floor-to-ceiling — so a `ceil:2` / `ceil:3` wall no longer smears vertically. `0` (default) keeps the stretch-to-wall behaviour; applies to `setWallTexture` and per-cell `tex:` overrides alike.
+
 ## v0.7.7 — 2026-09-09
 
 ### Tilemap editor: a persistent tag registry
