@@ -288,6 +288,14 @@ wraps at the edges) — they repeat once per world unit. Walls are lit per colum
 diagonal-wall tiles get a real slice of the wall texture. A wall with no texture
 (no default, no tag) falls back to the flat grey shading.
 
+By default one copy of the wall texture is stretched over the whole wall,
+floor to ceiling. That looks right at the standard ceiling height but stretches
+vertically on a `ceil:2` / `ceil:3` wall. `ren.setWallTexScale(1)` repeats the
+texture once per world unit up the wall instead (anchored at the floor);
+`setWallTexScale(2)` once per two units. `0` (the default) keeps the
+stretch-to-wall behaviour. It applies to `setWallTexture` and per-cell `tex:`
+overrides alike; horizontal tiling is always one copy per cell.
+
 ### Floor and ceiling colour
 
 By default floors and ceilings are flat-shaded (with `setFloorField(1)` they are

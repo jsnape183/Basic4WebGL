@@ -517,6 +517,13 @@ a low soffit under a raised `stdCeil`). Spec:
 `docs/superpowers/specs/2026-09-09-raycaster-per-scene-settings-design.md`,
 plan: `docs/superpowers/plans/2026-09-09-raycaster-per-scene-settings.md`.
 
+**Wall texture vertical scale [DONE 2026-09-10].** `RcRender.setWallTexScale(unitsPerTile)`
+— `0` (default) keeps one texture copy stretched floor→ceiling; `>0` repeats the
+wall texture every N world units, floor-anchored, so `ceil:2`/`ceil:3` walls
+don't stretch. Engine: `drawing.js` `_texFor` now flips the source to
+`addressMode:'repeat'` for a V window outside `[0,1]`. Doorway textures (a
+fixed-height image that neither stretches nor tiles) are a separate follow-up.
+
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Floor/ceiling
 surface light is bilinear-interpolated between cells; walls and sprites are lit per-cell.

@@ -239,6 +239,7 @@ raycast scene). Call `renderFrame()` every `onupdate`.
 | Method | Does |
 |---|---|
 | `setWallTexture(name)` | default wall texture for the level; `tex:` markers override per cell |
+| `setWallTexScale(u)` | wall-texture vertical repeat: world units per tile, floor-anchored. `0` (default) = one copy stretched floor→ceiling. |
 
 ### Floor & ceiling
 
