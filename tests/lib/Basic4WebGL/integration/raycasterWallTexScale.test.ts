@@ -69,30 +69,29 @@ describe('RcRender.setWallTexScale', () => {
     const strips = build(null);
     expect(strips.length).toBeGreaterThan(0);
     for (const s of strips) {
-      const span = (s[8] as number) - (s[7] as number);
-      expect(span).toBeGreaterThan(0.95);
-      expect(span).toBeLessThan(1.05);
+      // legacy stretch: exactly V 0 at the ceiling, V 1 at the floor.
+      expect(s[7] as number).toBeCloseTo(0, 3);
+      expect(s[8] as number).toBeCloseTo(1, 3);
     }
   });
 
-  test('scale 1 on a ceil:3 wall: texture repeats ~3x — V span ~= 3, floor-anchored', () => {
+  test('scale 1 on a ceil:3 wall: texture repeats 3x — V span 3, floor-anchored', () => {
     const strips = build(1);
     expect(strips.length).toBeGreaterThan(0);
     for (const s of strips) {
       const span = (s[8] as number) - (s[7] as number);
-      expect(span).toBeGreaterThan(2.8);
-      expect(span).toBeLessThan(3.2);
+      expect(span).toBeCloseTo(3, 2);
+      // floor-anchored: the bottom edge sits on an integer tile seam.
       const vb = s[8] as number;
-      expect(Math.abs(vb - Math.round(vb))).toBeLessThan(0.02);
+      expect(Math.abs(vb - Math.round(vb))).toBeLessThan(0.01);
     }
   });
 
-  test('scale 2 on a ceil:3 wall: V span ~= 1.5', () => {
+  test('scale 2 on a ceil:3 wall: V span 1.5', () => {
     const strips = build(2);
     for (const s of strips) {
       const span = (s[8] as number) - (s[7] as number);
-      expect(span).toBeGreaterThan(1.4);
-      expect(span).toBeLessThan(1.6);
+      expect(span).toBeCloseTo(1.5, 2);
     }
   });
 });
