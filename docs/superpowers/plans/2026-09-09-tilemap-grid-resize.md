@@ -294,9 +294,9 @@ describe('describeResizeLoss', () => {
   });
 
   test('shrinking counts non-zero tiles outside the new bounds', () => {
-    // Cols -> 2 drops the tile at (0,2)? it is 0, so not counted; tile at (0,1)=1 stays.
-    // Rows -> 1 drops row 1 which has a 1 at (1,0).
-    expect(describeResizeLoss(doc, 1, 3)).toEqual({ tiles: 1, collisionCells: 0, markers: 0 });
+    // rows -> 1 drops row 1 (has a 1 at (1,0)) => tiles 1; marker b at (2,2) is
+    // also outside rows=1 => markers 1.
+    expect(describeResizeLoss(doc, 1, 3)).toEqual({ tiles: 1, collisionCells: 0, markers: 1 });
   });
 
   test('empty (zero) cells outside the new bounds are not counted', () => {
@@ -304,7 +304,8 @@ describe('describeResizeLoss', () => {
   });
 
   test('counts collision cells and markers independently', () => {
-    expect(describeResizeLoss(doc, 1, 1)).toEqual({ tiles: 1, collisionCells: 1, markers: 1 });
+    // ground has two non-zero cells outside 1x1: (0,1) and (1,0).
+    expect(describeResizeLoss(doc, 1, 1)).toEqual({ tiles: 2, collisionCells: 1, markers: 1 });
   });
 
   test('a marker exactly on the new edge counts as lost', () => {
