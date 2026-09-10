@@ -219,10 +219,11 @@ describe('drawing — drawImageStrip tint + vertical source clip', () => {
     expect(sharedSource.style.addressMode).toBe('repeat');
   });
 
-  test('an in-range V clip leaves the frame maths as-is', () => {
-    const { d } = loadDrawing();
+  test('an in-range V clip leaves the frame maths and clamp mode as-is', () => {
+    const { d, sharedSource } = loadDrawing();
     d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 0.75);
     expect(lastTexOpts.frame.h).toBe(32);
+    expect(sharedSource.style.addressMode).toBeUndefined(); // no-op for the common case
   });
 });
 
