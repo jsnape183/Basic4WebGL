@@ -3,9 +3,14 @@ import { tagColor } from './tagColor';
 
 type Props = {
   tags: string[];
-  /** Paint mode: the tag loaded to paint with. `null` means the eraser. */
-  selectedTag: string | null;
-  onSelectTag: (tag: string | null) => void;
+  /** Paint mode: the set of tags currently loaded to stamp when painting. */
+  selectedTags?: string[];
+  /** Paint mode: true when the eraser is the active choice (mutually exclusive with loaded tags). */
+  eraserActive?: boolean;
+  /** Paint mode: add the tag to the loaded set if absent, remove it if present. */
+  onToggleTag?: (tag: string) => void;
+  /** Paint mode: choose the eraser (clears the loaded set). */
+  onSelectEraser?: () => void;
   /** When provided, shows a Select-mode toggle. */
   selectMode?: boolean;
   onToggleSelectMode?: () => void;
@@ -26,8 +31,10 @@ type Props = {
 
 const TagPicker: React.FC<Props> = ({
   tags,
-  selectedTag,
-  onSelectTag,
+  selectedTags = [],
+  eraserActive = false,
+  onToggleTag,
+  onSelectEraser,
   selectMode = false,
   onToggleSelectMode,
   selectedCell = null,
@@ -46,8 +53,8 @@ const TagPicker: React.FC<Props> = ({
     if (!trimmed) return;
     if (editingCell) {
       if (!cellTags.includes(trimmed)) onToggleCellTag?.(trimmed);
-    } else {
-      onSelectTag(trimmed);
+    } else if (!selectedTags.includes(trimmed)) {
+      onToggleTag?.(trimmed);
     }
     setDraftTag('');
   };
@@ -145,11 +152,11 @@ const TagPicker: React.FC<Props> = ({
         <>
           <button
             type="button"
-            onClick={() => onSelectTag(null)}
+            onClick={() => onSelectEraser?.()}
             aria-label="Eraser"
-            aria-pressed={selectedTag === null}
+            aria-pressed={eraserActive}
             className={`text-xs px-2 py-1 rounded border ${
-              selectedTag === null
+              eraserActive
                 ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
                 : 'border-ds-border text-ds-text-muted hover:text-ds-text'
             }`}
@@ -159,20 +166,21 @@ const TagPicker: React.FC<Props> = ({
           <div className="flex flex-wrap gap-1">
             {tags.map((tag) => {
               const removable = !!onRemoveTag && !tagsInUse.includes(tag);
+              const loaded = selectedTags.includes(tag);
               return (
                 <span
                   key={tag}
                   className={`inline-flex items-center rounded-full text-xs border ${
-                    selectedTag === tag
+                    loaded
                       ? 'border-ds-accent text-ds-accent bg-ds-accent-subtle'
                       : 'border-ds-border text-ds-text-muted'
                   }`}
                 >
                   <button
                     type="button"
-                    onClick={() => onSelectTag(tag)}
+                    onClick={() => onToggleTag?.(tag)}
                     aria-label={`Tag ${tag}`}
-                    aria-pressed={selectedTag === tag}
+                    aria-pressed={loaded}
                     className={`pl-2 py-1 hover:text-ds-text ${removable ? 'pr-1' : 'pr-2'}`}
                   >
                     {tag}

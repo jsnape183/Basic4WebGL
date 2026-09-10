@@ -322,6 +322,66 @@ describe('TileMapEditor — marker layers', () => {
     expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [{ row: 0, col: 1, tag: 'spawn' }] });
   });
 
+  test('multiple tags can be loaded and are all stamped on a painted cell', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    await userEvent.type(screen.getByLabelText('New tag name'), 'enemy{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [
+        { row: 0, col: 1, tag: 'spawn' },
+        { row: 0, col: 1, tag: 'enemy' },
+      ],
+    });
+  });
+
+  test('clicking a loaded tag again deselects it; later cells only get the rest', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    await userEvent.type(screen.getByLabelText('New tag name'), 'enemy{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+    await userEvent.click(screen.getByLabelText('Tag spawn'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [
+        { row: 0, col: 0, tag: 'spawn' },
+        { row: 0, col: 0, tag: 'enemy' },
+        { row: 0, col: 1, tag: 'enemy' },
+      ],
+    });
+  });
+
+  test('selecting the Eraser clears the loaded tags and erases painted cells', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'spawn{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByLabelText('Eraser'));
+    expect(screen.getByLabelText('Tag spawn')).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({ type: 'markers', markers: [] });
+  });
+
+  test('with nothing loaded and the eraser off, painting a marker cell does nothing', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+    expect(screen.getByLabelText('Row 0, Column 1')).toHaveTextContent('');
+    expect(screen.getByLabelText('Row 0, Column 0')).toHaveTextContent('');
+  });
+
   test('a tag stays available to paint with after its last marker is erased', async () => {
     await renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));

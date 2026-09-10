@@ -119,7 +119,8 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [draftDoc, setDraftDoc] = useState<StmDoc>(() => decodeStmText(''));
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedTile, setSelectedTile] = useState<number | null>(1);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [eraserActive, setEraserActive] = useState(false);
   const [markerSelectMode, setMarkerSelectMode] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
   // 1 (solid) by default, matching this layer kind's original always-solid
@@ -204,14 +205,24 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(true);
   };
 
-  const handleSelectPaintTag = (tag: string | null) => {
-    if (tag) registerTag(tag);
-    setSelectedTag(tag);
+  const handleTogglePaintTag = (tag: string) => {
+    setEraserActive(false);
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter((t) => t !== tag));
+    } else {
+      registerTag(tag);
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleSelectEraser = () => {
+    setSelectedTags([]);
+    setEraserActive(true);
   };
 
   const handleRemoveTag = (tag: string) => {
     setDraftDoc((prev) => ({ ...prev, tags: (prev.tags ?? []).filter((t) => t !== tag) }));
-    setSelectedTag((prev) => (prev === tag ? null : prev));
+    setSelectedTags((prev) => prev.filter((t) => t !== tag));
     setIsDirty(true);
   };
 
@@ -262,22 +273,22 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
         }),
       }));
     } else {
-      if (selectedTag) registerTag(selectedTag);
+      // Neither the eraser nor any tag loaded -> painting does nothing.
+      if (!eraserActive && selectedTags.length === 0) return;
       setDraftDoc((prev) => ({
         ...prev,
         layers: prev.layers.map((l, i) => {
           if (i !== activeIndex || l.kind !== 'marker') return l;
-          // Eraser (no tag loaded) clears the cell; painting a tag merges it
-          // into whatever the cell already carries rather than replacing.
-          let newMarkers: MarkerEntry[];
-          if (!selectedTag) {
-            newMarkers = l.markers.filter((m) => !(m.row === row && m.col === col));
-          } else if (l.markers.some((m) => m.row === row && m.col === col && m.tag === selectedTag)) {
-            newMarkers = l.markers;
-          } else {
-            newMarkers = [...l.markers, { row, col, tag: selectedTag }];
+          if (eraserActive) {
+            return { ...l, markers: l.markers.filter((m) => !(m.row === row && m.col === col)) };
           }
-          return { ...l, markers: newMarkers };
+          // Merge every loaded tag the cell doesn't already carry.
+          const onCell = new Set(
+            l.markers.filter((m) => m.row === row && m.col === col).map((m) => m.tag)
+          );
+          const toAdd = selectedTags.filter((t) => !onCell.has(t));
+          if (toAdd.length === 0) return l;
+          return { ...l, markers: [...l.markers, ...toAdd.map((tag) => ({ row, col, tag }))] };
         }),
       }));
     }
@@ -378,7 +389,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           new Set([
             ...(draftDoc.tags ?? []),
             ...tagsInUse,
-            ...(selectedTag ? [selectedTag] : []),
+            ...selectedTags,
           ])
         )
       : [];
@@ -483,8 +494,10 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           {activeLayer?.kind === 'marker' ? (
             <TagPicker
               tags={markerTags}
-              selectedTag={selectedTag}
-              onSelectTag={handleSelectPaintTag}
+              selectedTags={selectedTags}
+              eraserActive={eraserActive}
+              onToggleTag={handleTogglePaintTag}
+              onSelectEraser={handleSelectEraser}
               tagsInUse={Array.from(tagsInUse)}
               onRemoveTag={handleRemoveTag}
               selectMode={markerSelectMode}
