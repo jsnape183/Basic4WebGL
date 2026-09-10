@@ -58,6 +58,12 @@ dim primCount
 ' path). Per-cell tex:/ftex:/ctex: markers via wld.*TexAt override these.
 dim defWallTex
 
+' Wall-texture vertical repeat, in world units per tile. 0 (default) = the
+' legacy behaviour: one texture copy stretched over the whole floor->ceiling
+' span (fine at ceil:1, distorts at ceil:3). >0 = repeat every N units,
+' anchored at the floor. Applies to setWallTexture and per-cell tex: alike.
+dim wallTexScale
+
 ' Per-instance override for RcConfig.RC_FLAT_FILL (rung 1's painter's
 ' background fill). Defaults to the global constant; setFlatFill(0) forces
 ' every column through the accurate per-pixel floor/ceiling path instead.
@@ -134,6 +140,7 @@ Constructor(w as RcWorld)
     self.surfCountLast = 0
     self.primCount = 0
     self.defWallTex = ""
+    self.wallTexScale = 0
     self.flatFillOn = RcConfig.RC_FLAT_FILL
     self.surfSegN = 1
     self.gradientShadeOn = 0
@@ -1139,7 +1146,7 @@ endfunction
 ' with the source-V window clipped to the visible span so a wall behind a
 ' floor-step shows the right vertical slice. sideKind: 0 x-face / 1 y-face /
 ' RC_SPAN_SIDE_DIAG diagonal. Returns 1 if a strip was drawn, else 0.
-function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind)
+function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind, wLoZ, wHiZ)
     dim cTop
     dim cBot
     dim svTop
@@ -1148,6 +1155,9 @@ function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind
     dim chan
     dim sideDim
     dim tint
+    dim hTopVis
+    dim hBotVis
+    dim vk
     sideDim = 1.0
     if sideKind = 1 then
         sideDim = 0.8
@@ -1178,8 +1188,21 @@ function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind
     endif
     chan = 255 * lite * sideDim
     tint = self.packTint(chan, chan, chan + 25)
-    svTop = (cTop - wTop) / (wBot - wTop)
-    svBot = (cBot - wTop) / (wBot - wTop)
+    if self.wallTexScale > 0 and wHiZ > wLoZ then
+        ' projectY is linear in world height at fixed distance, so screen Y
+        ' maps linearly onto world Z between (wTop <-> wHiZ) and (wBot <-> wLoZ).
+        hTopVis = wHiZ + (wLoZ - wHiZ) * (cTop - wTop) / (wBot - wTop)
+        hBotVis = wHiZ + (wLoZ - wHiZ) * (cBot - wTop) / (wBot - wTop)
+        ' V increases downward; one tile per wallTexScale units; the texture's
+        ' bottom row sits on the floor (V at an integer there). vk lifts the
+        ' whole window to a non-negative frame origin.
+        vk = math.ceil((wHiZ - wLoZ) / self.wallTexScale)
+        svTop = vk - (hTopVis - wLoZ) / self.wallTexScale
+        svBot = vk - (hBotVis - wLoZ) / self.wallTexScale
+    else
+        svTop = (cTop - wTop) / (wBot - wTop)
+        svBot = (cBot - wTop) / (wBot - wTop)
+    endif
     drawing.drawImageStrip(tex, srcX, destX, (cTop + cBot) / 2, RcConfig.RC_STRIP_W, cBot - cTop, tint, svTop, svBot)
     self.primCount = self.primCount + 1
     return 1
@@ -1189,6 +1212,10 @@ endfunction
 
 function setWallTexture(name)
     self.defWallTex = name
+endfunction
+
+function setWallTexScale(v)
+    self.wallTexScale = v
 endfunction
 
 ' Resolve the texture for a wall cell: its own tex: marker if set, else the
@@ -1429,7 +1456,7 @@ function renderFrame()
                 hitWall = 1
                 wtex = self.wallTexFor(self.rc.spanCol(i), self.rc.spanRow(i))
                 if string.len(wtex) > 0 then
-                    self.surfCountLast = self.surfCountLast + self.drawWallStrip(destX, sTop, sBot, winTop, winBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i))
+                    self.surfCountLast = self.surfCountLast + self.drawWallStrip(destX, sTop, sBot, winTop, winBot, wtex, self.rc.spanU(i), lite, self.rc.spanSide(i), self.rc.spanLo(i), self.rc.spanHi(i))
                 else
                     wshade = self.rc.spanSide(i)
                     if wshade = RcConfig.RC_SPAN_SIDE_DIAG then
