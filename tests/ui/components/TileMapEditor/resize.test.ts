@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { resizeGrid, resizeStmDoc } from '../../../../src/components/TileMapEditor/resize';
+import { resizeGrid, resizeStmDoc, describeResizeLoss } from '../../../../src/components/TileMapEditor/resize';
 import { StmDoc } from '../../../../src/components/TileMapEditor/types';
 
 describe('resizeGrid', () => {
@@ -90,5 +90,43 @@ describe('resizeStmDoc', () => {
     resizeStmDoc(doc, 1, 1);
     expect((doc.layers[0] as { data: number[][] }).data).toEqual([[1, 2], [3, 4]]);
     expect((doc.layers[2] as { markers: unknown[] }).markers).toHaveLength(2);
+  });
+});
+
+describe('describeResizeLoss', () => {
+  const doc: StmDoc = {
+    tileWidth: 8, tileHeight: 8, tileImage: 'tiles.png',
+    layers: [
+      { key: 'k1', name: 'ground', kind: 'tile', data: [[1, 1, 0], [1, 0, 0], [0, 0, 0]] },
+      { key: 'k2', name: 'solid', kind: 'collision', data: [[0, 0, 1], [0, 0, 0], [0, 0, 0]] },
+      { key: 'k3', name: 'marks', kind: 'marker', markers: [
+        { row: 0, col: 0, tag: 'a' },
+        { row: 2, col: 2, tag: 'b' },
+      ] },
+    ],
+  };
+
+  test('growing in both dimensions discards nothing', () => {
+    expect(describeResizeLoss(doc, 5, 5)).toEqual({ tiles: 0, collisionCells: 0, markers: 0 });
+  });
+
+  test('shrinking counts non-zero tiles outside the new bounds', () => {
+    // marker 'b' at (2,2) is also outside rows=1, so markers:1 (plan text said 0 — impossible:
+    // a marker lost at rows=2 is necessarily lost at rows=1; T3/T4/T5 all require b to count).
+    expect(describeResizeLoss(doc, 1, 3)).toEqual({ tiles: 1, collisionCells: 0, markers: 1 });
+  });
+
+  test('empty (zero) cells outside the new bounds are not counted', () => {
+    expect(describeResizeLoss(doc, 2, 2)).toEqual({ tiles: 0, collisionCells: 1, markers: 1 });
+  });
+
+  test('counts collision cells and markers independently', () => {
+    // ground has two non-zero cells outside 1x1: (0,1) and (1,0) — so tiles:2
+    // (plan text said 1, undercounting one of them).
+    expect(describeResizeLoss(doc, 1, 1)).toEqual({ tiles: 2, collisionCells: 1, markers: 1 });
+  });
+
+  test('a marker exactly on the new edge counts as lost', () => {
+    expect(describeResizeLoss(doc, 2, 3).markers).toBe(1);
   });
 });

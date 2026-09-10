@@ -31,3 +31,30 @@ export function resizeStmDoc(doc: StmDoc, rows: number, cols: number): StmDoc {
     }),
   };
 }
+
+export type ResizeLoss = { tiles: number; collisionCells: number; markers: number };
+
+/**
+ * Count what resizing to `rows` x `cols` would permanently discard: non-zero
+ * tiles, non-zero collision cells, and markers whose row/col is now outside the
+ * grid. Growing (or keeping) both dimensions always returns all zeros.
+ */
+export function describeResizeLoss(doc: StmDoc, rows: number, cols: number): ResizeLoss {
+  const loss: ResizeLoss = { tiles: 0, collisionCells: 0, markers: 0 };
+  for (const l of doc.layers) {
+    if (l.kind === 'marker') {
+      loss.markers += l.markers.filter((m) => m.row >= rows || m.col >= cols).length;
+      continue;
+    }
+    for (let r = 0; r < l.data.length; r++) {
+      const dataRow = l.data[r] ?? [];
+      for (let c = 0; c < dataRow.length; c++) {
+        if ((r >= rows || c >= cols) && dataRow[c] !== 0) {
+          if (l.kind === 'tile') loss.tiles += 1;
+          else loss.collisionCells += 1;
+        }
+      }
+    }
+  }
+  return loss;
+}
