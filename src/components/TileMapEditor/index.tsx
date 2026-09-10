@@ -15,6 +15,8 @@ import CollisionCanvas from './CollisionCanvas';
 import TagPicker from './TagPicker';
 import CollisionPicker from './CollisionPicker';
 import LayersPanel from './LayersPanel';
+import ResizeTilemapDialog from './ResizeTilemapDialog';
+import { resizeStmDoc, describeResizeLoss } from './resize';
 import { StmDoc, EditorLayer, MarkerEntry } from './types';
 
 type Props = {
@@ -126,6 +128,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [isDirty, setIsDirty] = useState(false);
   const [hiddenLayerKeys, setHiddenLayerKeys] = useState<Set<string>>(() => new Set());
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
+  const [showResize, setShowResize] = useState(false);
 
   useEffect(() => {
     if (stmLoading) return;
@@ -352,6 +355,14 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setIsDirty(false);
   };
 
+  const handleResize = (rows: number, cols: number) => {
+    setDraftDoc((prev) => resizeStmDoc(prev, rows, cols));
+    setIsDirty(true);
+    setSelectedCell((prev) => (prev && (prev.row >= rows || prev.col >= cols) ? null : prev));
+    setHoverCell(null);
+    setShowResize(false);
+  };
+
   // Which tags a marker somewhere still uses — the rest are removable from
   // the registry without losing any placed markers.
   const tagsInUse = new Set(
@@ -385,6 +396,15 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
               `Row ${hoverCell.row}, Col ${hoverCell.col} · x ${hoverCell.col * draftDoc.tileWidth}, y ${hoverCell.row * draftDoc.tileHeight}`}
           </span>
           <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowResize(true)}
+              disabled={!firstTileLayer}
+              title={firstTileLayer ? undefined : 'Add a tile layer to resize'}
+              className="border border-ds-border text-ds-text text-sm px-4 py-1.5 rounded hover:bg-ds-surface transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Resize
+            </button>
             <button
               type="button"
               onClick={() => downloadStmFile(draftDoc, asset.name)}
@@ -495,6 +515,15 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           onToggleVisibility={handleToggleLayerVisibility}
         />
       </div>
+      {showResize && firstTileLayer && (
+        <ResizeTilemapDialog
+          currentRows={gridRows}
+          currentCols={gridCols}
+          describeLoss={(rows, cols) => describeResizeLoss(draftDoc, rows, cols)}
+          onApply={handleResize}
+          onCancel={() => setShowResize(false)}
+        />
+      )}
     </div>
   );
 };

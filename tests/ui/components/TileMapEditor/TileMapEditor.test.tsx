@@ -556,3 +556,98 @@ describe('TileMapEditor — collision layers', () => {
     expect(decoded.layers.collision3).toEqual({ type: 'collision', data: [[0, 0], [0, 0]] });
   });
 });
+
+describe('TileMapEditor — resize', () => {
+  test('the Resize button opens a dialog prefilled with the current grid size', async () => {
+    await renderEditor(); // STM_JSON is a 2x2 grid
+    await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+    expect(screen.getByRole('dialog', { name: 'Resize tilemap' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Rows')).toHaveValue(2);
+    expect(screen.getByLabelText('Columns')).toHaveValue(2);
+  });
+
+  test('growing the grid makes the new cells paintable and saves the new shape', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+    await userEvent.clear(screen.getByLabelText('Rows'));
+    await userEvent.type(screen.getByLabelText('Rows'), '3');
+    await userEvent.clear(screen.getByLabelText('Columns'));
+    await userEvent.type(screen.getByLabelText('Columns'), '3');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(screen.getByLabelText('Row 2, Column 2')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.background).toEqual([[1, 1, 0], [1, 1, 0], [0, 0, 0]]);
+    expect(decoded.layers.foreground).toEqual([[0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+  });
+
+  test('shrinking over painted tiles shows a confirm step; Confirm applies it', async () => {
+    await renderEditor(); // background is [[1,1],[1,1]] — every cell painted
+    await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+    await userEvent.clear(screen.getByLabelText('Rows'));
+    await userEvent.type(screen.getByLabelText('Rows'), '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(screen.getByText('This removes 2 painted tiles. Continue?')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.background).toEqual([[1, 1]]);
+  });
+
+  test('Back then Cancel leaves the grid untouched', async () => {
+    const onDirtyChange = vi.fn();
+    await renderEditor(makeStmAsset(), onDirtyChange);
+    await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+    await userEvent.clear(screen.getByLabelText('Rows'));
+    await userEvent.type(screen.getByLabelText('Rows'), '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog', { name: 'Resize tilemap' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Row 1, Column 1')).toBeInTheDocument();
+    expect(onDirtyChange).not.toHaveBeenCalledWith('m1', true);
+  });
+
+  test('shrinking that only drops empty cells applies with no confirm step', async () => {
+    const emptyRightCol = JSON.stringify({
+      tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png',
+      layers: { background: [[1, 1, 0], [1, 1, 0]] },
+    });
+    await renderEditor(makeStmAsset(), vi.fn(), emptyRightCol);
+    await userEvent.click(screen.getByRole('button', { name: 'Resize' }));
+    await userEvent.clear(screen.getByLabelText('Columns'));
+    await userEvent.type(screen.getByLabelText('Columns'), '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(screen.queryByText(/Continue\?/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Resize tilemap' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.background).toEqual([[1, 1], [1, 1]]);
+  });
+
+  test('the Resize button is disabled when the tilemap has no tile layer', async () => {
+    const markersOnly = JSON.stringify({
+      tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png',
+      layers: { marks: { type: 'markers', markers: [{ row: 0, col: 0, tag: 'x' }] } },
+    });
+    const store = configureStore({ reducer: { assets: assetsReducer } });
+    const asset = makeStmAsset();
+    await putAssetBlob(asset.id, new Blob([markersOnly], { type: 'application/json' }));
+    await putAssetBlob('t1', new Blob(['x'], { type: 'image/png' }));
+    store.dispatch(addAsset(makeTilesetAsset()));
+    store.dispatch(addAsset(asset));
+    render(
+      <Provider store={store}>
+        <TileMapEditor asset={asset} onDirtyChange={vi.fn()} />
+      </Provider>
+    );
+    expect(await screen.findByRole('button', { name: 'Resize' })).toBeDisabled();
+  });
+});
