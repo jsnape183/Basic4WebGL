@@ -74,12 +74,13 @@ function loadDrawing() {
     FillGradient: FakeFillGradient, BufferImageSource: FakeBufferImageSource,
   };
   const worldContainer = new FakeContainer();
-  const _sbAssets = { get: () => ({ source: { style: {} }, width: 64, height: 64 }) };
+  const _sharedSource = { style: {} as { addressMode?: string } };
+  const _sbAssets = { get: () => ({ source: _sharedSource, width: 64, height: 64 }) };
   const factory = new Function(
     'PIXI', 'worldContainer', '_sbAssets',
     `${src}\n; return _sbDrawing;`,
   );
-  return { d: factory(PIXI, worldContainer, _sbAssets), worldContainer };
+  return { d: factory(PIXI, worldContainer, _sbAssets), worldContainer, sharedSource: _sharedSource };
 }
 
 describe('drawing — object pooling', () => {
@@ -207,6 +208,21 @@ describe('drawing — drawImageStrip tint + vertical source clip', () => {
     d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0, 1);
     d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 1);
     expect(textureCreated).toBe(2);
+  });
+
+  test('a V range beyond [0,1] tiles: oversized frame + source set to repeat', () => {
+    const { d, sharedSource } = loadDrawing();
+    d.drawImageStrip('w.png', 3, 0, 0, 4, 120, 0xffffff, 0, 3); // 3 tiles tall
+    const rect = lastTexOpts.frame;
+    expect(rect.y).toBe(0);
+    expect(rect.h).toBe(192); // 3 * 64
+    expect(sharedSource.style.addressMode).toBe('repeat');
+  });
+
+  test('an in-range V clip leaves the frame maths as-is', () => {
+    const { d } = loadDrawing();
+    d.drawImageStrip('w.png', 3, 0, 0, 4, 40, 0xffffff, 0.25, 0.75);
+    expect(lastTexOpts.frame.h).toBe(32);
   });
 });
 

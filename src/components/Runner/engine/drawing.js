@@ -140,6 +140,12 @@ const _sbDrawing = (() => {
     let t = _texCache.get(key);
     if (!t) {
       const base = _sbAssets.get(imageName);
+      // A V window outside [0,1] (or wider than one tile) means the caller wants
+      // the image to repeat down the frame (tall walls). Match _meshTexFor: flip
+      // the shared source to 'repeat' so the oversized frame wraps, not clamps.
+      if ((vt < 0 || vb > 1 || vb - vt > 1.0001) && base.source && base.source.style) {
+        base.source.style.addressMode = 'repeat';
+      }
       t = new PIXI.Texture({
         source: base.source,
         frame: new PIXI.Rectangle(srcX, qt * base.height, 1, Math.max(1, (qb - qt) * base.height)),
