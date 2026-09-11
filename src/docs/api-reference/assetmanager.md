@@ -31,6 +31,8 @@ Returns the width of a loaded image, in pixels.
 
 **Returns:** number — the image's width in pixels.
 
+> **Note:** If the filename doesn't match an image in your Assets panel exactly, this will throw an error.
+
 ```bas
 dim w
 w = assetmanager.imageWidth("player.png")
@@ -45,6 +47,8 @@ Returns the height of a loaded image, in pixels.
 | name      | string | The filename of the image, as it appears in your project's Assets panel. |
 
 **Returns:** number — the image's height in pixels.
+
+> **Note:** If the filename doesn't match an image in your Assets panel exactly, this will throw an error.
 
 ```bas
 dim h
