@@ -14,7 +14,7 @@ const walls: number[][] = Array.from({ length: ROWS }, (_, r) =>
 );
 const markers = [{ row: 0, col: 2, tag: 'decal:door.png' }];
 
-function buildWorld() {
+function buildWorld(worldMarkers: Array<{ row: number; col: number; tag: string }> = markers) {
   const { files: ordered, error } = sortByDependencies([]);
   expect(error).toBeUndefined();
   const result = compiler.transpile({ lib, files: ordered });
@@ -34,7 +34,7 @@ function buildWorld() {
   _sb.tileWidth = () => tw; _sb.tileHeight = () => tw;
   _sb.tileMapWidthPx = () => COLS * tw; _sb.tileMapHeightPx = () => ROWS * tw;
   _sb.tileAt = (_h: unknown, px: number, py: number) => walls[Math.floor(py / tw)]?.[Math.floor(px / tw)] ?? 0;
-  _sb.allMarkers = () => markers.map((m) => ({ ...m }));
+  _sb.allMarkers = () => worldMarkers.map((m) => ({ ...m }));
 
   const deferred: Array<() => void> = [];
   _sb._deferModuleBody = (cb: () => void) => deferred.push(cb);
@@ -72,5 +72,10 @@ describe('RcWorld — decal: marker', () => {
   test('hasDecals is 1 when any cell carries a decal', () => {
     const world = buildWorld();
     expect(world.hasdecals()).toBe(1);
+  });
+
+  test('hasDecals is 0 when no cell carries a decal', () => {
+    const world = buildWorld([]);
+    expect(world.hasdecals()).toBe(0);
   });
 });
