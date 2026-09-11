@@ -67,9 +67,9 @@ describe('TagPicker (paint mode)', () => {
     expect(onToggleTag).not.toHaveBeenCalled();
   });
 
-  test('an unused tag can be deleted from the registry via its × affordance', async () => {
+  test('any tag can be deleted via its × affordance, in use or not', async () => {
     const onRemoveTag = vi.fn();
-    render(<TagPicker {...base} tags={['ghost']} tagsInUse={[]} onRemoveTag={onRemoveTag} />);
+    render(<TagPicker {...base} tags={['ghost']} onRemoveTag={onRemoveTag} />);
     await userEvent.click(screen.getByLabelText('Delete tag ghost from tilemap'));
     expect(onRemoveTag).toHaveBeenCalledWith('ghost');
   });

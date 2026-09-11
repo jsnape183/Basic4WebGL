@@ -16,6 +16,7 @@ import TagPicker from './TagPicker';
 import CollisionPicker from './CollisionPicker';
 import LayersPanel from './LayersPanel';
 import ResizeTilemapDialog from './ResizeTilemapDialog';
+import DeleteTagDialog from './DeleteTagDialog';
 import { resizeStmDoc, describeResizeLoss } from './resize';
 import { StmDoc, EditorLayer, MarkerEntry } from './types';
 
@@ -130,6 +131,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
   const [hiddenLayerKeys, setHiddenLayerKeys] = useState<Set<string>>(() => new Set());
   const [hoverCell, setHoverCell] = useState<{ row: number; col: number } | null>(null);
   const [showResize, setShowResize] = useState(false);
+  const [pendingDeleteTag, setPendingDeleteTag] = useState<string | null>(null);
 
   useEffect(() => {
     if (stmLoading) return;
@@ -137,6 +139,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setActiveIndex(0);
     setIsDirty(false);
     setHiddenLayerKeys(new Set());
+    setPendingDeleteTag(null);
   }, [asset.id, stmLoading, stmText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tilesetAsset = useSelector((state: RootState) =>
@@ -220,10 +223,43 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     setEraserActive(true);
   };
 
-  const handleRemoveTag = (tag: string) => {
+  const deleteTagFromRegistry = (tag: string) => {
     setDraftDoc((prev) => ({ ...prev, tags: (prev.tags ?? []).filter((t) => t !== tag) }));
     setSelectedTags((prev) => prev.filter((t) => t !== tag));
     setIsDirty(true);
+  };
+
+  // Unused tags delete immediately (unchanged behavior); an in-use tag opens
+  // a confirm dialog instead, since removing it can affect existing markers.
+  const handleRemoveTagClick = (tag: string) => {
+    if (tagsInUse.has(tag)) {
+      setPendingDeleteTag(tag);
+    } else {
+      deleteTagFromRegistry(tag);
+    }
+  };
+
+  const handleCancelDeleteTag = () => setPendingDeleteTag(null);
+
+  const handleDeleteTagFromListOnly = () => {
+    if (!pendingDeleteTag) return;
+    deleteTagFromRegistry(pendingDeleteTag);
+    setPendingDeleteTag(null);
+  };
+
+  const handleRemoveTagEverywhere = () => {
+    if (!pendingDeleteTag) return;
+    const tag = pendingDeleteTag;
+    setDraftDoc((prev) => ({
+      ...prev,
+      tags: (prev.tags ?? []).filter((t) => t !== tag),
+      layers: prev.layers.map((l) =>
+        l.kind === 'marker' ? { ...l, markers: l.markers.filter((m) => m.tag !== tag) } : l
+      ),
+    }));
+    setSelectedTags((prev) => prev.filter((t) => t !== tag));
+    setIsDirty(true);
+    setPendingDeleteTag(null);
   };
 
   // Add the tag if the cell doesn't already have it, remove it if it does —
@@ -380,19 +416,28 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
     draftDoc.layers.flatMap((l) => (l.kind === 'marker' ? l.markers.map((m) => m.tag) : []))
   );
 
-  // The registry plus every tag a marker uses (a legacy file mid-migration
-  // may have markers whose tag isn't registered yet) plus the loaded paint
-  // tag, so picking/typing one gives immediate visual confirmation.
+  // The registry plus the loaded paint tags, so picking/typing one gives
+  // immediate visual confirmation. Deliberately NOT unioned with tagsInUse:
+  // "delete from list only" removes a tag from here even though markers may
+  // still carry it (see handleDeleteTagFromListOnly).
   const markerTags =
     activeLayer?.kind === 'marker'
-      ? Array.from(
-          new Set([
-            ...(draftDoc.tags ?? []),
-            ...tagsInUse,
-            ...selectedTags,
-          ])
-        )
+      ? Array.from(new Set([...(draftDoc.tags ?? []), ...selectedTags]))
       : [];
+
+  const pendingDeleteTagStats = pendingDeleteTag
+    ? (() => {
+        const layersWithTag = draftDoc.layers.filter(
+          (l): l is Extract<EditorLayer, { kind: 'marker' }> =>
+            l.kind === 'marker' && l.markers.some((m) => m.tag === pendingDeleteTag)
+        );
+        const markerCount = layersWithTag.reduce(
+          (sum, l) => sum + l.markers.filter((m) => m.tag === pendingDeleteTag).length,
+          0
+        );
+        return { markerCount, layerCount: layersWithTag.length };
+      })()
+    : null;
 
   if (stmLoading) {
     return <div className="p-4 text-ds-text-dim text-sm">Loading tilemap…</div>;
@@ -498,8 +543,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
               eraserActive={eraserActive}
               onToggleTag={handleTogglePaintTag}
               onSelectEraser={handleSelectEraser}
-              tagsInUse={Array.from(tagsInUse)}
-              onRemoveTag={handleRemoveTag}
+              onRemoveTag={handleRemoveTagClick}
               selectMode={markerSelectMode}
               onToggleSelectMode={() => setMarkerSelectMode((v) => !v)}
               selectedCell={selectedCell}
@@ -535,6 +579,16 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
           describeLoss={(rows, cols) => describeResizeLoss(draftDoc, rows, cols)}
           onApply={handleResize}
           onCancel={() => setShowResize(false)}
+        />
+      )}
+      {pendingDeleteTag && pendingDeleteTagStats && (
+        <DeleteTagDialog
+          tag={pendingDeleteTag}
+          markerCount={pendingDeleteTagStats.markerCount}
+          layerCount={pendingDeleteTagStats.layerCount}
+          onCancel={handleCancelDeleteTag}
+          onDeleteFromListOnly={handleDeleteTagFromListOnly}
+          onRemoveEverywhere={handleRemoveTagEverywhere}
         />
       )}
     </div>

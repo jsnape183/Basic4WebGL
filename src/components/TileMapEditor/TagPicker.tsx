@@ -23,8 +23,6 @@ type Props = {
   /** Remove every tag from the selected cell. */
   onClearCell?: () => void;
   onDeselectCell?: () => void;
-  /** Tags a marker somewhere still uses — these can't be removed from the registry. */
-  tagsInUse?: string[];
   /** Delete a tag from the tilemap's registry (offered only for unused tags). */
   onRemoveTag?: (tag: string) => void;
 };
@@ -42,7 +40,6 @@ const TagPicker: React.FC<Props> = ({
   onToggleCellTag,
   onClearCell,
   onDeselectCell,
-  tagsInUse = [],
   onRemoveTag,
 }) => {
   const [draftTag, setDraftTag] = useState('');
@@ -165,7 +162,7 @@ const TagPicker: React.FC<Props> = ({
           </button>
           <div className="flex flex-wrap gap-1">
             {tags.map((tag) => {
-              const removable = !!onRemoveTag && !tagsInUse.includes(tag);
+              const removable = !!onRemoveTag;
               const loaded = selectedTags.includes(tag);
               return (
                 <span
@@ -190,7 +187,7 @@ const TagPicker: React.FC<Props> = ({
                       type="button"
                       onClick={() => onRemoveTag?.(tag)}
                       aria-label={`Delete tag ${tag} from tilemap`}
-                      title="Unused — delete from tilemap"
+                      title="Delete tag from tilemap"
                       className="pr-2 pl-0.5 py-1 text-ds-text-dim hover:text-ds-error"
                     >
                       ×

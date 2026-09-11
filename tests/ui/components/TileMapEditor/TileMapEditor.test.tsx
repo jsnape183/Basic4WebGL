@@ -416,7 +416,7 @@ describe('TileMapEditor — marker layers', () => {
     expect(screen.getByLabelText('Tag boss')).toBeInTheDocument();
   });
 
-  test('an unused tag can be deleted from the registry; a used one cannot', async () => {
+  test('an unused tag deletes immediately from the registry; a used one opens a confirm dialog', async () => {
     await renderEditor();
     await userEvent.click(screen.getByLabelText('Add marker layer'));
     await userEvent.click(screen.getByText('markers3'));
@@ -424,11 +424,96 @@ describe('TileMapEditor — marker layers', () => {
     fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
     await userEvent.type(screen.getByLabelText('New tag name'), 'unused{Enter}');
 
-    // 'used' has a marker -> no delete affordance; 'unused' does.
-    expect(screen.queryByLabelText('Delete tag used from tilemap')).not.toBeInTheDocument();
+    // Both tags now show the delete affordance, but 'used' opens a confirm
+    // dialog instead of deleting immediately.
+    await userEvent.click(screen.getByLabelText('Delete tag used from tilemap'));
+    expect(screen.getByRole('dialog', { name: 'Delete tag used' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Tag used')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
     await userEvent.click(screen.getByLabelText('Delete tag unused from tilemap'));
+    expect(screen.queryByRole('dialog', { name: /Delete tag/ })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Tag unused')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Tag used')).toBeInTheDocument();
+  });
+
+  test('deleting an unused tag still has no confirm dialog', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'unused{Enter}');
+    await userEvent.click(screen.getByLabelText('Delete tag unused from tilemap'));
+    expect(screen.queryByRole('dialog', { name: /Delete tag/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Tag unused')).not.toBeInTheDocument();
+  });
+
+  test('deleting an in-use tag opens a confirm dialog with the right counts', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'rogue{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByLabelText('Delete tag rogue from tilemap'));
+    expect(screen.getByRole('dialog', { name: 'Delete tag rogue' })).toBeInTheDocument();
+    expect(screen.getByText('"rogue" is used on 2 markers across 1 layer.')).toBeInTheDocument();
+  });
+
+  test('Cancel on the delete-tag dialog changes nothing', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'rogue{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+    await userEvent.click(screen.getByLabelText('Delete tag rogue from tilemap'));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog', { name: 'Delete tag rogue' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Tag rogue')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [{ row: 0, col: 0, tag: 'rogue' }],
+    });
+  });
+
+  test('"Delete from list only" removes the tag from the palette but leaves markers alone', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'rogue{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+    await userEvent.click(screen.getByLabelText('Delete tag rogue from tilemap'));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete from list only' }));
+
+    expect(screen.queryByLabelText('Tag rogue')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [{ row: 0, col: 0, tag: 'rogue' }],
+    });
+  });
+
+  test('"Remove everywhere" deletes the tag and strips it from every marker layer', async () => {
+    await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'rogue{Enter}');
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 0'));
+
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers4'));
+    // 'rogue' is still the loaded tag from painting it on markers3 above.
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+
+    await userEvent.click(screen.getByLabelText('Delete tag rogue from tilemap'));
+    expect(screen.getByText('"rogue" is used on 2 markers across 2 layers.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove everywhere' }));
+
+    expect(screen.queryByLabelText('Tag rogue')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    const decoded = await readSavedStm();
+    expect(decoded.layers.markers3).toEqual({ type: 'markers', markers: [] });
+    expect(decoded.layers.markers4).toEqual({ type: 'markers', markers: [] });
   });
 
   test('tags coined on one marker layer are offered as chips on another marker layer', async () => {
