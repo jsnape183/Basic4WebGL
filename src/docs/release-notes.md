@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.7.9 — 2026-09-11
+
+### Raycaster: wall decals
+
+- A `decal:<image>` marker puts a fixed-size, alpha-composited image flat against a wall face — a door, a sign, a wall light, a picture — without stretching or tiling the wall texture underneath it. Width is always one world unit (the full cell face); height comes from the image's own pixel aspect ratio. It's anchored to that wall segment's own local floor, so a decal on a raised platform or stepped wall sits on that step correctly. Pair it with a `door:` marker (read in your own game code) to make it interactive.
+- New `RcWorld` accessors: `decalAt(col, row)` and `hasDecals()`.
+
+### `assetmanager`: image pixel dimensions
+
+- `assetmanager.imageWidth(name)` and `imageHeight(name)` return a loaded image's pixel dimensions.
+
 ## v0.7.8 — 2026-09-10
 
 ### Tilemap editor: resize the grid
