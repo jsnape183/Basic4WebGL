@@ -7,6 +7,7 @@ import { useAssetText } from '../../hooks/useAssetText';
 import { useAssetObjectUrl } from '../../hooks/useAssetObjectUrl';
 import { putAssetBlob } from '../../lib/storage/assetBlobStore';
 import { useTilesetSlices } from './useTilesetSlices';
+import { useCrossMapTags } from './useCrossMapTags';
 import { CELL_SIZE } from './constants';
 import Palette from './Palette';
 import TileMapCanvas from './Canvas';
@@ -150,6 +151,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
 
   const tilesetUrl = useAssetObjectUrl(tilesetAsset?.id);
   const { slices } = useTilesetSlices(tilesetUrl, draftDoc.tileWidth, draftDoc.tileHeight);
+  const crossMapTags = useCrossMapTags(asset.projectId, asset.id);
 
   useEffect(() => {
     onDirtyChange?.(asset.id, isDirty);
@@ -543,6 +545,7 @@ const TileMapEditor: React.FC<Props> = ({ asset, onDirtyChange }) => {
               eraserActive={eraserActive}
               onToggleTag={handleTogglePaintTag}
               onSelectEraser={handleSelectEraser}
+              crossMapTags={crossMapTags}
               onRemoveTag={handleRemoveTagClick}
               selectMode={markerSelectMode}
               onToggleSelectMode={() => setMarkerSelectMode((v) => !v)}

@@ -796,3 +796,46 @@ describe('TileMapEditor — resize', () => {
     expect(await screen.findByRole('button', { name: 'Resize' })).toBeDisabled();
   });
 });
+
+describe('TileMapEditor — cross-map tag suggestions', () => {
+  test('a tag used in another tilemap in the same project is offered, and adopting it works like typing it', async () => {
+    const { store } = await renderEditor();
+    const otherMapJson = JSON.stringify({
+      tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png',
+      tags: ['ally'],
+      layers: { spawns: { type: 'markers', markers: [{ row: 0, col: 0, tag: 'ally' }] } },
+    });
+    await putAssetBlob('other-map', new Blob([otherMapJson], { type: 'application/json' }));
+    store.dispatch(addAsset({ id: 'other-map', name: 'level2.stm', projectId: 'p1', folderId: null, fullName: 'level2.stm' }));
+
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+
+    expect(await screen.findByLabelText('Use tag ally from another map')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Use tag ally from another map'));
+    fireEvent.mouseDown(screen.getByLabelText('Row 0, Column 1'));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    expect((await readSavedStm()).layers.markers3).toEqual({
+      type: 'markers',
+      markers: [{ row: 0, col: 1, tag: 'ally' }],
+    });
+  });
+
+  test("a tag already in this map's registry is not repeated as a suggestion", async () => {
+    const { store } = await renderEditor();
+    await userEvent.click(screen.getByLabelText('Add marker layer'));
+    await userEvent.click(screen.getByText('markers3'));
+    await userEvent.type(screen.getByLabelText('New tag name'), 'ally{Enter}');
+
+    const otherMapJson = JSON.stringify({
+      tileWidth: 8, tileHeight: 8, tileImage: 'tileset.png', tags: ['ally', 'scout'], layers: {},
+    });
+    await putAssetBlob('other-map', new Blob([otherMapJson], { type: 'application/json' }));
+    store.dispatch(addAsset({ id: 'other-map', name: 'level2.stm', projectId: 'p1', folderId: null, fullName: 'level2.stm' }));
+
+    // 'scout' proves the cross-map scan has completed; 'ally' must not also
+    // appear as a suggestion, since it's already in this map's own registry.
+    expect(await screen.findByLabelText('Use tag scout from another map')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Use tag ally from another map')).not.toBeInTheDocument();
+  });
+});
