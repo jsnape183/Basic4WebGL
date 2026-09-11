@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { tagColor } from './tagColor';
+import { CrossMapTag } from './useCrossMapTags';
 
 type Props = {
   tags: string[];
@@ -25,6 +26,8 @@ type Props = {
   onDeselectCell?: () => void;
   /** Delete a tag from the tilemap's registry (offered only for unused tags). */
   onRemoveTag?: (tag: string) => void;
+  /** Tags used by other tilemaps in the same project, offered as one-click suggestions. */
+  crossMapTags?: CrossMapTag[];
 };
 
 const TagPicker: React.FC<Props> = ({
@@ -41,6 +44,7 @@ const TagPicker: React.FC<Props> = ({
   onClearCell,
   onDeselectCell,
   onRemoveTag,
+  crossMapTags = [],
 }) => {
   const [draftTag, setDraftTag] = useState('');
   const editingCell = selectMode && !!selectedCell;
@@ -197,6 +201,32 @@ const TagPicker: React.FC<Props> = ({
               );
             })}
           </div>
+          {(() => {
+            const suggestions = crossMapTags.filter((c) => !tags.includes(c.tag));
+            if (suggestions.length === 0) return null;
+            return (
+              <>
+                <div className="text-[10px] uppercase tracking-wide text-ds-text-dim">Seen in other maps</div>
+                <div className="flex flex-wrap gap-1">
+                  {suggestions.map(({ tag, sources }) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => onToggleTag?.(tag)}
+                      aria-label={`Use tag ${tag} from another map`}
+                      title={`Also used in: ${sources.join(', ')}`}
+                      className="px-2 py-1 rounded-full text-xs border border-dashed border-ds-border text-ds-text-dim hover:text-ds-text hover:border-ds-accent"
+                    >
+                      {tag}{' '}
+                      <span className="text-ds-text-dim">
+                        ({sources.length === 1 ? sources[0] : `${sources.length} maps`})
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
           <input
             type="text"
             value={draftTag}

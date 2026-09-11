@@ -73,4 +73,33 @@ describe('TagPicker (paint mode)', () => {
     await userEvent.click(screen.getByLabelText('Delete tag ghost from tilemap'));
     expect(onRemoveTag).toHaveBeenCalledWith('ghost');
   });
+
+  test('cross-map tags not already registered here are offered as suggestions', () => {
+    render(<TagPicker {...base} tags={['spawn']} crossMapTags={[{ tag: 'ally', sources: ['level2.stm'] }]} />);
+    expect(screen.getByLabelText('Use tag ally from another map')).toBeInTheDocument();
+  });
+
+  test('a cross-map tag already in this map\'s registry is not shown as a suggestion', () => {
+    render(<TagPicker {...base} tags={['ally']} crossMapTags={[{ tag: 'ally', sources: ['level2.stm'] }]} />);
+    expect(screen.queryByLabelText('Use tag ally from another map')).not.toBeInTheDocument();
+  });
+
+  test('clicking a cross-map suggestion calls onToggleTag with that tag', async () => {
+    const onToggleTag = vi.fn();
+    render(
+      <TagPicker
+        {...base}
+        tags={[]}
+        crossMapTags={[{ tag: 'ally', sources: ['level2.stm'] }]}
+        onToggleTag={onToggleTag}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Use tag ally from another map'));
+    expect(onToggleTag).toHaveBeenCalledWith('ally');
+  });
+
+  test('no "Seen in other maps" section when there are no new cross-map tags', () => {
+    render(<TagPicker {...base} tags={[]} crossMapTags={[]} />);
+    expect(screen.queryByText('Seen in other maps')).not.toBeInTheDocument();
+  });
 });
