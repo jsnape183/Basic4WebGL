@@ -524,6 +524,19 @@ don't stretch. Engine: `drawing.js` `_texFor` now flips the source to
 `addressMode:'repeat'` for a V window outside `[0,1]`. Doorway textures (a
 fixed-height image that neither stretches nor tiles) are a separate follow-up.
 
+- **Wall decals** (shipped): `decal:<image>` marker puts a fixed-size,
+  floor-anchored, alpha-composited image on a wall face — see
+  `docs/superpowers/specs/2026-09-10-raycaster-wall-decals-design.md`.
+  Known limitation: the decal anchors to the world's absolute floor height
+  (Z=0), not the wall segment's own local floor (`wLoZ`) — on a raised
+  platform or stepped floor, a decal on that wall may not line up correctly.
+  Deferred follow-ups, each its own future design: fixing the local-floor
+  anchoring above, a `:z` bottom-edge offset (hang a picture at eye height
+  instead of the floor), sub-cell width with horizontal centering, per-face
+  decals on pillar cells, decals on `diag:` cells, a mutable `RcDecals` list
+  for runtime add/remove/animate/retexture, and per-frame image-dimension
+  caching in `RcRender` if profiling ever shows it's needed.
+
 Known limits: Light is a single brightness value — no colour yet. Only point lights (no
 spot cones). Moving lights are fully recomputed every frame (no caching). Floor/ceiling
 surface light is bilinear-interpolated between cells; walls and sprites are lit per-cell.

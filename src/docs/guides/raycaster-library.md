@@ -296,6 +296,32 @@ texture once per world unit up the wall instead (anchored at the floor);
 stretch-to-wall behaviour. It applies to `setWallTexture` and per-cell `tex:`
 overrides alike; horizontal tiling is always one copy per cell.
 
+### Wall decals
+
+A `decal:<image>` marker tag puts a fixed-size image flat against a wall face
+— a door, a sign, a wall light, a picture — without stretching or tiling the
+wall texture underneath it:
+
+```json
+{ "row": 2, "col": 5, "tag": "decal:rc_door.png" }
+```
+
+The decal always fills the cell's full width (1 world unit) and its height
+comes from the image's own pixel aspect ratio: a square 64x64 image is 1 unit
+tall, a 64x128 image is 2 units tall. It's anchored at the floor and drawn on
+top of the wall texture, alpha-composited — transparent pixels show the wall
+behind. It's the same per-column strip the wall itself uses (a "billboard that
+doesn't rotate with the camera"), so perspective stays correct at any angle.
+
+One `decal:` per cell; it shows on whichever face the ray hits, including all
+four faces of a pillar. A `decal:` marker does nothing on its own — pair it
+with a `door:` marker (read by your own game code) to make it interactive.
+
+> **Known limitation:** a decal anchors to the world's absolute floor height,
+> not the wall segment's own local floor. On a raised platform or stepped
+> floor, a decal on that wall may not line up correctly — stick to flat-floor
+> walls for now.
+
 ### Floor and ceiling colour
 
 By default floors and ceilings are flat-shaded (with `setFloorField(1)` they are

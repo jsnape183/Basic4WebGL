@@ -48,6 +48,7 @@ tokens are flags. `RcWorld` parses them in its constructor.
 | `ceil:<n>` | world units | ceiling height of this cell (`RC_STD_CEIL` = 1.0 standard; lower = soffit/tunnel) |
 | `light:<n>` | world units | marks the cell a static light **and** sets its height (bare `light` uses `RC_LIGHT_DEFAULT_Z` = 0.85) |
 | `diag:<nw\|ne\|se\|sw>` | corner | 45° diagonal wall — named corner solid, opposite half walkable. Leave the `walls` tile at 0. |
+| `decal:<image>` | asset filename | fixed-size image on this wall face, floor-anchored, height from the image's pixel aspect ratio. Alpha-composited over the wall texture. Pair with `door:`/etc. (read in game code) for interactivity. |
 
 Textures must tile seamlessly and are authored at `RC_TEX_SIZE` (64×64); they
 repeat once per world unit. `fcol:`/`ccol:` and `ftex:`/`ctex:` render through
@@ -132,6 +133,8 @@ return a safe default out of bounds.
 | `diagAt(col, row)` | `RC_DIAG_*` or 0 |
 | `flagsAt(col, row)` | flag bitset (door=1, lift=2, water=4, sky=8) |
 | `wallTexAt` / `floorTexAt` / `ceilTexAt` `(col, row)` | image name or `""` |
+| `decalAt(col, row)` | decal image name or `""` |
+| `hasDecals()` | 1 if any cell carries a `decal:` tag (fast-path flag) |
 | `floorColAt(col, row)` / `ceilColAt(col, row)` | packed `r*65536+g*256+b`, or -1 |
 | `hasSurfaceColor()` | 1 if any cell carries `fcol:`/`ccol:` (fast-path flag) |
 | `hasHeightVariation()` | 1 if any cell carries a non-zero `floor:` or *any* `ceil:` tag. RcRender skips its flat floor/ceiling fill when set (a step would otherwise read as self-lit against the flat fill). |
