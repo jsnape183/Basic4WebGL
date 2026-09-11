@@ -80,7 +80,7 @@ describe('RcWorld — decal: marker', () => {
   });
 });
 
-function buildScene(decalTag: string | null, imgW: number, imgH: number) {
+function buildScene(decalTag: string | null, imgW: number, imgH: number, floorH = 0) {
   const { files: ordered, error } = sortByDependencies([]);
   expect(error).toBeUndefined();
   const result = compiler.transpile({ lib, files: ordered });
@@ -94,8 +94,18 @@ function buildScene(decalTag: string | null, imgW: number, imgH: number) {
   const walls2: number[][] = Array.from({ length: ROWS2 }, (_, r) =>
     Array.from({ length: COLS2 }, (_, c) => (r === 0 || r === ROWS2 - 1 || c === 0 || c === COLS2 - 1 ? 1 : 0)),
   );
+  const markers2: Array<{ row: number; col: number; tag: string }> = [];
   // East wall, directly ahead of the camera's +x facing below.
-  const markers2 = decalTag ? [{ row: 20, col: 39, tag: decalTag }] : [];
+  if (decalTag) markers2.push({ row: 20, col: 39, tag: decalTag });
+  // floorH !== 0: raise the *entire* corridor uniformly (no interior step) so
+  // the wall's own local floor (spanLo, what drawDecalStrip anchors to) sits
+  // at floorH with no riser to occlude the shot. The camera's height is
+  // forced back to 0 below (see me.pz below) rather than left to follow the
+  // platform up, so this isolates the wall-anchor effect: same camera Z, same
+  // distance, only the wall's local floor moved.
+  if (floorH !== 0) {
+    for (let c = 1; c < COLS2 - 1; c++) markers2.push({ row: 20, col: c, tag: `floor:${floorH}` });
+  }
 
   const stub: Record<string, unknown> = {};
   const strips: unknown[][] = [];
@@ -147,6 +157,10 @@ function buildScene(decalTag: string | null, imgW: number, imgH: number) {
   ren.bindsettings(settings);
   const me = new M.RcMover(world, 1.5, 1.5, 0.3, 0.6);
   me.warpto(20.5, 20.5, 0); // angle 0 = facing +x, straight at the decal wall ~18.5 units away
+  // warpTo sets the camera's Z to its own cell's floor height, which the
+  // raised-floor case just tagged -- force it back to 0 so both runs share
+  // the same camera height and only the wall's local floor differs.
+  (me as unknown as { pz: number }).pz = 0;
   ren.bindcamera(me);
   ren.setwalltexture('rc_wall.png');
   ren.renderframe();
@@ -182,5 +196,24 @@ describe('RcRender — decal strips', () => {
     const strips = buildScene(null, 64, 64);
     const decalStrips = strips.filter((s) => s[0] === 'door.png');
     expect(decalStrips.length).toBe(0);
+  });
+
+  test('a raised floor anchors the decal to the platform, not world Z=0', () => {
+    const groundStrips = buildScene('decal:door.png', 64, 64, 0);
+    const raisedStrips = buildScene('decal:door.png', 64, 64, 1);
+    const groundStrip = groundStrips.find((s) => s[0] === 'door.png');
+    const raisedStrip = raisedStrips.find((s) => s[0] === 'door.png');
+    expect(groundStrip).toBeDefined();
+    expect(raisedStrip).toBeDefined();
+    // centerY (index 3) and height (index 5) together give the strip's
+    // screen-space bottom edge: centerY + height/2. On a 1-unit-raised floor
+    // that edge should sit one world unit higher on screen than on the
+    // ground -- by the same pixels-per-world-unit slope the decal's own
+    // height already establishes (span / decalH, decalH = 1 for a square
+    // image here) -- not stay pinned to the ground-floor position.
+    const groundBottom = (groundStrip![3] as number) + (groundStrip![5] as number) / 2;
+    const raisedBottom = (raisedStrip![3] as number) + (raisedStrip![5] as number) / 2;
+    const slopePerUnit = groundStrip![5] as number; // decalH = 1, so span == slope
+    expect(groundBottom - raisedBottom).toBeCloseTo(slopePerUnit, 1);
   });
 });

@@ -1215,9 +1215,13 @@ endfunction
 ' column already used, so perspective is correct at any viewing angle. Width
 ' is always 1 world unit (the full cell face); height comes from the image's
 ' own pixel aspect ratio, so a 128x128 image is 1 unit tall, a 64x128 image
-' is 2 units tall. Drawn immediately after the wall strip so the image's
-' alpha composites over it. Returns 1 if a strip was drawn, else 0.
-function drawDecalStrip(destX, wTop, wBot, winTop, winBot, image, u, d, lite)
+' is 2 units tall. "Floor-anchored" means this wall segment's own local floor
+' (wLoZ -- the same value drawWallStrip receives) -- not world Z=0 -- so a
+' decal on a raised platform or a stepped-up wall sits on that step, not
+' buried at the world's absolute ground level. Drawn immediately after the
+' wall strip so the image's alpha composites over it. Returns 1 if a strip
+' was drawn, else 0.
+function drawDecalStrip(destX, wTop, wBot, winTop, winBot, image, u, d, lite, wLoZ)
     dim dw
     dim dh
     dim decalH
@@ -1235,8 +1239,8 @@ function drawDecalStrip(destX, wTop, wBot, winTop, winBot, image, u, d, lite)
         return 0
     endif
     decalH = dh / dw
-    screenTop = self.projectY(decalH, d)
-    screenBot = self.projectY(0, d)
+    screenTop = self.projectY(wLoZ + decalH, d)
+    screenBot = self.projectY(wLoZ, d)
     dTop = screenTop
     if dTop < wTop then
         dTop = wTop
@@ -1529,7 +1533,7 @@ function renderFrame()
                 if self.wld.hasDecals() = 1 and self.rc.spanSide(i) <> RcConfig.RC_SPAN_SIDE_DIAG then
                     dtex = self.wld.decalAt(self.rc.spanCol(i), self.rc.spanRow(i))
                     if string.len(dtex) > 0 then
-                        self.surfCountLast = self.surfCountLast + self.drawDecalStrip(destX, sTop, sBot, winTop, winBot, dtex, self.rc.spanU(i), d, lite)
+                        self.surfCountLast = self.surfCountLast + self.drawDecalStrip(destX, sTop, sBot, winTop, winBot, dtex, self.rc.spanU(i), d, lite, self.rc.spanLo(i))
                     endif
                 endif
                 self.depthArr(col) = d

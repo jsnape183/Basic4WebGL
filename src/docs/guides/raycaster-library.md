@@ -308,19 +308,16 @@ wall texture underneath it:
 
 The decal always fills the cell's full width (1 world unit) and its height
 comes from the image's own pixel aspect ratio: a square 64x64 image is 1 unit
-tall, a 64x128 image is 2 units tall. It's anchored at the floor and drawn on
-top of the wall texture, alpha-composited — transparent pixels show the wall
-behind. It's the same per-column strip the wall itself uses (a "billboard that
+tall, a 64x128 image is 2 units tall. It's anchored to the wall segment's own
+local floor (not the world's absolute ground level) and drawn on top of the
+wall texture, alpha-composited — transparent pixels show the wall behind — so
+a decal on a raised platform or a stepped wall sits on that step correctly.
+It's the same per-column strip the wall itself uses (a "billboard that
 doesn't rotate with the camera"), so perspective stays correct at any angle.
 
 One `decal:` per cell; it shows on whichever face the ray hits, including all
 four faces of a pillar. A `decal:` marker does nothing on its own — pair it
 with a `door:` marker (read by your own game code) to make it interactive.
-
-> **Known limitation:** a decal anchors to the world's absolute floor height,
-> not the wall segment's own local floor. On a raised platform or stepped
-> floor, a decal on that wall may not line up correctly — stick to flat-floor
-> walls for now.
 
 ### Floor and ceiling colour
 
