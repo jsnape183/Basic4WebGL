@@ -48,3 +48,19 @@ describe('assetmanager.defineRegion — roadmap issue #9', () => {
     expect(result.diagnostics).toHaveLength(0);
   });
 });
+
+describe('assetmanager.imageWidth / imageHeight', () => {
+  test('compile to the expected _sb calls', () => {
+    const result = transpile(
+      [
+        'dim w',
+        'dim h',
+        'w = assetmanager.imageWidth("door.png")',
+        'h = assetmanager.imageHeight("door.png")',
+      ].join('\n')
+    );
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.code).toContain('_sb.imageWidth(imagewidth_name)');
+    expect(result.code).toContain('_sb.imageHeight(imageheight_name)');
+  });
+});

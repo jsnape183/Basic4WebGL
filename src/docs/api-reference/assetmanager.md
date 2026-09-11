@@ -21,6 +21,36 @@ dim playerImage
 playerImage = assetmanager.loadImage("player.png")
 ```
 
+## imageWidth(name)
+
+Returns the width of a loaded image, in pixels.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| name      | string | The filename of the image, as it appears in your project's Assets panel. |
+
+**Returns:** number — the image's width in pixels.
+
+```bas
+dim w
+w = assetmanager.imageWidth("player.png")
+```
+
+## imageHeight(name)
+
+Returns the height of a loaded image, in pixels.
+
+| Parameter | Type   | Description |
+|-----------|--------|-------------|
+| name      | string | The filename of the image, as it appears in your project's Assets panel. |
+
+**Returns:** number — the image's height in pixels.
+
+```bas
+dim h
+h = assetmanager.imageHeight("player.png")
+```
+
 ## defineRegion(newName, sourceName, x, y, width, height)
 
 Creates a new named image from a rectangular region of an already-loaded image, without changing the original file. Use this when several different things — a background tileset, a set of character animation frames, a single icon — are packed together into one combined image file, so you can treat each piece as its own image.

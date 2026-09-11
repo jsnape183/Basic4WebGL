@@ -64,6 +64,14 @@ const _sbAssets = (() => {
       return _cache.get(name);
     },
 
+    imageWidth(name) {
+      return this.get(name).width;
+    },
+
+    imageHeight(name) {
+      return this.get(name).height;
+    },
+
     tryGet(name) {
       return _cache.get(name);
     },

@@ -198,6 +198,20 @@ describe('getSlices — memoized frame slicing', () => {
   });
 });
 
+describe('imageWidth / imageHeight — raw pixel dimensions by asset name', () => {
+  test('return the loaded image\'s width and height', async () => {
+    const { assets } = await preloadedAssets();
+    expect(assets.imageWidth('sheet.png')).toBe(256);
+    expect(assets.imageHeight('sheet.png')).toBe(256);
+  });
+
+  test('imageWidth on an unknown name throws the same "not found" error as get()', async () => {
+    const assets = loadAssets();
+    await assets.preload([]);
+    expect(() => assets.imageWidth('missing.png')).toThrow(/not found/);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // A `.stm` / `.json` asset blob persisted without a MIME type (older app
 // versions; an OS that assigns nothing to the `.stm` extension) reaches the

@@ -5,3 +5,11 @@ endfunction
 function defineRegion(newName, sourceName, x, y, width, height)
     call("_sb.defineRegion(defineregion_newName, defineregion_sourceName, defineregion_x, defineregion_y, defineregion_width, defineregion_height)")
 endfunction
+
+function imageWidth(name)
+    return call("_sb.imageWidth(imagewidth_name)")
+endfunction
+
+function imageHeight(name)
+    return call("_sb.imageHeight(imageheight_name)")
+endfunction

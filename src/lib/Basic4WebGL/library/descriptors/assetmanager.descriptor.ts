@@ -14,5 +14,15 @@ export const assetmanagerDescriptor: ModuleDescriptor = {
       body: (p, _self) =>
         `_sb.defineRegion(${p.newName}, ${p.sourceName}, ${p.x}, ${p.y}, ${p.width}, ${p.height})`,
     },
+    {
+      name: 'imageWidth',
+      params: ['name'],
+      returns: (p, _self) => `_sb.imageWidth(${p.name})`,
+    },
+    {
+      name: 'imageHeight',
+      params: ['name'],
+      returns: (p, _self) => `_sb.imageHeight(${p.name})`,
+    },
   ],
 };
