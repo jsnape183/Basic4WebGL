@@ -21,6 +21,8 @@ dim wallArr(0)
 dim floorHArr(0)
 dim ceilHArr(0)
 dim wallTexArr(0)
+' Per-cell decal image name, from a `decal:<image>` tag. "" = no decal.
+dim decalArr(0)
 dim floorTexArr(0)
 dim ceilTexArr(0)
 dim lightArr(0)
@@ -41,6 +43,10 @@ dim surfColSeen
 ' RcRender skips that optimisation when this is set.
 dim heightVarSeen
 
+' Fast-path flag: 1 if any cell carries a decal: tag, so RcRender can skip
+' the per-column decal lookup entirely on levels that don't use the feature.
+dim decalSeen
+
 dim cfg as RcSettings
 
 Constructor(tm as tilemapset, wallsLayerName)
@@ -57,6 +63,7 @@ function build(tm as tilemapset, wallsLayerName)
     dim th
     self.surfColSeen = 0
     self.heightVarSeen = 0
+    self.decalSeen = 0
     tw = tm.tileWidth()
     th = tm.tileHeight()
 
@@ -74,6 +81,7 @@ function build(tm as tilemapset, wallsLayerName)
         array.push(self.floorHArr, 0)
         array.push(self.ceilHArr, RcConfig.RC_UNTAGGED)
         array.push(self.wallTexArr, "")
+        array.push(self.decalArr, "")
         array.push(self.floorTexArr, "")
         array.push(self.ceilTexArr, "")
         array.push(self.floorColArr, 0 - 1)
@@ -173,6 +181,10 @@ function applyKv(idx, key, v)
     endif
     if key = "ctex" then
         self.ceilTexArr(idx) = v
+    endif
+    if key = "decal" then
+        self.decalArr(idx) = v
+        self.decalSeen = 1
     endif
     if key = "floor" then
         self.floorHArr(idx) = math.val(v)
@@ -305,6 +317,19 @@ function wallTexAt(col, row)
         return ""
     endif
     return self.wallTexArr(row * self.cols + col)
+endfunction
+
+function decalAt(col, row)
+    if self.inBounds(col, row) = 0 then
+        return ""
+    endif
+    return self.decalArr(row * self.cols + col)
+endfunction
+
+' 1 if any cell carries a decal: tag -- lets the renderer skip the per-column
+' decal lookup entirely on levels that don't use the feature.
+function hasDecals()
+    return self.decalSeen
 endfunction
 
 function lightAt(col, row)
