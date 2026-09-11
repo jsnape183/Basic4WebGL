@@ -1208,6 +1208,67 @@ function drawWallStrip(destX, wTop, wBot, winTop, winBot, tex, u, lite, sideKind
     return 1
 endfunction
 
+' Fixed-size, floor-anchored, alpha-composited image on a wall face -- a
+' door, sign, light or picture from a `decal:<image>` tag. Co-planar with the
+' wall (a "billboard that doesn't rotate with the camera"): reuses the same
+' per-column distance `d` and face parameter `u` the wall strip for this
+' column already used, so perspective is correct at any viewing angle. Width
+' is always 1 world unit (the full cell face); height comes from the image's
+' own pixel aspect ratio, so a 128x128 image is 1 unit tall, a 64x128 image
+' is 2 units tall. Drawn immediately after the wall strip so the image's
+' alpha composites over it. Returns 1 if a strip was drawn, else 0.
+function drawDecalStrip(destX, wTop, wBot, winTop, winBot, image, u, d, lite)
+    dim dw
+    dim dh
+    dim decalH
+    dim screenTop
+    dim screenBot
+    dim dTop
+    dim dBot
+    dim vTop
+    dim vBot
+    dim srcX
+    dim tint
+    dw = assetmanager.imageWidth(image)
+    dh = assetmanager.imageHeight(image)
+    if dw <= 0 or dh <= 0 then
+        return 0
+    endif
+    decalH = dh / dw
+    screenTop = self.projectY(decalH, d)
+    screenBot = self.projectY(0, d)
+    dTop = screenTop
+    if dTop < wTop then
+        dTop = wTop
+    endif
+    if dTop < winTop then
+        dTop = winTop
+    endif
+    dBot = screenBot
+    if dBot > wBot then
+        dBot = wBot
+    endif
+    if dBot > winBot then
+        dBot = winBot
+    endif
+    if dBot <= dTop then
+        return 0
+    endif
+    vTop = (dTop - screenTop) / (screenBot - screenTop)
+    vBot = (dBot - screenTop) / (screenBot - screenTop)
+    srcX = math.floor(u * dw)
+    if srcX < 0 then
+        srcX = 0
+    endif
+    if srcX >= dw then
+        srcX = dw - 1
+    endif
+    tint = self.packTint(255 * lite, 255 * lite, 255 * lite)
+    drawing.drawImageStrip(image, srcX, destX, (dTop + dBot) / 2, RcConfig.RC_STRIP_W, dBot - dTop, tint, vTop, vBot)
+    self.primCount = self.primCount + 1
+    return 1
+endfunction
+
 ' --- Textures ------------------------------------------------------------------
 
 function setWallTexture(name)
@@ -1268,6 +1329,7 @@ function renderFrame()
     dim scLite
     dim wshade
     dim wtex
+    dim dtex
     dim fillOn
     dim fillLite
     dim stdCovered
@@ -1463,6 +1525,12 @@ function renderFrame()
                         wshade = 1
                     endif
                     self.drawStrip(destX, sTop, sBot, winTop, winBot, wshade, lite)
+                endif
+                if self.wld.hasDecals() = 1 and self.rc.spanSide(i) <> RcConfig.RC_SPAN_SIDE_DIAG then
+                    dtex = self.wld.decalAt(self.rc.spanCol(i), self.rc.spanRow(i))
+                    if string.len(dtex) > 0 then
+                        self.surfCountLast = self.surfCountLast + self.drawDecalStrip(destX, sTop, sBot, winTop, winBot, dtex, self.rc.spanU(i), d, lite)
+                    endif
                 endif
                 self.depthArr(col) = d
                 i = n
