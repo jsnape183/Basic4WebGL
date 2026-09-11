@@ -194,6 +194,7 @@ const stubWorld = {
   widthcells: () => 8,
   heightcells: () => 4,
   lightat: () => 0,
+  hasdecals: () => 0,
 };
 
 describe('raycaster phase demos smoke-execute', () => {
@@ -359,6 +360,7 @@ describe('raycaster phase demos smoke-execute', () => {
     widthcells: () => 12,
     heightcells: () => 4,
     lightat: () => 0,
+    hasdecals: () => 0,
   };
 
   // A single SE-solid diagonal at cell (3,3) in an 8x8 bordered room.
@@ -377,6 +379,7 @@ describe('raycaster phase demos smoke-execute', () => {
     widthcells: () => 8,
     heightcells: () => 8,
     lightat: () => 0,
+    hasdecals: () => 0,
   };
 
   // Center cell (3,3) is a diagonal of the given code; everything else open,
@@ -397,6 +400,7 @@ describe('raycaster phase demos smoke-execute', () => {
       widthcells: () => 8,
       heightcells: () => 8,
       lightat: () => 0,
+      hasdecals: () => 0,
     };
   }
 
@@ -598,6 +602,7 @@ describe('raycaster phase demos smoke-execute', () => {
     widthcells: () => 24,
     heightcells: () => 6,
     lightat: () => 0,
+    hasdecals: () => 0,
   };
 
   test.each(phaseDirs)('%s: renderFrame — a floor rise occludes geometry behind its rim', (dirName) => {

@@ -117,6 +117,7 @@ const openWorld = {
   widthcells: () => 8,
   heightcells: () => 4,
   lightat: () => 0,
+  hasdecals: () => 0,
 };
 
 describe('RcRender single-window occlusion', () => {
