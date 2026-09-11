@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.7.10 — 2026-09-11
+
+### Tilemap editor: delete a tag even if it's in use
+
+- The registry delete (×) on a tag chip now works even when markers still use it. Deleting an unused tag is unchanged. Deleting an in-use tag asks first: **Delete from list only** stops offering it to paint with but leaves existing markers alone; **Remove everywhere** also strips it from every marker on every layer.
+
+### Tilemap editor: see tags used in your other maps
+
+- The marker paint palette now shows a **Seen in other maps** row for any tag used by another tilemap in the same project but not yet in this one. Click it to adopt the name — exactly like typing a new tag, just without the risk of a typo drifting from what you already used elsewhere.
+
 ## v0.7.9 — 2026-09-11
 
 ### Raycaster: wall decals
